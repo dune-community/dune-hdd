@@ -24,7 +24,7 @@ AC_CONFIG_FILES([
   doc/doxygen/Makefile
   doc/doxygen/Doxyfile
   dune/Makefile
-  dune/detailed_solvers/Makefile
+  dune/detailed-solvers/Makefile
   m4/Makefile
   dune-detailed-solvers.pc
 ])
