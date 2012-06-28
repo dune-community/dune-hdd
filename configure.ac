@@ -25,8 +25,15 @@ AC_CONFIG_FILES([
   doc/doxygen/Doxyfile
   dune/Makefile
   dune/detailed-solvers/Makefile
+  dune/detailed-solvers/stationary/Makefile
+  dune/detailed-solvers/stationary/linear/Makefile
+  dune/detailed-solvers/stationary/linear/elliptic/Makefile
   m4/Makefile
   dune-detailed-solvers.pc
+  examples/Makefile
+  examples/stationray/Makefile
+  examples/stationray/linear/Makefile
+  examples/stationray/linear/elliptic/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information
