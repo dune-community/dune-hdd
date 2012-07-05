@@ -5,12 +5,17 @@ noinst_PROGRAMS = dune_fem
 
 dune_fem_SOURCES = dune_fem.cc
 
+CUSTOM_CPPFLAGS = -DALUGRID_SIMPLEX -DGRIDDIM=2 -DWORLDDIM=2 -Wall -O0 -DDEBUG -g -fdiagnostics-show-option -std=c++0x
+
 dune_fem_CPPFLAGS = $(AM_CPPFLAGS) \
 	$(DUNEMPICPPFLAGS) \
 	$(UG_CPPFLAGS) \
 	$(AMIRAMESH_CPPFLAGS) \
 	$(ALBERTA_CPPFLAGS) \
-	$(ALUGRID_CPPFLAGS)
+	$(ALUGRID_CPPFLAGS) \
+  $(EIGEN_CFLAGS) \
+  $(BOOST_CPPFLAGS) \
+  $(CUSTOM_CPPFLAGS)
 # The libraries have to be given in reverse order (most basic libraries
 # last).  Also, due to some misunderstanding, a lot of libraries include the
 # -L option in LDFLAGS instead of LIBS -- so we have to include the LDFLAGS
@@ -29,7 +34,8 @@ dune_fem_LDFLAGS = $(AM_LDFLAGS) \
 	$(AMIRAMESH_LDFLAGS) \
 	$(ALBERTA_LDFLAGS) \
 	$(ALUGRID_LDFLAGS) \
-	$(DUNE_LDFLAGS)
+	$(DUNE_LDFLAGS) \
+  -lboost_filesystem
 
 # don't follow the full GNU-standard
 # we need automake 1.5
