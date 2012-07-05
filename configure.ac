@@ -3,7 +3,7 @@
 AC_PREREQ(2.50)
 DUNE_AC_INIT # gets module version from dune.module file
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([src/dune_detailed_solvers.cc])
+AC_CONFIG_SRCDIR([])
 AM_CONFIG_HEADER([config.h])
 
 
@@ -19,7 +19,6 @@ LIBS="$DUNE_LIBS"
 
 AC_CONFIG_FILES([
   Makefile
-  src/Makefile
   doc/Makefile
   doc/doxygen/Makefile
   doc/doxygen/Doxyfile
@@ -28,12 +27,14 @@ AC_CONFIG_FILES([
   dune/detailed-solvers/stationary/Makefile
   dune/detailed-solvers/stationary/linear/Makefile
   dune/detailed-solvers/stationary/linear/elliptic/Makefile
+  dune/detailed-solvers/stationary/linear/elliptic/continuousgalerkin/Makefile
   m4/Makefile
   dune-detailed-solvers.pc
   examples/Makefile
-  examples/stationray/Makefile
-  examples/stationray/linear/Makefile
-  examples/stationray/linear/elliptic/Makefile
+  examples/stationary/Makefile
+  examples/stationary/linear/Makefile
+  examples/stationary/linear/elliptic/Makefile
+  examples/stationary/linear/elliptic/continuousgalerkin/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information
