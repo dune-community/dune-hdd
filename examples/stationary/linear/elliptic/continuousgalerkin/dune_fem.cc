@@ -13,9 +13,9 @@
 #include <dune/fem/gridpart/gridpart.hh>
 #include <dune/fem/gridpart/gridpartview.hh>
 
-// dune-helper-tools
-#include <dune/helper-tools/common/parametertree.hh>
-#include <dune/helper-tools/grid/provider/cube.hh>
+// dune-stuff
+#include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/grid/provider/cube.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed-solvers/stationary/linear/elliptic/model.hh>
@@ -79,8 +79,8 @@ int main(int argc, char** argv)
 
     // grid
     std::cout << "setting up grid:" << std::endl;
-    typedef Dune::HelperTools::Grid::Provider::UnitCube< Dune::GridSelector::GridType > GridProviderType;
-    Dune::HelperTools::Common::ParameterTree::assertSub(paramTree, GridProviderType::id, filename);
+    typedef Dune::Stuff::Grid::Provider::UnitCube< Dune::GridSelector::GridType > GridProviderType;
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, filename);
     GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::GridType GridType;
     GridType& grid = gridProvider.grid();

@@ -5,9 +5,9 @@
 #include <dune/common/parametertree.hh>
 #include <dune/common/shared_ptr.hh>
 
-// dune-helper-tools
-#include <dune/helper-tools/function/expression.hh>
-#include <dune/helper-tools/common/parametertree.hh>
+// dune-stuff
+#include <dune/stuff/function/expression.hh>
+#include <dune/stuff/common/parameter/tree.hh>
 
 namespace Dune
 {
@@ -40,15 +40,15 @@ public:
 
   static const std::string id;
 
-  typedef Dune::HelperTools::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > DiffusionType;
+  typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > DiffusionType;
 
   typedef DiffusionType ForceType;
 
   Model(const Dune::ParameterTree& paramTree)
   {
     // check parametertree
-    Dune::HelperTools::Common::ParameterTree::assertSub(paramTree, "diffusion", id);
-    Dune::HelperTools::Common::ParameterTree::assertSub(paramTree, "force", id);
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "diffusion", id);
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "force", id);
     // build functions
     diffusion_ = Dune::shared_ptr< DiffusionType >(new DiffusionType(paramTree.sub("diffusion")));
     force_ = Dune::shared_ptr< ForceType >(new ForceType(paramTree.sub("force")));

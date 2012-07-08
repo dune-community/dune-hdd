@@ -7,4 +7,4 @@ Module: dune-detailed-solvers
 Version: 2.2.0
 Maintainer: felix.albrecht@uni-muenster.de
 #depending on 
-Depends: dune-helper-tools dune-detailed-discretizations dune-fem
+Depends: dune-stuff dune-detailed-discretizations

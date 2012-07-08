@@ -13,9 +13,9 @@
 #include <dune/fem/gridpart/gridpart.hh>
 #include <dune/fem/gridpart/gridpartview.hh>
 
-// dune-helper-tools
-#include <dune/helper-tools/common/parametertree.hh>
-#include <dune/helper-tools/grid/provider/cube.hh>
+// dune-stuff
+#include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/grid/provider/cube.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed-solvers/stationary/linear/elliptic/model.hh>
@@ -76,15 +76,15 @@ int main(int argc, char** argv)
     const std::string id = "dune_detailed_discretizations";
     const std::string filename = id + ".param";
     ensureParamFile(filename);
-    Dune::ParameterTree paramTree = Dune::HelperTools::Common::ParameterTree::init(argc, argv, filename);
+    Dune::ParameterTree paramTree = Dune::Stuff::Common::Parameter::Tree::init(argc, argv, filename);
 
     // timer
     Dune::Timer timer;
 
     // grid
     std::cout << "setting up grid:" << std::endl;
-    typedef Dune::HelperTools::Grid::Provider::UnitCube< Dune::GridSelector::GridType > GridProviderType;
-    Dune::HelperTools::Common::ParameterTree::assertSub(paramTree, GridProviderType::id, filename);
+    typedef Dune::Stuff::Grid::Provider::UnitCube< Dune::GridSelector::GridType > GridProviderType;
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, filename);
     GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::GridType GridType;
     GridType& grid = gridProvider.grid();
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
     typedef Dune::DetailedSolvers::Stationary::Linear::Elliptic::Model< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    Dune::HelperTools::Common::ParameterTree::assertSub(paramTree, ModelType::id, id);
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
     const ModelType model(paramTree.sub(ModelType::id));
     std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
     else
       std::cout << "... " << std::flush;
     timer.reset();
-    Dune::HelperTools::Common::ParameterTree::assertSub(paramTree, SolverType::id, id);
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
     paramTree.sub(SolverType::id)["init.prefix"] = "  ";
     SolverType solver(model, gridPart);
     solver.init(paramTree.sub(SolverType::id).sub("init"));
