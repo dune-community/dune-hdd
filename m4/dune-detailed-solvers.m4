@@ -6,12 +6,45 @@ dnl -*- autoconf -*-
 # Additional checks needed to build dune-detailed-solvers
 # This macro should be invoked by every module which depends on dune-detailed-solvers, as
 # well as by dune-detailed-solvers itself
-AC_DEFUN([DUNE_DETAILED_SOLVERS_CHECKS])
+AC_DEFUN([DUNE_DETAILED_SOLVERS_CHECKS],
+[
+    AX_BOOST_BASE([1.42.0])
+
+    AC_LANG_PUSH([C++])
+
+    dnl Check for boost/filesystem.hpp
+    dnl AC_CHECK_HEADER([boost/filesystem.hpp],,
+      dnl [
+      dnl AC_MSG_ERROR([you must install libboost-filesystem to compile dune-detailed-discretizations.])
+      dnl ],
+      dnl [
+      dnl BOOST_CPPFLAGS
+      dnl ])
+
+    dnl AC_CHECK_LIB([boost_filesystem],[main],,
+      dnl [AC_MSG_ERROR([you must install libboost-filesystem to compile dune-detailed-discretizations.])
+      dnl ])
+
+    AC_LANG_POP([C++])
+
+    BOOST_LDADD="-lboost_system -lboost_filesystem"
+    AC_SUBST(BOOST_LDADD)
+
+    PKG_CHECK_MODULES([EIGEN], [eigen3], [
+      AC_DEFINE([HAVE_EIGEN],
+        [1],
+        [Define wether the eigen includes were found.])
+    ])
+
+    AC_DEFINE([HAVE_EIGEN],[1],
+      [Define wether the eigen includes were found.])
+
+])
 
 # Additional checks needed to find dune-detailed-solvers
 # This macro should be invoked by every module which depends on dune-detailed-solvers, but
 # not by dune-detailed-solvers itself
 AC_DEFUN([DUNE_DETAILED_SOLVERS_CHECK_MODULE],
 [
-  DUNE_CHECK_MODULES([dune-detailed-solvers],[detailed_solvers/detailed_solvers.hh])
+  DUNE_CHECK_MODULES([dune-detailed-solvers],[detailed-solvers/stationary/linear/elliptic/model.hh])
 ])

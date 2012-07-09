@@ -35,6 +35,7 @@ dune_fem_LDFLAGS = $(AM_LDFLAGS) \
 	$(ALBERTA_LDFLAGS) \
 	$(ALUGRID_LDFLAGS) \
 	$(DUNE_LDFLAGS) \
+  -lboost_system \
   -lboost_filesystem
 
 # don't follow the full GNU-standard
