@@ -35,7 +35,7 @@ void ensureParamFile(std::string filename)
   if (!boost::filesystem::exists(filename)) {
     std::ofstream file;
     file.open(filename);
-    file << "[helper-tools.grid.provider.cube]" << std::endl;
+    file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
     file << "[diffusion]" << std::endl;
     file << "variable = x" << std::endl;
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     const std::string id = "dune_fem";
     const std::string filename = id + ".param";
     ensureParamFile(filename);
-    Dune::ParameterTree paramTree = Dune::HelperTools::Common::ParameterTree::init(argc, argv, filename);
+    Dune::ParameterTree paramTree = Dune::Stuff::Common::Parameter::Tree::init(argc, argv, filename);
 
     // timer
     Dune::Timer timer;
