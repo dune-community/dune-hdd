@@ -27,7 +27,8 @@ dune_fem_LDADD = \
 	$(AMIRAMESH_LDFLAGS) $(AMIRAMESH_LIBS) \
 	$(UG_LDFLAGS) $(UG_LIBS) \
 	$(DUNEMPILIBS)	\
-	$(LDADD)
+	$(LDADD) \
+  $(BOOST_LDADD)
 dune_fem_LDFLAGS = $(AM_LDFLAGS) \
 	$(DUNEMPILDFLAGS) \
 	$(UG_LDFLAGS) \
@@ -35,6 +36,7 @@ dune_fem_LDFLAGS = $(AM_LDFLAGS) \
 	$(ALBERTA_LDFLAGS) \
 	$(ALUGRID_LDFLAGS) \
 	$(DUNE_LDFLAGS) \
+  $(BOOST_LDFLAGS) \
   -lboost_system \
   -lboost_filesystem
 
