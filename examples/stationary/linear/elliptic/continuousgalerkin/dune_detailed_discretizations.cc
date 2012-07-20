@@ -35,7 +35,7 @@ void ensureParamFile(std::string filename)
   if (!boost::filesystem::exists(filename)) {
     std::ofstream file;
     file.open(filename);
-    file << "[helper-tools.grid.provider.cube]" << std::endl;
+    file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
     file << "[detailed-solvers.stationary.linear.elliptic.model]" << std::endl;
     file << "diffusion.variable = x" << std::endl;

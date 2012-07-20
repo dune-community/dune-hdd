@@ -1,13 +1,16 @@
 
 SUBDIRS =
 
-noinst_PROGRAMS = dune_fem
+noinst_PROGRAMS = dune_detailed_discretizations
 
-dune_fem_SOURCES = dune_fem.cc
+dune_detailed_discretizations_SOURCES = dune_detailed_discretizations.cc
 
-CUSTOM_CPPFLAGS = -DALUGRID_SIMPLEX -DGRIDDIM=2 -DWORLDDIM=2 -Wall -O0 -DDEBUG -g -fdiagnostics-show-option -std=c++0x
+GRIDDIM=2
+GRIDTYPE=SGRID
 
-dune_fem_CPPFLAGS = $(AM_CPPFLAGS) \
+CUSTOM_CPPFLAGS = -D$(GRIDTYPE) -DGRIDDIM=$(GRIDDIM) -Wall -O0 -DDEBUG -g -fdiagnostics-show-option -std=c++0x
+
+dune_detailed_discretizations_CPPFLAGS = $(AM_CPPFLAGS) \
 	$(DUNEMPICPPFLAGS) \
 	$(UG_CPPFLAGS) \
 	$(AMIRAMESH_CPPFLAGS) \
@@ -20,7 +23,7 @@ dune_fem_CPPFLAGS = $(AM_CPPFLAGS) \
 # last).  Also, due to some misunderstanding, a lot of libraries include the
 # -L option in LDFLAGS instead of LIBS -- so we have to include the LDFLAGS
 # here as well.
-dune_fem_LDADD = \
+dune_detailed_discretizations_LDADD = \
 	$(DUNE_LDFLAGS) $(DUNE_LIBS) \
 	$(ALUGRID_LDFLAGS) $(ALUGRID_LIBS) \
 	$(ALBERTA_LDFLAGS) $(ALBERTA_LIBS) \
@@ -28,17 +31,17 @@ dune_fem_LDADD = \
 	$(UG_LDFLAGS) $(UG_LIBS) \
 	$(DUNEMPILIBS)	\
 	$(LDADD) \
-  $(BOOST_LDADD)
-dune_fem_LDFLAGS = $(AM_LDFLAGS) \
+  $(BOOST_LDADD) \
+  -lboost_system \
+  -lboost_filesystem
+dune_detailed_discretizations_LDFLAGS = $(AM_LDFLAGS) \
 	$(DUNEMPILDFLAGS) \
 	$(UG_LDFLAGS) \
 	$(AMIRAMESH_LDFLAGS) \
 	$(ALBERTA_LDFLAGS) \
 	$(ALUGRID_LDFLAGS) \
 	$(DUNE_LDFLAGS) \
-  $(BOOST_LDFLAGS) \
-  -lboost_system \
-  -lboost_filesystem
+  $(BOOST_LDFLAGS)
 
 # don't follow the full GNU-standard
 # we need automake 1.5
