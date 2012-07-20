@@ -27,5 +27,5 @@ AC_DEFUN([DUNE_DETAILED_SOLVERS_CHECKS],
 # not by dune-detailed-solvers itself
 AC_DEFUN([DUNE_DETAILED_SOLVERS_CHECK_MODULE],
 [
-  DUNE_CHECK_MODULES([dune-detailed-solvers],[detailed-solvers/stationary/linear/elliptic/model.hh])
+  DUNE_CHECK_MODULES([dune-detailed-solvers],[detailed-solvers/exists.hh])
 ])

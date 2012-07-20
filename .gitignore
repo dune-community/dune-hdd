@@ -54,3 +54,5 @@ m4/Makefile
 m4/Makefile.in
 missing
 stamp-h1
+examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizations
+examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizations-dune_detailed_discretizations.o
