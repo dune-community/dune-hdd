@@ -9,9 +9,8 @@
 #include <dune/common/mpihelper.hh>
 #include <dune/common/timer.hh>
 
-// dune-fem
-#include <dune/fem/gridpart/gridpart.hh>
-#include <dune/fem/gridpart/gridpartview.hh>
+// dune-grid-multiscale
+#include <dune/grid/part/leaf.hh>
 
 // dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
@@ -88,11 +87,9 @@ int main(int argc, char** argv)
     GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::GridType GridType;
     GridType& grid = gridProvider.grid();
-    typedef Dune::LeafGridPart< GridType > GridPartType;
-    GridPartType gridPart(grid);
-    typedef Dune::GridPartView< GridPartType > GridViewType;
-    GridViewType gridView(gridPart);
-    std::cout << "took " << timer.elapsed() << " sec, has " << gridView.size(0) << " entities" << std::endl;
+    typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
+    const GridPartType gridPart(grid);
+    std::cout << "  took " << timer.elapsed() << " sec, has " << gridPart.grid().size(0) << " elements" << std::endl;
 
     // model
     std::cout << "setting up model... " << std::flush;
