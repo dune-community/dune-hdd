@@ -24,8 +24,10 @@ namespace Linear
 namespace Elliptic
 {
 
+namespace Model {
+
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class Model
+class Default
 {
 public:
   typedef DomainFieldImp DomainFieldType;
@@ -36,7 +38,7 @@ public:
 
   static const int dimRange = rangeDim;
 
-  typedef Model< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
+  typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
 
   static const std::string id;
 
@@ -44,7 +46,7 @@ public:
 
   typedef DiffusionType ForceType;
 
-  Model(const Dune::ParameterTree& paramTree)
+  Default(const Dune::ParameterTree& paramTree)
   {
     // check parametertree
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "diffusion", id);
@@ -67,11 +69,70 @@ public:
 private:
   Dune::shared_ptr< DiffusionType > diffusion_;
   Dune::shared_ptr< ForceType > force_;
-}; // class Model
-
+}; // class Default
 
 template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-const std::string Model< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed-solvers.stationary.linear.elliptic.model";
+const std::string Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed-solvers.stationary.linear.elliptic.model.default";
+
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+class TwoPhase
+{
+public:
+  typedef DomainFieldImp DomainFieldType;
+
+  static const int dimDomain = domainDim;
+
+  typedef RangeFieldImp RangeFieldType;
+
+  static const int dimRange = rangeDim;
+
+  typedef TwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
+
+  static const std::string id;
+
+  typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > ForceType;
+
+  typedef ForceType TotalMobilityType;
+
+  typedef ForceType PermeabilityType;
+
+  TwoPhase(const Dune::ParameterTree& paramTree)
+  {
+    // check parametertree
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "totalMobility", id);
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "permeability", id);
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "force", id);
+    // build functions
+    totalMobility_ = Dune::shared_ptr< TotalMobilityType >(new TotalMobilityType(paramTree.sub("totalMobility")));
+    permeability_ = Dune::shared_ptr< PermeabilityType >(new PermeabilityType(paramTree.sub("permeability")));
+    force_ = Dune::shared_ptr< ForceType >(new ForceType(paramTree.sub("force")));
+  }
+
+  const Dune::shared_ptr< TotalMobilityType > totalMobility() const
+  {
+    return totalMobility_;
+  }
+
+  const Dune::shared_ptr< PermeabilityType > permeability() const
+  {
+    return permeability_;
+  }
+
+  const Dune::shared_ptr< ForceType > force() const
+  {
+    return force_;
+  }
+
+private:
+  Dune::shared_ptr< TotalMobilityType > totalMobility_;
+  Dune::shared_ptr< PermeabilityType > permeability_;
+  Dune::shared_ptr< ForceType > force_;
+}; // class TwoPhase
+
+template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
+const std::string TwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed-solvers.stationary.linear.elliptic.model.twophase";
+
+} // namespace Model
 
 } // namespace Elliptic
 

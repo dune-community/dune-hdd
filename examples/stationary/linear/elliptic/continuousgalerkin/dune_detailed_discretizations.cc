@@ -36,7 +36,7 @@ void ensureParamFile(std::string filename)
     file.open(filename);
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
-    file << "[detailed-solvers.stationary.linear.elliptic.model]" << std::endl;
+    file << "[detailed-solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.variable = x" << std::endl;
     file << "diffusion.expression.0 = 1.0"  << std::endl;
     file << "diffusion.expression.1 = 1.0"  << std::endl;
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
-    typedef Dune::DetailedSolvers::Stationary::Linear::Elliptic::Model< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+    typedef Dune::DetailedSolvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
     const ModelType model(paramTree.sub(ModelType::id));
     std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
