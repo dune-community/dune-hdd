@@ -28,6 +28,7 @@ AC_CONFIG_FILES([
   dune/detailed-solvers/stationary/linear/Makefile
   dune/detailed-solvers/stationary/linear/elliptic/Makefile
   dune/detailed-solvers/stationary/linear/elliptic/continuousgalerkin/Makefile
+  dune/detailed-solvers/stationary/linear/elliptic/discontinuousgalerkin/Makefile
   m4/Makefile
   dune-detailed-solvers.pc
   examples/Makefile
