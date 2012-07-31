@@ -35,6 +35,7 @@ AC_CONFIG_FILES([
   examples/stationary/linear/Makefile
   examples/stationary/linear/elliptic/Makefile
   examples/stationary/linear/elliptic/continuousgalerkin/Makefile
+  examples/stationary/linear/elliptic/discontinuousgalerkin/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information

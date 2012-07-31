@@ -26,7 +26,7 @@ SET( BLAS_LIB
   "BLAS LIB" )
 
 SET( GRIDTYPE
-  "ALUGRID_SIMPLEX" CACHE STRING
+  "SGRID" CACHE STRING
   "GRIDTYPE" )
 
 SET( GRIDDIM
@@ -76,7 +76,7 @@ add_cxx_flags(-std=c++0x)
 
 add_cxx_flags(${CUSTOM_FLAGS})
 # the other dune modules
-ADD_DUNE_MODULES(common istl grid fem geometry localfunctions fem-localfunction stuff detailed-discretizations)
+ADD_DUNE_MODULES(common grid-multiscale grid fem geometry localfunctions stuff detailed-discretizations)
 
 # Source listing, relative to the position of this file
 FILE( GLOB_RECURSE detailed-discretizations "../dune-detailed-discretizations/*.hh" )
@@ -87,8 +87,8 @@ FILE( GLOB_RECURSE common "../dune-common/*.hh" )
 FILE( GLOB_RECURSE common_cc "../dune-common/*.cc" )
 FILE( GLOB_RECURSE grid "../dune-grid/*.hh" )
 FILE( GLOB_RECURSE grid_cc "../dune-grid/*.cc" )
-FILE( GLOB_RECURSE istl "../dune-istl/*.hh" )
-FILE( GLOB_RECURSE istl_cc "../dune-istl/*.cc" )
+FILE( GLOB_RECURSE grid_multiscale "../dune-grid-multiscale/*.hh" )
+FILE( GLOB_RECURSE grid-multiscale_cc "../dune-grid-multiscale/*.cc" )
 FILE( GLOB_RECURSE fem "../dune-fem/*.hh" )
 FILE( GLOB_RECURSE fem_cc "../dune-fem/*.cc" )
 FILE( GLOB_RECURSE geometry "../dune-geometry/*.hh" )
@@ -97,19 +97,17 @@ FILE( GLOB_RECURSE localfunctions "../dune-localfunctions/*.hh" )
 FILE( GLOB_RECURSE localfunctions_cc "../dune-localfunctions/*.cc" )
 FILE( GLOB_RECURSE stuff "../dune-stuff/*.hh" )
 FILE( GLOB_RECURSE stuff_cc "../dune-stuff/*.cc" )
-FILE( GLOB_RECURSE fem-localfunctions "../dune-fem-localfunctions/*.hh" )
-FILE( GLOB_RECURSE fem-localfunctions_cc "../dune-fem-localfunctions/*.cc" )
 
-set_source_files_properties( ${common} ${grid} ${istl} ${fem} ${localfunctions} ${fem-localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${detailed-solvers_cc}
-${common_cc} ${grid_cc} ${istl_cc} ${fem_cc} ${localfunctions_cc} ${grid-howto_cc} ${fem-localfunctions_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} PROPERTIES HEADER_FILE_ONLY 1 )
+set_source_files_properties( ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${detailed-solvers_cc}
+${common_cc} ${grid_cc} ${grid_multiscale_cc} ${fem_cc} ${localfunctions_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} PROPERTIES HEADER_FILE_ONLY 1 )
 
-set( LIST_LIBS ${common} ${grid} ${istl} ${fem} ${localfunctions} ${fem-localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers}
-${common_cc} ${grid_cc} ${istl_cc} ${fem_cc} ${localfunctions_cc} ${grid-howto_cc} ${fem-localfunctions_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} ${detailed-solvers} )
+set(LIST_LIBS ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers}
+${common_cc} ${grid_cc} ${fem_cc} ${localfunctions_cc} ${grid_multiscale_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} ${detailed-solvers} )
 
 set( COMMON_LIBS "fem" "grid" "dunegeometry" "common" ${BLAS_LIB} "alugrid" "lapack" "boost_filesystem" "boost_system" "superlu" )
 
-ADD_EXECUTABLE( examples_stationary_linear_elliptic_continuousgalerkin_dune_fem "examples/stationary/linear/elliptic/continuousgalerkin/dune_fem.cc" ${LIST_LIBS} )
-TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_continuousgalerkin_dune_fem ${COMMON_LIBS} )
-
 ADD_EXECUTABLE( examples_stationary_linear_elliptic_continuousgalerkin_dune_detailed_discretizations "examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizations.cc" ${LIST_LIBS} )
 TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_continuousgalerkin_dune_detailed_discretizations ${COMMON_LIBS} )
+
+ADD_EXECUTABLE( examples_stationary_linear_elliptic_discontinuousgalerkin_dune_detailed_discretizations "examples/stationary/linear/elliptic/discontinuousgalerkin/dune_detailed_discretizations.cc" ${LIST_LIBS} )
+TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_discontinuousgalerkin_dune_detailed_discretizations ${COMMON_LIBS} )
