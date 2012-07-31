@@ -58,3 +58,5 @@ examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizat
 examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizations-dune_detailed_discretizations.o
 doc/doxygen
 *.deps
+examples/stationary/linear/elliptic/discontinuousgalerkin/dune_detailed_discretizations
+*.o
