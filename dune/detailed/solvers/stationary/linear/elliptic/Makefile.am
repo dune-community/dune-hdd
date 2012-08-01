@@ -1,4 +1,4 @@
-SUBDIRS = continuousgalerkin discontinuousgalerkin
+SUBDIRS = continuousgalerkin multiscale
 
 elliptic_includedir = $(includedir)/dune/detailed/solvers/stationary/linear/elliptic
 elliptic_includeHEADERS = model.hh
