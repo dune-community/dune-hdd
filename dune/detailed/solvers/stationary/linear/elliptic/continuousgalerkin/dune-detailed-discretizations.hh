@@ -90,9 +90,9 @@ public:
 
   DuneDetailedDiscretizations(const ModelType& model, const GridPartType& gridPart)
     : model_(model),
-      gridPart_(gridPart)
-  {
-  }
+      gridPart_(gridPart),
+      initialized_(false)
+  {}
 
   void init(Dune::ParameterTree paramTree = Dune::ParameterTree())
   {
@@ -156,6 +156,10 @@ public:
     systemAssembler.assembleSystem(localmatrixAssembler, *matrix_, localVectorAssembler, *rhs_);
     if (verbose)
       std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+    // done
+    initialized_ = true;
+    return;
   } // void init(Dune::ParameterTree paramTree = Dune::ParameterTree())
 
   void solve(Dune::shared_ptr< VectorType >& solution, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
@@ -233,6 +237,30 @@ public:
   {
     VectorBackendType tmp = ContainerFactory::createDenseVector(*testSpace_);
     return tmp.storage();
+  }
+
+  const Dune::shared_ptr< const MatrixType > getSystemMatrix() const
+  {
+    assert(initialized_);
+    return matrix_.storage();
+  }
+
+  Dune::shared_ptr< MatrixType > getSystemMatrix()
+  {
+    assert(initialized_);
+    return matrix_.storage();
+  }
+
+  const Dune::shared_ptr< const VectorType > getRightHandSide() const
+  {
+    assert(initialized_);
+    return rhs_.storage();
+  }
+
+  Dune::shared_ptr< VectorType > getRightHandSide()
+  {
+    assert(initialized_);
+    return rhs_.storage();
   }
 
 private:
