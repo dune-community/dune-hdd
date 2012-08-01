@@ -23,12 +23,14 @@ AC_CONFIG_FILES([
   doc/doxygen/Makefile
   doc/doxygen/Doxyfile
   dune/Makefile
-  dune/detailed-solvers/Makefile
-  dune/detailed-solvers/stationary/Makefile
-  dune/detailed-solvers/stationary/linear/Makefile
-  dune/detailed-solvers/stationary/linear/elliptic/Makefile
-  dune/detailed-solvers/stationary/linear/elliptic/continuousgalerkin/Makefile
-  dune/detailed-solvers/stationary/linear/elliptic/discontinuousgalerkin/Makefile
+  dune/detailed/Makefile
+  dune/detailed/solvers/Makefile
+  dune/detailed/solvers/stationary/Makefile
+  dune/detailed/solvers/stationary/linear/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/multiscale/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/Makefile
   m4/Makefile
   dune-detailed-solvers.pc
   examples/Makefile
@@ -36,7 +38,8 @@ AC_CONFIG_FILES([
   examples/stationary/linear/Makefile
   examples/stationary/linear/elliptic/Makefile
   examples/stationary/linear/elliptic/continuousgalerkin/Makefile
-  examples/stationary/linear/elliptic/discontinuousgalerkin/Makefile
+  examples/stationary/linear/elliptic/multiscale/Makefile
+  examples/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information

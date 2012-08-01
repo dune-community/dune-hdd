@@ -13,23 +13,25 @@
 #include <dune/fem/space/common/functionspace.hh>
 
 // dune-detailed-discretizations
-#include <dune/detailed-discretizations/discretefunctionspace/continuous/lagrange.hh>
-#include <dune/detailed-discretizations/discretefunctionspace/subspace/linear.hh>
-#include <dune/detailed-discretizations/evaluation/local/binary/elliptic.hh>
-#include <dune/detailed-discretizations/discreteoperator/local/codim0/integral.hh>
-#include <dune/detailed-discretizations/evaluation/local/unary/scale.hh>
-#include <dune/detailed-discretizations/discretefunctional/local/codim0/integral.hh>
-#include <dune/detailed-discretizations/la/factory/eigen.hh>
-#include <dune/detailed-discretizations/assembler/local/codim0/matrix.hh>
-#include <dune/detailed-discretizations/assembler/local/codim0/vector.hh>
-#include <dune/detailed-discretizations/assembler/system/constrained.hh>
-#include <dune/detailed-discretizations/la/backend/solver/eigen.hh>
-#include <dune/detailed-discretizations/discretefunction/default.hh>
+#include <dune/detailed/discretizations/discretefunctionspace/continuous/lagrange.hh>
+#include <dune/detailed/discretizations/discretefunctionspace/sub/linear.hh>
+#include <dune/detailed/discretizations/evaluation/local/binary/elliptic.hh>
+#include <dune/detailed/discretizations/discreteoperator/local/codim0/integral.hh>
+#include <dune/detailed/discretizations/evaluation/local/unary/scale.hh>
+#include <dune/detailed/discretizations/discretefunctional/local/codim0/integral.hh>
+#include <dune/detailed/discretizations/la/factory/eigen.hh>
+#include <dune/detailed/discretizations/assembler/local/codim0/matrix.hh>
+#include <dune/detailed/discretizations/assembler/local/codim0/vector.hh>
+#include <dune/detailed/discretizations/assembler/system/constrained.hh>
+#include <dune/detailed/discretizations/la/backend/solver/eigen.hh>
+#include <dune/detailed/discretizations/discretefunction/default.hh>
 
 namespace Dune
 {
 
-namespace DetailedSolvers
+namespace Detailed {
+
+namespace Solvers
 {
 
 namespace Stationary
@@ -67,7 +69,7 @@ private:
 
   static const int dimRange = ModelType::dimRange;
 
-  typedef Dune::DetailedDiscretizations::LA::Factory::Eigen< RangeFieldType > ContainerFactory;
+  typedef Dune::Detailed::Discretizations::LA::Factory::Eigen< RangeFieldType > ContainerFactory;
 
   typedef typename ContainerFactory::SparseMatrixType MatrixBackendType;
 
@@ -75,9 +77,9 @@ private:
 
   typedef Dune::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange > FunctionSpaceType;
 
-  typedef Dune::DetailedDiscretizations::DiscreteFunctionSpace::Continuous::Lagrange< FunctionSpaceType, GridPartType, polOrder > DiscreteH1Type;
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Continuous::Lagrange< FunctionSpaceType, GridPartType, polOrder > DiscreteH1Type;
 
-  typedef Dune::DetailedDiscretizations::DiscreteFunctionSpace::Subspace::Linear::Dirichlet< DiscreteH1Type > AnsatzSpaceType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< DiscreteH1Type > AnsatzSpaceType;
 
   typedef AnsatzSpaceType TestSpaceType;
 
@@ -116,16 +118,16 @@ public:
       timer.reset();
     }
     typedef typename ModelType::DiffusionType DiffusionType;
-    typedef Dune::DetailedDiscretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
+    typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
     const EllipticEvaluationType ellipticEvaluation(model_.diffusion());
-    typedef Dune::DetailedDiscretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
+    typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
     const EllipticOperatorType ellipticOperator(ellipticEvaluation);
 
     // right hand side (functional)
     typedef typename ModelType::ForceType ForceType;
-    typedef Dune::DetailedDiscretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
+    typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
     const ProductEvaluationType productEvaluation(model_.force());
-    typedef Dune::DetailedDiscretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
+    typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
     const L2FunctionalType l2Functional(productEvaluation);
     if (verbose)
       std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
@@ -145,11 +147,11 @@ public:
       std::cout << prefix << "assembling system... " << std::flush;
       timer.reset();
     }
-    typedef Dune::DetailedDiscretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType > LocalMatrixAssemblerType;
+    typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType > LocalMatrixAssemblerType;
     const LocalMatrixAssemblerType localmatrixAssembler(ellipticOperator);
-    typedef Dune::DetailedDiscretizations::Assembler::Local::Codim0::Vector< L2FunctionalType > LocalVectorAssemblerType;
+    typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2FunctionalType > LocalVectorAssemblerType;
     const LocalVectorAssemblerType localVectorAssembler(l2Functional);
-    typedef Dune::DetailedDiscretizations::Assembler::System::Constrained< AnsatzSpaceType, TestSpaceType > SystemAssemblerType;
+    typedef Dune::Detailed::Discretizations::Assembler::System::Constrained< AnsatzSpaceType, TestSpaceType > SystemAssemblerType;
     const SystemAssemblerType systemAssembler(*ansatzSpace_, *testSpace_);
     systemAssembler.assembleSystem(localmatrixAssembler, *matrix_, localVectorAssembler, *rhs_);
     if (verbose)
@@ -166,12 +168,12 @@ public:
     const double precision = paramTree.get("precision", 1e-12);
     Dune::Timer timer;
     VectorBackendType vector(solution);
-    typedef Dune::DetailedDiscretizations::LA::Solver::Eigen::BicgstabIlut BicgstabIlutSolver;
-    typedef Dune::DetailedDiscretizations::LA::Solver::Eigen::BicgstabDiagonal BicgstabDiagonalSolver;
-    typedef Dune::DetailedDiscretizations::LA::Solver::Eigen::CgDiagonalUpper CgDiagonalUpperSolver;
-    typedef Dune::DetailedDiscretizations::LA::Solver::Eigen::CgDiagonalLower CgDiagonalLowerSolver;
-    typedef Dune::DetailedDiscretizations::LA::Solver::Eigen::SimplicialcholeskyUpper SimplicialcholeskyUpperSolver;
-    typedef Dune::DetailedDiscretizations::LA::Solver::Eigen::SimplicialcholeskyLower SimplicialcholeskyLowerSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabIlut BicgstabIlutSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabDiagonal BicgstabDiagonalSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalUpper CgDiagonalUpperSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalLower CgDiagonalLowerSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyUpper SimplicialcholeskyUpperSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyLower SimplicialcholeskyLowerSolver;
     if (verbose)
       std::cout << prefix << "solving linear system of size " << matrix_->rows() << "x" << matrix_->cols() << std::endl
                 << prefix << "using " << type << "... " << std::flush;
@@ -217,7 +219,7 @@ public:
       std::cout << "'... " << std::flush;
     }
     const VectorBackendType vectorBackend(vector);
-    typedef Dune::DetailedDiscretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorBackendType > DiscreteFunctionType;
+    typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorBackendType > DiscreteFunctionType;
     Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*ansatzSpace_, vectorBackend, name));
     typedef Dune::VTKWriter< typename AnsatzSpaceType::GridViewType > VTKWriterType;
     VTKWriterType vtkWriter(ansatzSpace_->gridView());
@@ -236,6 +238,7 @@ public:
 private:
   const ModelType& model_;
   const GridPartType& gridPart_;
+  bool initialized_;
   Dune::shared_ptr< DiscreteH1Type > discreteH1_;
   Dune::shared_ptr< AnsatzSpaceType > ansatzSpace_;
   Dune::shared_ptr< TestSpaceType > testSpace_;
@@ -244,7 +247,7 @@ private:
 }; // class DuneDetailedDiscretizations
 
 template< class ModelType, class GridPartType, int polOrder >
-const std::string DuneDetailedDiscretizations< ModelType, GridPartType, polOrder >::id = "detailed-solvers.stationary.linear.elliptic.continuousgalerkin";
+const std::string DuneDetailedDiscretizations< ModelType, GridPartType, polOrder >::id = "detailed.solvers.stationary.linear.elliptic.continuousgalerkin";
 
 } // namespace ContinuousGalerkin
 
@@ -254,7 +257,9 @@ const std::string DuneDetailedDiscretizations< ModelType, GridPartType, polOrder
 
 } // namespace Stationary
 
-} // namespace DetailedSolvers
+} // namespace Solvers
+
+} // namespace Detailed
 
 } // namespace Dune
 

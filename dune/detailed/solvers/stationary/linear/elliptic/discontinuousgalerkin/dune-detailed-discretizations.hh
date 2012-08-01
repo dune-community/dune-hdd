@@ -15,34 +15,32 @@
 // dune-detailed-discretizations
 #include <dune/detailed-discretizations/discretefunctionspace/continuous/lagrange.hh>
 #include <dune/detailed-discretizations/discretefunctionspace/subspace/linear.hh>
+#include <dune/detailed-discretizations/evaluation/local/quaternary/ipdgfluxes.hh>
 #include <dune/detailed-discretizations/evaluation/local/binary/elliptic.hh>
 #include <dune/detailed-discretizations/discreteoperator/local/codim0/integral.hh>
+#include <dune/detailed-discretizations/discreteoperator/local/codim1/innerintegral.hh>
 #include <dune/detailed-discretizations/evaluation/local/unary/scale.hh>
 #include <dune/detailed-discretizations/discretefunctional/local/codim0/integral.hh>
 #include <dune/detailed-discretizations/la/factory/eigen.hh>
 #include <dune/detailed-discretizations/assembler/local/codim0/matrix.hh>
+#include <dune/detailed-discretizations/assembler/local/codim1/matrix.hh>
+#include <dune/detailed-discretizations/assembler/local/combined/matrix.hh>
 #include <dune/detailed-discretizations/assembler/local/codim0/vector.hh>
 #include <dune/detailed-discretizations/assembler/system/constrained.hh>
 #include <dune/detailed-discretizations/la/backend/solver/eigen.hh>
 #include <dune/detailed-discretizations/discretefunction/default.hh>
 
-namespace Dune
-{
+namespace Dune {
 
-namespace DetailedSolvers
-{
+namespace DetailedSolvers {
 
-namespace Stationary
-{
+namespace Stationary {
 
-namespace Linear
-{
+namespace Linear {
 
-namespace Elliptic
-{
+namespace Elliptic {
 
-namespace ContinuousGalerkin
-{
+namespace DiscontinuousGalerkin {
 
 template< class ModelImp, class GridPartImp, int polynomialOrder >
 class DuneDetailedDiscretizations
@@ -120,6 +118,10 @@ public:
     const EllipticEvaluationType ellipticEvaluation(model_.diffusion());
     typedef Dune::DetailedDiscretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
     const EllipticOperatorType ellipticOperator(ellipticEvaluation);
+    typedef Dune::DetailedDiscretizations::Evaluation::Local::Quaternary::IPDGfluxes::Inner< FunctionSpaceType, DiffusionType > InnerIPDGEvaluationType;
+    const InnerIPDGEvaluationType innerIPDGEvaluation(model_.diffusion());
+    typedef Dune::DetailedDiscretizations::DiscreteOperator::Local::Codim1::InnerIntegral< InnerIPDGEvaluationType > InnerIPDGOperatorType;
+    const InnerIPDGOperatorType innerIPDGOperator(innerIPDGEvaluation);
 
     // right hand side (functional)
     typedef typename ModelType::ForceType ForceType;
@@ -145,13 +147,17 @@ public:
       std::cout << prefix << "assembling system... " << std::flush;
       timer.reset();
     }
-    typedef Dune::DetailedDiscretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType > LocalMatrixAssemblerType;
-    const LocalMatrixAssemblerType localmatrixAssembler(ellipticOperator);
+    typedef Dune::DetailedDiscretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType > LocalCodim0MatrixAssemblerType;
+    const LocalCodim0MatrixAssemblerType localCodim0MatrixAssembler(ellipticOperator);
+    typedef Dune::DetailedDiscretizations::Assembler::Local::Codim1::Matrix< InnerIPDGOperatorType > LocalCodim1MatrixAssemblerType;
+    const LocalCodim1MatrixAssemblerType localCodim1MatrixAssembler(innerIPDGOperator);
+    typedef Dune::DetailedDiscretizations::Assembler::Local::Combined::Matrix< LocalCodim0MatrixAssemblerType, LocalCodim1MatrixAssemblerType > LocalMatrixAssemblerType;
+    const LocalMatrixAssemblerType localMatrixAssembler(localCodim0MatrixAssembler, localCodim1MatrixAssembler);
     typedef Dune::DetailedDiscretizations::Assembler::Local::Codim0::Vector< L2FunctionalType > LocalVectorAssemblerType;
     const LocalVectorAssemblerType localVectorAssembler(l2Functional);
     typedef Dune::DetailedDiscretizations::Assembler::System::Constrained< AnsatzSpaceType, TestSpaceType > SystemAssemblerType;
     const SystemAssemblerType systemAssembler(*ansatzSpace_, *testSpace_);
-    systemAssembler.assembleSystem(localmatrixAssembler, *matrix_, localVectorAssembler, *rhs_);
+    systemAssembler.assembleSystem(localMatrixAssembler, *matrix_, localVectorAssembler, *rhs_);
     if (verbose)
       std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void init(Dune::ParameterTree paramTree = Dune::ParameterTree())
@@ -244,9 +250,9 @@ private:
 }; // class DuneDetailedDiscretizations
 
 template< class ModelType, class GridPartType, int polOrder >
-const std::string DuneDetailedDiscretizations< ModelType, GridPartType, polOrder >::id = "detailed-solvers.stationary.linear.elliptic.continuousgalerkin";
+const std::string DuneDetailedDiscretizations< ModelType, GridPartType, polOrder >::id = "detailed-solvers.stationary.linear.elliptic.discontinuousgalerkin";
 
-} // namespace ContinuousGalerkin
+} // namespace DiscontinuousGalerkin
 
 } // namespace Elliptic
 

@@ -12,7 +12,9 @@
 namespace Dune
 {
 
-namespace DetailedSolvers
+namespace Detailed {
+
+namespace Solvers
 {
 
 namespace Stationary
@@ -72,7 +74,7 @@ private:
 }; // class Default
 
 template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-const std::string Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed-solvers.stationary.linear.elliptic.model.default";
+const std::string Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed.solvers.stationary.linear.elliptic.model.default";
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
 class TwoPhase
@@ -130,7 +132,7 @@ private:
 }; // class TwoPhase
 
 template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-const std::string TwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed-solvers.stationary.linear.elliptic.model.twophase";
+const std::string TwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detaileddsolvers.stationary.linear.elliptic.model.twophase";
 
 } // namespace Model
 
@@ -140,7 +142,9 @@ const std::string TwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange
 
 } // namespace Stationary
 
-} // namespace DetailedSolvers
+} // namespace Solvers
+
+} // namespace Detailed
 
 } // namespace Dune
 

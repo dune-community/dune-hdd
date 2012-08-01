@@ -17,8 +17,8 @@
 #include <dune/stuff/grid/provider/cube.hh>
 
 // dune-detailed-solvers
-#include <dune/detailed-solvers/stationary/linear/elliptic/model.hh>
-#include <dune/detailed-solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/model.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -36,7 +36,7 @@ void ensureParamFile(std::string filename)
     file.open(filename);
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
-    file << "[detailed-solvers.stationary.linear.elliptic.model.default]" << std::endl;
+    file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.variable = x" << std::endl;
     file << "diffusion.expression.0 = 1.0"  << std::endl;
     file << "diffusion.expression.1 = 1.0"  << std::endl;
@@ -47,7 +47,7 @@ void ensureParamFile(std::string filename)
     file << "force.expression.1 = 1.0"  << std::endl;
     file << "force.expression.2 = 1.0"  << std::endl;
     file << "force.order = 0"  << std::endl;
-    file << "[detailed-solvers.stationary.linear.elliptic.continuousgalerkin]" << std::endl;
+    file << "[detailed.solvers.stationary.linear.elliptic.continuousgalerkin]" << std::endl;
     file << "init.verbose = true" << std::endl;
     file << "solve.verbose = true" << std::endl;
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
@@ -98,14 +98,14 @@ int main(int argc, char** argv)
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
-    typedef Dune::DetailedSolvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
     const ModelType model(paramTree.sub(ModelType::id));
     std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // solver
     std::cout << "initializing solver";
-    typedef Dune::DetailedSolvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType, GridPartType, polOrder > SolverType;
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType, GridPartType, polOrder > SolverType;
     if (paramTree.sub(SolverType::id).get("init.verbose", false))
       std::cout << ":" << std::endl;
     else

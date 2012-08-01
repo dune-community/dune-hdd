@@ -60,3 +60,4 @@ doc/doxygen
 *.deps
 examples/stationary/linear/elliptic/discontinuousgalerkin/dune_detailed_discretizations
 *.o
+demos
