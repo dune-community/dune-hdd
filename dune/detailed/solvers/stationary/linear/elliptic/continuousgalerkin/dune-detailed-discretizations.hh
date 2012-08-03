@@ -46,6 +46,9 @@ namespace Elliptic
 namespace ContinuousGalerkin
 {
 
+/**
+ *  \todo Add method to create a discrete function.
+ */
 template< class ModelImp, class GridPartImp, int polynomialOrder >
 class DuneDetailedDiscretizations
 {
@@ -79,14 +82,22 @@ private:
 
   typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Continuous::Lagrange< FunctionSpaceType, GridPartType, polOrder > DiscreteH1Type;
 
+public:
   typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< DiscreteH1Type > AnsatzSpaceType;
 
   typedef AnsatzSpaceType TestSpaceType;
 
-public:
+  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorBackendType > DiscreteFunctionType;
+
+  typedef typename AnsatzSpaceType::MapperType AnsatzMapperType;
+
+  typedef typename TestSpaceType::MapperType TestMapperType;
+
   typedef typename MatrixBackendType::StorageType MatrixType;
 
   typedef typename VectorBackendType::StorageType VectorType;
+
+  typedef typename AnsatzSpaceType::PatternType SparsityPatternType;
 
   DuneDetailedDiscretizations(const ModelType& model, const GridPartType& gridPart)
     : model_(model),
@@ -137,7 +148,8 @@ public:
       std::cout << prefix << "setting up matrix and vector container... " << std::flush;
       timer.reset();
     }
-    matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(ContainerFactory::createSparseMatrix(*ansatzSpace_, *testSpace_)));
+    sparsityPattern_ = Dune::shared_ptr< SparsityPatternType >(new SparsityPatternType(ansatzSpace_->computePattern(*testSpace_)));
+    matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(ContainerFactory::createSparseMatrix(ansatzSpace_->map().size(), testSpace_->map().size(), *sparsityPattern_)));
     rhs_ = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(ContainerFactory::createDenseVector(*testSpace_)));
     if (verbose)
       std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
@@ -167,7 +179,7 @@ public:
     // preparations
     const bool verbose = paramTree.get("verbose", false);
     const std::string prefix = paramTree.get("prefix", "");
-    const std::string type = paramTree.get("type", "eigen.cg.diagonal.upper");
+    const std::string type = paramTree.get("type", "eigen.bicgstab.incompletelut");
     const unsigned int maxIter = paramTree.get("maxIter", 5000);
     const double precision = paramTree.get("precision", 1e-12);
     Dune::Timer timer;
@@ -223,7 +235,6 @@ public:
       std::cout << "'... " << std::flush;
     }
     const VectorBackendType vectorBackend(vector);
-    typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorBackendType > DiscreteFunctionType;
     Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*ansatzSpace_, vectorBackend, name));
     typedef Dune::VTKWriter< typename AnsatzSpaceType::GridViewType > VTKWriterType;
     VTKWriterType vtkWriter(ansatzSpace_->gridView());
@@ -231,6 +242,21 @@ public:
     vtkWriter.write(filename);
     if (verbose)
       std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  }
+
+  const AnsatzSpaceType& ansatzSpace() const
+  {
+    return *ansatzSpace_;
+  }
+
+  const AnsatzMapperType& ansatzMapper() const
+  {
+    return ansatzSpace_->map();
+  }
+
+  const TestMapperType& testMapper() const
+  {
+    return testSpace_->map();
   }
 
   Dune::shared_ptr< VectorType > createVector() const
@@ -242,25 +268,37 @@ public:
   const Dune::shared_ptr< const MatrixType > getSystemMatrix() const
   {
     assert(initialized_);
-    return matrix_.storage();
+    return matrix_->storage();
   }
 
   Dune::shared_ptr< MatrixType > getSystemMatrix()
   {
     assert(initialized_);
-    return matrix_.storage();
+    return matrix_->storage();
   }
 
   const Dune::shared_ptr< const VectorType > getRightHandSide() const
   {
     assert(initialized_);
-    return rhs_.storage();
+    return rhs_->storage();
   }
 
   Dune::shared_ptr< VectorType > getRightHandSide()
   {
     assert(initialized_);
-    return rhs_.storage();
+    return rhs_->storage();
+  }
+
+  Dune::shared_ptr< const SparsityPatternType > sparsityPattern() const
+  {
+    assert(initialized_);
+    return sparsityPattern_;
+  }
+
+  Dune::shared_ptr< SparsityPatternType > sparsityPattern()
+  {
+    assert(initialized_);
+    return sparsityPattern_;
   }
 
 private:
@@ -270,6 +308,7 @@ private:
   Dune::shared_ptr< DiscreteH1Type > discreteH1_;
   Dune::shared_ptr< AnsatzSpaceType > ansatzSpace_;
   Dune::shared_ptr< TestSpaceType > testSpace_;
+  Dune::shared_ptr< SparsityPatternType > sparsityPattern_;
   Dune::shared_ptr< MatrixBackendType > matrix_;
   Dune::shared_ptr< VectorBackendType > rhs_;
 }; // class DuneDetailedDiscretizations
