@@ -81,21 +81,23 @@ int main(int argc, char** argv)
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
                                          Dune::Stuff::Common::LOG_CONSOLE |
                                          Dune::Stuff::Common::LOG_DEBUG);
-    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
+//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+    std::ostream& info = std::cout;
+//    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
+    std::ostream& debug = std::cout;
 
     // timer
     Dune::Timer timer;
 
     // grid
     info << "setting up grid: " << std::endl;
-    debug.suspend();
+    Dune::Stuff::Common::Logger().debug().suspend();
     typedef Dune::grid::Multiscale::Provider::Cube< Dune::GridSelector::GridType > GridProviderType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, id);
     const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::MsGridType MsGridType;
     const MsGridType& msGrid = gridProvider.msGrid();
-    debug.resume();
+    Dune::Stuff::Common::Logger().debug().resume();
     info << "  took " << timer.elapsed()
          << " sec (has " << msGrid.globalGridPart()->grid().size(0) << " elements, "
          << msGrid.size() << " subdomains)" << std::endl;
@@ -122,32 +124,27 @@ int main(int argc, char** argv)
     SolverType solver(model, msGrid);
     solver.init(paramTree.sub(SolverType::id).sub("init"));
 //    debug.resume();
-    std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    std::cout << "solving";
-//    if (paramTree.sub(SolverType::id).get("solve.verbose", false))
-//      std::cout << ":" << std::endl;
-//    else
-//      std::cout << "... " << std::flush;
-//    timer.reset();
-//    typedef SolverType::VectorType DofVectorType;
-//    Dune::shared_ptr< DofVectorType > solution = solver.createVector();
-//    paramTree.sub(SolverType::id)["solve.prefix"] = "  ";
-//    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"));
-//    if (!paramTree.sub(SolverType::id).get("solve.verbose", false))
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    info << "solving... ";
+    //    debug.suspend();
+    timer.reset();
+    typedef SolverType::LocalVectorType LocalDofVectorType;
+    typedef std::vector< Dune::shared_ptr< LocalDofVectorType > > MsDofVectorType;
+    MsDofVectorType solution = solver.createVector();
+    paramTree.sub(SolverType::id)["solve.prefix"] = "  ";
+    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"));
+    //    debug.resume();
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    std::cout << "postprocessing";
-//    if (paramTree.sub(SolverType::id).get("visualize.verbose", false))
-//      std::cout << ":" << std::endl;
-//    else
-//      std::cout << "... " << std::flush;
-//    timer.reset();
-//    paramTree.sub(SolverType::id)["visualize.prefix"] = "  ";
-//    paramTree.sub(SolverType::id)["visualize.filename"] = id + "_solution";
-//    solver.visualize(solution, paramTree.sub(SolverType::id).sub("visualize"));
-//    if (!paramTree.sub(SolverType::id).get("visualize.verbose", false))
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    info << "postprocessing...";
+    //    debug.suspend();
+    timer.reset();
+    paramTree.sub(SolverType::id)["visualize.prefix"] = "  ";
+    paramTree.sub(SolverType::id)["visualize.filename"] = id + "_solution";
+    solver.visualize(solution, paramTree.sub(SolverType::id).sub("visualize"));
+    //    debug.resume();
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // if we came that far we can as well be happy about it
     return 0;
