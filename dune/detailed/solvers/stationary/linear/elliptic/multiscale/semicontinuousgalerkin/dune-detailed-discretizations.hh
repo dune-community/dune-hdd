@@ -18,6 +18,8 @@
 
 // dune-detailed-discretizations
 #include <dune/detailed/discretizations/la/factory/eigen.hh>
+#include <dune/detailed/discretizations/mapper/multiscale.hh>
+#include <dune/detailed/discretizations/discretefunction/multiscale.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
@@ -80,21 +82,37 @@ private:
 
   typedef typename Dune::Detailed::Solvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType, LocalGridPartType, polOrder > LocalSolverType;
 
-public:
+  typedef typename LocalSolverType::SparsityPatternType LocalSparsityPatternType;
+
+  typedef LocalSparsityPatternType GlobalSparsityPatternType;
+
+  // should be the index type of the local problem, not unsinged int
+  typedef Dune::Detailed::Discretizations::Mapper::Multiscale< unsigned int > AnsatzMapperType;
+
+  typedef AnsatzMapperType TestMapperType;
+
   typedef typename MatrixBackendType::StorageType MatrixType;
 
-  typedef typename VectorBackendType::StorageType VectorType;
+public:
+  typedef typename VectorBackendType::StorageType LocalVectorType;
+
+  typedef typename LocalSolverType::DiscreteFunctionType LocalDiscreteFunctionType;
+
+  typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
 
   DuneDetailedDiscretizations(const ModelType& model, const MsGridType& msGrid)
     : model_(model),
-      msGrid_(msGrid)
+      msGrid_(msGrid),
+      ansatzMapper_(),
+      testMapper_()
   {}
 
   void init(Dune::ParameterTree paramTree = Dune::ParameterTree())
   {
     // logging
     const std::string prefix = paramTree.get("prefix", "");
-    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
+//    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().info();
+    std::ostream& debug = std::cout;
 
     // timer
     Dune::Timer timer;
@@ -102,162 +120,168 @@ public:
     // create local solvers for each subdomain
     const unsigned int subdomains = msGrid_.size();
     debug << std::endl << prefix << id << ".init:" << std::endl;
-    debug << prefix << "initializing " << subdomains << " local continuous galerkin solvers" << std::flush;
+    debug << prefix << "initializing " << subdomains << " local continuous galerkin solvers... " << std::flush;
+    ansatzMapper_.prepare();
+    testMapper_.prepare();
     for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
-      debug << "." << std::flush;
       localGridParts_.push_back(msGrid_.localGridPart(subdomain));
       localSolvers_.push_back(Dune::shared_ptr< LocalSolverType >(new LocalSolverType(model_, *(localGridParts_[subdomain]))));
       localSolvers_[subdomain]->init();
+      localSparsityPatterns_.push_back(localSolvers_[subdomain]->sparsityPattern());
+      ansatzMapper_.add(subdomain, localSolvers_[subdomain]->ansatzMapper().size());
+      testMapper_.add(subdomain, localSolvers_[subdomain]->testMapper().size());
     }
-    debug << " done (took " << timer.elapsed() << " sek)" << std::endl;
-
-//    // function spaces
-//    if (verbose) {
-//      std::cout << prefix << "setting up function spaces... " << std::flush;
-//      timer.reset();
-//    }
-//    discreteH1_ = Dune::shared_ptr< DiscreteH1Type >(new DiscreteH1Type(gridPart_));
-//    ansatzSpace_ = Dune::shared_ptr< AnsatzSpaceType >(new AnsatzSpaceType(*discreteH1_));
-//    testSpace_ = Dune::shared_ptr< TestSpaceType >(new TestSpaceType(*discreteH1_));
-//    if (verbose)
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
-
-//    // left hand side (operator)
-//    if (verbose) {
-//      std::cout << prefix << "setting up operator and functional... " << std::flush;
-//      timer.reset();
-//    }
-//    typedef typename ModelType::DiffusionType DiffusionType;
-//    typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
-//    const EllipticEvaluationType ellipticEvaluation(model_.diffusion());
-//    typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
-//    const EllipticOperatorType ellipticOperator(ellipticEvaluation);
-//    typedef Dune::Detailed::Discretizations::Evaluation::Local::Quaternary::IPDGfluxes::Inner< FunctionSpaceType, DiffusionType > InnerIPDGEvaluationType;
-//    const InnerIPDGEvaluationType innerIPDGEvaluation(model_.diffusion());
-//    typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::InnerIntegral< InnerIPDGEvaluationType > InnerIPDGOperatorType;
-//    const InnerIPDGOperatorType innerIPDGOperator(innerIPDGEvaluation);
-
-//    // right hand side (functional)
-//    typedef typename ModelType::ForceType ForceType;
-//    typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
-//    const ProductEvaluationType productEvaluation(model_.force());
-//    typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
-//    const L2FunctionalType l2Functional(productEvaluation);
-//    if (verbose)
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    ansatzMapper_.finalize();
+    testMapper_.finalize();
+    debug << "done (took " << timer.elapsed() << " sek)" << std::endl;
 
 //    // system matrix and right hand side
-//    if (verbose) {
-//      std::cout << prefix << "setting up matrix and vector container... " << std::flush;
-//      timer.reset();
-//    }
-//    matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(ContainerFactory::createSparseMatrix(*ansatzSpace_, *testSpace_)));
-//    rhs_ = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(ContainerFactory::createDenseVector(*testSpace_)));
-//    if (verbose)
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    debug << prefix << "setting up global matrix (of size " << ansatzMapper_.size() << "x" << ansatzMapper_.size() << ") and vector container... " << std::flush;
+//    timer.reset();
+//    computeGlobalSparsityPatternType();
+//    matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(ContainerFactory::createSparseMatrix(ansatzMapper_.size(), testMapper_.size(), *globalSparsityPattern_)));
+//    rhs_ = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(ContainerFactory::createDenseVector(testMapper_.size())));
+//    debug << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
 //    // assemble system
-//    if (verbose) {
-//      std::cout << prefix << "assembling system... " << std::flush;
-//      timer.reset();
+//    debug << prefix << "assembling system" << std::flush;
+//    timer.reset();
+//    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
+//      debug << "." << std::flush;
+//      copyLocalToGlobalMatrix(subdomain);
+//      copyLocalToGlobalVector(subdomain);
 //    }
-//    typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType > LocalCodim0MatrixAssemblerType;
-//    const LocalCodim0MatrixAssemblerType localCodim0MatrixAssembler(ellipticOperator);
-//    typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Matrix< InnerIPDGOperatorType > LocalCodim1MatrixAssemblerType;
-//    const LocalCodim1MatrixAssemblerType localCodim1MatrixAssembler(innerIPDGOperator);
-//    typedef Dune::Detailed::Discretizations::Assembler::Local::Combined::Matrix< LocalCodim0MatrixAssemblerType, LocalCodim1MatrixAssemblerType > LocalMatrixAssemblerType;
-//    const LocalMatrixAssemblerType localMatrixAssembler(localCodim0MatrixAssembler, localCodim1MatrixAssembler);
-//    typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2FunctionalType > LocalVectorAssemblerType;
-//    const LocalVectorAssemblerType localVectorAssembler(l2Functional);
-//    typedef Dune::Detailed::Discretizations::Assembler::System::Constrained< AnsatzSpaceType, TestSpaceType > SystemAssemblerType;
-//    const SystemAssemblerType systemAssembler(*ansatzSpace_, *testSpace_);
-//    systemAssembler.assembleSystem(localMatrixAssembler, *matrix_, localVectorAssembler, *rhs_);
-//    if (verbose)
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    debug << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void init(Dune::ParameterTree paramTree = Dune::ParameterTree())
 
-//  void solve(Dune::shared_ptr< VectorType >& solution, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
-//  {
-//    // preparations
-//    const bool verbose = paramTree.get("verbose", false);
-//    const std::string prefix = paramTree.get("prefix", "");
-//    const std::string type = paramTree.get("type", "eigen.cg.diagonal.upper");
-//    const unsigned int maxIter = paramTree.get("maxIter", 5000);
-//    const double precision = paramTree.get("precision", 1e-12);
-//    Dune::Timer timer;
-//    VectorBackendType vector(solution);
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabIlut BicgstabIlutSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabDiagonal BicgstabDiagonalSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalUpper CgDiagonalUpperSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalLower CgDiagonalLowerSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyUpper SimplicialcholeskyUpperSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyLower SimplicialcholeskyLowerSolver;
-//    if (verbose)
-//      std::cout << prefix << "solving linear system of size " << matrix_->rows() << "x" << matrix_->cols() << std::endl
-//                << prefix << "using " << type << "... " << std::flush;
-//    if (type == "eigen.bicgstab.incompletelut"){
-//      BicgstabIlutSolver::apply(*matrix_, vector, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.bicgstab.diagonal"){
-//      BicgstabDiagonalSolver::apply(*matrix_, vector, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.cg.diagonal.upper"){
-//      CgDiagonalUpperSolver::apply(*matrix_, vector, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.cg.diagonal.lower"){
-//      CgDiagonalLowerSolver::apply(*matrix_, vector, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.simplicialcholesky.upper"){
-//      SimplicialcholeskyUpperSolver::apply(*matrix_, vector, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.simplicialcholesky.lower"){
-//      SimplicialcholeskyLowerSolver::apply(*matrix_, vector, *rhs_, maxIter, precision);
-//    } else {
-//      std::stringstream msg;
-//      msg << "Error";
-//      if (id != "") {
-//        msg << " in " << id;
-//      }
-//      msg << ": solver type '" << type << "not supported!" << std::endl;
-//      DUNE_THROW(Dune::InvalidStateException, msg.str());
-//    }
-//    if (verbose)
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  } // void solve(Dune::shared_ptr< VectorType >& solution, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
+  void solve(std::vector< Dune::shared_ptr< LocalVectorType > >& solution, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
+  {
+    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
+      localSolvers_[subdomain]->solve(solution[subdomain], paramTree);
+    }
+  } // void solve(std::vector< Dune::shared_ptr< LocalVectorType > >& solution, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
 
-//  void visualize(const Dune::shared_ptr< VectorType >& vector, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
-//  {
-//    // preparations
-//    const bool verbose = paramTree.get("verbose", false);
-//    const std::string prefix = paramTree.get("prefix", "");
-//    const std::string name = paramTree.get("name", id);
-//    const std::string filename = paramTree.get("filename", "visualization");
-//    Dune::Timer timer;
-//    if (verbose) {
-//        std::cout << prefix << "writing '" << name << "' to '" << filename;
-//      if (dimDomain == 1)
-//        std::cout << ".vtp";
-//      else
-//        std::cout << ".vtu";
-//      std::cout << "'... " << std::flush;
-//    }
-//    const VectorBackendType vectorBackend(vector);
-//    typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorBackendType > DiscreteFunctionType;
-//    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*ansatzSpace_, vectorBackend, name));
-//    typedef Dune::VTKWriter< typename AnsatzSpaceType::GridViewType > VTKWriterType;
-//    VTKWriterType vtkWriter(ansatzSpace_->gridView());
-//    vtkWriter.addVertexData(discreteFunction);
-//    vtkWriter.write(filename);
-//    if (verbose)
-//      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  }
+  void visualize(const std::vector< Dune::shared_ptr< LocalVectorType > >& vector, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
+  {
+    assert(vector.size() == msGrid_.size());
+    // logging
+    const std::string prefix = paramTree.get("prefix", "");
+//    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().info();
+    std::ostream& debug = std::cout;
+    const std::string name = paramTree.get("name", id);
+    const std::string filename = paramTree.get("filename", "visualization");
+    Dune::Timer timer;
+    debug << std::endl;
+    debug << prefix << "writing '" << name << "' to '" << filename;
+    if (dimDomain == 1)
+      debug << ".vtp";
+    else
+      debug << ".vtu";
+    debug << "'... " << std::flush;
+    // create vector of local discrete functions
+    std::vector< VectorBackendType > localVectorBackends;
+    std::vector< Dune::shared_ptr< LocalDiscreteFunctionType > > localDiscreteFunctions;
+    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
+      localVectorBackends.push_back(vector[subdomain]);
+      localDiscreteFunctions.push_back(Dune::shared_ptr< LocalDiscreteFunctionType >(new LocalDiscreteFunctionType(localSolvers_[subdomain]->ansatzSpace(), localVectorBackends[subdomain])));
+    }
+    // create multiscale discrete function
+    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(msGrid_, localDiscreteFunctions, name));
+    typedef Dune::VTKWriter< typename MsGridType::GlobalGridViewType > VTKWriterType;
+    VTKWriterType vtkWriter(*(msGrid_.globalGridView()));
+    vtkWriter.addVertexData(discreteFunction);
+    vtkWriter.write(filename);
+    debug << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualize(const std::vector< Dune::shared_ptr< LocalVectorType > >& vector, Dune::ParameterTree paramTree = Dune::ParameterTree()) const
 
-//  Dune::shared_ptr< VectorType > createVector() const
-//  {
-//    VectorBackendType tmp = ContainerFactory::createDenseVector(*testSpace_);
-//    return tmp.storage();
-//  }
+  std::vector< Dune::shared_ptr< LocalVectorType > > createVector() const
+  {
+    typename std::vector< Dune::shared_ptr< LocalVectorType > > ret;
+    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
+      ret.push_back(localSolvers_[subdomain]->createVector());
+    }
+    return ret;
+  } // std::vector< Dune::shared_ptr< LocalVectorType > > createVector() const
 
 private:
+  void computeGlobalSparsityPatternType()
+  {
+    globalSparsityPattern_ = Dune::shared_ptr< GlobalSparsityPatternType >(new GlobalSparsityPatternType());
+    // loop over all local sparsity patterns
+    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
+      // get local sparsity pattern
+      const LocalSparsityPatternType& localSparsityPattern = *(localSparsityPatterns_[subdomain]);
+      // loop over all rows in the sparsity pattern
+      for (typename LocalSparsityPatternType::const_iterator rowIterator = localSparsityPattern.begin();
+           rowIterator != localSparsityPattern.end();
+           ++rowIterator) {
+        const unsigned int localRow = rowIterator->first;
+        const unsigned int globalRow = ansatzMapper_.toGlobal(subdomain, localRow);
+        typename GlobalSparsityPatternType::iterator result = globalSparsityPattern_->find(globalRow);
+        if (result == globalSparsityPattern_->end())
+          globalSparsityPattern_->insert(typename GlobalSparsityPatternType::value_type(globalRow, typename GlobalSparsityPatternType::mapped_type()));
+        result = globalSparsityPattern_->find(globalRow);
+        assert(result != globalSparsityPattern_->end());
+        const typename LocalSparsityPatternType::mapped_type& localRowSet = rowIterator->second;
+        // loop over all cols in the current row
+        for (typename LocalSparsityPatternType::mapped_type::const_iterator colIterator = localRowSet.begin();
+             colIterator != localRowSet.end();
+             ++colIterator) {
+          const unsigned int localCol = *colIterator;
+          const unsigned int globalCol = testMapper_.toGlobal(subdomain, localCol);
+          result->second.insert(globalCol);
+        } // loop over all cols in the current row
+      } // loop over all rows in the sparsity pattern
+    } // loop over all local sparsity patterns
+    return;
+  } // void computeGlobalSparsityPatternType()
+
+  void copyLocalToGlobalMatrix(const unsigned int subdomain)
+  {
+    // get local system matrix
+    const MatrixBackendType localMatrix(localSolvers_[subdomain]->getSystemMatrix());
+    // get local sparsity pattern
+    const LocalSparsityPatternType& localSparsityPattern = *(localSparsityPatterns_[subdomain]);
+    // loop over all local rows
+    for (typename LocalSparsityPatternType::const_iterator rowIterator = localSparsityPattern.begin();
+         rowIterator != localSparsityPattern.end();
+         ++rowIterator) {
+      const unsigned int localRow = rowIterator->first;
+      const unsigned int globalRow = ansatzMapper_.toGlobal(subdomain, localRow);
+      const typename LocalSparsityPatternType::mapped_type& localRowSet = rowIterator->second;
+      // loop over all cols in the current row
+      for (typename LocalSparsityPatternType::mapped_type::const_iterator colIterator = localRowSet.begin();
+           colIterator != localRowSet.end();
+           ++colIterator) {
+        const unsigned int localCol = *colIterator;
+        const unsigned int globalCol = testMapper_.toGlobal(subdomain, localCol);
+        // add entry
+        matrix_->add(globalRow, globalCol, localMatrix.get(localRow, localCol));
+      } // loop over all cols in the current row
+    } // loop over all local rows
+  } // void copyLocalToGlobal(const unsigned int subdomain)
+
+  void copyLocalToGlobalVector(const unsigned int subdomain)
+  {
+    // get local rhs
+    const VectorBackendType localVector(localSolvers_[subdomain]->getRightHandSide());
+    // copy entries
+    for (unsigned int localI = 0; localI < localVector.size(); ++localI) {
+      const unsigned int globalI = testMapper_.toGlobal(subdomain, localI);
+      rhs_->set(globalI, localVector.get(localI));
+    } // copy entries
+  } // void copyLocalToGlobalVector(const unsigned int subdomain)
+
   const ModelType& model_;
   const MsGridType& msGrid_;
+  AnsatzMapperType ansatzMapper_;
+  TestMapperType testMapper_;
   std::vector< Dune::shared_ptr< const LocalGridPartType > > localGridParts_;
   std::vector< Dune::shared_ptr< LocalSolverType > > localSolvers_;
+  std::vector< Dune::shared_ptr< LocalSparsityPatternType > > localSparsityPatterns_;
+  Dune::shared_ptr< GlobalSparsityPatternType > globalSparsityPattern_;
+  Dune::shared_ptr< MatrixBackendType > matrix_;
+  Dune::shared_ptr< VectorBackendType > rhs_;
 }; // class DuneDetailedDiscretizations
 
 template< class ModelType, class GridPartType, int polOrder >
