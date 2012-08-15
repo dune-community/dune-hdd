@@ -254,6 +254,11 @@ public:
     return ansatzSpace_->map();
   }
 
+  const TestSpaceType& testSpace() const
+  {
+    return *testSpace_;
+  }
+
   const TestMapperType& testMapper() const
   {
     return testSpace_->map();
@@ -295,11 +300,11 @@ public:
     return sparsityPattern_;
   }
 
-  Dune::shared_ptr< SparsityPatternType > sparsityPattern()
-  {
-    assert(initialized_);
-    return sparsityPattern_;
-  }
+//  Dune::shared_ptr< SparsityPatternType > sparsityPattern()
+//  {
+//    assert(initialized_);
+//    return sparsityPattern_;
+//  }
 
 private:
   const ModelType& model_;
