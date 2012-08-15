@@ -40,6 +40,7 @@ void ensureParamFile(std::string filename)
     file << "partitions.0 = 2" << std::endl;
     file << "partitions.1 = 2" << std::endl;
     file << "partitions.2 = 2" << std::endl;
+    file << "filename = msGrid_visualization" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.variable = x" << std::endl;
     file << "diffusion.expression.0 = 1.0"  << std::endl;
@@ -83,24 +84,29 @@ int main(int argc, char** argv)
                                          Dune::Stuff::Common::LOG_DEBUG);
 //    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
     std::ostream& info = std::cout;
-//    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
-    std::ostream& debug = std::cout;
+    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
     Dune::Timer timer;
 
     // grid
     info << "setting up grid: " << std::endl;
-    Dune::Stuff::Common::Logger().debug().suspend();
-    typedef Dune::grid::Multiscale::Provider::Cube< Dune::GridSelector::GridType > GridProviderType;
+    debug.suspend();
+    typedef Dune::grid::Multiscale::Provider::Cube<> GridProviderType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, id);
     const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::MsGridType MsGridType;
     const MsGridType& msGrid = gridProvider.msGrid();
-    Dune::Stuff::Common::Logger().debug().resume();
     info << "  took " << timer.elapsed()
          << " sec (has " << msGrid.globalGridPart()->grid().size(0) << " elements, "
          << msGrid.size() << " subdomains)" << std::endl;
+    debug.resume();
+    info << "visualizing grid... " << std::flush;
+    debug.suspend();
+    timer.reset();
+    msGrid.visualize();
+    info << " done (took " << timer.elapsed() << " sek)" << std::endl;
+    debug.resume();
 
     // model
     info << "setting up model... " << std::flush;
