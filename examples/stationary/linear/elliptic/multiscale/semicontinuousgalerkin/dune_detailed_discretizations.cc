@@ -20,6 +20,14 @@
 #include <dune/detailed/solvers/stationary/linear/elliptic/model.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
 
+#ifdef POLORDER
+const int polOrder = POLORDER;
+#else
+const int polOrder = 1;
+#endif
+
+const std::string id = "semicontinuous_ddd_multiscale_solver";
+
 /**
   \brief      Creates a parameter file if it does not exist.
 
@@ -40,7 +48,7 @@ void ensureParamFile(std::string filename)
     file << "partitions.0 = 2" << std::endl;
     file << "partitions.1 = 2" << std::endl;
     file << "partitions.2 = 2" << std::endl;
-    file << "filename = msGrid_visualization" << std::endl;
+    file << "filename = " << id << "_msGrid" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.variable = x" << std::endl;
     file << "diffusion.expression.0 = 1.0"  << std::endl;
@@ -55,16 +63,11 @@ void ensureParamFile(std::string filename)
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
     file << "solve.maxIter = 5000"  << std::endl;
     file << "solve.precision = 1e-12"  << std::endl;
+    file << "visualize.filename = " << id << "_solution"  << std::endl;
     file << "visualize.name = solution"  << std::endl;
     file.close();
   } // only write param file if there is none
 } // void ensureParamFile()
-
-#ifdef POLORDER
-const int polOrder = POLORDER;
-#else
-const int polOrder = 1;
-#endif
 
 int main(int argc, char** argv)
 {
@@ -73,7 +76,6 @@ int main(int argc, char** argv)
     Dune::MPIHelper::instance(argc, argv);
 
     // parameter
-    const std::string id = "dune_detailed_discretizations";
     const std::string filename = id + ".param";
     ensureParamFile(filename);
     Dune::ParameterTree paramTree = Dune::Stuff::Common::Parameter::Tree::init(argc, argv, filename);
@@ -104,7 +106,7 @@ int main(int argc, char** argv)
     info << "visualizing grid... " << std::flush;
     debug.suspend();
     timer.reset();
-    msGrid.visualize();
+    msGrid.visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_msGrid"));
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
@@ -121,35 +123,34 @@ int main(int argc, char** argv)
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // solver
-    info << "initializing solver... " << std::flush;
+    info << "initializing solver... " << std::endl;
 //    debug.suspend();
     timer.reset();
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations< ModelType, MsGridType, polOrder > SolverType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
-    paramTree.sub(SolverType::id)["init.prefix"] = "  ";
     SolverType solver(model, msGrid);
-    solver.init(paramTree.sub(SolverType::id).sub("init"));
+    solver.init("  ", std::cout);
 //    debug.resume();
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    info << "solving... ";
-    //    debug.suspend();
+    info << "solving... " << std::endl;
+//    debug.suspend();
     timer.reset();
     typedef SolverType::LocalVectorType LocalDofVectorType;
-    typedef std::vector< Dune::shared_ptr< LocalDofVectorType > > MsDofVectorType;
-    MsDofVectorType solution = solver.createVector();
-    paramTree.sub(SolverType::id)["solve.prefix"] = "  ";
-    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"));
+    std::vector< Dune::shared_ptr< LocalDofVectorType > > solution = solver.createVector();
+    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"), "  ", std::cout);
     //    debug.resume();
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    info << "postprocessing...";
-    //    debug.suspend();
+    info << "postprocessing..." << std::endl;
+//    debug.suspend();
     timer.reset();
-    paramTree.sub(SolverType::id)["visualize.prefix"] = "  ";
-    paramTree.sub(SolverType::id)["visualize.filename"] = id + "_solution";
-    solver.visualize(solution, paramTree.sub(SolverType::id).sub("visualize"));
-    //    debug.resume();
+    solver.visualize(solution,
+                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
+                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
+                     "  ",
+                     std::cout);
+//    debug.resume();
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // if we came that far we can as well be happy about it
