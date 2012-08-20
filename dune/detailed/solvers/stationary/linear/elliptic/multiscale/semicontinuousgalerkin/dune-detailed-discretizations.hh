@@ -36,6 +36,7 @@
 
 // dune-stuff
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/grid/boundaryinfo.hh>
 
 namespace Dune {
 
@@ -86,7 +87,9 @@ private:
 
   typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Continuous::Lagrange< FunctionSpaceType, LocalGridPartType, polOrder > LocalDiscreteH1Type;
 
-  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< LocalDiscreteH1Type > LocalAnsatzSpaceType;
+  typedef Dune::Stuff::Grid::BoundaryInfo::IdBased BoundaryInfoType;
+
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< LocalDiscreteH1Type, BoundaryInfoType > LocalAnsatzSpaceType;
 
   typedef LocalAnsatzSpaceType LocalTestSpaceType;
 
@@ -140,6 +143,13 @@ public:
     out << prefix << "initializing locally (on " << subdomains << " subdomains)"  << std::flush;
     if (!verbose)
       out << "...";
+    // boundary info
+    typedef typename BoundaryInfoType::IdSetType BoundaryIdSetType;
+    typedef typename BoundaryInfoType::IdSetMapType BoundaryIdSetMapType;
+    Dune::shared_ptr< BoundaryIdSetMapType > boundaryIdSetMap = Dune::shared_ptr< BoundaryIdSetMapType >(new BoundaryIdSetMapType());
+    boundaryIdSetMap->insert(std::pair< std::string, BoundaryIdSetType >("dirichlet", BoundaryIdSetType()));
+    for (int id = 1; id < 7; ++id) boundaryIdSetMap->operator[]("dirichlet").insert(id); // because the inner boundaries will hopefully have id 7
+    boundaryInfo_ = Dune::shared_ptr< BoundaryInfoType >(new BoundaryInfoType(boundaryIdSetMap));
     // walk the subdomains to initialize locally
     for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
       // local grid part
@@ -148,9 +158,9 @@ public:
       localDiscreteH1s_[subdomain]
           = Dune::shared_ptr< const LocalDiscreteH1Type >(new LocalDiscreteH1Type(*(localGridParts_[subdomain])));
       localAnsatzSpaces_[subdomain]
-          = Dune::shared_ptr< const LocalAnsatzSpaceType >(new LocalAnsatzSpaceType(*(localDiscreteH1s_[subdomain])));
+          = Dune::shared_ptr< const LocalAnsatzSpaceType >(new LocalAnsatzSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
       localTestSpaces_[subdomain]
-          = Dune::shared_ptr< const LocalTestSpaceType >(new LocalTestSpaceType(*(localDiscreteH1s_[subdomain])));
+          = Dune::shared_ptr< const LocalTestSpaceType >(new LocalTestSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
       // multiscale mapper
       ansatzMapper_.add(subdomain, localAnsatzSpaces_[subdomain]->map().size());
       testMapper_.add(subdomain, localTestSpaces_[subdomain]->map().size());
@@ -578,6 +588,7 @@ private:
   std::vector< std::map< unsigned int, Dune::shared_ptr< MatrixBackendType > > > couplingMatricesMaps_;
   Dune::shared_ptr< SparsityPatternType > globalSparsityPattern_;
   // uninitialized
+  Dune::shared_ptr< BoundaryInfoType > boundaryInfo_;
   Dune::shared_ptr< MatrixBackendType > matrix_;
   Dune::shared_ptr< VectorBackendType > rhs_;
 }; // class DuneDetailedDiscretizations
