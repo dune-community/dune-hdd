@@ -148,7 +148,7 @@ public:
       std::cout << prefix << "setting up matrix and vector container... " << std::flush;
       timer.reset();
     }
-    sparsityPattern_ = Dune::shared_ptr< SparsityPatternType >(new SparsityPatternType(ansatzSpace_->computePattern(*testSpace_)));
+    sparsityPattern_ = ansatzSpace_->computePattern(*testSpace_);
     matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(ContainerFactory::createSparseMatrix(ansatzSpace_->map().size(), testSpace_->map().size(), *sparsityPattern_)));
     rhs_ = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(ContainerFactory::createDenseVector(*testSpace_)));
     if (verbose)
@@ -300,20 +300,14 @@ public:
     return sparsityPattern_;
   }
 
-//  Dune::shared_ptr< SparsityPatternType > sparsityPattern()
-//  {
-//    assert(initialized_);
-//    return sparsityPattern_;
-//  }
-
 private:
   const ModelType& model_;
   const GridPartType& gridPart_;
   bool initialized_;
-  Dune::shared_ptr< DiscreteH1Type > discreteH1_;
-  Dune::shared_ptr< AnsatzSpaceType > ansatzSpace_;
-  Dune::shared_ptr< TestSpaceType > testSpace_;
-  Dune::shared_ptr< SparsityPatternType > sparsityPattern_;
+  Dune::shared_ptr< const DiscreteH1Type > discreteH1_;
+  Dune::shared_ptr< const AnsatzSpaceType > ansatzSpace_;
+  Dune::shared_ptr< const TestSpaceType > testSpace_;
+  Dune::shared_ptr< const SparsityPatternType > sparsityPattern_;
   Dune::shared_ptr< MatrixBackendType > matrix_;
   Dune::shared_ptr< VectorBackendType > rhs_;
 }; // class DuneDetailedDiscretizations
