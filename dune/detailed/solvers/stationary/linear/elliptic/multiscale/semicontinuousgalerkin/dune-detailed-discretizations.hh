@@ -110,9 +110,9 @@ private:
 public:
   typedef typename VectorBackendType::StorageType LocalVectorType;
 
-//  typedef typename LocalSolverType::DiscreteFunctionType LocalDiscreteFunctionType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< LocalAnsatzSpaceType, VectorBackendType > LocalDiscreteFunctionType;
 
-//  typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
+  typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
 
   DuneDetailedDiscretizations(const ModelType& model, const MsGridType& msGrid)
     : model_(model)
