@@ -36,6 +36,7 @@
 
 // dune-stuff
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 
 namespace Dune {
@@ -114,10 +115,11 @@ public:
 
   typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
 
-  DuneDetailedDiscretizations(const ModelType& model, const MsGridType& msGrid)
+  DuneDetailedDiscretizations(const ModelType& model, const MsGridType& msGrid, const Dune::ParameterTree& paramTree)
     : model_(model)
     , msGrid_(msGrid)
     , initialized_(false)
+    , penaltyFactor_(-1)
     , ansatzMapper_()
     , testMapper_()
     , localGridParts_(msGrid_.size())
@@ -130,7 +132,19 @@ public:
     , localVectors_(msGrid_.size())
     , couplingMatricesMaps_(msGrid_.size())
     , globalSparsityPattern_(Dune::shared_ptr< SparsityPatternType >(new SparsityPatternType()))
-  {}
+  {
+    // get penalty factor
+    std::string key = "discretization.penaltyFactor";
+    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, key, id);
+    penaltyFactor_ = paramTree.get(key, -1);
+    if (!penaltyFactor_ > 0) {
+      std::stringstream msg;
+      msg << "Error in " << id << ":"
+          << "wrong '" << key << "' given (should be posititve double) in the following Dune::ParameterTree:" << std::endl;
+      paramTree.report(msg);
+      DUNE_THROW(Dune::InvalidStateException, msg.str());
+    }
+  } // DuneDetailedDiscretizations()
 
   void init(const std::string prefix = "", std::ostream& out = Dune::Stuff::Common::Logger().debug())
   {
@@ -291,7 +305,8 @@ public:
         //   operator
         typedef typename ModelType::DiffusionType DiffusionType;
         typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
-        const EllipticEvaluationType ellipticEvaluation(model_.diffusion());
+        assert(model_.diffusionOrder() >= 0 && "Please provide a nonnegative integration order!");
+        const EllipticEvaluationType ellipticEvaluation(model_.diffusion(), model_.diffusionOrder());
         typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
         const EllipticOperatorType ellipticOperator(ellipticEvaluation);
         //   matrix assembler
@@ -301,7 +316,8 @@ public:
         //   functional
         typedef typename ModelType::ForceType ForceType;
         typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
-        const ProductEvaluationType productEvaluation(model_.force());
+        assert(model_.forceOrder() >= 0 && "Please provide a nonnegative integration order!");
+        const ProductEvaluationType productEvaluation(model_.force(), model_.forceOrder());
         typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
         const L2FunctionalType l2Functional(productEvaluation);
         //   vector assembler
@@ -327,7 +343,7 @@ public:
           if (subdomain < neighboringSubdomain) {
             // evaluation
             typedef Dune::Detailed::Discretizations::Evaluation::Local::Quaternary::IPDGfluxes::Inner< FunctionSpaceType, DiffusionType > IPDGfluxType;
-            const IPDGfluxType ipdgFlux(model_.diffusion());
+            const IPDGfluxType ipdgFlux(model_.diffusion(), model_.diffusionOrder(), penaltyFactor_);
             // operator
             typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::InnerIntegral< IPDGfluxType > IPDGoperatorType;
             const IPDGoperatorType ipdgOperator(ipdgFlux);
@@ -599,6 +615,7 @@ private:
   const ModelType& model_;
   const MsGridType& msGrid_;
   bool initialized_;
+  RangeFieldType penaltyFactor_;
   AnsatzMapperType ansatzMapper_;
   TestMapperType testMapper_;
   std::vector< Dune::shared_ptr< const LocalGridPartType > > localGridParts_;
