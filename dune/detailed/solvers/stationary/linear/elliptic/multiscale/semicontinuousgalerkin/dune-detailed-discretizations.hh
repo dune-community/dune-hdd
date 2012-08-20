@@ -117,6 +117,7 @@ public:
   DuneDetailedDiscretizations(const ModelType& model, const MsGridType& msGrid)
     : model_(model)
     , msGrid_(msGrid)
+    , initialized_(false)
     , ansatzMapper_()
     , testMapper_()
     , localGridParts_(msGrid_.size())
@@ -133,255 +134,265 @@ public:
 
   void init(const std::string prefix = "", std::ostream& out = Dune::Stuff::Common::Logger().debug())
   {
-    // preparations
-    Dune::Timer timer;
-    const unsigned int subdomains = msGrid_.size();
-    const bool verbose = subdomains < std::pow(3, 3);
-    ansatzMapper_.prepare();
-    testMapper_.prepare();
+    if (!initialized_) {
+      // preparations
+      Dune::Timer timer;
+      const unsigned int subdomains = msGrid_.size();
+      const bool verbose = subdomains < std::pow(3, 3);
+      ansatzMapper_.prepare();
+      testMapper_.prepare();
 
-    out << prefix << "initializing locally (on " << subdomains << " subdomains)"  << std::flush;
-    if (!verbose)
-      out << "...";
-    // boundary info
-    typedef typename BoundaryInfoType::IdSetType BoundaryIdSetType;
-    typedef typename BoundaryInfoType::IdSetMapType BoundaryIdSetMapType;
-    Dune::shared_ptr< BoundaryIdSetMapType > boundaryIdSetMap = Dune::shared_ptr< BoundaryIdSetMapType >(new BoundaryIdSetMapType());
-    boundaryIdSetMap->insert(std::pair< std::string, BoundaryIdSetType >("dirichlet", BoundaryIdSetType()));
-    for (int id = 1; id < 7; ++id) boundaryIdSetMap->operator[]("dirichlet").insert(id); // because the inner boundaries will hopefully have id 7
-    boundaryInfo_ = Dune::shared_ptr< BoundaryInfoType >(new BoundaryInfoType(boundaryIdSetMap));
-    // walk the subdomains to initialize locally
-    for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
-      // local grid part
-      localGridParts_[subdomain] = Dune::shared_ptr< const LocalGridPartType >(msGrid_.localGridPart(subdomain));
-      // function spaces
-      localDiscreteH1s_[subdomain]
-          = Dune::shared_ptr< const LocalDiscreteH1Type >(new LocalDiscreteH1Type(*(localGridParts_[subdomain])));
-      localAnsatzSpaces_[subdomain]
-          = Dune::shared_ptr< const LocalAnsatzSpaceType >(new LocalAnsatzSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
-      localTestSpaces_[subdomain]
-          = Dune::shared_ptr< const LocalTestSpaceType >(new LocalTestSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
-      // multiscale mapper
-      ansatzMapper_.add(subdomain, localAnsatzSpaces_[subdomain]->map().size());
-      testMapper_.add(subdomain, localTestSpaces_[subdomain]->map().size());
-      // sparsity pattern
-      localSparsityPatterns_[subdomain] = localAnsatzSpaces_[subdomain]->computePattern(*(localTestSpaces_[subdomain]));
-      if (verbose)
-        out << "." << std::flush;
-    } // walk the subdomains to initialize locally
-    ansatzMapper_.finalize();
-    testMapper_.finalize();
-    out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+      out << prefix << "initializing locally (on " << subdomains << " subdomains)"  << std::flush;
+      if (!verbose)
+        out << "...";
+      // boundary info
+      typedef typename BoundaryInfoType::IdSetType BoundaryIdSetType;
+      typedef typename BoundaryInfoType::IdSetMapType BoundaryIdSetMapType;
+      Dune::shared_ptr< BoundaryIdSetMapType > boundaryIdSetMap = Dune::shared_ptr< BoundaryIdSetMapType >(new BoundaryIdSetMapType());
+      boundaryIdSetMap->insert(std::pair< std::string, BoundaryIdSetType >("dirichlet", BoundaryIdSetType()));
+      for (int id = 1; id < 7; ++id) boundaryIdSetMap->operator[]("dirichlet").insert(id); // because the inner boundaries will hopefully have id 7
+      boundaryInfo_ = Dune::shared_ptr< BoundaryInfoType >(new BoundaryInfoType(boundaryIdSetMap));
+      // walk the subdomains to initialize locally
+      for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
+        // local grid part
+        localGridParts_[subdomain] = Dune::shared_ptr< const LocalGridPartType >(msGrid_.localGridPart(subdomain));
+        // function spaces
+        localDiscreteH1s_[subdomain]
+            = Dune::shared_ptr< const LocalDiscreteH1Type >(new LocalDiscreteH1Type(*(localGridParts_[subdomain])));
+        localAnsatzSpaces_[subdomain]
+            = Dune::shared_ptr< const LocalAnsatzSpaceType >(new LocalAnsatzSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
+        localTestSpaces_[subdomain]
+            = Dune::shared_ptr< const LocalTestSpaceType >(new LocalTestSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
+        // multiscale mapper
+        ansatzMapper_.add(subdomain, localAnsatzSpaces_[subdomain]->map().size());
+        testMapper_.add(subdomain, localTestSpaces_[subdomain]->map().size());
+        // sparsity pattern
+        localSparsityPatterns_[subdomain] = localAnsatzSpaces_[subdomain]->computePattern(*(localTestSpaces_[subdomain]));
+        if (verbose)
+          out << "." << std::flush;
+      } // walk the subdomains to initialize locally
+      ansatzMapper_.finalize();
+      testMapper_.finalize();
+      out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
 
-    out << prefix << "initializing coupling (on " << subdomains << " subdomains)"  << std::flush;
-    if (!verbose)
-      out << "...";
-    timer.reset();
-    // walk the subdomains to initialize coupling
-    for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
-      // sparsity pattern map
-      std::map< unsigned int, Dune::shared_ptr< const SparsityPatternType > >&
-          couplingSparsityPatternMap = couplingSpartityPatternMaps_[subdomain];
-      // init inside / inside pattern
-      Dune::shared_ptr< SparsityPatternType > insideInsidePatterns(new SparsityPatternType());
-      // walk the neighbors
-      const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
-      for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
-           neighborIt != neighbors->end();
-           ++neighborIt) {
-        const unsigned int neighboringSubdomain = *neighborIt;
-        // get coupling grid part
-        const Dune::shared_ptr< const typename MsGridType::CouplingGridPartType >
-            couplingGridPart = msGrid_.couplingGridPart(subdomain, neighboringSubdomain);
-        // get inside / inside pattern for this coupling grid part (the outside / outside pattern is computed when the neighbor is the subdomain)
-        const Dune::shared_ptr< const SparsityPatternType >
-            insideInsidePattern = localAnsatzSpaces_[subdomain]->computeLocalPattern(*couplingGridPart);
-        // add to the overall inside / inside pattern
-        addPatternToPattern(*insideInsidePattern, *insideInsidePatterns);
-        // compute the inside / outside pattern (the outside / inside pattern is computed when the neighbor is the subdomain)
-        const Dune::shared_ptr< const SparsityPatternType >
-            insideOutsidePattern = localAnsatzSpaces_[subdomain]->computeCouplingPattern(*couplingGridPart,
-                                                                                         *(localTestSpaces_[neighboringSubdomain]));
-        // add it to the map
-        couplingSparsityPatternMap.insert(std::pair< unsigned int, Dune::shared_ptr< const SparsityPatternType > >(
-          neighboringSubdomain,
-          insideOutsidePattern));
-      } // walk the neighbors
-      // finally add the overall inside / inside pattern
-      addPatternToPattern(*(localSparsityPatterns_[subdomain]), *insideInsidePatterns);
-      localSparsityPatterns_[subdomain] = insideInsidePatterns;
-      if (verbose)
-        out << "." << std::flush;
-    } // walk the subdomains to initialize coupling
-    out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
-
-    out << prefix << "initializing local matrices (on " << subdomains << " subdomains)"  << std::flush;
-    if (!verbose)
-      out << "...";
-    timer.reset();
-    // walk the subdomains to initialize storage
-    for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
-      // create local matrix and vector (inside / inside)
-      localMatrices_[subdomain] = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(
-          ContainerFactory::createSparseMatrix(localAnsatzSpaces_[subdomain]->map().size(),
-                                               localTestSpaces_[subdomain]->map().size(),
-                                               *(localSparsityPatterns_[subdomain]))));
-      localVectors_[subdomain] = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(
-          ContainerFactory::createDenseVector(localTestSpaces_[subdomain]->map().size())));
-      // get coupling matrices map
-      typename std::map< unsigned int, Dune::shared_ptr< MatrixBackendType > >& couplingMatricesMap = couplingMatricesMaps_[subdomain];
-      // walk the neighbors
-      const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
-      for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
-           neighborIt != neighbors->end();
-           ++neighborIt) {
-        const unsigned int neighboringSubdomain = *neighborIt;
-        // create coupling matrix (inside / outside) (we assume here, that the correct coupling pattern exists, thus no checking of the map!)
-        couplingMatricesMap.insert(std::pair< unsigned int, Dune::shared_ptr< MatrixBackendType > >(
+      out << prefix << "initializing coupling (on " << subdomains << " subdomains)"  << std::flush;
+      if (!verbose)
+        out << "...";
+      timer.reset();
+      // walk the subdomains to initialize coupling
+      for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
+        // sparsity pattern map
+        std::map< unsigned int, Dune::shared_ptr< const SparsityPatternType > >&
+            couplingSparsityPatternMap = couplingSpartityPatternMaps_[subdomain];
+        // init inside / inside pattern
+        Dune::shared_ptr< SparsityPatternType > insideInsidePatterns(new SparsityPatternType());
+        // walk the neighbors
+        const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
+        for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
+             neighborIt != neighbors->end();
+             ++neighborIt) {
+          const unsigned int neighboringSubdomain = *neighborIt;
+          // get coupling grid part
+          const Dune::shared_ptr< const typename MsGridType::CouplingGridPartType >
+              couplingGridPart = msGrid_.couplingGridPart(subdomain, neighboringSubdomain);
+          // get inside / inside pattern for this coupling grid part (the outside / outside pattern is computed when the neighbor is the subdomain)
+          const Dune::shared_ptr< const SparsityPatternType >
+              insideInsidePattern = localAnsatzSpaces_[subdomain]->computeLocalPattern(*couplingGridPart);
+          // add to the overall inside / inside pattern
+          addPatternToPattern(*insideInsidePattern, *insideInsidePatterns);
+          // compute the inside / outside pattern (the outside / inside pattern is computed when the neighbor is the subdomain)
+          const Dune::shared_ptr< const SparsityPatternType >
+              insideOutsidePattern = localAnsatzSpaces_[subdomain]->computeCouplingPattern(*couplingGridPart,
+                                                                                           *(localTestSpaces_[neighboringSubdomain]));
+          // add it to the map
+          couplingSparsityPatternMap.insert(std::pair< unsigned int, Dune::shared_ptr< const SparsityPatternType > >(
             neighboringSubdomain,
-            Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(
-                ContainerFactory::createSparseMatrix(localAnsatzSpaces_[subdomain]->map().size(),
-                                                     localTestSpaces_[neighboringSubdomain]->map().size(),
-                                                     *(couplingSpartityPatternMaps_[subdomain][neighboringSubdomain]))))));
-      } // walk the neighbors
-      if (verbose)
-        out << "." << std::flush;
-    } // walk the subdomains to initialize storage
-    out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+            insideOutsidePattern));
+        } // walk the neighbors
+        // finally add the overall inside / inside pattern
+        addPatternToPattern(*(localSparsityPatterns_[subdomain]), *insideInsidePatterns);
+        localSparsityPatterns_[subdomain] = insideInsidePatterns;
+        if (verbose)
+          out << "." << std::flush;
+      } // walk the subdomains to initialize coupling
+      out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
 
-    out << prefix << "initializing global matrix (of size " << ansatzMapper_.size() << "x" << testMapper_.size() << ") and vector" << std::flush;
-    if (!verbose)
-      out << "...";
-    // walk the subdomains to create the global sparsity pattern
-    for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
-      // add the local (inside / inside) pattern
-      addLocalToGlobalPattern(*(localSparsityPatterns_[subdomain]), subdomain, subdomain, *globalSparsityPattern_);
-      // walk the neighbors
-      const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
-      for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
-           neighborIt != neighbors->end();
-           ++neighborIt) {
-        const unsigned int neighboringSubdomain = *neighborIt;
-        // add the coupling (inside / outside) pattern
-        addLocalToGlobalPattern(*(couplingSpartityPatternMaps_[subdomain][neighboringSubdomain]),
+      out << prefix << "initializing local matrices (on " << subdomains << " subdomains)"  << std::flush;
+      if (!verbose)
+        out << "...";
+      timer.reset();
+      // walk the subdomains to initialize storage
+      for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
+        // create local matrix and vector (inside / inside)
+        localMatrices_[subdomain] = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(
+            ContainerFactory::createSparseMatrix(localAnsatzSpaces_[subdomain]->map().size(),
+                                                 localTestSpaces_[subdomain]->map().size(),
+                                                 *(localSparsityPatterns_[subdomain]))));
+        localVectors_[subdomain] = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(
+            ContainerFactory::createDenseVector(localTestSpaces_[subdomain]->map().size())));
+        // get coupling matrices map
+        typename std::map< unsigned int, Dune::shared_ptr< MatrixBackendType > >& couplingMatricesMap = couplingMatricesMaps_[subdomain];
+        // walk the neighbors
+        const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
+        for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
+             neighborIt != neighbors->end();
+             ++neighborIt) {
+          const unsigned int neighboringSubdomain = *neighborIt;
+          // create coupling matrix (inside / outside) (we assume here, that the correct coupling pattern exists, thus no checking of the map!)
+          couplingMatricesMap.insert(std::pair< unsigned int, Dune::shared_ptr< MatrixBackendType > >(
+              neighboringSubdomain,
+              Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(
+                  ContainerFactory::createSparseMatrix(localAnsatzSpaces_[subdomain]->map().size(),
+                                                       localTestSpaces_[neighboringSubdomain]->map().size(),
+                                                       *(couplingSpartityPatternMaps_[subdomain][neighboringSubdomain]))))));
+        } // walk the neighbors
+        if (verbose)
+          out << "." << std::flush;
+      } // walk the subdomains to initialize storage
+      out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+
+      out << prefix << "initializing global matrix (of size " << ansatzMapper_.size() << "x" << testMapper_.size() << ") and vector" << std::flush;
+      if (!verbose)
+        out << "...";
+      // walk the subdomains to create the global sparsity pattern
+      for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
+        // add the local (inside / inside) pattern
+        addLocalToGlobalPattern(*(localSparsityPatterns_[subdomain]), subdomain, subdomain, *globalSparsityPattern_);
+        // walk the neighbors
+        const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
+        for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
+             neighborIt != neighbors->end();
+             ++neighborIt) {
+          const unsigned int neighboringSubdomain = *neighborIt;
+          // add the coupling (inside / outside) pattern
+          addLocalToGlobalPattern(*(couplingSpartityPatternMaps_[subdomain][neighboringSubdomain]),
+                                  subdomain,
+                                  neighboringSubdomain,
+                                  *globalSparsityPattern_);
+        } // walk the neighbors
+        if (verbose)
+          out << "." << std::flush;
+      } // walk the subdomains to create the global sparsity pattern
+      matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(
+          ContainerFactory::createSparseMatrix(ansatzMapper_.size(),
+                                               testMapper_.size(),
+                                               *globalSparsityPattern_)));
+      rhs_ = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(
+          ContainerFactory::createDenseVector(testMapper_.size())));
+      out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+
+      out << prefix << "assembling local and coupling matrices and vectors (on " << subdomains << " subdomains)"  << std::flush;
+      if (!verbose)
+        out << "...";
+      timer.reset();
+      // walk the subdomains to assemble locally
+      for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
+        // left hand side
+        //   operator
+        typedef typename ModelType::DiffusionType DiffusionType;
+        typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
+        const EllipticEvaluationType ellipticEvaluation(model_.diffusion());
+        typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
+        const EllipticOperatorType ellipticOperator(ellipticEvaluation);
+        //   matrix assembler
+        typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType > LocalMatrixAssemblerType;
+        const LocalMatrixAssemblerType localMatrixAssembler(ellipticOperator);
+        // right hand side
+        //   functional
+        typedef typename ModelType::ForceType ForceType;
+        typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
+        const ProductEvaluationType productEvaluation(model_.force());
+        typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
+        const L2FunctionalType l2Functional(productEvaluation);
+        //   vector assembler
+        typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2FunctionalType > LocalVectorAssemblerType;
+        const LocalVectorAssemblerType localVectorAssembler(l2Functional);
+        // assemble system
+        typedef Dune::Detailed::Discretizations::Assembler::System::Constrained< LocalAnsatzSpaceType, LocalTestSpaceType > LocalSystemAssemblerType;
+        const LocalSystemAssemblerType localSystemAssembler(*(localAnsatzSpaces_[subdomain]), *(localTestSpaces_[subdomain]));
+        localSystemAssembler.assembleSystem(localMatrixAssembler,
+                                            *(localMatrices_[subdomain]),
+                                            localVectorAssembler,
+                                            *(localVectors_[subdomain]));
+  //      out << std::endl << "===== subdomain " << subdomain << " matrix (before) =====" << std::endl;
+  //      out << *(localMatrices_[subdomain]->storage());
+  //      out << std::endl << "=============== " << subdomain << " =====================" << std::endl;
+        // walk the neighbors
+        const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
+        for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
+             neighborIt != neighbors->end();
+             ++neighborIt) {
+          const unsigned int neighboringSubdomain = *neighborIt;
+          // assemble primaly
+          if (subdomain < neighboringSubdomain) {
+            // evaluation
+            typedef Dune::Detailed::Discretizations::Evaluation::Local::Quaternary::IPDGfluxes::Inner< FunctionSpaceType, DiffusionType > IPDGfluxType;
+            const IPDGfluxType ipdgFlux(model_.diffusion());
+            // operator
+            typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::InnerIntegral< IPDGfluxType > IPDGoperatorType;
+            const IPDGoperatorType ipdgOperator(ipdgFlux);
+            // local assembler
+            typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Inner< IPDGoperatorType > CouplingMatrixAssemblerType;
+            const CouplingMatrixAssemblerType couplingMatrixAssembler(ipdgOperator);
+            // assemble coupling matrix
+            typedef Dune::Detailed::Discretizations::Assembler::Multiscale::Coupling::Primal<
+                typename MsGridType::CouplingGridPartType,
+                LocalAnsatzSpaceType,
+                LocalTestSpaceType,
+                LocalAnsatzSpaceType,
+                LocalTestSpaceType > CouplingAssemblerType;
+            const CouplingAssemblerType couplingAssembler(*(msGrid_.couplingGridPart(subdomain, neighboringSubdomain)),
+                                                          *(localAnsatzSpaces_[subdomain]),
+                                                          *(localTestSpaces_[subdomain]),
+                                                          *(localAnsatzSpaces_[neighboringSubdomain]),
+                                                          *(localTestSpaces_[neighboringSubdomain]));
+            couplingAssembler.assembleMatrices(couplingMatrixAssembler,
+                                               *(localMatrices_[subdomain]),
+                                               *(localMatrices_[neighboringSubdomain]),
+                                               *(couplingMatricesMaps_[subdomain][neighboringSubdomain]),
+                                               *(couplingMatricesMaps_[neighboringSubdomain][subdomain]));
+          } // assemble primaly
+        } // walk the neighbors
+  //      out << std::endl << "===== subdomain " << subdomain << " matrix (after) =====" << std::endl;
+  //      out << *(localMatrices_[subdomain]->storage());
+  //      out << std::endl << "=============== " << subdomain << " ====================" << std::endl;
+        if (verbose)
+          out << "." << std::flush;
+      } // walk the subdomains to assemble locally
+      out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+
+      out << prefix << "copying local matrices and vectors to global (on " << subdomains << " subdomains)"  << std::flush;
+      if (!verbose)
+        out << "...";
+      timer.reset();
+      // walk the subdomains to copy from local to global
+      for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
+        // copy local matrix
+        copyLocalToGlobalMatrix(*(localMatrices_[subdomain]),
+                                *(localSparsityPatterns_[subdomain]),
                                 subdomain,
-                                neighboringSubdomain,
-                                *globalSparsityPattern_);
-      } // walk the neighbors
-      if (verbose)
-        out << "." << std::flush;
-    } // walk the subdomains to create the global sparsity pattern
-    matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(
-        ContainerFactory::createSparseMatrix(ansatzMapper_.size(),
-                                             testMapper_.size(),
-                                             *globalSparsityPattern_)));
-    rhs_ = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(
-        ContainerFactory::createDenseVector(testMapper_.size())));
-    out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
-
-    out << prefix << "assembling local and coupling matrices and vectors (on " << subdomains << " subdomains)"  << std::flush;
-    if (!verbose)
-      out << "...";
-    timer.reset();
-    // walk the subdomains to assemble locally
-    for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
-      // left hand side
-      //   operator
-      typedef typename ModelType::DiffusionType DiffusionType;
-      typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
-      const EllipticEvaluationType ellipticEvaluation(model_.diffusion());
-      typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
-      const EllipticOperatorType ellipticOperator(ellipticEvaluation);
-      //   matrix assembler
-      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType > LocalMatrixAssemblerType;
-      const LocalMatrixAssemblerType localMatrixAssembler(ellipticOperator);
-      // right hand side
-      //   functional
-      typedef typename ModelType::ForceType ForceType;
-      typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
-      const ProductEvaluationType productEvaluation(model_.force());
-      typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
-      const L2FunctionalType l2Functional(productEvaluation);
-      //   vector assembler
-      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2FunctionalType > LocalVectorAssemblerType;
-      const LocalVectorAssemblerType localVectorAssembler(l2Functional);
-      // assemble system
-      typedef Dune::Detailed::Discretizations::Assembler::System::Constrained< LocalAnsatzSpaceType, LocalTestSpaceType > LocalSystemAssemblerType;
-      const LocalSystemAssemblerType localSystemAssembler(*(localAnsatzSpaces_[subdomain]), *(localTestSpaces_[subdomain]));
-      localSystemAssembler.assembleSystem(localMatrixAssembler,
-                                          *(localMatrices_[subdomain]),
-                                          localVectorAssembler,
-                                          *(localVectors_[subdomain]));
-      // walk the neighbors
-      const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
-      for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
-           neighborIt != neighbors->end();
-           ++neighborIt) {
-        const unsigned int neighboringSubdomain = *neighborIt;
-        // assemble primaly
-        if (subdomain < neighboringSubdomain) {
-          // evaluation
-          typedef Dune::Detailed::Discretizations::Evaluation::Local::Quaternary::IPDGfluxes::Inner< FunctionSpaceType, DiffusionType > IPDGfluxType;
-          const IPDGfluxType ipdgFlux(model_.diffusion());
-          // operator
-          typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::InnerIntegral< IPDGfluxType > IPDGoperatorType;
-          const IPDGoperatorType ipdgOperator(ipdgFlux);
-          // local assembler
-          typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Inner< IPDGoperatorType > CouplingMatrixAssemblerType;
-          const CouplingMatrixAssemblerType couplingMatrixAssembler(ipdgOperator);
-          // assemble coupling matrix
-          typedef Dune::Detailed::Discretizations::Assembler::Multiscale::Coupling::Primal<
-              typename MsGridType::CouplingGridPartType,
-              LocalAnsatzSpaceType,
-              LocalTestSpaceType,
-              LocalAnsatzSpaceType,
-              LocalTestSpaceType > CouplingAssemblerType;
-          const CouplingAssemblerType couplingAssembler(*(msGrid_.couplingGridPart(subdomain, neighboringSubdomain)),
-                                                        *(localAnsatzSpaces_[subdomain]),
-                                                        *(localTestSpaces_[subdomain]),
-                                                        *(localAnsatzSpaces_[neighboringSubdomain]),
-                                                        *(localTestSpaces_[neighboringSubdomain]));
-          couplingAssembler.assembleMatrices(couplingMatrixAssembler,
-                                             *(localMatrices_[subdomain]),
-                                             *(localMatrices_[neighboringSubdomain]),
-                                             *(couplingMatricesMaps_[subdomain][neighboringSubdomain]),
-                                             *(couplingMatricesMaps_[neighboringSubdomain][subdomain]));
-        } // assemble primaly
-      } // walk the neighbors
-      if (verbose)
-        out << "." << std::flush;
-    } // walk the subdomains to assemble locally
-    out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
-
-    out << prefix << "copying local matrices and vectors to global (on " << subdomains << " subdomains)"  << std::flush;
-    if (!verbose)
-      out << "...";
-    timer.reset();
-    // walk the subdomains to copy from local to global
-    for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
-      // copy local matrix
-      copyLocalToGlobalMatrix(*(localMatrices_[subdomain]),
-                              *(localSparsityPatterns_[subdomain]),
-                              subdomain,
-                              subdomain,
-                              *matrix_);
-      copyLocalToGlobalVector(*(localVectors_[subdomain]), subdomain, *rhs_);
-      // walk the neighbors
-      const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
-      for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
-           neighborIt != neighbors->end();
-           ++neighborIt) {
-        const unsigned int neighboringSubdomain = *neighborIt;
-        copyLocalToGlobalMatrix(*(couplingMatricesMaps_[subdomain][neighboringSubdomain]),
-                                *(couplingSpartityPatternMaps_[subdomain][neighboringSubdomain]),
                                 subdomain,
-                                neighboringSubdomain,
                                 *matrix_);
-      } // walk the neighbors
-      if (verbose)
-        out << "." << std::flush;
-    } // walk the subdomains to copy from local to global
-    out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+        copyLocalToGlobalVector(*(localVectors_[subdomain]), subdomain, *rhs_);
+        // walk the neighbors
+        const Dune::shared_ptr< const typename MsGridType::NeighboringSubdomainsSetType > neighbors = msGrid_.neighborsOf(subdomain);
+        for (typename MsGridType::NeighboringSubdomainsSetType::const_iterator neighborIt = neighbors->begin();
+             neighborIt != neighbors->end();
+             ++neighborIt) {
+          const unsigned int neighboringSubdomain = *neighborIt;
+          copyLocalToGlobalMatrix(*(couplingMatricesMaps_[subdomain][neighboringSubdomain]),
+                                  *(couplingSpartityPatternMaps_[subdomain][neighboringSubdomain]),
+                                  subdomain,
+                                  neighboringSubdomain,
+                                  *matrix_);
+        } // walk the neighbors
+        if (verbose)
+          out << "." << std::flush;
+      } // walk the subdomains to copy from local to global
+      out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+      // done
+      initialized_ = true;
+    } // if (!initialized_)
   } // init()
 
   std::vector< Dune::shared_ptr< LocalVectorType > > createVector() const
@@ -400,6 +411,7 @@ public:
              std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
     // preparations
+    assert(initialized_);
     assert(solution.size() == msGrid_.size());
     const std::string type = paramTree.get("type", "eigen.bicgstab.incompletelut");
     const unsigned int maxIter = paramTree.get("maxIter", 5000);
@@ -461,6 +473,7 @@ public:
                  std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
     // preparations
+    assert(initialized_);
     assert(vector.size() == msGrid_.size());
     Dune::Timer timer;
     out << prefix << "writing '" << name << "' to '" << filename;
@@ -585,6 +598,7 @@ private:
   // initialized
   const ModelType& model_;
   const MsGridType& msGrid_;
+  bool initialized_;
   AnsatzMapperType ansatzMapper_;
   TestMapperType testMapper_;
   std::vector< Dune::shared_ptr< const LocalGridPartType > > localGridParts_;
