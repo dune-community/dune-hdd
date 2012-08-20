@@ -489,6 +489,16 @@ public:
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // visualize() const
 
+  std::vector< Dune::shared_ptr< const LocalAnsatzSpaceType > > ansatzSpace() const
+  {
+    return localAnsatzSpaces_;
+  }
+
+  std::vector< Dune::shared_ptr< const LocalTestSpaceType > > testSpace() const
+  {
+    return localTestSpaces_;
+  }
+
 private:
   template< class SparsityPatternType >
   void addPatternToPattern(const SparsityPatternType& arg, SparsityPatternType& ret) const
