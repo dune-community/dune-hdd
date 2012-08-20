@@ -50,16 +50,18 @@ void ensureParamFile(std::string filename)
     file << "partitions.2 = 2" << std::endl;
     file << "filename = " << id << "_msGrid" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
+    file << "diffusion.order = 0" << std::endl;
     file << "diffusion.variable = x" << std::endl;
     file << "diffusion.expression.0 = 1.0"  << std::endl;
     file << "diffusion.expression.1 = 1.0"  << std::endl;
     file << "diffusion.expression.2 = 1.0"  << std::endl;
+    file << "force.order = 0" << std::endl;
     file << "force.variable = x" << std::endl;
     file << "force.expression.0 = 1.0"  << std::endl;
     file << "force.expression.1 = 1.0"  << std::endl;
     file << "force.expression.2 = 1.0"  << std::endl;
-    file << "force.order = 0"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.multiscale.semicontinuousgalerkin]" << std::endl;
+    file << "discretization.penaltyFactor = 10.0" << std::endl;
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
     file << "solve.maxIter = 5000"  << std::endl;
     file << "solve.precision = 1e-12"  << std::endl;
@@ -128,7 +130,7 @@ int main(int argc, char** argv)
     timer.reset();
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations< ModelType, MsGridType, polOrder > SolverType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
-    SolverType solver(model, msGrid);
+    SolverType solver(model, msGrid, paramTree.sub(SolverType::id));
     solver.init("  ", std::cout);
 //    debug.resume();
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
