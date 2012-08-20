@@ -49,6 +49,8 @@ public:
   typedef DiffusionType ForceType;
 
   Default(const Dune::ParameterTree& paramTree)
+    : diffusionOrder_(-1)
+    , forceOrder_(-1)
   {
     // check parametertree
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "diffusion", id);
@@ -56,6 +58,11 @@ public:
     // build functions
     diffusion_ = Dune::shared_ptr< DiffusionType >(new DiffusionType(paramTree.sub("diffusion")));
     force_ = Dune::shared_ptr< ForceType >(new ForceType(paramTree.sub("force")));
+    // set orders
+    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, "diffusion.order", id);
+    diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
+    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, "force.order", id);
+    forceOrder_ = paramTree.sub("force").get("order", -1);
   }
 
   const Dune::shared_ptr< DiffusionType > diffusion() const
@@ -68,7 +75,19 @@ public:
     return force_;
   }
 
+  int diffusionOrder() const
+  {
+    return diffusionOrder_;
+  }
+
+  int forceOrder() const
+  {
+    return forceOrder_;
+  }
+
 private:
+  int diffusionOrder_;
+  int forceOrder_;
   Dune::shared_ptr< DiffusionType > diffusion_;
   Dune::shared_ptr< ForceType > force_;
 }; // class Default
