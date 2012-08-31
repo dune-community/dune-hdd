@@ -1,6 +1,2 @@
-SUBDIRS = continuousgalerkin multiscale
+SUBDIRS = continuousgalerkin model multiscale
 
-elliptic_includedir = $(includedir)/dune/detailed/solvers/stationary/linear/elliptic
-elliptic_includeHEADERS = model.hh
-
-include $(top_srcdir)/am/global-rules
