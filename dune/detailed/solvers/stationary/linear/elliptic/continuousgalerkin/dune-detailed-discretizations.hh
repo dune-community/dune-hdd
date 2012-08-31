@@ -130,14 +130,14 @@ public:
     }
     typedef typename ModelType::DiffusionType DiffusionType;
     typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
-    const EllipticEvaluationType ellipticEvaluation(model_.diffusion());
+    const EllipticEvaluationType ellipticEvaluation(model_.diffusion(), model_.diffusionOrder());
     typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
     const EllipticOperatorType ellipticOperator(ellipticEvaluation);
 
     // right hand side (functional)
     typedef typename ModelType::ForceType ForceType;
     typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
-    const ProductEvaluationType productEvaluation(model_.force());
+    const ProductEvaluationType productEvaluation(model_.force(), model_.forceOrder());
     typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
     const L2FunctionalType l2Functional(productEvaluation);
     if (verbose)
