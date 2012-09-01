@@ -17,19 +17,21 @@
 #include <dune/grid/multiscale/default.hh>
 
 // dune-detailed-discretizations
+#include <dune/detailed/discretizations/assembler/local/codim1/matrix.hh>
+#include <dune/detailed/discretizations/assembler/multiscale/coupling.hh>
+#include <dune/detailed/discretizations/assembler/system/unconstrained.hh>
+#include <dune/detailed/discretizations/discretefunction/multiscale.hh>
+#include <dune/detailed/discretizations/discretefunctional/local/codim0/integral.hh>
 #include <dune/detailed/discretizations/discretefunctionspace/continuous/lagrange.hh>
 #include <dune/detailed/discretizations/discretefunctionspace/sub/linear.hh>
-#include <dune/detailed/discretizations/evaluation/local/binary/elliptic.hh>
+#include <dune/detailed/discretizations/discretefunctionspace/sub/affine.hh>
 #include <dune/detailed/discretizations/discreteoperator/local/codim0/integral.hh>
+#include <dune/detailed/discretizations/discreteoperator/local/codim1/innerintegral.hh>
+#include <dune/detailed/discretizations/evaluation/local/binary/elliptic.hh>
+#include <dune/detailed/discretizations/evaluation/local/quaternary/ipdgfluxes.hh>
 #include <dune/detailed/discretizations/evaluation/local/unary/scale.hh>
-#include <dune/detailed/discretizations/discretefunctional/local/codim0/integral.hh>
 #include <dune/detailed/discretizations/la/factory/eigen.hh>
 #include <dune/detailed/discretizations/mapper/multiscale.hh>
-#include <dune/detailed/discretizations/discretefunction/multiscale.hh>
-#include <dune/detailed/discretizations/assembler/multiscale/coupling.hh>
-#include <dune/detailed/discretizations/evaluation/local/quaternary/ipdgfluxes.hh>
-#include <dune/detailed/discretizations/discreteoperator/local/codim1/innerintegral.hh>
-#include <dune/detailed/discretizations/assembler/local/codim1/matrix.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
@@ -38,6 +40,7 @@
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
+#include <dune/stuff/discretefunction/projection/dirichlet.hh>
 
 namespace Dune {
 
@@ -90,17 +93,7 @@ private:
 
   typedef Dune::Stuff::Grid::BoundaryInfo::IdBased BoundaryInfoType;
 
-  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< LocalDiscreteH1Type, BoundaryInfoType > LocalAnsatzSpaceType;
-
-  typedef LocalAnsatzSpaceType LocalTestSpaceType;
-
-  typedef typename LocalAnsatzSpaceType::PatternType SparsityPatternType;
-
-  typedef Dune::Detailed::Discretizations::Mapper::Multiscale< typename LocalAnsatzSpaceType::MapperType::IndexType > AnsatzMapperType;
-
-  typedef AnsatzMapperType TestMapperType;
-
-  typedef typename MsGridType::CouplingGridPartType CouplingGridPartType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< LocalDiscreteH1Type, BoundaryInfoType > LocalTestSpaceType;
 
   typedef Dune::Detailed::Discretizations::LA::Factory::Eigen< RangeFieldType > ContainerFactory;
 
@@ -111,7 +104,21 @@ private:
 public:
   typedef typename VectorBackendType::StorageType LocalVectorType;
 
-  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< LocalAnsatzSpaceType, VectorBackendType > LocalDiscreteFunctionType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< LocalTestSpaceType, VectorBackendType > LocalDiscreteFunctionType;
+
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Affine::Dirichlet< LocalTestSpaceType, LocalDiscreteFunctionType > LocalAnsatzSpaceType;
+
+private:
+  typedef typename LocalAnsatzSpaceType::PatternType SparsityPatternType;
+
+  typedef Dune::Detailed::Discretizations::Mapper::Multiscale< typename LocalAnsatzSpaceType::MapperType::IndexType > AnsatzMapperType;
+
+  typedef AnsatzMapperType TestMapperType;
+
+  typedef typename MsGridType::CouplingGridPartType CouplingGridPartType;
+
+
+public:
 
   typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
 
@@ -124,8 +131,9 @@ public:
     , testMapper_()
     , localGridParts_(msGrid_.size())
     , localDiscreteH1s_(msGrid_.size())
-    , localAnsatzSpaces_(msGrid_.size())
     , localTestSpaces_(msGrid_.size())
+    , localDirichletValues_(msGrid_.size())
+    , localAnsatzSpaces_(msGrid_.size())
     , localSparsityPatterns_(msGrid_.size())
     , couplingSpartityPatternMaps_(msGrid_.size())
     , localMatrices_(msGrid_.size())
@@ -136,14 +144,17 @@ public:
     // get penalty factor
     std::string key = "discretization.penaltyFactor";
     Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, key, id);
-    penaltyFactor_ = paramTree.get(key, -1);
+    penaltyFactor_ = paramTree.get(key, -1.0);
     if (!penaltyFactor_ > 0) {
       std::stringstream msg;
       msg << "Error in " << id << ":"
-          << "wrong '" << key << "' given (should be posititve double) in the following Dune::ParameterTree:" << std::endl;
+          << "wrong '" << key << "' given (should be posititve double, is '" << penaltyFactor_ << "') in the following Dune::ParameterTree:" << std::endl;
       paramTree.report(msg);
       DUNE_THROW(Dune::InvalidStateException, msg.str());
     }
+    // test orders
+    assert(model_.diffusionOrder() >= 0 && "Please provide a nonnegative integration order!");
+    assert(model_.forceOrder() >= 0 && "Please provide a nonnegative integration order!");
   } // DuneDetailedDiscretizations()
 
   void init(const std::string prefix = "", std::ostream& out = Dune::Stuff::Common::Logger().debug())
@@ -152,7 +163,7 @@ public:
       // preparations
       Dune::Timer timer;
       const unsigned int subdomains = msGrid_.size();
-      const bool verbose = subdomains < std::pow(3, 3);
+      const bool verbose = (subdomains >= 3) && (subdomains <= std::pow(3, 3));
       ansatzMapper_.prepare();
       testMapper_.prepare();
 
@@ -165,7 +176,8 @@ public:
       Dune::shared_ptr< BoundaryIdSetMapType > boundaryIdSetMap = Dune::shared_ptr< BoundaryIdSetMapType >(new BoundaryIdSetMapType());
       boundaryIdSetMap->insert(std::pair< std::string, BoundaryIdSetType >("dirichlet", BoundaryIdSetType()));
       for (int id = 1; id < 7; ++id) boundaryIdSetMap->operator[]("dirichlet").insert(id); // because the inner boundaries will hopefully have id 7
-      boundaryInfo_ = Dune::shared_ptr< BoundaryInfoType >(new BoundaryInfoType(boundaryIdSetMap));
+      boundaryInfo_ = Dune::shared_ptr< BoundaryInfoType >(new BoundaryInfoType(boundaryIdSetMap)); // this should rather happen in the model somehow
+      const Dune::shared_ptr< const typename ModelType::DirichletType > dirichlet = model_.dirichlet();
       // walk the subdomains to initialize locally
       for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
         // local grid part
@@ -173,10 +185,15 @@ public:
         // function spaces
         localDiscreteH1s_[subdomain]
             = Dune::shared_ptr< const LocalDiscreteH1Type >(new LocalDiscreteH1Type(*(localGridParts_[subdomain])));
-        localAnsatzSpaces_[subdomain]
-            = Dune::shared_ptr< const LocalAnsatzSpaceType >(new LocalAnsatzSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
         localTestSpaces_[subdomain]
             = Dune::shared_ptr< const LocalTestSpaceType >(new LocalTestSpaceType(*(localDiscreteH1s_[subdomain]), boundaryInfo_));
+        // boundary values
+        localDirichletValues_[subdomain] = Dune::shared_ptr< LocalDiscreteFunctionType >(new LocalDiscreteFunctionType(*(localTestSpaces_[subdomain])));
+        Dune::Stuff::DiscreteFunction::Projection::Dirichlet::project(*boundaryInfo_,
+                                                                      *dirichlet,
+                                                                      *(localDirichletValues_[subdomain]));
+        localAnsatzSpaces_[subdomain]
+            = Dune::shared_ptr< const LocalAnsatzSpaceType >(new LocalAnsatzSpaceType(*(localTestSpaces_[subdomain]), localDirichletValues_[subdomain]));
         // multiscale mapper
         ansatzMapper_.add(subdomain, localAnsatzSpaces_[subdomain]->map().size());
         testMapper_.add(subdomain, localTestSpaces_[subdomain]->map().size());
@@ -305,7 +322,6 @@ public:
         //   operator
         typedef typename ModelType::DiffusionType DiffusionType;
         typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType, DiffusionType > EllipticEvaluationType;
-        assert(model_.diffusionOrder() >= 0 && "Please provide a nonnegative integration order!");
         const EllipticEvaluationType ellipticEvaluation(model_.diffusion(), model_.diffusionOrder());
         typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType > EllipticOperatorType;
         const EllipticOperatorType ellipticOperator(ellipticEvaluation);
@@ -316,7 +332,6 @@ public:
         //   functional
         typedef typename ModelType::ForceType ForceType;
         typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType, ForceType > ProductEvaluationType;
-        assert(model_.forceOrder() >= 0 && "Please provide a nonnegative integration order!");
         const ProductEvaluationType productEvaluation(model_.force(), model_.forceOrder());
         typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType > L2FunctionalType;
         const L2FunctionalType l2Functional(productEvaluation);
@@ -324,7 +339,7 @@ public:
         typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2FunctionalType > LocalVectorAssemblerType;
         const LocalVectorAssemblerType localVectorAssembler(l2Functional);
         // assemble system
-        typedef Dune::Detailed::Discretizations::Assembler::System::Constrained< LocalAnsatzSpaceType, LocalTestSpaceType > LocalSystemAssemblerType;
+        typedef Dune::Detailed::Discretizations::Assembler::System::Unconstrained< LocalAnsatzSpaceType, LocalTestSpaceType > LocalSystemAssemblerType;
         const LocalSystemAssemblerType localSystemAssembler(*(localAnsatzSpaces_[subdomain]), *(localTestSpaces_[subdomain]));
         localSystemAssembler.assembleSystem(localMatrixAssembler,
                                             *(localMatrices_[subdomain]),
@@ -405,6 +420,18 @@ public:
         if (verbose)
           out << "." << std::flush;
       } // walk the subdomains to copy from local to global
+      out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
+
+      out << prefix << "applying global constraints (on " << subdomains << " subdomains)"  << std::flush;
+      if (!verbose)
+        out << "...";
+      timer.reset();
+      // walk the subdomains to apply constraints
+      for (unsigned int subdomain = 0; subdomain < subdomains; ++subdomain) {
+        applyLocalConstraintsGlobally(subdomain);
+        if (verbose)
+          out << "." << std::flush;
+      } // walk the subdomains to apply constraints
       out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
       // done
       initialized_ = true;
@@ -518,6 +545,27 @@ public:
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // visualize() const
 
+  void visualize(const Dune::shared_ptr< DiscreteFunctionType >& discreteFunction,
+                 const std::string filename = "discreteFunction",
+                 const std::string prefix = "",
+                 std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_);
+    Dune::Timer timer;
+    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    typedef Dune::VTKWriter< typename MsGridType::GlobalGridViewType > VTKWriterType;
+    VTKWriterType vtkWriter(*(msGrid_.globalGridView()));
+    vtkWriter.addVertexData(discreteFunction);
+    vtkWriter.write(filename);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // visualize() const
+
   std::vector< Dune::shared_ptr< const LocalAnsatzSpaceType > > ansatzSpace() const
   {
     return localAnsatzSpaces_;
@@ -611,6 +659,43 @@ private:
     }
   } // copyLocalToGlobalVector()
 
+  //! \attention Assumes dirichlet constraints!
+  void applyLocalConstraintsGlobally(const unsigned int subdomain)
+  {
+    typedef typename LocalAnsatzSpaceType::ConstraintsType ConstraintsType;
+    const ConstraintsType& constraints = localAnsatzSpaces_[subdomain]->constraints();
+    // walk the local grid part
+    for (typename LocalGridPartType::template Codim< 0 >::IteratorType entityIt = localGridParts_[subdomain]->template begin< 0 >();
+         entityIt != localGridParts_[subdomain]->template end< 0 >();
+         ++entityIt) {
+      // get the local constraints
+      const typename LocalGridPartType::template Codim< 0 >::EntityType& entity = *entityIt;
+      const typename ConstraintsType::LocalConstraintsType localConstraints = constraints.local(entity);
+      // walk the local rows
+      for(unsigned int i = 0; i < localConstraints.rowDofsSize(); ++i) {
+        // get the global row
+        const unsigned int localI = localConstraints.rowDofs(i);
+        const unsigned int globalI = ansatzMapper_.toGlobal(subdomain, localI);
+        // clear the global row
+        typename SparsityPatternType::const_iterator result = globalSparsityPattern_->find(globalI);
+        assert(result != globalSparsityPattern_->end());
+        for (typename SparsityPatternType::mapped_type::const_iterator rowIt = result->second.begin();
+             rowIt != result->second.end();
+             ++rowIt) {
+          const unsigned int globalJ = *rowIt;
+          matrix_->set(globalI, globalJ, RangeFieldType(0.0));
+        } // clear the global row
+        // apply local matrix constraints
+        for (unsigned int j = 0; j < localConstraints.columnDofsSize(); ++j) {
+          const unsigned int globalJ = testMapper_.toGlobal(subdomain, localConstraints.columnDofs(j));
+          matrix_->set(globalI, globalJ, RangeFieldType(1.0));
+        } // apply local matrix constraints
+        // apply local vector constraints
+        rhs_->set(globalI, RangeFieldType(0.0));
+      } // walk the local rows
+    } // walk the local grid part
+  } // void applyLocalConstraintsGlobally(const unsigned int subdomain)
+
   // initialized
   const ModelType& model_;
   const MsGridType& msGrid_;
@@ -620,8 +705,9 @@ private:
   TestMapperType testMapper_;
   std::vector< Dune::shared_ptr< const LocalGridPartType > > localGridParts_;
   std::vector< Dune::shared_ptr< const LocalDiscreteH1Type > > localDiscreteH1s_;
-  std::vector< Dune::shared_ptr< const LocalAnsatzSpaceType > > localAnsatzSpaces_;
   std::vector< Dune::shared_ptr< const LocalTestSpaceType > > localTestSpaces_;
+  std::vector< Dune::shared_ptr< LocalDiscreteFunctionType > > localDirichletValues_;
+  std::vector< Dune::shared_ptr< const LocalAnsatzSpaceType > > localAnsatzSpaces_;
   std::vector< Dune::shared_ptr< const SparsityPatternType > > localSparsityPatterns_;
   std::vector< std::map< unsigned int, Dune::shared_ptr< const SparsityPatternType > > > couplingSpartityPatternMaps_;
   std::vector< Dune::shared_ptr< MatrixBackendType > > localMatrices_;
