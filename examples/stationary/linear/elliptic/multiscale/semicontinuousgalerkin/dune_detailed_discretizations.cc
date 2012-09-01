@@ -17,7 +17,7 @@
 #include <dune/stuff/common/logging.hh>
 
 // dune-detailed-solvers
-#include <dune/detailed/solvers/stationary/linear/elliptic/model.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
 
 #ifdef POLORDER
@@ -60,6 +60,11 @@ void ensureParamFile(std::string filename)
     file << "force.expression.0 = 1.0"  << std::endl;
     file << "force.expression.1 = 1.0"  << std::endl;
     file << "force.expression.2 = 1.0"  << std::endl;
+    file << "dirichlet.order = 0"  << std::endl;
+    file << "dirichlet.variable = x" << std::endl;
+    file << "dirichlet.expression.0 = x[0]"  << std::endl;
+    file << "dirichlet.expression.1 = 1.0"  << std::endl;
+    file << "dirichlet.expression.2 = 1.0"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.multiscale.semicontinuousgalerkin]" << std::endl;
     file << "discretization.penaltyFactor = 10.0" << std::endl;
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
