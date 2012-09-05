@@ -659,7 +659,8 @@ private:
     }
   } // copyLocalToGlobalVector()
 
-  //! \attention Assumes dirichlet constraints!
+  //! \attention  Assumes dirichlet constraints, bc it clears the whole row first!
+  //! \todo       Be smart about it (I think we dont need the clear)!
   void applyLocalConstraintsGlobally(const unsigned int subdomain)
   {
     typedef typename LocalAnsatzSpaceType::ConstraintsType ConstraintsType;
@@ -688,7 +689,7 @@ private:
         // apply local matrix constraints
         for (unsigned int j = 0; j < localConstraints.columnDofsSize(); ++j) {
           const unsigned int globalJ = testMapper_.toGlobal(subdomain, localConstraints.columnDofs(j));
-          matrix_->set(globalI, globalJ, RangeFieldType(1.0));
+          matrix_->set(globalI, globalJ, localConstraints.localMatrix(i,j));
         } // apply local matrix constraints
         // apply local vector constraints
         rhs_->set(globalI, RangeFieldType(0.0));
