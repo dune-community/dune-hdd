@@ -14,11 +14,20 @@
 
 // dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/provider/cube.hh>
 
 // dune-detailed-solvers
-#include <dune/detailed/solvers/stationary/linear/elliptic/model.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
+
+#ifdef POLORDER
+const int polOrder = POLORDER;
+#else
+const int polOrder = 1;
+#endif
+
+const std::string id = "dune_detailed_discretizations";
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -36,6 +45,7 @@ void ensureParamFile(std::string filename)
     file.open(filename);
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
+    file << "filename = " << id << "_grid" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
     file << "diffusion.variable = x" << std::endl;
@@ -53,22 +63,14 @@ void ensureParamFile(std::string filename)
     file << "dirichlet.expression.1 = 0.0"  << std::endl;
     file << "dirichlet.expression.2 = 0.0"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.continuousgalerkin]" << std::endl;
-    file << "init.verbose = true" << std::endl;
-    file << "solve.verbose = true" << std::endl;
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
     file << "solve.maxIter = 5000"  << std::endl;
     file << "solve.precision = 1e-12"  << std::endl;
-    file << "visualize.verbose = true"  << std::endl;
+    file << "visualize.filename = " << id << "_solution"  << std::endl;
     file << "visualize.name = solution"  << std::endl;
     file.close();
   } // only write param file if there is none
 } // void ensureParamFile()
-
-#ifdef POLORDER
-const int polOrder = POLORDER;
-#else
-const int polOrder = 1;
-#endif
 
 int main(int argc, char** argv)
 {
@@ -77,27 +79,41 @@ int main(int argc, char** argv)
     Dune::MPIHelper::instance(argc, argv);
 
     // parameter
-    const std::string id = "dune_detailed_discretizations";
     const std::string filename = id + ".param";
     ensureParamFile(filename);
     Dune::ParameterTree paramTree = Dune::Stuff::Common::Parameter::Tree::init(argc, argv, filename);
+
+    // logger
+    Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
+                                         Dune::Stuff::Common::LOG_CONSOLE |
+                                         Dune::Stuff::Common::LOG_DEBUG);
+//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+    std::ostream& info = std::cout;
+    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
     Dune::Timer timer;
 
     // grid
-    std::cout << "setting up grid:" << std::endl;
-    typedef Dune::Stuff::Grid::Provider::UnitCube< Dune::GridSelector::GridType > GridProviderType;
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, filename);
-    GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
+    info << "setting up grid: " << std::endl;
+    debug.suspend();
+    typedef Dune::Stuff::Grid::Provider::UnitCube<> GridProviderType;
+    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, id);
+    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::GridType GridType;
-    GridType& grid = gridProvider.grid();
+    const Dune::shared_ptr< const GridType > grid = gridProvider.gridPtr();
     typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
-    const GridPartType gridPart(grid);
-    std::cout << "  took " << timer.elapsed() << " sec, has " << gridPart.grid().size(0) << " elements" << std::endl;
+    const Dune::shared_ptr< const GridPartType > gridPart(new GridPartType(*grid));
+    std::cout << "  took " << timer.elapsed()
+              << " sec, has " << grid->size(0) << " elements" << std::endl;
+    info << "visualizing grid... " << std::flush;
+    timer.reset();
+    gridProvider.visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_grid"));
+    info << " done (took " << timer.elapsed() << " sek)" << std::endl;
+    debug.resume();
 
     // model
-    std::cout << "setting up model... " << std::flush;
+    info << "setting up model... " << std::flush;
     timer.reset();
     const unsigned int DUNE_UNUSED(dimDomain) = GridProviderType::dim;
     const unsigned int DUNE_UNUSED(dimRange) = 1;
@@ -105,48 +121,33 @@ int main(int argc, char** argv)
     typedef DomainFieldType RangeFieldType;
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
-    const ModelType model(paramTree.sub(ModelType::id));
-    std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id)));
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // solver
-    std::cout << "initializing solver";
+    info << "initializing solver:" << std::endl;
+//    timer.reset();
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType, GridPartType, polOrder > SolverType;
-    if (paramTree.sub(SolverType::id).get("init.verbose", false))
-      std::cout << ":" << std::endl;
-    else
-      std::cout << "... " << std::flush;
-    timer.reset();
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
-    paramTree.sub(SolverType::id)["init.prefix"] = "  ";
     SolverType solver(model, gridPart);
-    solver.init(paramTree.sub(SolverType::id).sub("init"));
-    if (!paramTree.sub(SolverType::id).get("init.verbose", false))
-      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    solver.init("  ", info);
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    std::cout << "solving";
-    if (paramTree.sub(SolverType::id).get("solve.verbose", false))
-      std::cout << ":" << std::endl;
-    else
-      std::cout << "... " << std::flush;
-    timer.reset();
-    typedef SolverType::VectorType DofVectorType;
+    info << "solving:" << std::endl;
+//    timer.reset();
+    typedef SolverType::VectorBackendType DofVectorType;
     Dune::shared_ptr< DofVectorType > solution = solver.createVector();
-    paramTree.sub(SolverType::id)["solve.prefix"] = "  ";
-    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"));
-    if (!paramTree.sub(SolverType::id).get("solve.verbose", false))
-      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    solver.solve(*solution, paramTree.sub(SolverType::id).sub("solve"), "  ", info);
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    std::cout << "postprocessing";
-    if (paramTree.sub(SolverType::id).get("visualize.verbose", false))
-      std::cout << ":" << std::endl;
-    else
-      std::cout << "... " << std::flush;
-    timer.reset();
-    paramTree.sub(SolverType::id)["visualize.prefix"] = "  ";
-    paramTree.sub(SolverType::id)["visualize.filename"] = id + "_solution";
-    solver.visualize(solution, paramTree.sub(SolverType::id).sub("visualize"));
-    if (!paramTree.sub(SolverType::id).get("visualize.verbose", false))
-      std::cout << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    info << "postprocessing:" << std::endl;
+//    timer.reset();
+    solver.visualize(*solution,
+                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
+                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
+                     "  ",
+                     info);
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // if we came that far we can as well be happy about it
     return 0;
