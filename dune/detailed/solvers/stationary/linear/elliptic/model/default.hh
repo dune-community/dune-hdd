@@ -10,26 +10,21 @@
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 
-namespace Dune
-{
+namespace Dune {
 
 namespace Detailed {
 
-namespace Solvers
-{
+namespace Solvers {
 
-namespace Stationary
-{
+namespace Stationary {
 
-namespace Linear
-{
+namespace Linear {
 
-namespace Elliptic
-{
+namespace Elliptic {
 
 namespace Model {
 
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, class BoundaryInfoImp = Dune::Stuff::Grid::BoundaryInfo::AllDirichlet >
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
 class Default
 {
 public:
@@ -41,9 +36,7 @@ public:
 
   static const int dimRange = rangeDim;
 
-  typedef BoundaryInfoImp BoundaryInfoType;
-
-  typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange, BoundaryInfoType > ThisType;
+  typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
 
   static const std::string id;
 
@@ -53,12 +46,10 @@ public:
 
   typedef DiffusionType DirichletType;
 
-  Default(const Dune::ParameterTree& paramTree,
-          Dune::shared_ptr< BoundaryInfoType > boundaryInfo = Dune::shared_ptr< BoundaryInfoType >(new BoundaryInfoType()))
+  Default(const Dune::ParameterTree& paramTree)
     : diffusionOrder_(-1)
     , forceOrder_(-1)
     , dirichletOrder_(-1)
-    , boundaryInfo_(boundaryInfo)
   {
     // check parametertree
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "diffusion", id);
@@ -81,21 +72,10 @@ public:
     : diffusionOrder_(other.diffusionOrder_)
     , forceOrder_(other.forceOrder_)
     , dirichletOrder_(other.dirichletOrder_)
-    , boundaryInfo_(other.boundaryInfo_)
     , diffusion_(other.diffusion_)
     , force_(other.force_)
     , dirichlet_(other.dirichlet_)
   {}
-
-  const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo() const
-  {
-    return boundaryInfo_;
-  }
-
-  void setBoundaryInfo(Dune::shared_ptr< BoundaryInfoType > boundaryInfo)
-  {
-    boundaryInfo_ = boundaryInfo;
-  }
 
   const Dune::shared_ptr< DiffusionType > diffusion() const
   {
@@ -133,14 +113,13 @@ private:
   int diffusionOrder_;
   int forceOrder_;
   int dirichletOrder_;
-  Dune::shared_ptr< BoundaryInfoType > boundaryInfo_;
   Dune::shared_ptr< DiffusionType > diffusion_;
   Dune::shared_ptr< ForceType > force_;
   Dune::shared_ptr< DirichletType > dirichlet_;
 }; // class Default
 
-template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange, class BoundaryInfoType >
-const std::string Default< DomainFieldType, dimDomain, RangeFieldType, dimRange, BoundaryInfoType >::id = "detailed.solvers.stationary.linear.elliptic.model.default";
+template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
+const std::string Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed.solvers.stationary.linear.elliptic.model.default";
 
 } // namespace Model
 
