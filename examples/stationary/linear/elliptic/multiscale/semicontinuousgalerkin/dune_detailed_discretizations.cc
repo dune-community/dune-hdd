@@ -15,9 +15,11 @@
 // dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/grid/boundaryinfo.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
+//#include <dune/detailed/solvers/stationary/linear/elliptic/model/spe10.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
 
 #ifdef POLORDER
@@ -44,7 +46,7 @@ void ensureParamFile(std::string filename)
     file.open(filename);
     file << "[grid.multiscale.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
-    file << "boundaryId = 7" << std::endl;                  // a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 ? in 3d
+    file << "boundaryId = 7" << std::endl;                  // a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 in 3d (hopefully)
     file << "partitions.0 = 2" << std::endl;
     file << "partitions.1 = 2" << std::endl;
     file << "partitions.2 = 2" << std::endl;
@@ -105,60 +107,66 @@ int main(int argc, char** argv)
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, id);
     const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::MsGridType MsGridType;
-    const MsGridType& msGrid = gridProvider.msGrid();
+    const Dune::shared_ptr< const MsGridType > msGrid = gridProvider.msGridPtr();
     info << "  took " << timer.elapsed()
-         << " sec (has " << msGrid.globalGridPart()->grid().size(0) << " elements, "
-         << msGrid.size() << " subdomains)" << std::endl;
-    debug.resume();
+         << " sec (has " << gridProvider.grid().size(0) << " elements, "
+         << msGrid->size() << " subdomains)" << std::endl;
     info << "visualizing grid... " << std::flush;
-    debug.suspend();
     timer.reset();
-    msGrid.visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_msGrid"));
-    info << " done (took " << timer.elapsed() << " sek)" << std::endl;
+    msGrid->visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_msGrid"));
+    info << "done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
     // model
     info << "setting up model... " << std::flush;
-    timer.reset();
+    debug.suspend();
+//    timer.reset();
     const unsigned int DUNE_UNUSED(dimDomain) = GridProviderType::dim;
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
-    const ModelType model(paramTree.sub(ModelType::id));
+    const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id)));
+    typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
+    const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    debug.resume();
 
     // solver
-    info << "initializing solver... " << std::endl;
+    info << "initializing solver:" << std::endl;
 //    debug.suspend();
-    timer.reset();
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations< ModelType, MsGridType, polOrder > SolverType;
+//    timer.reset();
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations<
+        ModelType,
+        MsGridType,
+        BoundaryInfoType,
+        polOrder > SolverType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
-    SolverType solver(model, msGrid, paramTree.sub(SolverType::id));
+    SolverType solver(model, msGrid, boundaryInfo, paramTree.sub(SolverType::id));
     solver.init("  ", std::cout);
 //    debug.resume();
-    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    info << "solving... " << std::endl;
+//    info << "solving:" << std::endl;
 //    debug.suspend();
-    timer.reset();
-    typedef SolverType::LocalVectorType LocalDofVectorType;
-    std::vector< Dune::shared_ptr< LocalDofVectorType > > solution = solver.createVector();
-    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"), "  ", std::cout);
-    //    debug.resume();
-    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-
-    info << "postprocessing..." << std::endl;
-//    debug.suspend();
-    timer.reset();
-    solver.visualize(solution,
-                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
-                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
-                     "  ",
-                     std::cout);
+//    timer.reset();
+//    typedef SolverType::LocalVectorType LocalDofVectorType;
+//    std::vector< Dune::shared_ptr< LocalDofVectorType > > solution = solver.createVector();
+//    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"), "  ", std::cout);
 //    debug.resume();
-    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+//    info << "postprocessing..." << std::endl;
+//    debug.suspend();
+//    timer.reset();
+//    solver.visualize(solution,
+//                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
+//                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
+//                     "  ",
+//                     std::cout);
+//    debug.resume();
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // if we came that far we can as well be happy about it
     return 0;
