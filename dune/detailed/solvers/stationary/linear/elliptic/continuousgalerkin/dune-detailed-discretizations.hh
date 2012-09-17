@@ -51,7 +51,7 @@ namespace ContinuousGalerkin {
 /**
  *  \todo Add method to create a discrete function.
  */
-template< class ModelImp, class GridPartImp, int polynomialOrder >
+template< class ModelImp, class GridPartImp, class BoundaryInfoImp, int polynomialOrder >
 class DuneDetailedDiscretizations
 {
 public:
@@ -59,9 +59,11 @@ public:
 
   typedef GridPartImp GridPartType;
 
+  typedef BoundaryInfoImp BoundaryInfoType;
+
   static const int polOrder = polynomialOrder;
 
-  typedef DuneDetailedDiscretizations< ModelType, GridPartType, polOrder > ThisType;
+  typedef DuneDetailedDiscretizations< ModelType, GridPartType, BoundaryInfoType, polOrder > ThisType;
 
   static const std::string id;
 
@@ -86,8 +88,6 @@ private:
 
   typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Continuous::Lagrange< FunctionSpaceType, GridPartType, polOrder > DiscreteH1Type;
 
-  typedef typename ModelType::BoundaryInfoType BoundaryInfoType;
-
 public:
   typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< DiscreteH1Type, BoundaryInfoType > TestSpaceType;
 
@@ -98,11 +98,28 @@ public:
   typedef typename AnsatzSpaceType::PatternType PatternType;
 
   DuneDetailedDiscretizations(const Dune::shared_ptr< const ModelType > model,
-                              const Dune::shared_ptr< const GridPartType > gridPart)
-    : model_(model),
-      gridPart_(gridPart),
-      initialized_(false)
+                              const Dune::shared_ptr< const GridPartType > gridPart,
+                              const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo)
+    : model_(model)
+    , gridPart_(gridPart)
+    , boundaryInfo_(boundaryInfo)
+    , initialized_(false)
   {}
+
+  const Dune::shared_ptr< const ModelType > model() const
+  {
+    return model_;
+  }
+
+  const Dune::shared_ptr< const GridPartType > gridPart() const
+  {
+    return gridPart_;
+  }
+
+  const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo() const
+  {
+    return boundaryInfo_;
+  }
 
   void init(const std::string prefix = "", std::ostream& out = Dune::Stuff::Common::Logger().debug())
   {
@@ -114,7 +131,7 @@ public:
       out << prefix << "initializing function spaces... " << std::flush;
       timer.reset();
       discreteH1_ = Dune::shared_ptr< const DiscreteH1Type >(new DiscreteH1Type(*gridPart_));
-      testSpace_ = Dune::shared_ptr< TestSpaceType >(new TestSpaceType(*discreteH1_, model_->boundaryInfo()));
+      testSpace_ = Dune::shared_ptr< TestSpaceType >(new TestSpaceType(*discreteH1_, boundaryInfo_));
 //      Dune::shared_ptr< DiscreteFunctionType > dirichlet(new DiscreteFunctionType(*testSpace_, "dirichlet"));
 //      Dune::Stuff::DiscreteFunction::Projection::Dirichlet::project(testSpace_->boundaryInfo(),
 //                                                                    *(model_->dirichlet()),
@@ -256,16 +273,16 @@ public:
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   }
 
-  const Dune::shared_ptr< const AnsatzSpaceType > ansatzSpace() const
+  const AnsatzSpaceType& ansatzSpace() const
   {
     assert(initialized_);
-    return ansatzSpace_;
+    return *ansatzSpace_;
   }
 
-  const Dune::shared_ptr< const TestSpaceType > testSpace() const
+  const TestSpaceType& testSpace() const
   {
     assert(initialized_);
-    return testSpace_;
+    return *testSpace_;
   }
 
   const Dune::shared_ptr< const MatrixBackendType > systemMatrix() const
@@ -292,7 +309,7 @@ public:
     return rhs_;
   }
 
-  Dune::shared_ptr< const PatternType > pattern() const
+  const Dune::shared_ptr< const PatternType > pattern() const
   {
     assert(initialized_);
     return pattern_;
@@ -301,6 +318,7 @@ public:
 private:
   const Dune::shared_ptr< const ModelType > model_;
   const Dune::shared_ptr< const GridPartType > gridPart_;
+  const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo_;
   bool initialized_;
   Dune::shared_ptr< const DiscreteH1Type > discreteH1_;
   Dune::shared_ptr< const TestSpaceType > testSpace_;
@@ -311,8 +329,8 @@ private:
   Dune::shared_ptr< VectorBackendType > affineShift_;
 }; // class DuneDetailedDiscretizations
 
-template< class ModelType, class GridPartType, int polOrder >
-const std::string DuneDetailedDiscretizations< ModelType, GridPartType, polOrder >::id = "detailed.solvers.stationary.linear.elliptic.continuousgalerkin";
+template< class ModelType, class GridPartType, class BoundaryInfoType, int polOrder >
+const std::string DuneDetailedDiscretizations< ModelType, GridPartType, BoundaryInfoType, polOrder >::id = "detailed.solvers.stationary.linear.elliptic.continuousgalerkin";
 
 } // namespace ContinuousGalerkin
 

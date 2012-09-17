@@ -16,6 +16,7 @@
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/provider/cube.hh>
+#include <dune/stuff/grid/boundaryinfo.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
@@ -122,14 +123,19 @@ int main(int argc, char** argv)
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
     const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id)));
+    typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
+    const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // solver
     info << "initializing solver:" << std::endl;
 //    timer.reset();
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType, GridPartType, polOrder > SolverType;
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType,
+                                                                                                                    GridPartType,
+                                                                                                                    BoundaryInfoType,
+                                                                                                                    polOrder > SolverType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
-    SolverType solver(model, gridPart);
+    SolverType solver(model, gridPart, boundaryInfo);
     solver.init("  ", info);
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
