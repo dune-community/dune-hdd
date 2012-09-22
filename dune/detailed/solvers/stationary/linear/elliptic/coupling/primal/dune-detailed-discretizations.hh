@@ -65,9 +65,9 @@ private:
 
   static const int dimRange = ModelType::dimRange;
 
+public:
   typedef typename InnerSolverType::AnsatzSpaceType::PatternType PatternType;
 
-public:
   DuneDetailedDiscretizations(const Dune::shared_ptr< const CouplingGridPartType > innerOuterCouplingGridPart,
                               const Dune::shared_ptr< const CouplingGridPartType > outerInnerCouplingGridPart,
                               const Dune::shared_ptr< const InnerSolverType > innerSolver,
