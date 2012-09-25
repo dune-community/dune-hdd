@@ -111,8 +111,10 @@ int main(int argc, char** argv)
     info << "  took " << timer.elapsed()
          << " sec (has " << gridProvider.grid().size(0) << " elements, "
          << msGrid->size() << " subdomains)" << std::endl;
+    debug.resume();
     info << "visualizing grid... " << std::flush;
     timer.reset();
+    debug.suspend();
     msGrid->visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_msGrid"));
     info << "done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
@@ -120,7 +122,7 @@ int main(int argc, char** argv)
     // model
     info << "setting up model... " << std::flush;
     debug.suspend();
-//    timer.reset();
+    timer.reset();
     const unsigned int DUNE_UNUSED(dimDomain) = GridProviderType::dim;
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
@@ -134,9 +136,11 @@ int main(int argc, char** argv)
     debug.resume();
 
     // solver
-    info << "initializing solver:" << std::endl;
-//    debug.suspend();
-//    timer.reset();
+    info << "initializing solver";
+//    info << ":" << std::endl;
+    info << "... " << std::flush;
+    debug.suspend();
+    timer.reset();
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations<
         ModelType,
         MsGridType,
@@ -144,27 +148,31 @@ int main(int argc, char** argv)
         polOrder > SolverType;
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
     SolverType solver(model, msGrid, boundaryInfo, paramTree.sub(SolverType::id));
-    solver.init("  ", std::cout);
-//    debug.resume();
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    solver.init("  ", debug);
+    debug.resume();
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    info << "solving:" << std::endl;
+    info << "solving";
+//    info << ":" << std::endl;
+    info << "... " << std::flush;
+    debug.suspend();
+    timer.reset();
+    typedef SolverType::VectorBackendType VectorType;
+    Dune::shared_ptr< std::vector< VectorType > > solution = solver.createVector();
+    solver.solve(*solution, paramTree.sub(SolverType::id).sub("solve"), "  ", debug);
+    debug.resume();
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+    info << "postprocessing";
+    info << ":" << std::endl;
+//    info << "... " << std::flush;
 //    debug.suspend();
 //    timer.reset();
-//    typedef SolverType::LocalVectorType LocalDofVectorType;
-//    std::vector< Dune::shared_ptr< LocalDofVectorType > > solution = solver.createVector();
-//    solver.solve(solution, paramTree.sub(SolverType::id).sub("solve"), "  ", std::cout);
-//    debug.resume();
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-
-//    info << "postprocessing..." << std::endl;
-//    debug.suspend();
-//    timer.reset();
-//    solver.visualize(solution,
-//                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
-//                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
-//                     "  ",
-//                     std::cout);
+    solver.visualize(*solution,
+                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
+                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
+                     "  ",
+                     std::cout);
 //    debug.resume();
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
