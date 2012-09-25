@@ -12,10 +12,10 @@
 #include <dune/fem/space/common/functionspace.hh>
 
 // dune-detailed-discretizations
-#include <dune/detailed/discretizations/discreteoperator/local/codim1/innerintegral.hh>
-#include <dune/detailed/discretizations/evaluation/local/quaternary/ipdgfluxes.hh>
+#include <dune/detailed/discretizations/evaluation/local/binary/ipdgfluxes.hh>
+#include <dune/detailed/discretizations/discreteoperator/local/codim1/boundaryintegral.hh>
 #include <dune/detailed/discretizations/assembler/local/codim1/matrix.hh>
-#include <dune/detailed/discretizations/assembler/multiscale/coupling.hh>
+#include <dune/detailed/discretizations/assembler/multiscale/boundary.hh>
 
 // dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
@@ -34,17 +34,19 @@ namespace Elliptic {
 
 namespace Boundary {
 
-template< class BoundaryGridPartImp, class LocalSolverImp, class ContainerFactoryImp >
+template< class BoundaryGridPartImp, class BoundaryInfoImp, class LocalSolverImp, class ContainerFactoryImp >
 class DuneDetailedDiscretizations
 {
 public:
   typedef BoundaryGridPartImp BoundaryGridPartType;
 
+  typedef BoundaryInfoImp BoundaryInfoType;
+
   typedef LocalSolverImp LocalSolverType;
 
   typedef ContainerFactoryImp ContainerFactory;
 
-  typedef DuneDetailedDiscretizations< BoundaryGridPartType, LocalSolverType, ContainerFactory > ThisType;
+  typedef DuneDetailedDiscretizations< BoundaryGridPartType, BoundaryInfoType, LocalSolverType, ContainerFactory > ThisType;
 
   static const std::string id;
 
@@ -67,9 +69,11 @@ public:
   typedef typename LocalSolverType::AnsatzSpaceType::PatternType PatternType;
 
   DuneDetailedDiscretizations(const Dune::shared_ptr< const BoundaryGridPartType > boundaryGridPart,
+                              const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo,
                               const Dune::shared_ptr< const LocalSolverType > localSolver,
                               const Dune::ParameterTree& paramTree)
     : boundaryGridPart_(boundaryGridPart)
+    , boundaryInfo_(boundaryInfo)
     , localSolver_(localSolver)
     , model_(localSolver_->model())
     , initialized_(false)
@@ -99,7 +103,7 @@ public:
           << localSolver_->ansatzSpace().map().size() << "x" << localSolver_->testSpace().map().size()
           << ")... " << std::flush;
       timer.reset();
-      // computer pattern
+      // compute pattern
       pattern_ = localSolver_->ansatzSpace().computeLocalPattern(*boundaryGridPart_,
                                                                  localSolver_->testSpace());
       // create matrix
@@ -112,35 +116,36 @@ public:
           ContainerFactory::createDenseVector(localSolver_->testSpace().map().size())));
       out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
       out << prefix << "assembling matrix... " << std::flush;
-//      // evaluation
-//      typedef Dune::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange > FunctionSpaceType;
-//      typedef typename ModelType::DiffusionType DiffusionType;
-//      typedef Dune::Detailed::Discretizations::Evaluation::Local::Quaternary::IPDGfluxes::Inner< FunctionSpaceType, DiffusionType > IPDGfluxType;
-//      const IPDGfluxType ipdgFlux(model_->diffusion(), model_->diffusionOrder(), penaltyFactor_);
-//      // operator
-//      typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::InnerIntegral< IPDGfluxType > IPDGoperatorType;
-//      const IPDGoperatorType ipdgOperator(ipdgFlux);
-//      // local assembler
-//      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Inner< IPDGoperatorType > CouplingMatrixAssemblerType;
-//      const CouplingMatrixAssemblerType couplingMatrixAssembler(ipdgOperator);
-//      // assemble coupling matrix
-//      typedef Dune::Detailed::Discretizations::Assembler::Multiscale::Coupling::Primal<
-//          CouplingGridPartType,
-//          typename InnerSolverType::AnsatzSpaceType,
-//          typename InnerSolverType::TestSpaceType,
-//          typename OuterSolverType::AnsatzSpaceType,
-//          typename OuterSolverType::TestSpaceType >
-//        CouplingAssemblerType;
-//      const CouplingAssemblerType couplingAssembler(*innerOuterCouplingGridPart_,
-//                                                    innerSolver_->ansatzSpace(),
-//                                                    innerSolver_->testSpace(),
-//                                                    outerSolver_->ansatzSpace(),
-//                                                    outerSolver_->testSpace());
-//      couplingAssembler.assembleMatrices(couplingMatrixAssembler,
-//                                         *innerInnerMatrix_,
-//                                         *innerOuterMatrix_,
-//                                         *outerInnerMatrix_,
-//                                         *outerOuterMatrix_);
+      // evaluation
+      typedef Dune::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange > FunctionSpaceType;
+      typedef typename ModelType::DiffusionType DiffusionType;
+      typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::IPDGfluxes::Dirichlet< FunctionSpaceType, DiffusionType > IPDGfluxType;
+      const IPDGfluxType ipdgFlux(model_->diffusion(), model_->diffusionOrder(), penaltyFactor_);
+      // operator
+      typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::BoundaryIntegral< IPDGfluxType > DirichletOperatorType;
+      const DirichletOperatorType dirichletOperator(ipdgFlux);
+      // local matrix assembler
+      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Boundary< DirichletOperatorType > DirichletMatrixAssemblerType;
+      const DirichletMatrixAssemblerType dirichletMatrixAssembler(dirichletOperator);
+      // evaluation
+
+      // functional
+
+      // local vector assemblerh
+
+      // assemble boundary matrix
+      typedef Dune::Detailed::Discretizations::Assembler::Multiscale::Boundary  <
+          BoundaryGridPartType,
+          BoundaryInfoType,
+          typename LocalSolverType::AnsatzSpaceType,
+          typename LocalSolverType::TestSpaceType >
+        BoundaryAssemblerType;
+      const BoundaryAssemblerType boundaryAssembler(*boundaryGridPart_,
+                                                    boundaryInfo_,
+                                                    localSolver_->ansatzSpace(),
+                                                    localSolver_->testSpace());
+      boundaryAssembler.assembleMatrices(dirichletMatrixAssembler,
+                                         *matrix_);
       out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
       initialized_ = true;
     } // if (!initialized_)
@@ -173,6 +178,7 @@ public:
 
 private:
   const Dune::shared_ptr< const BoundaryGridPartType > boundaryGridPart_;
+  const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo_;
   const Dune::shared_ptr< const LocalSolverType > localSolver_;
   const Dune::shared_ptr< const ModelType > model_;
   bool initialized_;
@@ -182,8 +188,8 @@ private:
   Dune::shared_ptr< VectorBackendType > rhs_;
 }; // DuneDetailedDiscretizations
 
-template< class BoundaryGridPartType, class LocalSolverType, class ContainerFactoryType >
-const std::string DuneDetailedDiscretizations< BoundaryGridPartType, LocalSolverType, ContainerFactoryType >::id = "detailed.solvers.stationary.linear.elliptic.boundary";
+template< class BoundaryGridPartType, class BoundaryInfoType, class LocalSolverType, class ContainerFactoryType >
+const std::string DuneDetailedDiscretizations< BoundaryGridPartType, BoundaryInfoType, LocalSolverType, ContainerFactoryType >::id = "detailed.solvers.stationary.linear.elliptic.boundary";
 
 } // namespace Boundary
 
