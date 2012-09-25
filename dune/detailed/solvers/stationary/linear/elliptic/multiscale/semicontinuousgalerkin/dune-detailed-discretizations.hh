@@ -16,6 +16,7 @@
 // dune-detailed-discretizations
 #include <dune/detailed/discretizations/mapper/multiscale.hh>
 #include <dune/detailed/discretizations/la/factory/eigen.hh>
+#include <dune/detailed/discretizations/discretefunction/multiscale.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
@@ -77,8 +78,10 @@ private:
 
   typedef typename ContainerFactory::SparseMatrixType MatrixBackendType;
 
+public:
   typedef typename ContainerFactory::DenseVectorType VectorBackendType;
 
+private:
   typedef typename MsGridType::CouplingGridPartType CouplingGridPartType;
 
   typedef typename MsGridType::BoundaryGridPartType BoundaryGridPartType;
@@ -101,6 +104,7 @@ private:
 
   typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Boundary::DuneDetailedDiscretizations<
       BoundaryGridPartType,
+      BoundaryInfoType,
       LocalSolverType,
       ContainerFactory >
     BoundarySolverType;
@@ -116,9 +120,9 @@ private:
   typedef Dune::Detailed::Discretizations::Mapper::Multiscale< typename LocalTestSpaceType::MapperType::IndexType > TestMapperType;
 
 public:
-//  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< LocalTestSpaceType, VectorBackendType > LocalDiscreteFunctionType;
+  typedef typename LocalSolverType::DiscreteFunctionType LocalDiscreteFunctionType;
 
-//  typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
+  typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
 
   DuneDetailedDiscretizations(const Dune::shared_ptr< const ModelType > model,
                               const Dune::shared_ptr< const MsGridType > msGrid,
@@ -202,6 +206,7 @@ public:
                                 *pattern_);
         // initialize the boundary solvers
         Dune::shared_ptr< BoundarySolverType > boundarySolver(new BoundarySolverType(msGrid_->boundaryGridPart(subdomain),
+                                                                                     boundaryInfo_,
                                                                                      localSolvers_[subdomain],
                                                                                      paramTree_));
         boundarySolver->init(prefix + "  ", devnull);
@@ -325,143 +330,140 @@ public:
     } // if (!initialized_)
   } // void init()
 
-//  std::vector< Dune::shared_ptr< LocalVectorType > > createVector() const
-//  {
-//    typename std::vector< Dune::shared_ptr< LocalVectorType > > ret;
-//    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
-//      VectorBackendType tmp = ContainerFactory::createDenseVector(*(localTestSpaces_[subdomain]));
-//      ret.push_back(tmp.storage());
-//    }
-//    return ret;
-//  } // std::vector< Dune::shared_ptr< LocalVectorType > > createVector() const
+  Dune::shared_ptr< std::vector< VectorBackendType > > createVector() const
+  {
+    typename Dune::shared_ptr< std::vector< VectorBackendType > > retPtr(new std::vector< VectorBackendType >());
+    typename std::vector< VectorBackendType >& ret = *retPtr;
+    for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
+      const LocalSolverType& localSolver = *(localSolvers_[subdomain]);
+      typename Dune::shared_ptr< VectorBackendType > localVector = localSolver.createVector();
+      ret.push_back(*localVector);
+    }
+    return retPtr;
+  } // Dune::shared_ptr< std::vector< VectorBackendType > > createVector() const
 
-//  void solve(std::vector< Dune::shared_ptr< LocalVectorType > >& solution,
-//             const Dune::ParameterTree paramTree = Dune::ParameterTree(),
-//             const std::string prefix = "",
-//             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-//  {
-//    // preparations
-//    assert(initialized_);
-//    assert(solution.size() == msGrid_.size());
-//    const std::string type = paramTree.get("type", "eigen.bicgstab.incompletelut");
-//    const unsigned int maxIter = paramTree.get("maxIter", 5000);
-//    const double precision = paramTree.get("precision", 1e-12);
-//    Dune::Timer timer;
+  void solve(std::vector< VectorBackendType >& solution,
+             const Dune::ParameterTree paramTree = Dune::ParameterTree(),
+             const std::string prefix = "",
+             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "The system can only be solved after init() has been called! ");
+    assert(solution.size() == msGrid_->size() && "Given vector has wrong size!");
+    const std::string type = paramTree.get("type", "eigen.bicgstab.incompletelut");
+    const unsigned int maxIter = paramTree.get("maxIter", 5000);
+    const double precision = paramTree.get("precision", 1e-12);
+    Dune::Timer timer;
+    // create global solution vector
+    VectorBackendType tmpSolution = ContainerFactory::createDenseVector(testMapper_.size());
+    // solve
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabIlut BicgstabIlutSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabDiagonal BicgstabDiagonalSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalUpper CgDiagonalUpperSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalLower CgDiagonalLowerSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyUpper SimplicialcholeskyUpperSolver;
+    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyLower SimplicialcholeskyLowerSolver;
+    out << prefix << "solving linear system of size " << matrix_->rows() << "x" << matrix_->cols() << std::endl
+        << prefix << "  using " << type << "... " << std::flush;
+    if (type == "eigen.bicgstab.incompletelut"){
+      BicgstabIlutSolver::apply(*matrix_, tmpSolution, *rhs_, maxIter, precision);
+    } else if (type == "eigen.bicgstab.diagonal"){
+      BicgstabDiagonalSolver::apply(*matrix_, tmpSolution, *rhs_, maxIter, precision);
+    } else if (type == "eigen.cg.diagonal.upper"){
+      CgDiagonalUpperSolver::apply(*matrix_, tmpSolution, *rhs_, maxIter, precision);
+    } else if (type == "eigen.cg.diagonal.lower"){
+      CgDiagonalLowerSolver::apply(*matrix_, tmpSolution, *rhs_, maxIter, precision);
+    } else if (type == "eigen.simplicialcholesky.upper"){
+      SimplicialcholeskyUpperSolver::apply(*matrix_, tmpSolution, *rhs_, maxIter, precision);
+    } else if (type == "eigen.simplicialcholesky.lower"){
+      SimplicialcholeskyLowerSolver::apply(*matrix_, tmpSolution, *rhs_, maxIter, precision);
+    } else {
+      std::stringstream msg;
+      msg << "Error";
+      if (id != "") {
+        msg << " in " << id;
+      }
+      msg << ": solver type '" << type << "not supported!" << std::endl;
+      DUNE_THROW(Dune::InvalidStateException, msg.str());
+    } // solve
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    // copy global vector to local vectors
+    out << prefix << "copying global vector to local...  " << std::flush;
+    timer.reset();
+    for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
+      VectorBackendType& localVector = solution[subdomain];
+      for (unsigned int localI = 0; localI < localVector.size(); ++localI) {
+        const unsigned int globalI = testMapper_.toGlobal(subdomain, localI);
+        localVector.set(localI, tmpSolution.get(globalI));
+      }
+    } // copy global vector to local vector
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void solve(...) const
 
-//    // create global solution vector
-//    VectorBackendType tmp = ContainerFactory::createDenseVector(testMapper_.size());
+  void visualize(const std::vector< VectorBackendType >& vector,
+                 const std::string filename = "solution",
+                 const std::string name = "solution",
+                 const std::string prefix = "",
+                 std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "A vector can only be visualized after init() has been called! ");
+    assert(vector.size() == msGrid_->size() && "Given vector has wrong size!");
+    Dune::Timer timer;
+    out << prefix << "writing '" << name << "' to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    // create vector of local discrete functions
+    std::vector< Dune::shared_ptr< LocalDiscreteFunctionType > > localDiscreteFunctions;
+    for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
+      localDiscreteFunctions.push_back(Dune::shared_ptr< LocalDiscreteFunctionType >(
+          new LocalDiscreteFunctionType(localSolvers_[subdomain]->ansatzSpace(),
+                                        vector[subdomain])));
+    }
+    // create multiscale discrete function
+    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*msGrid_, localDiscreteFunctions, name));
+    // visualize
+    visualize(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualize(...) const
 
-//    // solve
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabIlut BicgstabIlutSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabDiagonal BicgstabDiagonalSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalUpper CgDiagonalUpperSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalLower CgDiagonalLowerSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyUpper SimplicialcholeskyUpperSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyLower SimplicialcholeskyLowerSolver;
-//    out << prefix << "solving linear system of size " << matrix_->rows() << "x" << matrix_->cols() << std::endl
-//        << prefix << "  using " << type << "... " << std::flush;
-//    if (type == "eigen.bicgstab.incompletelut"){
-//      BicgstabIlutSolver::apply(*matrix_, tmp, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.bicgstab.diagonal"){
-//      BicgstabDiagonalSolver::apply(*matrix_, tmp, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.cg.diagonal.upper"){
-//      CgDiagonalUpperSolver::apply(*matrix_, tmp, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.cg.diagonal.lower"){
-//      CgDiagonalLowerSolver::apply(*matrix_, tmp, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.simplicialcholesky.upper"){
-//      SimplicialcholeskyUpperSolver::apply(*matrix_, tmp, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.simplicialcholesky.lower"){
-//      SimplicialcholeskyLowerSolver::apply(*matrix_, tmp, *rhs_, maxIter, precision);
-//    } else {
-//      std::stringstream msg;
-//      msg << "Error";
-//      if (id != "") {
-//        msg << " in " << id;
-//      }
-//      msg << ": solver type '" << type << "not supported!" << std::endl;
-//      DUNE_THROW(Dune::InvalidStateException, msg.str());
-//    } // solve
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  void visualize(const Dune::shared_ptr< const DiscreteFunctionType > discreteFunction,
+                 const std::string filename = "discreteFunction",
+                 const std::string prefix = "",
+                 std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "Please call init() before calling visualize()! ");
+    Dune::Timer timer;
+    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    typedef Dune::VTKWriter< typename MsGridType::GlobalGridViewType > VTKWriterType;
+    VTKWriterType vtkWriter(*(msGrid_->globalGridView()));
+    vtkWriter.addVertexData(discreteFunction);
+    vtkWriter.write(filename);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualize(...) const
 
-//    // copy global vector to local vector
-//    out << prefix << "copying global vector to local...  " << std::flush;
-//    timer.reset();
-//    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
-//      VectorBackendType localVectorBackend(solution[subdomain]);
-//      for (unsigned int localI = 0; localI < localVectorBackend.size(); ++localI) {
-//        const unsigned int globalI = testMapper_.toGlobal(subdomain, localI);
-//        localVectorBackend.set(localI, tmp.get(globalI));
-//      }
-//    } // copy global vector to local vector
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  } // solve() const
+  const Dune::shared_ptr< const LocalSolverType > localSolver(const unsigned int subdomain) const
+  {
+    assert(initialized_ && "Please call init() before calling localSolver()!");
+    assert(subdomain < msGrid_->size());
+    return localSolvers_[subdomain];
+  }
 
-//  void visualize(const std::vector< Dune::shared_ptr< LocalVectorType > >& vector,
-//                 const std::string filename = "solution",
-//                 const std::string name = "solution",
-//                 const std::string prefix = "",
-//                 std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-//  {
-//    // preparations
-//    assert(initialized_);
-//    assert(vector.size() == msGrid_.size());
-//    Dune::Timer timer;
-//    out << prefix << "writing '" << name << "' to '" << filename;
-//    if (dimDomain == 1)
-//      out << ".vtp";
-//    else
-//      out << ".vtu";
-//    out << "'... " << std::flush;
-//    // create vector of local discrete functions
-//    std::vector< VectorBackendType > localVectorBackends;
-//    typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< LocalAnsatzSpaceType, VectorBackendType > LocalDiscreteFunctionType;
-//    std::vector< Dune::shared_ptr< LocalDiscreteFunctionType > > localDiscreteFunctions;
-//    for (unsigned int subdomain = 0; subdomain < msGrid_.size(); ++subdomain) {
-//      localVectorBackends.push_back(vector[subdomain]);
-//      localDiscreteFunctions.push_back(Dune::shared_ptr< LocalDiscreteFunctionType >(new LocalDiscreteFunctionType(
-//          *(localAnsatzSpaces_[subdomain]),
-//          localVectorBackends[subdomain])));
-//    }
-//    // create multiscale discrete function
-//    typedef Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
-//    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(msGrid_, localDiscreteFunctions, name));
-//    typedef Dune::VTKWriter< typename MsGridType::GlobalGridViewType > VTKWriterType;
-//    VTKWriterType vtkWriter(*(msGrid_.globalGridView()));
-//    vtkWriter.addVertexData(discreteFunction);
-//    vtkWriter.write(filename);
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  } // visualize() const
-
-//  void visualize(const Dune::shared_ptr< DiscreteFunctionType >& discreteFunction,
-//                 const std::string filename = "discreteFunction",
-//                 const std::string prefix = "",
-//                 std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-//  {
-//    // preparations
-//    assert(initialized_);
-//    Dune::Timer timer;
-//    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
-//    if (dimDomain == 1)
-//      out << ".vtp";
-//    else
-//      out << ".vtu";
-//    out << "'... " << std::flush;
-//    typedef Dune::VTKWriter< typename MsGridType::GlobalGridViewType > VTKWriterType;
-//    VTKWriterType vtkWriter(*(msGrid_.globalGridView()));
-//    vtkWriter.addVertexData(discreteFunction);
-//    vtkWriter.write(filename);
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  } // visualize() const
-
-//  std::vector< Dune::shared_ptr< const LocalAnsatzSpaceType > > ansatzSpace() const
-//  {
-//    return localAnsatzSpaces_;
-//  }
-
-//  std::vector< Dune::shared_ptr< const LocalTestSpaceType > > testSpace() const
-//  {
-//    return localTestSpaces_;
-//  }
+  Dune::shared_ptr< LocalSolverType > localSolver(const unsigned int subdomain)
+  {
+    assert(initialized_ && "Please call init() before calling localSolver()!");
+    assert(subdomain < msGrid_->size());
+    return localSolvers_[subdomain];
+  }
 
 private:
   void addLocalToGlobalPattern(const PatternType& local,
