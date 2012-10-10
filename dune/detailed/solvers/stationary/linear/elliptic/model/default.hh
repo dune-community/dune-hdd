@@ -46,25 +46,25 @@ public:
 
   typedef DiffusionType DirichletType;
 
-  Default(const Dune::ParameterTree& paramTree)
+  Default(const Dune::Stuff::Common::ExtendedParameterTree paramTree)
     : diffusionOrder_(-1)
     , forceOrder_(-1)
     , dirichletOrder_(-1)
   {
     // check parametertree
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "diffusion", id);
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "force", id);
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "dirichlet", id);
+    paramTree.assertSub("diffusion", id);
+    paramTree.assertSub("force", id);
+    paramTree.assertSub("dirichlet", id);
+    paramTree.assertKey("diffusion.order", id);
+    paramTree.assertKey("force.order", id);
+    paramTree.assertKey("dirichlet.order", id);
     // build functions
     diffusion_ = Dune::shared_ptr< DiffusionType >(new DiffusionType(paramTree.sub("diffusion")));
     force_ = Dune::shared_ptr< ForceType >(new ForceType(paramTree.sub("force")));
     dirichlet_ = Dune::shared_ptr< DirichletType >(new DirichletType(paramTree.sub("dirichlet")));
     // set orders
-    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, "diffusion.order", id);
     diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
-    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, "force.order", id);
     forceOrder_ = paramTree.sub("force").get("order", -1);
-    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, "dirichlet.order", id);
     dirichletOrder_ = paramTree.sub("dirichlet").get("order", -1);
   }
 
