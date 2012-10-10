@@ -82,7 +82,7 @@ int main(int argc, char** argv)
     // parameter
     const std::string filename = id + ".param";
     ensureParamFile(filename);
-    Dune::ParameterTree paramTree = Dune::Stuff::Common::Parameter::Tree::init(argc, argv, filename);
+    Dune::Stuff::Common::ExtendedParameterTree paramTree(argc, argv, filename);
 
     // logger
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     info << "setting up grid: " << std::endl;
     debug.suspend();
     typedef Dune::Stuff::Grid::Provider::UnitCube<> GridProviderType;
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, id);
+    paramTree.assertSub(GridProviderType::id, id);
     const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::GridType GridType;
     const Dune::shared_ptr< const GridType > grid = gridProvider.gridPtr();
@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
+    paramTree.assertSub(ModelType::id, id);
     const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id)));
     typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
                                                                                                                     GridPartType,
                                                                                                                     BoundaryInfoType,
                                                                                                                     polOrder > SolverType;
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
+    paramTree.assertSub(SolverType::id, id);
     SolverType solver(model, gridPart, boundaryInfo);
     solver.init("  ", info);
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
