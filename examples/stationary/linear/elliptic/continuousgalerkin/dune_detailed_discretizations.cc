@@ -1,6 +1,9 @@
 
 #include "config.h"
 
+// system
+#include <sstream>
+
 // boost
 #include <boost/filesystem.hpp>
 
@@ -47,6 +50,8 @@ void ensureParamFile(std::string filename)
   if (!boost::filesystem::exists(filename)) {
     std::ofstream file;
     file.open(filename);
+    file << "[stationary.linear.elliptic.cg.ddd]" << std::endl;
+    file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
     file << "filename = " << id << ".grid" << std::endl;
@@ -75,6 +80,28 @@ void ensureParamFile(std::string filename)
     file.close();
   } // only write param file if there is none
 } // void ensureParamFile()
+
+template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
+Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > >
+  createModel(const Dune::Stuff::Common::ExtendedParameterTree& paramTree)
+{
+  // prepare
+  paramTree.assertKey(id + ".model");
+  const std::string modelId = paramTree.sub(id).get("model", "default_value");
+  typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelInterfaceType;
+  // chosse model
+  if (modelId == "detailed.solvers.stationary.linear.elliptic.model.default") {
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+    paramTree.assertSub(ModelType::id, id);
+    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id)));
+    return model;
+  } else {
+    std::stringstream msg;
+    msg << std::endl << "Error in " << id << ": unknown model ('" << modelId << "') given in the following Dune::Parametertree" << std::endl;
+    paramTree.report(msg);
+    DUNE_THROW(Dune::InvalidStateException, msg.str());
+  } // chosse model
+} // ... createModel(...)
 
 int main(int argc, char** argv)
 {
@@ -123,9 +150,9 @@ int main(int argc, char** argv)
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id, id);
-    const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id)));
+    paramTree.assertSub(id, id);
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+    const Dune::shared_ptr< const ModelType > model = createModel< DomainFieldType, dimDomain, RangeFieldType, dimRange >(paramTree);
     typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
