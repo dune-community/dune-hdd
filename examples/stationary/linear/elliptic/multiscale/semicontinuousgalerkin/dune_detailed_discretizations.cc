@@ -12,6 +12,9 @@
 // dune-grid-multiscale
 #include <dune/grid/multiscale/provider/cube.hh>
 
+// dune-fem
+#include <dune/fem/misc/mpimanager.hh>
+
 // dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
@@ -28,7 +31,7 @@ const int polOrder = POLORDER;
 const int polOrder = 1;
 #endif
 
-const std::string id = "semicontinuous_ddd_multiscale_solver";
+const std::string id = "stationary.linear.elliptic.ms.ddd";
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -50,7 +53,7 @@ void ensureParamFile(std::string filename)
     file << "partitions.0 = 2" << std::endl;
     file << "partitions.1 = 2" << std::endl;
     file << "partitions.2 = 2" << std::endl;
-    file << "filename = " << id << "_msGrid" << std::endl;
+    file << "filename = " << id << ".msGrid" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.order = 0" << std::endl;
     file << "diffusion.variable = x" << std::endl;
@@ -72,7 +75,7 @@ void ensureParamFile(std::string filename)
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
     file << "solve.maxIter = 5000"  << std::endl;
     file << "solve.precision = 1e-12"  << std::endl;
-    file << "visualize.filename = " << id << "_solution"  << std::endl;
+    file << "visualize.filename = " << id << ".solution"  << std::endl;
     file << "visualize.name = solution"  << std::endl;
     file.close();
   } // only write param file if there is none
@@ -82,12 +85,12 @@ int main(int argc, char** argv)
 {
   try {
     // mpi
-    Dune::MPIHelper::instance(argc, argv);
+    Dune::MPIManager::initialize(argc, argv);
 
     // parameter
     const std::string filename = id + ".param";
     ensureParamFile(filename);
-    Dune::ParameterTree paramTree = Dune::Stuff::Common::Parameter::Tree::init(argc, argv, filename);
+    Dune::Stuff::Common::ExtendedParameterTree paramTree(argc, argv, filename);
 
     // logger
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
@@ -104,7 +107,7 @@ int main(int argc, char** argv)
     info << "setting up grid: " << std::endl;
     debug.suspend();
     typedef Dune::grid::Multiscale::Provider::Cube<> GridProviderType;
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, GridProviderType::id, id);
+    paramTree.assertSub(GridProviderType::id, id);
     const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
     typedef GridProviderType::MsGridType MsGridType;
     const Dune::shared_ptr< const MsGridType > msGrid = gridProvider.msGridPtr();
@@ -128,7 +131,7 @@ int main(int argc, char** argv)
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, ModelType::id, id);
+    paramTree.assertSub(ModelType::id, id);
     const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id)));
     typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
@@ -146,7 +149,7 @@ int main(int argc, char** argv)
         MsGridType,
         BoundaryInfoType,
         polOrder > SolverType;
-    Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, SolverType::id, id);
+    paramTree.assertSub(SolverType::id, id);
     SolverType solver(model, msGrid, boundaryInfo, paramTree.sub(SolverType::id));
     solver.init("  ", debug);
     debug.resume();

@@ -1,0 +1,4 @@
+*.vtu
+*.param
+*.m
+dune_detailed_discretizations
