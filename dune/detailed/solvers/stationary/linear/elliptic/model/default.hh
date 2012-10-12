@@ -2,13 +2,14 @@
 #define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_DEFAULT_HH
 
 // dune-common
-#include <dune/common/parametertree.hh>
 #include <dune/common/shared_ptr.hh>
 
 // dune-stuff
 #include <dune/stuff/function/expression.hh>
 #include <dune/stuff/common/parameter/tree.hh>
-#include <dune/stuff/grid/boundaryinfo.hh>
+
+// local
+#include "interface.hh"
 
 namespace Dune {
 
@@ -26,6 +27,7 @@ namespace Model {
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
 class Default
+  : public Interface < DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
 {
 public:
   typedef DomainFieldImp DomainFieldType;
@@ -36,15 +38,17 @@ public:
 
   static const int dimRange = rangeDim;
 
+  typedef Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > BaseType;
+
   typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
 
   static const std::string id;
 
-  typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > DiffusionType;
+  typedef typename BaseType::DiffusionType DiffusionType;
 
-  typedef DiffusionType ForceType;
+  typedef typename BaseType::ForceType ForceType;
 
-  typedef DiffusionType DirichletType;
+  typedef typename BaseType::DirichletType DirichletType;
 
   Default(const Dune::Stuff::Common::ExtendedParameterTree paramTree)
     : diffusionOrder_(-1)
@@ -59,9 +63,10 @@ public:
     paramTree.assertKey("force.order", id);
     paramTree.assertKey("dirichlet.order", id);
     // build functions
-    diffusion_ = Dune::shared_ptr< DiffusionType >(new DiffusionType(paramTree.sub("diffusion")));
-    force_ = Dune::shared_ptr< ForceType >(new ForceType(paramTree.sub("force")));
-    dirichlet_ = Dune::shared_ptr< DirichletType >(new DirichletType(paramTree.sub("dirichlet")));
+    typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > ExpressionFunctionType;
+    diffusion_ = Dune::shared_ptr< DiffusionType >(new ExpressionFunctionType(paramTree.sub("diffusion")));
+    force_ = Dune::shared_ptr< ForceType >(new ExpressionFunctionType(paramTree.sub("force")));
+    dirichlet_ = Dune::shared_ptr< DirichletType >(new ExpressionFunctionType(paramTree.sub("dirichlet")));
     // set orders
     diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
     forceOrder_ = paramTree.sub("force").get("order", -1);
@@ -77,32 +82,32 @@ public:
     , dirichlet_(other.dirichlet_)
   {}
 
-  const Dune::shared_ptr< DiffusionType > diffusion() const
+  virtual const Dune::shared_ptr< const DiffusionType > diffusion() const
   {
     return diffusion_;
   }
 
-  int diffusionOrder() const
+  virtual int diffusionOrder() const
   {
     return diffusionOrder_;
   }
 
-  const Dune::shared_ptr< ForceType > force() const
+  virtual const Dune::shared_ptr< const ForceType > force() const
   {
     return force_;
   }
 
-  int forceOrder() const
+  virtual int forceOrder() const
   {
     return forceOrder_;
   }
 
-  const Dune::shared_ptr< DirichletType > dirichlet() const
+  virtual const Dune::shared_ptr< const DirichletType > dirichlet() const
   {
     return dirichlet_;
   }
 
-  int dirichletOrder() const
+  virtual int dirichletOrder() const
   {
     return dirichletOrder_;
   }
