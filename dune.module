@@ -4,6 +4,6 @@
 
 #Name of the module
 Module: dune-detailed-solvers
-Version: 2.2.0
+Version: 2.2.1
 Maintainer: felix.albrecht@uni-muenster.de
-Depends: dune-stuff dune-detailed-discretizations dune-grid-multiscale
+Depends: dune-stuff (>= 2.2.1) dune-detailed-discretizations (>= 2.2.1) dune-grid-multiscale (>= 2.2)
