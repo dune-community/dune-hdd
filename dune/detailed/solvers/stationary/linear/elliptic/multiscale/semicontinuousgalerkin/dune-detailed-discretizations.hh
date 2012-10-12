@@ -127,7 +127,7 @@ public:
   DuneDetailedDiscretizations(const Dune::shared_ptr< const ModelType > model,
                               const Dune::shared_ptr< const MsGridType > msGrid,
                               const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo,
-                              const Dune::ParameterTree& paramTree)
+                              const Dune::Stuff::Common::ExtendedParameterTree paramTree)
     : model_(model)
     , msGrid_(msGrid)
     , boundaryInfo_(boundaryInfo)
@@ -141,7 +141,7 @@ public:
   {
     // get penalty factor
     std::string key = "discretization.penaltyFactor";
-    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, key, id);
+    paramTree.assertKey(key, id);
     penaltyFactor_ = paramTree.get(key, RangeFieldType(-1.0));
     if (!penaltyFactor_ > 0) {
       std::stringstream msg;

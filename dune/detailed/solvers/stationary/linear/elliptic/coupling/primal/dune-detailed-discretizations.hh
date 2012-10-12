@@ -72,7 +72,7 @@ public:
                               const Dune::shared_ptr< const CouplingGridPartType > outerInnerCouplingGridPart,
                               const Dune::shared_ptr< const InnerSolverType > innerSolver,
                               const Dune::shared_ptr< const OuterSolverType > outerSolver,
-                              const Dune::ParameterTree& paramTree)
+                              const Dune::Stuff::Common::ExtendedParameterTree paramTree)
     : innerOuterCouplingGridPart_(innerOuterCouplingGridPart)
     , outerInnerCouplingGridPart_(outerInnerCouplingGridPart)
     , innerSolver_(innerSolver)
@@ -84,7 +84,7 @@ public:
     assert(innerSolver_->model()->id == outerSolver_->model()->id && "The solvers models have to be compatible");
     // get penalty factor
     std::string key = "discretization.penaltyFactor";
-    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, key, id);
+    paramTree.assertKey(key, id);
     penaltyFactor_ = paramTree.get(key, RangeFieldType(-1.0));
     if (!penaltyFactor_ > 0) {
       std::stringstream msg;

@@ -71,7 +71,7 @@ public:
   DuneDetailedDiscretizations(const Dune::shared_ptr< const BoundaryGridPartType > boundaryGridPart,
                               const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo,
                               const Dune::shared_ptr< const LocalSolverType > localSolver,
-                              const Dune::ParameterTree& paramTree)
+                              const Dune::Stuff::Common::ExtendedParameterTree paramTree)
     : boundaryGridPart_(boundaryGridPart)
     , boundaryInfo_(boundaryInfo)
     , localSolver_(localSolver)
@@ -80,7 +80,7 @@ public:
   {
     // get penalty factor
     std::string key = "discretization.penaltyFactor";
-    Dune::Stuff::Common::Parameter::Tree::assertKey(paramTree, key, id);
+    paramTree.assertKey(key, id);
     penaltyFactor_ = paramTree.get(key, RangeFieldType(-1.0));
     if (!penaltyFactor_ > 0) {
       std::stringstream msg;
