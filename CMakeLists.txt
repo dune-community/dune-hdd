@@ -54,7 +54,6 @@ set( EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../local/include/eigen3")
 find_package( Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-#set( SUPERLU_ROOT "/usr/" )
 find_package( SuperLU REQUIRED)
 include_directories( ${SUPERLU_INCLUDES} )
 link_directories( ${SUPERLU_LIBRARY_DIRS} )
