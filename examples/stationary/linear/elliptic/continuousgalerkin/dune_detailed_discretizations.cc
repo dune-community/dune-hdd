@@ -26,6 +26,7 @@
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/model/thermalblock.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
 #ifdef POLORDER
@@ -51,7 +52,7 @@ void ensureParamFile(std::string filename)
     std::ofstream file;
     file.open(filename);
     file << "[stationary.linear.elliptic.cg.ddd]" << std::endl;
-    file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
+    file << "model = detailed.solvers.stationary.linear.elliptic.model.thermalblock" << std::endl;
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
     file << "filename = " << id << ".grid" << std::endl;
@@ -61,6 +62,25 @@ void ensureParamFile(std::string filename)
     file << "diffusion.expression.0 = 1.0"  << std::endl;
     file << "diffusion.expression.1 = 1.0"  << std::endl;
     file << "diffusion.expression.2 = 1.0"  << std::endl;
+    file << "force.order = 0"  << std::endl;
+    file << "force.variable = x" << std::endl;
+    file << "force.expression.0 = 1.0"  << std::endl;
+    file << "force.expression.1 = 1.0"  << std::endl;
+    file << "force.expression.2 = 1.0"  << std::endl;
+    file << "dirichlet.order = 0"  << std::endl;
+    file << "dirichlet.variable = x" << std::endl;
+    file << "dirichlet.expression.0 = 0.0"  << std::endl;
+    file << "dirichlet.expression.1 = 0.0"  << std::endl;
+    file << "dirichlet.expression.2 = 0.0"  << std::endl;
+    file << "[detailed.solvers.stationary.linear.elliptic.model.thermalblock]" << std::endl;
+    file << "diffusion.order = 0"  << std::endl;
+    file << "diffusion.numElements.0 = 2"  << std::endl;
+    file << "diffusion.numElements.1 = 2"  << std::endl;
+    file << "diffusion.numElements.2 = 2"  << std::endl;
+    file << "diffusion.component.0 = 1.0"  << std::endl;
+    file << "diffusion.component.1 = 10.0"  << std::endl;
+    file << "diffusion.component.2 = 3.0"  << std::endl;
+    file << "diffusion.component.3 = 0.1"  << std::endl;
     file << "force.order = 0"  << std::endl;
     file << "force.variable = x" << std::endl;
     file << "force.expression.0 = 1.0"  << std::endl;
@@ -89,9 +109,14 @@ Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::
   paramTree.assertKey(id + ".model");
   const std::string modelId = paramTree.sub(id).get("model", "default_value");
   typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelInterfaceType;
-  // chosse model
+  // choose model
   if (modelId == "detailed.solvers.stationary.linear.elliptic.model.default") {
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+    paramTree.assertSub(ModelType::id, id);
+    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id)));
+    return model;
+  } else if (modelId == "detailed.solvers.stationary.linear.elliptic.model.thermalblock") {
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
     paramTree.assertSub(ModelType::id, id);
     Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id)));
     return model;
@@ -100,7 +125,7 @@ Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::
     msg << std::endl << "Error in " << id << ": unknown model ('" << modelId << "') given in the following Dune::Parametertree" << std::endl;
     paramTree.report(msg);
     DUNE_THROW(Dune::InvalidStateException, msg.str());
-  } // chosse model
+  } // choose model
 } // ... createModel(...)
 
 int main(int argc, char** argv)
