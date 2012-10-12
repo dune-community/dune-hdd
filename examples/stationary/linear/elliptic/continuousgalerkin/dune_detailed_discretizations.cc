@@ -9,6 +9,9 @@
 #include <dune/common/mpihelper.hh>
 #include <dune/common/timer.hh>
 
+// dune-fem
+#include <dune/fem/misc/mpimanager.hh>
+
 // dune-grid-multiscale
 #include <dune/grid/part/leaf.hh>
 
@@ -28,7 +31,7 @@ const int polOrder = POLORDER;
 const int polOrder = 1;
 #endif
 
-const std::string id = "dune_detailed_discretizations";
+const std::string id = "stationary.linear.elliptic.cg.ddd";
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -46,7 +49,7 @@ void ensureParamFile(std::string filename)
     file.open(filename);
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
-    file << "filename = " << id << "_grid" << std::endl;
+    file << "filename = " << id << ".grid" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
     file << "diffusion.variable = x" << std::endl;
@@ -67,7 +70,7 @@ void ensureParamFile(std::string filename)
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
     file << "solve.maxIter = 5000"  << std::endl;
     file << "solve.precision = 1e-12"  << std::endl;
-    file << "visualize.filename = " << id << "_solution"  << std::endl;
+    file << "visualize.filename = " << id << ".solution"  << std::endl;
     file << "visualize.name = solution"  << std::endl;
     file.close();
   } // only write param file if there is none
@@ -77,7 +80,7 @@ int main(int argc, char** argv)
 {
   try {
     // mpi
-    Dune::MPIHelper::instance(argc, argv);
+    Dune::MPIManager::initialize(argc, argv);
 
     // parameter
     const std::string filename = id + ".param";
@@ -88,8 +91,8 @@ int main(int argc, char** argv)
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
                                          Dune::Stuff::Common::LOG_CONSOLE |
                                          Dune::Stuff::Common::LOG_DEBUG);
-//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-    std::ostream& info = std::cout;
+    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+//    std::ostream& info = std::cout;
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
@@ -105,8 +108,8 @@ int main(int argc, char** argv)
     const Dune::shared_ptr< const GridType > grid = gridProvider.gridPtr();
     typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
     const Dune::shared_ptr< const GridPartType > gridPart(new GridPartType(*grid));
-    std::cout << "  took " << timer.elapsed()
-              << " sec, has " << grid->size(0) << " elements" << std::endl;
+    info << "  took " << timer.elapsed()
+         << " sec, has " << grid->size(0) << " elements" << std::endl;
     info << "visualizing grid... " << std::flush;
     timer.reset();
     gridProvider.visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_grid"));
