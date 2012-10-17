@@ -180,7 +180,7 @@ public:
 
   Dune::shared_ptr< VectorBackendType > createVector() const
   {
-    assert(initialized_ && "A vector an only be created after init() has been called!");
+    assert(initialized_ && "A vector can only be created after init() has been called!");
     Dune::shared_ptr< VectorBackendType > ret(new VectorBackendType(ContainerFactory::createDenseVector(*ansatzSpace_)));
     return ret;
   }
