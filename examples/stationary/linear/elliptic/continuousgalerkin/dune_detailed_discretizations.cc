@@ -50,7 +50,7 @@ void ensureParamFile(std::string filename)
   if (!boost::filesystem::exists(filename)) {
     std::ofstream file;
     file.open(filename);
-    file << "[stationary.linear.elliptic.cg.ddd]" << std::endl;
+    file << "[" << id << "]" << std::endl;
     file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
@@ -88,12 +88,12 @@ Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::
   // prepare
   paramTree.assertKey(id + ".model");
   const std::string modelId = paramTree.sub(id).get("model", "default_value");
-  typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelInterfaceType;
+  typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > InterfaceType;
   // chosse model
   if (modelId == "detailed.solvers.stationary.linear.elliptic.model.default") {
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id, id);
-    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id)));
+    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > DerivedType;
+    paramTree.assertSub(DerivedType::id(), id);
+    Dune::shared_ptr< InterfaceType > model(new DerivedType(paramTree.sub(DerivedType::id())));
     return model;
   } else {
     std::stringstream msg;
@@ -119,7 +119,6 @@ int main(int argc, char** argv)
                                          Dune::Stuff::Common::LOG_CONSOLE |
                                          Dune::Stuff::Common::LOG_DEBUG);
     Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-//    std::ostream& info = std::cout;
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
@@ -129,8 +128,8 @@ int main(int argc, char** argv)
     info << "setting up grid: " << std::endl;
     debug.suspend();
     typedef Dune::Stuff::Grid::Provider::UnitCube<> GridProviderType;
-    paramTree.assertSub(GridProviderType::id, id);
-    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
+    paramTree.assertSub(GridProviderType::id(), id);
+    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id()));
     typedef GridProviderType::GridType GridType;
     const Dune::shared_ptr< const GridType > grid = gridProvider.gridPtr();
     typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
@@ -139,7 +138,7 @@ int main(int argc, char** argv)
          << " sec, has " << grid->size(0) << " elements" << std::endl;
     info << "visualizing grid... " << std::flush;
     timer.reset();
-    gridProvider.visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_grid"));
+    gridProvider.visualize(paramTree.sub(GridProviderType::id()).get("filename", id + "_grid"));
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
