@@ -22,7 +22,6 @@
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
-//#include <dune/detailed/solvers/stationary/linear/elliptic/model/spe10.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
 
 #ifdef POLORDER
@@ -31,7 +30,7 @@ const int polOrder = POLORDER;
 const int polOrder = 1;
 #endif
 
-const std::string id = "stationary.linear.elliptic.ms.ddd";
+const std::string id = "stationary.linear.elliptic.ms.semicg.ddd";
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -67,9 +66,9 @@ void ensureParamFile(std::string filename)
     file << "force.expression.2 = 1.0"  << std::endl;
     file << "dirichlet.order = 0"  << std::endl;
     file << "dirichlet.variable = x" << std::endl;
-    file << "dirichlet.expression.0 = x[0]"  << std::endl;
-    file << "dirichlet.expression.1 = 1.0"  << std::endl;
-    file << "dirichlet.expression.2 = 1.0"  << std::endl;
+    file << "dirichlet.expression.0 = 0.0"  << std::endl;
+    file << "dirichlet.expression.1 = 0.0"  << std::endl;
+    file << "dirichlet.expression.2 = 0.0"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.multiscale.semicontinuousgalerkin]" << std::endl;
     file << "discretization.penaltyFactor = 10.0" << std::endl;
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
@@ -96,8 +95,7 @@ int main(int argc, char** argv)
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
                                          Dune::Stuff::Common::LOG_CONSOLE |
                                          Dune::Stuff::Common::LOG_DEBUG);
-//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-    std::ostream& info = std::cout;
+    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
@@ -131,8 +129,8 @@ int main(int argc, char** argv)
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id, id);
-    const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id)));
+    paramTree.assertSub(ModelType::id(), id);
+    const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id())));
     typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
@@ -140,10 +138,10 @@ int main(int argc, char** argv)
 
     // solver
     info << "initializing solver";
-//    info << ":" << std::endl;
-    info << "... " << std::flush;
-    debug.suspend();
-    timer.reset();
+    info << ":" << std::endl;
+//    info << "... " << std::flush;
+//    debug.suspend();
+//    timer.reset();
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations<
         ModelType,
         MsGridType,
@@ -152,19 +150,19 @@ int main(int argc, char** argv)
     paramTree.assertSub(SolverType::id, id);
     SolverType solver(model, msGrid, boundaryInfo, paramTree.sub(SolverType::id));
     solver.init("  ", debug);
-    debug.resume();
-    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    debug.resume();
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "solving";
-//    info << ":" << std::endl;
-    info << "... " << std::flush;
-    debug.suspend();
-    timer.reset();
+    info << ":" << std::endl;
+//    info << "... " << std::flush;
+//    debug.suspend();
+//    timer.reset();
     typedef SolverType::VectorBackendType VectorType;
     Dune::shared_ptr< std::vector< VectorType > > solution = solver.createVector();
     solver.solve(*solution, paramTree.sub(SolverType::id).sub("solve"), "  ", debug);
-    debug.resume();
-    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    debug.resume();
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "postprocessing";
     info << ":" << std::endl;
@@ -172,10 +170,10 @@ int main(int argc, char** argv)
 //    debug.suspend();
 //    timer.reset();
     solver.visualize(*solution,
-                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
+                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + ".solution"),
                      paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
                      "  ",
-                     std::cout);
+                     debug);
 //    debug.resume();
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
