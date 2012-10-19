@@ -50,6 +50,7 @@ namespace ContinuousGalerkin {
 
 /**
  *  \todo Add method to create a discrete function.
+ *  \todo Change id -> static id()
  */
 template< class ModelImp, class GridPartImp, class BoundaryInfoImp, int polynomialOrder >
 class DuneDetailedDiscretizations
