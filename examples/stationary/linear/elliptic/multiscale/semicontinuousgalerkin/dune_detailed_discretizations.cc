@@ -1,5 +1,7 @@
-
 #include "config.h"
+
+// system
+#include <vector>
 
 // boost
 #include <boost/filesystem.hpp>
@@ -14,15 +16,19 @@
 
 // dune-fem
 #include <dune/fem/misc/mpimanager.hh>
+#include <dune/fem/misc/gridwidth.hh>
 
 // dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
+#include <dune/stuff/discretefunction/norm.hh>
+#include <dune/stuff/function/expression.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
 #ifdef POLORDER
 const int polOrder = POLORDER;
@@ -46,6 +52,10 @@ void ensureParamFile(std::string filename)
   if (!boost::filesystem::exists(filename)) {
     std::ofstream file;
     file.open(filename);
+    file << "[" << id << "]" << std::endl;
+    file << "exact_solution.order = 2" << std::endl;
+    file << "exact_solution.variable = x" << std::endl;
+    file << "exact_solution.expression.0 = -0.5*x[0]*x[0] + 0.5*x[0]" << std::endl;
     file << "[grid.multiscale.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
     file << "boundaryId = 7" << std::endl;                  // a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 in 3d (hopefully)
@@ -80,6 +90,53 @@ void ensureParamFile(std::string filename)
   } // only write param file if there is none
 } // void ensureParamFile()
 
+template< class MultiscaleDiscreteFunctionType,
+          class OutStreamType >
+void compute_errors(Dune::ParameterTree& paramTree,
+                    const MultiscaleDiscreteFunctionType& discreteFunction,
+                    OutStreamType& out,
+                    std::string prefix = "")
+{
+  // exact solution
+  typedef typename MultiscaleDiscreteFunctionType::LocalDiscreteFunctionType DiscreteFunctionType;
+  typedef typename DiscreteFunctionType::RangeFieldType RangeFieldType;
+  typedef typename DiscreteFunctionType::DomainFieldType DomainFieldType;
+  typedef Dune::Stuff::Function::Expression<
+      DomainFieldType,
+      DiscreteFunctionType::dimDomain,
+      RangeFieldType,
+      DiscreteFunctionType::dimRange >
+    FunctionType;
+  const FunctionType function(paramTree);
+  const unsigned int functionOrder = paramTree.get("order", 100);
+  // compute norms
+  out << prefix << " norm | exact solution | discrete solution | error (abs) | error (rel)" << std::endl;
+  out << prefix << "------+----------------+-------------------+-------------+-------------" << std::endl;
+  const RangeFieldType L2_reference_norm = Dune::Stuff::DiscreteFunction::Norm::L2(*(discreteFunction.msGrid().globalGridPart()),
+                                                                               function,
+                                                                               functionOrder);
+  out.precision(2);
+  out << prefix << "   L2 | " << std::setw(14) << std::scientific << L2_reference_norm
+                                      << " | " << std::flush;
+  const RangeFieldType L2_discrete_norm = Dune::Stuff::DiscreteFunction::Norm::L2(discreteFunction);
+  out << std::setw(17) << std::scientific << L2_discrete_norm
+                                                          << " | " << std::flush;
+  const RangeFieldType L2_difference = Dune::Stuff::DiscreteFunction::Norm::L2_difference(function, functionOrder, discreteFunction);
+  out << std::setw(11) << std::scientific << L2_difference
+                                                                        << " | " << std::flush;
+  out << std::setw(11) << std::scientific << L2_difference/L2_reference_norm << std::endl;
+  out << prefix << "------+----------------+-------------------+-------------+-------------" << std::endl;
+//  const RangeFieldType h1_reference_norm = Dune::Stuff::DiscreteFunction::Norm::h1(referenceSolution);
+//  out.precision(2);
+//  out << prefix << "   h1 | " << std::setw(9) << std::scientific << h1_reference_norm << " | " << std::flush;
+//  const RangeFieldType h1_multiscale_norm = Dune::Stuff::DiscreteFunction::Norm::h1(multiscaleSolution);
+//  out << std::setw(10) << std::scientific << h1_multiscale_norm << " | " << std::flush;
+//  const RangeFieldType h1_difference = Dune::Stuff::DiscreteFunction::Norm::h1_difference(referenceSolution, multiscaleSolution);
+//  out << std::setw(11) << std::scientific << h1_difference << " | " << std::flush;
+//  out << std::setw(11) << std::scientific << h1_difference/h1_reference_norm << std::endl;
+//  out << prefix << "------+-----------+------------+-------------+-------------" << std::endl;
+} // void compute_norms(...)
+
 int main(int argc, char** argv)
 {
   try {
@@ -95,13 +152,13 @@ int main(int argc, char** argv)
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
                                          Dune::Stuff::Common::LOG_CONSOLE |
                                          Dune::Stuff::Common::LOG_DEBUG);
-    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+    std::ostream& info = std::cout;
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
     Dune::Timer timer;
 
-    // grid
     info << "setting up grid: " << std::endl;
     debug.suspend();
     typedef Dune::grid::Multiscale::Provider::Cube<> GridProviderType;
@@ -111,7 +168,11 @@ int main(int argc, char** argv)
     const Dune::shared_ptr< const MsGridType > msGrid = gridProvider.msGridPtr();
     info << "  took " << timer.elapsed()
          << " sec (has " << gridProvider.grid().size(0) << " elements, "
-         << msGrid->size() << " subdomains)" << std::endl;
+         << msGrid->size() << " subdomain";
+    if (msGrid->size() > 1)
+      info << "s";
+    info << " and a width of "
+         << Dune::GridWidth::calcGridWidth(*(msGrid->globalGridPart())) << ")" << std::endl;
     debug.resume();
     info << "visualizing grid... " << std::flush;
     timer.reset();
@@ -120,7 +181,6 @@ int main(int argc, char** argv)
     info << "done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
-    // model
     info << "setting up model... " << std::flush;
     debug.suspend();
     timer.reset();
@@ -138,10 +198,10 @@ int main(int argc, char** argv)
 
     // solver
     info << "initializing solver";
-    info << ":" << std::endl;
-//    info << "... " << std::flush;
-//    debug.suspend();
-//    timer.reset();
+//    info << ":" << std::endl;
+    info << "... " << std::flush;
+    debug.suspend();
+    timer.reset();
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations<
         ModelType,
         MsGridType,
@@ -150,33 +210,59 @@ int main(int argc, char** argv)
     paramTree.assertSub(SolverType::id, id);
     SolverType solver(model, msGrid, boundaryInfo, paramTree.sub(SolverType::id));
     solver.init("  ", debug);
-//    debug.resume();
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    debug.resume();
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "solving";
-    info << ":" << std::endl;
-//    info << "... " << std::flush;
-//    debug.suspend();
-//    timer.reset();
+//    info << ":" << std::endl;
+    info << "... " << std::flush;
+    debug.suspend();
+    timer.reset();
     typedef SolverType::VectorBackendType VectorType;
     Dune::shared_ptr< std::vector< VectorType > > solution = solver.createVector();
     solver.solve(*solution, paramTree.sub(SolverType::id).sub("solve"), "  ", debug);
-//    debug.resume();
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    debug.resume();
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    info << "postprocessing";
-    info << ":" << std::endl;
-//    info << "... " << std::flush;
+//    info << "computing detailed reference solution... " << std::flush;
 //    debug.suspend();
 //    timer.reset();
+//    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations<
+//        ModelType,
+//        typename MsGridType::GlobalGridPartType,
+//        BoundaryInfoType,
+//        polOrder >
+//      ReferenceSolverType;
+//    ReferenceSolverType referenceSolver(model, msGrid->globalGridPart(), boundaryInfo);
+//    referenceSolver.init();
+//    Dune::shared_ptr< VectorType > referenceSolution = referenceSolver.createVector();
+//    referenceSolver.solve(*referenceSolution, paramTree.sub(SolverType::id).sub("solve"), "  ", debug);
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    debug.resume();
+
+    info << "postprocessing";
+//    info << ":" << std::endl;
+    info << "... " << std::flush;
+    debug.suspend();
+    timer.reset();
     solver.visualize(*solution,
                      paramTree.sub(SolverType::id).sub("visualize").get("filename", id + ".solution"),
                      paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
                      "  ",
                      debug);
-//    debug.resume();
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    referenceSolver.visualize(*referenceSolution,
+//                              paramTree.sub(SolverType::id).sub("visualize").get("filename", id + ".solution") + "_reference",
+//                              paramTree.sub(SolverType::id).sub("visualize").get("name", "solution") + "_reference",
+//                              "  ",
+//                              debug);
+    debug.resume();
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
+    info << "computing norms:" << std::endl;
+    Dune::shared_ptr< typename SolverType::DiscreteFunctionType > discreteSolution = solver.createDiscreteFunction(*solution, "discrete_solution");
+    compute_errors(paramTree.sub(id).sub("exact_solution"),
+                   *discreteSolution,
+                   info, "  ");
     // if we came that far we can as well be happy about it
     return 0;
   } catch(Dune::Exception& e) {
