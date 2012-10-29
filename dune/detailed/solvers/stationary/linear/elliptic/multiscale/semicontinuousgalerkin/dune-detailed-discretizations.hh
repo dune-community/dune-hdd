@@ -158,7 +158,7 @@ public:
       const unsigned int subdomains = msGrid_->size();
       const bool verbose = (subdomains >= 3) && (subdomains <= std::pow(3, 3));
       std::ostream& devnull = Dune::Stuff::Common::Logger().devnull();
-      std::vector< Dune::shared_ptr< const PatternType > > boundaryPatterns(msGrid_->size());
+      std::map< unsigned int, Dune::shared_ptr< const PatternType > > boundaryPatternMap;
       std::vector< std::map< unsigned int, std::map< std::string, Dune::shared_ptr< const PatternType > > > > couplingPatternMapMaps(msGrid_->size());
 
       // walk the subdomains for the first time
@@ -202,14 +202,19 @@ public:
         // create the boundary pattern
         const typename LocalSolverType::AnsatzSpaceType& innerAnsatzSpace = localSolvers_[subdomain]->ansatzSpace();
         const typename LocalSolverType::TestSpaceType& innerTestSpace = localSolvers_[subdomain]->testSpace();
-        boundaryPatterns[subdomain]
-            = innerAnsatzSpace.computeLocalPattern(*(msGrid_->boundaryGridPart(subdomain)),
-                                                   innerTestSpace);
-        // and copy it
-        addLocalToGlobalPattern(*(boundaryPatterns[subdomain]),
-                                subdomain,
-                                subdomain,
-                                *pattern_);
+        if (msGrid_->boundary(subdomain)) {
+          const Dune::shared_ptr< const PatternType > boundaryPattern
+              = innerAnsatzSpace.computeLocalPattern(*(msGrid_->boundaryGridPart(subdomain)),
+                                                     innerTestSpace);
+          boundaryPatternMap.insert(std::pair< unsigned int, Dune::shared_ptr< const PatternType > >(
+                                      subdomain,
+                                      boundaryPattern));
+          // and copy it
+          addLocalToGlobalPattern(*boundaryPattern,
+                                  subdomain,
+                                  subdomain,
+                                  *pattern_);
+        } // if (msGrid->boundary(subdomain))
         // walk the neighbors
         std::map< unsigned int, std::map< std::string, Dune::shared_ptr< const PatternType > > >& couplingPatternMapMap
             = couplingPatternMapMaps[subdomain];
@@ -295,22 +300,27 @@ public:
         // for the boundary contribution
         const typename LocalSolverType::AnsatzSpaceType& innerAnsatzSpace = localSolvers_[subdomain]->ansatzSpace();
         const typename LocalSolverType::TestSpaceType& innerTestSpace = localSolvers_[subdomain]->testSpace();
-        //   * initialize the boundary matrix and vector,
-        Dune::shared_ptr< MatrixBackendType > boundaryMatrix(new MatrixBackendType(
-            ContainerFactory::createSparseMatrix(innerAnsatzSpace.map().size(),
-                                                 innerTestSpace.map().size(),
-                                                 *(boundaryPatterns[subdomain]))));
-        Dune::shared_ptr< VectorBackendType > boundaryRhs(new VectorBackendType(
-            ContainerFactory::createDenseVector(innerTestSpace.map().size())));
-        //   * assemble them
-        assembleBoundaryContribution(subdomain, *boundaryMatrix, *boundaryRhs);
-        //   * and copy them into the global matrix and vector
-        copyLocalToGlobalMatrix(*boundaryMatrix,
-                                *(boundaryPatterns[subdomain]),
-                                subdomain,
-                                subdomain,
-                                *matrix_);
-        copyLocalToGlobalVector(*boundaryRhs, subdomain, *rhs_);
+        if (msGrid_->boundary(subdomain)) {
+          //   * initialize the boundary matrix and vector,
+          typename std::map< unsigned int, Dune::shared_ptr< const PatternType > >::const_iterator result = boundaryPatternMap.find(subdomain);
+          assert(result != boundaryPatternMap.end());
+          const Dune::shared_ptr< const PatternType > boundaryPattern = result->second;
+          Dune::shared_ptr< MatrixBackendType > boundaryMatrix(new MatrixBackendType(
+              ContainerFactory::createSparseMatrix(innerAnsatzSpace.map().size(),
+                                                   innerTestSpace.map().size(),
+                                                   *boundaryPattern)));
+          Dune::shared_ptr< VectorBackendType > boundaryRhs(new VectorBackendType(
+              ContainerFactory::createDenseVector(innerTestSpace.map().size())));
+          //   * assemble them
+          assembleBoundaryContribution(subdomain, *boundaryMatrix, *boundaryRhs);
+          //   * and copy them into the global matrix and vector
+          copyLocalToGlobalMatrix(*boundaryMatrix,
+                                  *boundaryPattern,
+                                  subdomain,
+                                  subdomain,
+                                  *matrix_);
+          copyLocalToGlobalVector(*boundaryRhs, subdomain, *rhs_);
+        } // if (msGrid_->boundary(subdomain))
         // walk the neighbors
         std::map< unsigned int, std::map< std::string, Dune::shared_ptr< const PatternType > > >& couplingPatternMapMap
             = couplingPatternMapMaps[subdomain];
