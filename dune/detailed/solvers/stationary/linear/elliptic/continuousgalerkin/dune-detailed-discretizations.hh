@@ -186,6 +186,23 @@ public:
     return ret;
   }
 
+  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
+    return createDiscreteFunction(ContainerFactory::createDenseVector(*ansatzSpace_), name);
+  } // ... createDiscreteFunction(...)
+
+  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(VectorBackendType vector,
+                                                                  const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
+    assert(vector.size() == ansatzSpace_->map().size());
+    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*ansatzSpace_,
+                                                                                       vector,
+                                                                                       name));
+    return discreteFunction;
+  } // ... createDiscreteFunction(...)
+
   void solve(VectorBackendType& solution,
              const Dune::ParameterTree paramTree = Dune::ParameterTree(),
              const std::string prefix = "",
