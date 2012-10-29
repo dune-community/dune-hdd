@@ -150,6 +150,21 @@ public:
     assert(model_->forceOrder() >= 0 && "Please provide a nonnegative order for the force!");
   } // DuneDetailedDiscretizations()
 
+  const Dune::shared_ptr< const ModelType > model() const
+  {
+    return model_;
+  }
+
+  const Dune::shared_ptr< const MsGridType > msGrid() const
+  {
+    return msGrid_;
+  }
+
+  const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo() const
+  {
+    return boundaryInfo_;
+  }
+
   void init(const std::string prefix = "", std::ostream& out = Dune::Stuff::Common::Logger().debug())
   {
     if (!initialized_) {
@@ -398,6 +413,7 @@ public:
 
   Dune::shared_ptr< std::vector< VectorBackendType > > createVector() const
   {
+    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
     typename Dune::shared_ptr< std::vector< VectorBackendType > > retPtr(new std::vector< VectorBackendType >());
     typename std::vector< VectorBackendType >& ret = *retPtr;
     for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
@@ -407,6 +423,40 @@ public:
     }
     return retPtr;
   } // Dune::shared_ptr< std::vector< VectorBackendType > > createVector() const
+
+  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
+    // create vector of local discrete functions
+    std::vector< Dune::shared_ptr< LocalDiscreteFunctionType > > localDiscreteFunctions;
+    for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
+      localDiscreteFunctions.push_back(Dune::shared_ptr< LocalDiscreteFunctionType >(
+          new LocalDiscreteFunctionType(localSolvers_[subdomain]->ansatzSpace())));
+    }
+    // create multiscale discrete function
+    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*msGrid_,
+                                                                                       localDiscreteFunctions,
+                                                                                       name));
+    return discreteFunction;
+  }
+
+  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(std::vector< VectorBackendType >& vectors,
+                                                                  const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
+    // create vector of local discrete functions
+    std::vector< Dune::shared_ptr< LocalDiscreteFunctionType > > localDiscreteFunctions;
+    for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
+      localDiscreteFunctions.push_back(Dune::shared_ptr< LocalDiscreteFunctionType >(
+          new LocalDiscreteFunctionType(localSolvers_[subdomain]->ansatzSpace(),
+                                        vectors[subdomain])));
+    }
+    // create multiscale discrete function
+    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*msGrid_,
+                                                                                       localDiscreteFunctions,
+                                                                                       name));
+    return discreteFunction;
+  }
 
   void solve(std::vector< VectorBackendType >& solution,
              const Dune::ParameterTree paramTree = Dune::ParameterTree(),
@@ -529,6 +579,36 @@ public:
     assert(initialized_ && "Please call init() before calling localSolver()!");
     assert(subdomain < msGrid_->size());
     return localSolvers_[subdomain];
+  }
+
+  const Dune::shared_ptr< const MatrixBackendType > systemMatrix() const
+  {
+    assert(initialized_);
+    return matrix_;
+  }
+
+  Dune::shared_ptr< MatrixBackendType > systemMatrix()
+  {
+    assert(initialized_);
+    return matrix_;
+  }
+
+  const Dune::shared_ptr< const VectorBackendType > rightHandSide() const
+  {
+    assert(initialized_);
+    return rhs_;
+  }
+
+  Dune::shared_ptr< VectorBackendType > rightHandSide()
+  {
+    assert(initialized_);
+    return rhs_;
+  }
+
+  const Dune::shared_ptr< const PatternType > pattern() const
+  {
+    assert(initialized_);
+    return pattern_;
   }
 
 private:
