@@ -74,13 +74,19 @@ void ensureParamFile(std::string filename)
     file << "dirichlet.expression.2 = 0.0"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.thermalblock]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
+    file << "diffusion.lowerLeft.0 = 0.0"  << std::endl; // should coincide with the grid
+    file << "diffusion.lowerLeft.1 = 0.0"  << std::endl; // should coincide with the grid
+    file << "diffusion.lowerLeft.2 = 0.0"  << std::endl; // should coincide with the grid
+    file << "diffusion.upperRight.0 = 1.0"  << std::endl; // should coincide with the grid
+    file << "diffusion.upperRight.1 = 1.0"  << std::endl; // should coincide with the grid
+    file << "diffusion.upperRight.2 = 1.0"  << std::endl; // should coincide with the grid
     file << "diffusion.numElements.0 = 2"  << std::endl;
     file << "diffusion.numElements.1 = 2"  << std::endl;
     file << "diffusion.numElements.2 = 2"  << std::endl;
     file << "diffusion.component.0 = 1.0"  << std::endl;
     file << "diffusion.component.1 = 10.0"  << std::endl;
     file << "diffusion.component.2 = 3.0"  << std::endl;
-    file << "diffusion.component.3 = 0.1"  << std::endl;
+    file << "diffusion.component.3 = 2.1"  << std::endl;
     file << "force.order = 0"  << std::endl;
     file << "force.variable = x" << std::endl;
     file << "force.expression.0 = 1.0"  << std::endl;
