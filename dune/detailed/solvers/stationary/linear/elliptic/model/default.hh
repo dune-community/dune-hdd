@@ -42,8 +42,6 @@ public:
 
   typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
 
-  static const std::string id;
-
   typedef typename BaseType::DiffusionType DiffusionType;
 
   typedef typename BaseType::ForceType ForceType;
@@ -56,12 +54,12 @@ public:
     , dirichletOrder_(-1)
   {
     // check parametertree
-    paramTree.assertSub("diffusion", id);
-    paramTree.assertSub("force", id);
-    paramTree.assertSub("dirichlet", id);
-    paramTree.assertKey("diffusion.order", id);
-    paramTree.assertKey("force.order", id);
-    paramTree.assertKey("dirichlet.order", id);
+    paramTree.assertSub("diffusion", id());
+    paramTree.assertSub("force", id());
+    paramTree.assertSub("dirichlet", id());
+    paramTree.assertKey("diffusion.order", id());
+    paramTree.assertKey("force.order", id());
+    paramTree.assertKey("dirichlet.order", id());
     // build functions
     typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > ExpressionFunctionType;
     diffusion_ = Dune::shared_ptr< DiffusionType >(new ExpressionFunctionType(paramTree.sub("diffusion")));
@@ -81,6 +79,11 @@ public:
     , force_(other.force_)
     , dirichlet_(other.dirichlet_)
   {}
+
+  static const std::string id()
+  {
+    return "detailed.solvers.stationary.linear.elliptic.model.default";
+  }
 
   virtual const Dune::shared_ptr< const DiffusionType > diffusion() const
   {
@@ -122,9 +125,6 @@ private:
   Dune::shared_ptr< ForceType > force_;
   Dune::shared_ptr< DirichletType > dirichlet_;
 }; // class Default
-
-template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-const std::string Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed.solvers.stationary.linear.elliptic.model.default";
 
 } // namespace Model
 

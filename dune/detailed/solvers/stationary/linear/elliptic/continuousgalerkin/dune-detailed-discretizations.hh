@@ -50,6 +50,7 @@ namespace ContinuousGalerkin {
 
 /**
  *  \todo Add method to create a discrete function.
+ *  \todo Change id -> static id()
  */
 template< class ModelImp, class GridPartImp, class BoundaryInfoImp, int polynomialOrder >
 class DuneDetailedDiscretizations
@@ -180,10 +181,27 @@ public:
 
   Dune::shared_ptr< VectorBackendType > createVector() const
   {
-    assert(initialized_ && "A vector an only be created after init() has been called!");
+    assert(initialized_ && "A vector can only be created after init() has been called!");
     Dune::shared_ptr< VectorBackendType > ret(new VectorBackendType(ContainerFactory::createDenseVector(*ansatzSpace_)));
     return ret;
   }
+
+  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
+    return createDiscreteFunction(ContainerFactory::createDenseVector(*ansatzSpace_), name);
+  } // ... createDiscreteFunction(...)
+
+  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(VectorBackendType vector,
+                                                                  const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
+    assert(vector.size() == ansatzSpace_->map().size());
+    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*ansatzSpace_,
+                                                                                       vector,
+                                                                                       name));
+    return discreteFunction;
+  } // ... createDiscreteFunction(...)
 
   void solve(VectorBackendType& solution,
              const Dune::ParameterTree paramTree = Dune::ParameterTree(),

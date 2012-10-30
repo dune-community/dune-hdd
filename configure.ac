@@ -28,10 +28,7 @@ AC_CONFIG_FILES([
   dune/detailed/solvers/stationary/Makefile
   dune/detailed/solvers/stationary/linear/Makefile
   dune/detailed/solvers/stationary/linear/elliptic/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/boundary/Makefile
   dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/coupling/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/coupling/primal/Makefile
   dune/detailed/solvers/stationary/linear/elliptic/model/Makefile
   dune/detailed/solvers/stationary/linear/elliptic/multiscale/Makefile
   dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/Makefile

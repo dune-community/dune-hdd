@@ -14,6 +14,7 @@
 
 // dune-fem
 #include <dune/fem/misc/mpimanager.hh>
+#include <dune/fem/misc/gridwidth.hh>
 
 // dune-grid-multiscale
 #include <dune/grid/part/leaf.hh>
@@ -23,6 +24,8 @@
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/provider/cube.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
+#include <dune/stuff/function/expression.hh>
+#include <dune/stuff/discretefunction/norm.hh>
 
 // dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
@@ -51,8 +54,11 @@ void ensureParamFile(std::string filename)
   if (!boost::filesystem::exists(filename)) {
     std::ofstream file;
     file.open(filename);
-    file << "[stationary.linear.elliptic.cg.ddd]" << std::endl;
-    file << "model = detailed.solvers.stationary.linear.elliptic.model.thermalblock" << std::endl;
+    file << "[" << id << "]" << std::endl;
+    file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
+    file << "exact_solution.order = 2" << std::endl;
+    file << "exact_solution.variable = x" << std::endl;
+    file << "exact_solution.expression.0 = -0.5*x[0]*x[0] + 0.5*x[0]" << std::endl;
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "level = 4" << std::endl;
     file << "filename = " << id << ".grid" << std::endl;
@@ -107,6 +113,40 @@ void ensureParamFile(std::string filename)
   } // only write param file if there is none
 } // void ensureParamFile()
 
+template< class DiscreteFunctionType,
+          class OutStreamType >
+void compute_errors(const Dune::ParameterTree& paramTree,
+                    const DiscreteFunctionType& discreteFunction,
+                    OutStreamType& out,
+                    std::string prefix = "")
+{
+  // preparations
+  typedef typename DiscreteFunctionType::RangeFieldType RangeFieldType;
+  typedef Dune::Stuff::Function::Expression<
+      typename DiscreteFunctionType::DomainFieldType,
+      DiscreteFunctionType::dimDomain,
+      RangeFieldType,
+      DiscreteFunctionType::dimRange >
+    FunctionType;
+  const FunctionType function(paramTree);
+  const unsigned int functionOrder = paramTree.get("order", 100);
+  // compute norms
+  out << prefix << " norm | exact solution | discrete solution | error (abs) | error (rel)" << std::endl;
+  out << prefix << "------+----------------+-------------------+-------------+-------------" << std::endl;
+  const RangeFieldType L2_reference_norm = Dune::Stuff::DiscreteFunction::Norm::L2(discreteFunction.space().gridPart(),
+                                                                                   function,
+                                                                                   functionOrder);
+  out.precision(2);
+  out << prefix << "   L2 | " << std::setw(14) << std::scientific << L2_reference_norm
+                                      << " | " << std::flush;
+  const RangeFieldType L2_discrete_norm = Dune::Stuff::DiscreteFunction::Norm::L2(discreteFunction);
+  out << std::setw(17) << std::scientific << L2_discrete_norm << " | " << std::flush;
+  const RangeFieldType L2_difference = Dune::Stuff::DiscreteFunction::Norm::L2_difference(function, functionOrder, discreteFunction);
+  out << std::setw(11) << std::scientific << L2_difference << " | " << std::flush;
+  out << std::setw(11) << std::scientific << L2_difference/L2_reference_norm << std::endl;
+  out << prefix << "------+----------------+-------------------+-------------+-------------" << std::endl;
+} // void compute_norms(...)
+
 template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
 Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > >
   createModel(const Dune::Stuff::Common::ExtendedParameterTree& paramTree)
@@ -118,13 +158,13 @@ Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::
   // choose model
   if (modelId == "detailed.solvers.stationary.linear.elliptic.model.default") {
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id, id);
-    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id)));
+    paramTree.assertSub(ModelType::id(), id);
+    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id())));
     return model;
   } else if (modelId == "detailed.solvers.stationary.linear.elliptic.model.thermalblock") {
     typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id, id);
-    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id)));
+    paramTree.assertSub(ModelType::id(), id);
+    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id())));
     return model;
   } else {
     std::stringstream msg;
@@ -149,8 +189,8 @@ int main(int argc, char** argv)
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
                                          Dune::Stuff::Common::LOG_CONSOLE |
                                          Dune::Stuff::Common::LOG_DEBUG);
-    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-//    std::ostream& info = std::cout;
+//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+    std::ostream& info = std::cout;
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
@@ -160,17 +200,21 @@ int main(int argc, char** argv)
     info << "setting up grid: " << std::endl;
     debug.suspend();
     typedef Dune::Stuff::Grid::Provider::UnitCube<> GridProviderType;
-    paramTree.assertSub(GridProviderType::id, id);
-    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
+    paramTree.assertSub(GridProviderType::id(), id);
+    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id()));
     typedef GridProviderType::GridType GridType;
     const Dune::shared_ptr< const GridType > grid = gridProvider.gridPtr();
     typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
     const Dune::shared_ptr< const GridPartType > gridPart(new GridPartType(*grid));
-    info << "  took " << timer.elapsed()
-         << " sec, has " << grid->size(0) << " elements" << std::endl;
+    info << "  done (took " << timer.elapsed()
+         << " sec, has " << grid->size(0) << " element";
+    if (grid->size(0) > 1)
+      info << "s";
+    info << " and a width of "
+         << Dune::GridWidth::calcGridWidth(*gridPart) << ")" << std::endl;
     info << "visualizing grid... " << std::flush;
     timer.reset();
-    gridProvider.visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_grid"));
+    gridProvider.visualize(paramTree.sub(GridProviderType::id()).get("filename", id + "_grid"));
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
@@ -215,6 +259,10 @@ int main(int argc, char** argv)
                      "  ",
                      info);
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+    info << "computing errors:" << std::endl;
+    const Dune::shared_ptr< const SolverType::DiscreteFunctionType > discreteFunction = solver.createDiscreteFunction(*solution, "discrete_solution");
+    compute_errors(paramTree.sub(id).sub("exact_solution"), *discreteFunction, info, "  ");
 
     // if we came that far we can as well be happy about it
     return 0;

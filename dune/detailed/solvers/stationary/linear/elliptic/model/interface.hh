@@ -39,6 +39,11 @@ public:
 
   typedef Dune::Stuff::Function::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > DirichletType;
 
+  static const std::string id()
+  {
+    return "stationary.linear.elliptic.model.interface";
+  }
+
   virtual const Dune::shared_ptr< const DiffusionType > diffusion() const = 0;
 
   virtual int diffusionOrder() const = 0;
