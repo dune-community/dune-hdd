@@ -3,6 +3,7 @@
 
 // system
 #include <vector>
+#include <string>
 
 // dune-common
 #include <dune/common/shared_ptr.hh>
@@ -11,6 +12,7 @@
 #include <dune/stuff/function/expression.hh>
 #include <dune/stuff/function/interface.hh>
 #include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/common/print.hh>
 
 // local
 #include "interface.hh"
@@ -76,9 +78,38 @@ private:
 
     virtual void evaluate(const DomainType& x, RangeType& ret) const
     {
+      // get total number of subdomains
+      unsigned int totalSubdomains = 1;
+      static const unsigned int dim = numElements_.size();
+      for (unsigned int d = 0; d < dim; ++d)
+      {
+          totalSubdomains *= numElements_[d];
+      }
 
-      assert(false && "Implement me!");
+      assert( totalSubdomains <= components_.size() );
 
+      // decide on the subdomain the point x belongs to
+      std::vector< unsigned int > whichPartition;
+      for (unsigned int d = 0; d < dim; ++d)
+      {
+        whichPartition.push_back(std::floor(numElements_[d]*((x[d] - lowerLeft_[d])/(upperRight_[d] - lowerLeft_[d]))));
+      }
+      unsigned int subdomain = 0;
+      if (dim == 1)
+        subdomain = whichPartition[0];
+      else if (dim == 2)
+        subdomain = whichPartition[0] + whichPartition[1]*numElements_[0];
+      else if (dim == 3)
+        subdomain = whichPartition[0] + whichPartition[1]*numElements_[0] + whichPartition[2]*numElements_[1]*numElements_[0];
+      else
+      {
+        std::stringstream msg;
+        msg << "Error in " << id << ": not implemented for grid dimensions other than 1, 2 or 3!";
+        DUNE_THROW(Dune::NotImplemented, msg.str());
+      } // decide on the subdomain the point x belongs to
+
+      // return the component that belongs to the subdomain of x
+      ret = components_[subdomain];
     } // virtual void evaluate(const DomainType& x, RangeType& ret) const
 
   private:
@@ -111,15 +142,35 @@ public:
     typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > ExpressionFunctionType;
     force_ = Dune::shared_ptr< ForceType >(new ExpressionFunctionType(paramTree.sub("force")));
     dirichlet_ = Dune::shared_ptr< DirichletType >(new ExpressionFunctionType(paramTree.sub("dirichlet")));
+
     // build the thermalblock diffusion
     Dune::FieldVector< DomainFieldType, dimDomain > lowerLeft(DomainFieldType(0));
-    Dune::FieldVector< DomainFieldType, dimDomain > upperRight(DomainFieldType(0));
+    Dune::FieldVector< DomainFieldType, dimDomain > upperRight(DomainFieldType(1));
     std::vector< unsigned int > numElements(dimDomain, 0);
     std::vector< RangeFieldType > components;
 
-    assert(false && "Implement me!");
-
     Dune::Stuff::Common::ExtendedParameterTree paramTreeDiffusion = paramTree.sub("diffusion");
+
+    // get number of subdomains per direction, total number of subdomains and coordinates of lowerLeft and upperRight corners of the cube
+    unsigned int totalSubdomains = 1;
+    for (unsigned int d=0; d<dimDomain; ++d)
+    {
+      std::string low = "lowerLeft." + std::to_string(d);
+      std::string up = "upperRight." + std::to_string(d);
+      std::string el = "numElements." + std::to_string(d);
+      lowerLeft[d] = paramTreeDiffusion.get(low, 0);
+      upperRight[d] = paramTreeDiffusion.get(up, 1);
+      numElements[d] = paramTreeDiffusion.get(el, 0);
+      totalSubdomains *= numElements[d];
+    }
+
+    for (unsigned int i=0; i<totalSubdomains; ++i)
+    {
+      std::string com = "component." + std::to_string(i);
+      const RangeFieldType tmp=paramTreeDiffusion.get(com, 1.0);
+      components.push_back( tmp );
+    }
+
     diffusion_ = Dune::shared_ptr< DiffusionType >(new Diffusion(lowerLeft, upperRight, numElements, components));
     // set orders
     diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
