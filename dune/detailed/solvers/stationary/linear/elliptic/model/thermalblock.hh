@@ -67,27 +67,33 @@ private:
       , upperRight_(upperRight)
       , numElements_(numElements)
       , components_(components)
-    {}
+    {
+      // get total number of subdomains
+      unsigned int totalSubdomains = 1;
+      static const unsigned int dim = numElements_.size();
+      for (unsigned int d = 0; d < dim; ++d) {
+          totalSubdomains *= numElements_[d];
+      }
+      assert(totalSubdomains <= components_.size() && "Please provide at least as many components as subdomains!");
+    }
 
     Diffusion(const Diffusion& other)
       : lowerLeft_(other.lowerLeft_)
       , upperRight_(other.upperRight_)
       , numElements_(other.numElements_)
       , components_(other.components_)
-    {}
-
-    virtual void evaluate(const DomainType& x, RangeType& ret) const
     {
       // get total number of subdomains
       unsigned int totalSubdomains = 1;
       static const unsigned int dim = numElements_.size();
-      for (unsigned int d = 0; d < dim; ++d)
-      {
+      for (unsigned int d = 0; d < dim; ++d) {
           totalSubdomains *= numElements_[d];
       }
+      assert(totalSubdomains <= components_.size() && "Please provide at least as many components as subdomains!");
+    }
 
-      assert( totalSubdomains <= components_.size() );
-
+    virtual void evaluate(const DomainType& x, RangeType& ret) const
+    {
       // decide on the subdomain the point x belongs to
       std::vector< unsigned int > whichPartition;
       for (unsigned int d = 0; d < dim; ++d)
@@ -153,8 +159,7 @@ public:
 
     // get number of subdomains per direction, total number of subdomains and coordinates of lowerLeft and upperRight corners of the cube
     unsigned int totalSubdomains = 1;
-    for (unsigned int d=0; d<dimDomain; ++d)
-    {
+    for (unsigned int d = 0; d < dimDomain; ++d) {
       std::string low = "lowerLeft." + std::to_string(d);
       std::string up = "upperRight." + std::to_string(d);
       std::string el = "numElements." + std::to_string(d);
@@ -163,14 +168,11 @@ public:
       numElements[d] = paramTreeDiffusion.get(el, 0);
       totalSubdomains *= numElements[d];
     }
-
-    for (unsigned int i=0; i<totalSubdomains; ++i)
-    {
+    for (unsigned int i = 0; i < totalSubdomains; ++i) {
       std::string com = "component." + std::to_string(i);
-      const RangeFieldType tmp=paramTreeDiffusion.get(com, 1.0);
-      components.push_back( tmp );
+      const RangeFieldType tmp = paramTreeDiffusion.get(com, 1.0);
+      components.push_back(tmp);
     }
-
     diffusion_ = Dune::shared_ptr< DiffusionType >(new Diffusion(lowerLeft, upperRight, numElements, components));
     // set orders
     diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
