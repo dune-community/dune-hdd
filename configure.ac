@@ -40,6 +40,7 @@ AC_CONFIG_FILES([
   examples/stationary/linear/Makefile
   examples/stationary/linear/elliptic/Makefile
   examples/stationary/linear/elliptic/continuousgalerkin/Makefile
+  examples/stationary/linear/elliptic/finitevolume/Makefile
   examples/stationary/linear/elliptic/multiscale/Makefile
   examples/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/Makefile
 ])

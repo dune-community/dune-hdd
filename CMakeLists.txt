@@ -112,5 +112,8 @@ set( COMMON_LIBS "fem" "grid" "dunegeometry" "common" ${BLAS_LIB} "alugrid" "lap
 ADD_EXECUTABLE( examples_stationary_linear_elliptic_continuousgalerkin_dune_detailed_discretizations "examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizations.cc" ${LIST_LIBS} )
 TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_continuousgalerkin_dune_detailed_discretizations ${COMMON_LIBS} )
 
+ADD_EXECUTABLE( examples_stationary_linear_elliptic_finitevolume_dune_pdelab "examples/stationary/linear/elliptic/finitevolume/dune_pdelab.cc" ${LIST_LIBS} )
+TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_finitevolume_dune_pdelab ${COMMON_LIBS} )
+
 ADD_EXECUTABLE( examples_stationary_linear_elliptic_multiscale_semicontinuousgalerkin_dune_detailed_discretizations "examples/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune_detailed_discretizations.cc" ${LIST_LIBS} )
 TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_multiscale_semicontinuousgalerkin_dune_detailed_discretizations ${COMMON_LIBS} )
