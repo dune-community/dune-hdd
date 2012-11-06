@@ -48,8 +48,6 @@ public:
 
   typedef Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
 
-  static const std::string id;
-
 private:
   class Diffusion
     : public Dune::Stuff::Function::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >
@@ -138,12 +136,12 @@ public:
     , dirichletOrder_(-1)
   {
     // check parametertree
-    paramTree.assertSub("diffusion", id);
-    paramTree.assertSub("force", id);
-    paramTree.assertSub("dirichlet", id);
-    paramTree.assertKey("diffusion.order", id);
-    paramTree.assertKey("force.order", id);
-    paramTree.assertKey("dirichlet.order", id);
+    paramTree.assertSub("diffusion", id());
+    paramTree.assertSub("force", id());
+    paramTree.assertSub("dirichlet", id());
+    paramTree.assertKey("diffusion.order", id());
+    paramTree.assertKey("force.order", id());
+    paramTree.assertKey("dirichlet.order", id());
     // build functions
     typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > ExpressionFunctionType;
     force_ = Dune::shared_ptr< ForceType >(new ExpressionFunctionType(paramTree.sub("force")));
@@ -189,6 +187,11 @@ public:
     , dirichlet_(other.dirichlet_)
   {}
 
+  static const std::string id()
+  {
+    return "detailed.solvers.stationary.linear.elliptic.model.thermalblock";
+  }
+
   virtual const Dune::shared_ptr< const DiffusionType > diffusion() const
   {
     return diffusion_;
@@ -229,9 +232,6 @@ private:
   Dune::shared_ptr< ForceType > force_;
   Dune::shared_ptr< DirichletType > dirichlet_;
 }; // class Thermalblock
-
-template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-const std::string Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >::id = "detailed.solvers.stationary.linear.elliptic.model.thermalblock";
 
 } // namespace Model
 
