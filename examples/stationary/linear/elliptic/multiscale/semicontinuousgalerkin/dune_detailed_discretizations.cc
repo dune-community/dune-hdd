@@ -162,8 +162,8 @@ int main(int argc, char** argv)
     info << "setting up grid: " << std::endl;
     debug.suspend();
     typedef Dune::grid::Multiscale::Provider::Cube<> GridProviderType;
-    paramTree.assertSub(GridProviderType::id, id);
-    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id));
+    paramTree.assertSub(GridProviderType::id(), id);
+    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id()));
     typedef GridProviderType::MsGridType MsGridType;
     const Dune::shared_ptr< const MsGridType > msGrid = gridProvider.msGridPtr();
     info << "  took " << timer.elapsed()
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
     info << "visualizing grid... " << std::flush;
     timer.reset();
     debug.suspend();
-    msGrid->visualize(paramTree.sub(GridProviderType::id).get("filename", id + "_msGrid"));
+    msGrid->visualize(paramTree.sub(GridProviderType::id()).get("filename", id + "_msGrid"));
     info << "done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
@@ -202,11 +202,13 @@ int main(int argc, char** argv)
     info << "... " << std::flush;
     debug.suspend();
     timer.reset();
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Multiscale::SemicontinuousGalerkin::DuneDetailedDiscretizations<
-        ModelType,
-        MsGridType,
-        BoundaryInfoType,
-        polOrder > SolverType;
+    typedef Dune::Detailed::Solvers
+        ::Stationary
+        ::Linear
+        ::Elliptic
+        ::Multiscale
+        ::SemicontinuousGalerkin::DuneDetailedDiscretizations< ModelType, MsGridType, BoundaryInfoType, polOrder >
+        SolverType;
     paramTree.assertSub(SolverType::id, id);
     SolverType solver(model, msGrid, boundaryInfo, paramTree.sub(SolverType::id));
     solver.init("  ", debug);
