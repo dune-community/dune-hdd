@@ -189,8 +189,7 @@ int main(int argc, char** argv)
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
                                          Dune::Stuff::Common::LOG_CONSOLE |
                                          Dune::Stuff::Common::LOG_DEBUG);
-//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-    std::ostream& info = std::cout;
+    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     // timer
@@ -260,9 +259,11 @@ int main(int argc, char** argv)
                      info);
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    info << "computing errors:" << std::endl;
-    const Dune::shared_ptr< const SolverType::DiscreteFunctionType > discreteFunction = solver.createDiscreteFunction(*solution, "discrete_solution");
-    compute_errors(paramTree.sub(id).sub("exact_solution"), *discreteFunction, info, "  ");
+    if (dimDomain == 1) {
+      info << "computing errors:" << std::endl;
+      const Dune::shared_ptr< const SolverType::DiscreteFunctionType > discreteFunction = solver.createDiscreteFunction(*solution, "discrete_solution");
+      compute_errors(paramTree.sub(id).sub("exact_solution"), *discreteFunction, info, "  ");
+    }
 
     // if we came that far we can as well be happy about it
     return 0;
