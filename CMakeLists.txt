@@ -75,7 +75,7 @@ add_cxx_flags(-std=c++0x)
 
 add_cxx_flags(${CUSTOM_FLAGS})
 # the other dune modules
-ADD_DUNE_MODULES(common grid-multiscale grid fem geometry localfunctions stuff detailed-discretizations)
+ADD_DUNE_MODULES(common grid-multiscale grid fem geometry localfunctions stuff detailed-discretizations istl)
 
 # Source listing, relative to the position of this file
 FILE( GLOB_RECURSE detailed-discretizations "../dune-detailed-discretizations/*.hh" )
