@@ -75,7 +75,7 @@ add_cxx_flags(-std=c++0x)
 
 add_cxx_flags(${CUSTOM_FLAGS})
 # the other dune modules
-ADD_DUNE_MODULES(common grid-multiscale grid fem geometry localfunctions stuff detailed-discretizations istl)
+ADD_DUNE_MODULES(common grid-multiscale grid fem geometry localfunctions stuff detailed-discretizations istl pdelab)
 
 # Source listing, relative to the position of this file
 FILE( GLOB_RECURSE detailed-discretizations "../dune-detailed-discretizations/*.hh" )
@@ -98,11 +98,13 @@ FILE( GLOB_RECURSE stuff "../dune-stuff/*.hh" )
 FILE( GLOB_RECURSE stuff_cc "../dune-stuff/*.cc" )
 FILE( GLOB_RECURSE istl "../dune-istl/*.hh" )
 FILE( GLOB_RECURSE istl_cc "../dune-istl/*.cc" )
+FILE( GLOB_RECURSE pdelab "../dune-pdelab/*.hh" )
+FILE( GLOB_RECURSE pdelab_cc "../dune-pdelab/*.cc" )
 
-set_source_files_properties( ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${detailed-solvers_cc} ${istl_cc}
+set_source_files_properties( ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${detailed-solvers_cc} ${istl_cc} ${pdelab} ${pdelab_cc}
 ${common_cc} ${grid_cc} ${grid_multiscale_cc} ${fem_cc} ${localfunctions_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} ${istl} PROPERTIES HEADER_FILE_ONLY 1 )
 
-set(LIST_LIBS ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${istl}
+set(LIST_LIBS ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${istl} ${pdelab} ${pdelab_cc}
 ${common_cc} ${grid_cc} ${fem_cc} ${localfunctions_cc} ${grid_multiscale_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} ${istl_cc} )
 
 set( COMMON_LIBS "fem" "grid" "dunegeometry" "common" ${BLAS_LIB} "alugrid" "lapack" "boost_filesystem" "boost_system" "superlu" )
