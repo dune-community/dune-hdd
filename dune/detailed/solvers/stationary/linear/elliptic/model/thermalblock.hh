@@ -157,7 +157,7 @@ public:
 
     // get number of subdomains per direction, total number of subdomains and coordinates of lowerLeft and upperRight corners of the cube
     unsigned int totalSubdomains = 1;
-    for (unsigned int d = 0; d < dimDomain; ++d) {
+    for (int d = 0; d < dimDomain; ++d) {
       std::string low = "lowerLeft." + std::to_string(d);
       std::string up = "upperRight." + std::to_string(d);
       std::string el = "numElements." + std::to_string(d);
