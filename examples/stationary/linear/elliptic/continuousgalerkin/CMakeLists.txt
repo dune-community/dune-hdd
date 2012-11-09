@@ -1,0 +1,3 @@
+ADD_EXECUTABLE( examples_stationary_linear_elliptic_continuousgalerkin_dune_detailed_discretizations "dune_detailed_discretizations.cc" ${COMMON_HEADERS} )
+TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_continuousgalerkin_dune_detailed_discretizations ${COMMON_LIBS} )
+
