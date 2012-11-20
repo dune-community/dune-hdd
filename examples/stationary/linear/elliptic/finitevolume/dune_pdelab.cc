@@ -196,17 +196,19 @@ int main(int argc, char** argv)
     SolverType solver(model, gridView, boundaryInfo);
     solver.init("  ", debug);
 
-//    info << "solving:" << std::endl;
-//    typedef SolverType::VectorBackendType DofVectorType;
+    info << "solving:" << std::endl;
+    typedef SolverType::VectorBackendType DofVectorType;
 //    Dune::shared_ptr< DofVectorType > solution = solver.createVector();
 //    solver.solve(*solution, paramTree.sub(SolverType::id()).sub("solve"), "  ", debug);
+    //TODO: adapt function call to former interface
+      solver.solve(paramTree.sub(SolverType::id()).sub("solve"), "  ", debug);
 
-//    info << "postprocessing:" << std::endl;
-//    solver.visualize(*solution,
-//                     paramTree.sub(SolverType::id()).sub("visualize").get("filename", id + "_solution"),
-//                     paramTree.sub(SolverType::id()).sub("visualize").get("name", "solution"),
-//                     "  ",
-//                     debug);
+    info << "postprocessing:" << std::endl;
+    solver.visualize(//*solution,
+                     paramTree.sub(SolverType::id()).sub("visualize").get("filename", id + "_solution"),
+                     paramTree.sub(SolverType::id()).sub("visualize").get("name", "solution"),
+                     "  ",
+                     debug);
 
     // if we came that far we can as well be happy about it
     return 0;

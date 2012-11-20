@@ -100,12 +100,14 @@ FILE( GLOB_RECURSE istl "../dune-istl/*.hh" )
 FILE( GLOB_RECURSE istl_cc "../dune-istl/*.cc" )
 FILE( GLOB_RECURSE pdelab "../dune-pdelab/*.hh" )
 FILE( GLOB_RECURSE pdelab_cc "../dune-pdelab/*.cc" )
+FILE( GLOB_RECURSE pdelab-howto "../dune-pdelab-howto/*.hh" )
+FILE( GLOB_RECURSE pdelab-howto_cc "../dune-pdelab-howto/*.cc" )
 
-set_source_files_properties( ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${detailed-solvers_cc} ${istl_cc} ${pdelab} ${pdelab_cc}
+set_source_files_properties( ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${detailed-solvers_cc} ${istl_cc} ${pdelab} ${pdelab_cc} ${pdelab-howto} ${pdelab-howto_cc}
 ${common_cc} ${grid_cc} ${grid_multiscale_cc} ${fem_cc} ${localfunctions_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} ${istl} PROPERTIES HEADER_FILE_ONLY 1 )
 
 set(LIST_LIBS ${common} ${grid} ${grid_multiscale} ${fem} ${localfunctions} ${geometry} ${stuff} ${detailed-discretizations} ${detailed-solvers} ${istl} ${pdelab} ${pdelab_cc}
-${common_cc} ${grid_cc} ${fem_cc} ${localfunctions_cc} ${grid_multiscale_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} ${istl_cc} )
+${common_cc} ${grid_cc} ${fem_cc} ${localfunctions_cc} ${grid_multiscale_cc} ${geometry_cc} ${stuff_cc} ${detailed-discretizations_cc} ${istl_cc} ${pdelab-howto} ${pdelab-howto_cc})
 
 set( COMMON_LIBS "fem" "grid" "dunegeometry" "common" ${BLAS_LIB} "alugrid" "lapack" "boost_filesystem" "boost_system" "superlu" )
 

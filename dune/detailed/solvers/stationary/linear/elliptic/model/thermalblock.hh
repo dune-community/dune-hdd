@@ -94,7 +94,7 @@ private:
     {
       // decide on the subdomain the point x belongs to
       std::vector< unsigned int > whichPartition;
-      for (unsigned int d = 0; d < dimDomain; ++d)
+      for (int d = 0; d < dimDomain; ++d)
       {
         whichPartition.push_back(std::floor(numElements_[d]*((x[d] - lowerLeft_[d])/(upperRight_[d] - lowerLeft_[d]))));
       }
