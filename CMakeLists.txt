@@ -66,6 +66,8 @@ SET_CONFIGHEADER_VARS()
 include_dir( ${dune-detailed-solvers_SOURCE_DIR} )
 INCLUDE_DIR( ${dune-detailed-solvers_BINARY_DIR} )
 
+ADD_DEFINITIONS(${CUSTOM_FLAGS})
+
 IF( ${GRIDTYPE} STREQUAL "UGGRID" )
   ADD_CXX_FLAGS( -DENABLE_UG )
   INCLUDE_SYS_DIR( ${UGGRID_BASE_PATH}/include )
