@@ -1,2 +1,3 @@
 add_subdirectory(continuousgalerkin)
+add_subdirectory(finitevolume)
 add_subdirectory(multiscale)
