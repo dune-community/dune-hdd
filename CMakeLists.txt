@@ -104,7 +104,7 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURR
 
 # other dune modules
 ADD_DUNE_MODULES(common fem geometry grid grid-howto grid-multiscale localfunctions stuff detailed-discretizations dune-pdelab dune-pdelab-howto )
-set( COMMON_LIBS "dunefem" "dunegrid" "dunecommon" "dunegeometry"
+set( COMMON_LIBS "dunefem" "duneistl" "dunegrid" "dunecommon" "dunegeometry"
   ${BLAS_LIB} ${GRIDLIBS} ${ParaLIBS} 
   "boost_filesystem" "boost_system" )
 FILE( GLOB_RECURSE header "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
