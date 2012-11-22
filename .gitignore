@@ -1,5 +1,4 @@
-CMakeLists.txt
-CMakeLists.txt.user*
+CMakeLists.txt.user
 Makefile
 Makefile.in
 aclocal.m4
@@ -56,7 +55,6 @@ missing
 stamp-h1
 examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizations
 examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizations-dune_detailed_discretizations.o
-doc/doxygen
 *.deps
 examples/stationary/linear/elliptic/discontinuousgalerkin/dune_detailed_discretizations
 *.o
