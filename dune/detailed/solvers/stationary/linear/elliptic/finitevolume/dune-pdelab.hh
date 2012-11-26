@@ -302,8 +302,8 @@ public:
       // function space
       out << prefix << "initializing function space... " << std::flush;
       timer.reset();
-      FiniteElementMap finiteElementMap(Dune::GeometryType(Dune::GeometryType::cube,dim));  // supply element type for P0
-      gridFunctionSpace_ = Dune::shared_ptr< GridFunctionSpace >(new GridFunctionSpace(*gridView_,finiteElementMap));
+      finiteElementMap_ = Dune::shared_ptr< FiniteElementMap >(new FiniteElementMap(Dune::GeometryType(gridView_->template begin< 0 >()->geometry().type())));
+      gridFunctionSpace_ = Dune::shared_ptr< GridFunctionSpace >(new GridFunctionSpace(*gridView_, *finiteElementMap_));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // grid operator (left hand side)
@@ -491,7 +491,8 @@ private:
   Dune::shared_ptr< VectorBackendType > rhs_;
   Dune::shared_ptr< TrialVectorType > solution_;
   Dune::shared_ptr< DiscreteTrialFunction > residual_;
-  Dune::shared_ptr< GridFunctionSpace> gridFunctionSpace_;
+  Dune::shared_ptr< FiniteElementMap > finiteElementMap_;
+  Dune::shared_ptr< GridFunctionSpace > gridFunctionSpace_;
   Dune::shared_ptr< GridOperator> gridOperator_;
 
 }; // class DunePdelab
