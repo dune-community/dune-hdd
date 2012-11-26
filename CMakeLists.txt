@@ -103,8 +103,8 @@ ENDIF( ${GRIDTYPE} MATCHES "ALBERTAGRID" )
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
 
 # other dune modules
-ADD_DUNE_MODULES(common fem istl geometry grid grid-howto grid-multiscale localfunctions stuff detailed-discretizations dune-pdelab dune-pdelab-howto)
-set( COMMON_LIBS "dunefem" "duneistl" "dunegrid" "dunecommon" "dunegeometry"
+ADD_DUNE_MODULES(common fem istl geometry grid grid-howto grid-multiscale localfunctions stuff detailed-discretizations pdelab pdelab-howto)
+set( COMMON_LIBS "dunefem" "dunegrid" "dunecommon" "dunegeometry"
   ${BLAS_LIB} ${GRIDLIBS} ${ParaLIBS} 
   "boost_filesystem" "boost_system" )
 FILE( GLOB_RECURSE header "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
