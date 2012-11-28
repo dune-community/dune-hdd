@@ -11,6 +11,7 @@
 // dune-stuff
 #include <dune/stuff/function/expression.hh>
 #include <dune/stuff/function/interface.hh>
+#include <dune/stuff/function/checkerboard.hh>
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/print.hh>
 
@@ -18,17 +19,11 @@
 #include "interface.hh"
 
 namespace Dune {
-
 namespace Detailed {
-
 namespace Solvers {
-
 namespace Stationary {
-
 namespace Linear {
-
 namespace Elliptic {
-
 namespace Model {
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
@@ -48,148 +43,83 @@ public:
 
   typedef Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
 
-private:
-  class Diffusion
-    : public Dune::Stuff::Function::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >
-  {
-  public:
-    typedef Dune::FieldVector< DomainFieldType, dimDomain > DomainType;
-
-    typedef Dune::FieldVector< RangeFieldType, dimRange > RangeType;
-
-    Diffusion(const DomainType lowerLeft,
-              const DomainType upperRight,
-              const std::vector< unsigned int > numElements,
-              const std::vector< RangeFieldType > components)
-      : lowerLeft_(lowerLeft)
-      , upperRight_(upperRight)
-      , numElements_(numElements)
-      , components_(components)
-    {
-      // get total number of subdomains
-      unsigned int totalSubdomains = 1;
-      static const unsigned int dim = numElements_.size();
-      for (unsigned int d = 0; d < dim; ++d) {
-          totalSubdomains *= numElements_[d];
-      }
-      assert(totalSubdomains <= components_.size() && "Please provide at least as many components as subdomains!");
-    }
-
-    Diffusion(const Diffusion& other)
-      : lowerLeft_(other.lowerLeft_)
-      , upperRight_(other.upperRight_)
-      , numElements_(other.numElements_)
-      , components_(other.components_)
-    {
-      // get total number of subdomains
-      unsigned int totalSubdomains = 1;
-      static const unsigned int dim = numElements_.size();
-      for (unsigned int d = 0; d < dim; ++d) {
-          totalSubdomains *= numElements_[d];
-      }
-      assert(totalSubdomains <= components_.size() && "Please provide at least as many components as subdomains!");
-    }
-
-    virtual void evaluate(const DomainType& x, RangeType& ret) const
-    {
-      // decide on the subdomain the point x belongs to
-      std::vector< unsigned int > whichPartition;
-      for (int d = 0; d < dimDomain; ++d)
-      {
-        whichPartition.push_back(std::floor(numElements_[d]*((x[d] - lowerLeft_[d])/(upperRight_[d] - lowerLeft_[d]))));
-      }
-      unsigned int subdomain = 0;
-      if (dimDomain == 1)
-        subdomain = whichPartition[0];
-      else if (dimDomain == 2)
-        subdomain = whichPartition[0] + whichPartition[1]*numElements_[0];
-      else if (dimDomain == 3)
-        subdomain = whichPartition[0] + whichPartition[1]*numElements_[0] + whichPartition[2]*numElements_[1]*numElements_[0];
-      else
-      {
-        std::stringstream msg;
-        msg << "Error in " << id << ": not implemented for grid dimensions other than 1, 2 or 3!";
-        DUNE_THROW(Dune::NotImplemented, msg.str());
-      } // decide on the subdomain the point x belongs to
-
-      // return the component that belongs to the subdomain of x
-      ret = components_[subdomain];
-    } // virtual void evaluate(const DomainType& x, RangeType& ret) const
-
-  private:
-    const DomainType lowerLeft_;
-    const DomainType upperRight_;
-    const std::vector< unsigned int > numElements_;
-    const std::vector< RangeFieldType > components_;
-  }; // class Diffusion
-
-public:
   typedef typename BaseType::DiffusionType DiffusionType;
 
   typedef typename BaseType::ForceType ForceType;
 
   typedef typename BaseType::DirichletType DirichletType;
 
+  typedef typename BaseType::NeumannType NeumannType;
+
   Thermalblock(const Dune::Stuff::Common::ExtendedParameterTree paramTree)
-    : diffusionOrder_(-1)
-    , forceOrder_(-1)
+    : forceOrder_(-1)
     , dirichletOrder_(-1)
+    , neumannOrder_(-1)
   {
     // check parametertree
     paramTree.assertSub("diffusion", id());
     paramTree.assertSub("force", id());
     paramTree.assertSub("dirichlet", id());
+    paramTree.assertSub("neumann", id());
     paramTree.assertKey("diffusion.order", id());
     paramTree.assertKey("force.order", id());
     paramTree.assertKey("dirichlet.order", id());
-    // build functions
-    typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > ExpressionFunctionType;
+    paramTree.assertKey("neumann.order", id());
+    // build expression functions
+    typedef typename Dune::Stuff::Function::Expression< DomainFieldType, dimDomain,
+                                                        RangeFieldType, dimRange >
+      ExpressionFunctionType;
     force_ = Dune::shared_ptr< ForceType >(new ExpressionFunctionType(paramTree.sub("force")));
     dirichlet_ = Dune::shared_ptr< DirichletType >(new ExpressionFunctionType(paramTree.sub("dirichlet")));
-
+    neumann_ = Dune::shared_ptr< NeumannType >(new ExpressionFunctionType(paramTree.sub("neumann")));
     // build the thermalblock diffusion
-    Dune::FieldVector< DomainFieldType, dimDomain > lowerLeft(DomainFieldType(0));
-    Dune::FieldVector< DomainFieldType, dimDomain > upperRight(DomainFieldType(1));
-    std::vector< unsigned int > numElements(dimDomain, 0);
-    std::vector< RangeFieldType > components;
-
-    Dune::Stuff::Common::ExtendedParameterTree paramTreeDiffusion = paramTree.sub("diffusion");
-
-    // get number of subdomains per direction, total number of subdomains and coordinates of lowerLeft and upperRight corners of the cube
-    unsigned int totalSubdomains = 1;
+    typedef typename Dune::Stuff::Function::Checkerboard< DomainFieldType, dimDomain,
+                                                          RangeFieldType, dimRange >
+      CheckerboardFunctionType;
+    const Dune::Stuff::Common::ExtendedParameterTree subTree = paramTree.sub("diffusion");
+    subTree.assertVector("lowerLeft");
+    subTree.assertVector("upperRight");
+    subTree.assertVector("numElements");
+    subTree.assertVector("components");
+    const std::vector< DomainFieldType > lowerLefts = subTree.getVector("lowerLeft", DomainFieldType(0));
+    const std::vector< DomainFieldType > upperRights = subTree.getVector("upperRight", DomainFieldType(1));
+    const std::vector< unsigned int > numElements = subTree.getVector("numElements", (unsigned int)(1));
+    const std::vector< RangeFieldType > components = subTree.getVector("components", RangeFieldType(1));
+    assert(int(lowerLefts.size()) >= dimDomain && "Given vector is too short!");
+    assert(int(upperRights.size()) >= dimDomain && "Given vector is too short!");
+    assert(int(numElements.size()) >= dimDomain && "Given vector is too short!");
+    assert(int(components.size()) >= dimDomain && "Given vector is too short!");
+    Dune::FieldVector< DomainFieldType, dimDomain > lowerLeft;
+    Dune::FieldVector< DomainFieldType, dimDomain > upperRight;
+    unsigned int numSubdomains = 1;
     for (int d = 0; d < dimDomain; ++d) {
-      std::string low = "lowerLeft." + std::to_string(d);
-      std::string up = "upperRight." + std::to_string(d);
-      std::string el = "numElements." + std::to_string(d);
-      lowerLeft[d] = paramTreeDiffusion.get(low, 0);
-      upperRight[d] = paramTreeDiffusion.get(up, 1);
-      numElements[d] = paramTreeDiffusion.get(el, 0);
-      totalSubdomains *= numElements[d];
+      lowerLeft[d] = lowerLefts[d];
+      upperRight[d] = upperRights[d];
+      numSubdomains *= numElements[d];
     }
-    for (unsigned int i = 0; i < totalSubdomains; ++i) {
-      std::string com = "component." + std::to_string(i);
-      const RangeFieldType tmp = paramTreeDiffusion.get(com, 1.0);
-      components.push_back(tmp);
-    }
-    diffusion_ = Dune::shared_ptr< DiffusionType >(new Diffusion(lowerLeft, upperRight, numElements, components));
-    // set orders
-    diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
+    diffusion_ = Dune::shared_ptr< DiffusionType >(new CheckerboardFunctionType(lowerLeft,
+                                                                                upperRight,
+                                                                                numElements,
+                                                                                components));
+    // set integration orders
     forceOrder_ = paramTree.sub("force").get("order", -1);
     dirichletOrder_ = paramTree.sub("dirichlet").get("order", -1);
+    neumannOrder_ = paramTree.sub("neumann").get("order", -1);
   }
 
   Thermalblock(const ThisType& other)
-    : diffusionOrder_(other.diffusionOrder_)
-    , forceOrder_(other.forceOrder_)
+    : forceOrder_(other.forceOrder_)
     , dirichletOrder_(other.dirichletOrder_)
+    , neumannOrder_(other.nemannOrder_)
     , diffusion_(other.diffusion_)
     , force_(other.force_)
     , dirichlet_(other.dirichlet_)
+    , neumann_(other.neumann_)
   {}
 
   static const std::string id()
   {
-    return "detailed.solvers.stationary.linear.elliptic.model.thermalblock";
+    return BaseType::id() + ".thermalblock";
   }
 
   virtual const Dune::shared_ptr< const DiffusionType > diffusion() const
@@ -199,7 +129,7 @@ public:
 
   virtual int diffusionOrder() const
   {
-    return diffusionOrder_;
+    return 0;
   }
 
   virtual const Dune::shared_ptr< const ForceType > force() const
@@ -222,15 +152,26 @@ public:
     return dirichletOrder_;
   }
 
+  virtual const Dune::shared_ptr< const NeumannType > neumann() const
+  {
+    return neumann_;
+  }
+
+  virtual int neumannOrder() const
+  {
+    return neumannOrder_;
+  }
+
 private:
   ThisType& operator=(const ThisType&);
 
-  int diffusionOrder_;
   int forceOrder_;
   int dirichletOrder_;
+  int neumannOrder_;
   Dune::shared_ptr< DiffusionType > diffusion_;
   Dune::shared_ptr< ForceType > force_;
   Dune::shared_ptr< DirichletType > dirichlet_;
+  Dune::shared_ptr< NeumannType > neumann_;
 }; // class Thermalblock
 
 } // namespace Model
