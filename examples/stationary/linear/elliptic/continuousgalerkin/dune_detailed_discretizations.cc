@@ -1,5 +1,8 @@
-
-#include "config.h"
+#ifdef HAVE_CMAKE_CONFIG
+  #include "cmake_config.h"
+#elif defined (HAVE_CONFIG_H)
+  #include "config.h"
+#endif // ifdef HAVE_CMAKE_CONFIG
 
 // system
 #include <sstream>
