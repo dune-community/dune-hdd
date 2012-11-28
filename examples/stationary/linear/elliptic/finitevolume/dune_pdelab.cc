@@ -1,5 +1,8 @@
-
-#include "config.h"
+#ifdef HAVE_CMAKE_CONFIG
+  #include "cmake_config.h"
+#elif defined (HAVE_CONFIG_H)
+  #include "config.h"
+#endif // ifdef HAVE_CMAKE_CONFIG
 
 // system
 #include <sstream>
@@ -49,49 +52,38 @@ void ensureParamFile(std::string filename)
     file << "[" << id << "]" << std::endl;
     file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
     file << "[stuff.grid.provider.cube]" << std::endl;
-    file << "level = 4" << std::endl;
+    file << "lowerLeft = [0.0; 0.0; 0.0]" << std::endl;
+    file << "upperRight = [1.0; 1.0; 1.0]" << std::endl;
+    file << "numElements = 4" << std::endl;
     file << "filename = " << id << ".grid" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
     file << "diffusion.variable = x" << std::endl;
-    file << "diffusion.expression.0 = 1.0"  << std::endl;
-    file << "diffusion.expression.1 = 1.0"  << std::endl;
-    file << "diffusion.expression.2 = 1.0"  << std::endl;
+    file << "diffusion.expression = [1.0; 1.0; 1.0]"  << std::endl;
     file << "force.order = 0"  << std::endl;
     file << "force.variable = x" << std::endl;
-    file << "force.expression.0 = 1.0"  << std::endl;
-    file << "force.expression.1 = 1.0"  << std::endl;
-    file << "force.expression.2 = 1.0"  << std::endl;
+    file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
     file << "dirichlet.order = 0"  << std::endl;
     file << "dirichlet.variable = x" << std::endl;
-    file << "dirichlet.expression.0 = 0.0"  << std::endl;
-    file << "dirichlet.expression.1 = 0.0"  << std::endl;
-    file << "dirichlet.expression.2 = 0.0"  << std::endl;
+    file << "dirichlet.expression = [1.0; 1.0; 1.0]"  << std::endl;
+    file << "neumann.order = 0"  << std::endl;
+    file << "neumann.variable = x" << std::endl;
+    file << "neumann.expression = [1.0; 1.0; 1.0]"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.thermalblock]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
-    file << "diffusion.lowerLeft.0 = 0.0"  << std::endl; // should coincide with the grid
-    file << "diffusion.lowerLeft.1 = 0.0"  << std::endl; // should coincide with the grid
-    file << "diffusion.lowerLeft.2 = 0.0"  << std::endl; // should coincide with the grid
-    file << "diffusion.upperRight.0 = 1.0"  << std::endl; // should coincide with the grid
-    file << "diffusion.upperRight.1 = 1.0"  << std::endl; // should coincide with the grid
-    file << "diffusion.upperRight.2 = 1.0"  << std::endl; // should coincide with the grid
-    file << "diffusion.numElements.0 = 2"  << std::endl;
-    file << "diffusion.numElements.1 = 2"  << std::endl;
-    file << "diffusion.numElements.2 = 2"  << std::endl;
-    file << "diffusion.component.0 = 1.0"  << std::endl;
-    file << "diffusion.component.1 = 10.0"  << std::endl;
-    file << "diffusion.component.2 = 3.0"  << std::endl;
-    file << "diffusion.component.3 = 2.1"  << std::endl;
+    file << "diffusion.lowerLeft = [0.0; 0.0; 0.0]" << std::endl; // should coincide with the grid
+    file << "diffusion.upperRight = [1.0; 1.0; 1.0]" << std::endl; // should coincide with the grid
+    file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
+    file << "diffusion.components = [1.0; 10.0; 3.0; 2.1]"  << std::endl;
     file << "force.order = 0"  << std::endl;
     file << "force.variable = x" << std::endl;
-    file << "force.expression.0 = 1.0"  << std::endl;
-    file << "force.expression.1 = 1.0"  << std::endl;
-    file << "force.expression.2 = 1.0"  << std::endl;
+    file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
     file << "dirichlet.order = 0"  << std::endl;
     file << "dirichlet.variable = x" << std::endl;
-    file << "dirichlet.expression.0 = 0.0"  << std::endl;
-    file << "dirichlet.expression.1 = 0.0"  << std::endl;
-    file << "dirichlet.expression.2 = 0.0"  << std::endl;
+    file << "dirichlet.expression = [1.0; 1.0; 1.0]"  << std::endl;
+    file << "neumann.order = 0"  << std::endl;
+    file << "neumann.variable = x" << std::endl;
+    file << "neumann.expression = [1.0; 1.0; 1.0]"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.finitevolume.dune-pdelab]" << std::endl;
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
     file << "solve.maxIter = 5000"  << std::endl;
@@ -153,7 +145,7 @@ int main(int argc, char** argv)
     // grid
     info << "setting up grid: " << std::endl;
     debug.suspend();
-    typedef Dune::Stuff::Grid::Provider::UnitCube<> GridProviderType;
+    typedef Dune::Stuff::Grid::Provider::Cube<> GridProviderType;
     paramTree.assertSub(GridProviderType::id(), id);
     const GridProviderType gridProvider(paramTree.sub(GridProviderType::id()));
     typedef GridProviderType::GridType GridType;
@@ -179,8 +171,13 @@ int main(int argc, char** argv)
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
     paramTree.assertSub(id, id);
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    const Dune::shared_ptr< const ModelType > model = createModel< DomainFieldType, dimDomain, RangeFieldType, dimRange >(paramTree);
+    typedef Dune::Detailed::Solvers
+        ::Stationary
+        ::Linear
+        ::Elliptic
+        ::Model::Interface<  DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+    const Dune::shared_ptr< const ModelType >
+        model = createModel< DomainFieldType, dimDomain, RangeFieldType, dimRange >(paramTree);
     typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
@@ -212,11 +209,11 @@ int main(int argc, char** argv)
 
     // if we came that far we can as well be happy about it
     return 0;
-  } catch(Dune::Exception& e) {
+  } catch (Dune::Exception& e) {
     std::cerr << "Dune reported error: " << e.what() << std::endl;
-  } catch(std::exception& e) {
+  } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
-  } catch( ... ) {
+  } catch ( ... ) {
     std::cerr << "Unknown exception thrown!" << std::endl;
   } // try
 } // main
