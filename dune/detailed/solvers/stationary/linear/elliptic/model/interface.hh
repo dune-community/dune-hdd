@@ -39,9 +39,11 @@ public:
 
   typedef Dune::Stuff::Function::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > DirichletType;
 
+  typedef Dune::Stuff::Function::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > NeumannType;
+
   static const std::string id()
   {
-    return "stationary.linear.elliptic.model.interface";
+    return "detailed.solvers.stationary.linear.elliptic.model";
   }
 
   virtual const Dune::shared_ptr< const DiffusionType > diffusion() const = 0;
@@ -55,6 +57,10 @@ public:
   virtual const Dune::shared_ptr< const DirichletType > dirichlet() const = 0;
 
   virtual int dirichletOrder() const = 0;
+
+  virtual const Dune::shared_ptr< const NeumannType > neumann() const = 0;
+
+  virtual int neumannOrder() const = 0;
 }; // class Interface
 
 } // namespace Model
