@@ -1,4 +1,8 @@
-#include "config.h"
+#ifdef HAVE_CMAKE_CONFIG
+  #include "cmake_config.h"
+#elif defined (HAVE_CONFIG_H)
+  #include "config.h"
+#endif // ifdef HAVE_CMAKE_CONFIG
 
 // system
 #include <vector>
@@ -57,28 +61,25 @@ void ensureParamFile(std::string filename)
     file << "exact_solution.variable = x" << std::endl;
     file << "exact_solution.expression.0 = -0.5*x[0]*x[0] + 0.5*x[0]" << std::endl;
     file << "[grid.multiscale.provider.cube]" << std::endl;
-    file << "level = 4" << std::endl;
+    file << "lowerLeft = [0.0; 0.0; 0.0]" << std::endl;
+    file << "upperRight = [1.0; 1.0; 1.0]" << std::endl;
+    file << "numElements = [4; 4; 4]" << std::endl;
     file << "boundaryId = 7" << std::endl;                  // a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 in 3d (hopefully)
-    file << "partitions.0 = 2" << std::endl;
-    file << "partitions.1 = 2" << std::endl;
-    file << "partitions.2 = 2" << std::endl;
+    file << "partitions = [2; 2; 2]" << std::endl;
     file << "filename = " << id << ".msGrid" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.order = 0" << std::endl;
     file << "diffusion.variable = x" << std::endl;
-    file << "diffusion.expression.0 = 1.0"  << std::endl;
-    file << "diffusion.expression.1 = 1.0"  << std::endl;
-    file << "diffusion.expression.2 = 1.0"  << std::endl;
+    file << "diffusion.expression = [1.0; 1.0; 1.0]" << std::endl;
     file << "force.order = 0" << std::endl;
     file << "force.variable = x" << std::endl;
-    file << "force.expression.0 = 1.0"  << std::endl;
-    file << "force.expression.1 = 1.0"  << std::endl;
-    file << "force.expression.2 = 1.0"  << std::endl;
+    file << "force.expression = [1.0; 1.0; 1.0]" << std::endl;
     file << "dirichlet.order = 0"  << std::endl;
     file << "dirichlet.variable = x" << std::endl;
-    file << "dirichlet.expression.0 = 0.0"  << std::endl;
-    file << "dirichlet.expression.1 = 0.0"  << std::endl;
-    file << "dirichlet.expression.2 = 0.0"  << std::endl;
+    file << "dirichlet.expression = [0.0; 0.0; 0.0]" << std::endl;
+    file << "neumann.order = 0"  << std::endl;
+    file << "neumann.variable = x" << std::endl;
+    file << "neumann.expression = [0.0; 0.0; 0.0]" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.multiscale.semicontinuousgalerkin]" << std::endl;
     file << "discretization.penaltyFactor = 10.0" << std::endl;
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
@@ -252,19 +253,24 @@ int main(int argc, char** argv)
                      paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
                      "  ",
                      debug);
-//    referenceSolver.visualize(*referenceSolution,
-//                              paramTree.sub(SolverType::id).sub("visualize").get("filename", id + ".solution") + "_reference",
-//                              paramTree.sub(SolverType::id).sub("visualize").get("name", "solution") + "_reference",
-//                              "  ",
-//                              debug);
-    debug.resume();
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    debug.resume();
 
-    info << "computing norms:" << std::endl;
-    Dune::shared_ptr< typename SolverType::DiscreteFunctionType > discreteSolution = solver.createDiscreteFunction(*solution, "discrete_solution");
-    compute_errors(paramTree.sub(id).sub("exact_solution"),
-                   *discreteSolution,
-                   info, "  ");
+//    if (dimDomain == 1) {
+//      info << "computing norms:" << std::endl;
+//      debug.suspend();
+//      referenceSolver.visualize(*referenceSolution,
+//                                paramTree.sub(SolverType::id).sub("visualize").get("filename", id + ".solution") + "_reference",
+//                                paramTree.sub(SolverType::id).sub("visualize").get("name", "solution") + "_reference",
+//                                "  ",
+//                                debug);
+
+//      Dune::shared_ptr< typename SolverType::DiscreteFunctionType > discreteSolution = solver.createDiscreteFunction(*solution, "discrete_solution");
+//      debug.resume();
+//      compute_errors(paramTree.sub(id).sub("exact_solution"),
+//                     *discreteSolution,
+//                     info, "  ");
+//    }
     // if we came that far we can as well be happy about it
     return 0;
   } catch(Dune::Exception& e) {
