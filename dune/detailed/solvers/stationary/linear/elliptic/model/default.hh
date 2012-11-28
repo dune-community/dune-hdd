@@ -12,17 +12,11 @@
 #include "interface.hh"
 
 namespace Dune {
-
 namespace Detailed {
-
 namespace Solvers {
-
 namespace Stationary {
-
 namespace Linear {
-
 namespace Elliptic {
-
 namespace Model {
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
@@ -48,41 +42,51 @@ public:
 
   typedef typename BaseType::DirichletType DirichletType;
 
+  typedef typename BaseType::NeumannType NeumannType;
+
   Default(const Dune::Stuff::Common::ExtendedParameterTree paramTree)
     : diffusionOrder_(-1)
     , forceOrder_(-1)
     , dirichletOrder_(-1)
+    , neumannOrder_(-1)
   {
     // check parametertree
     paramTree.assertSub("diffusion", id());
     paramTree.assertSub("force", id());
     paramTree.assertSub("dirichlet", id());
+    paramTree.assertSub("neumann", id());
     paramTree.assertKey("diffusion.order", id());
     paramTree.assertKey("force.order", id());
     paramTree.assertKey("dirichlet.order", id());
+    paramTree.assertKey("neumann.order", id());
     // build functions
-    typedef Dune::Stuff::Function::Expression< DomainFieldType, dimDomain, RangeFieldType, dimRange > ExpressionFunctionType;
+    typedef Dune::Stuff::Function::Expression<  DomainFieldType, dimDomain,
+                                                RangeFieldType, dimRange >
+      ExpressionFunctionType;
     diffusion_ = Dune::shared_ptr< DiffusionType >(new ExpressionFunctionType(paramTree.sub("diffusion")));
     force_ = Dune::shared_ptr< ForceType >(new ExpressionFunctionType(paramTree.sub("force")));
     dirichlet_ = Dune::shared_ptr< DirichletType >(new ExpressionFunctionType(paramTree.sub("dirichlet")));
+    neumann_ = Dune::shared_ptr< NeumannType >(new ExpressionFunctionType(paramTree.sub("neumann")));
     // set orders
     diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
     forceOrder_ = paramTree.sub("force").get("order", -1);
-    dirichletOrder_ = paramTree.sub("dirichlet").get("order", -1);
+    dirichletOrder_ = paramTree.sub("neumann").get("order", -1);
   }
 
   Default(const ThisType& other)
     : diffusionOrder_(other.diffusionOrder_)
     , forceOrder_(other.forceOrder_)
     , dirichletOrder_(other.dirichletOrder_)
+    , neumannOrder_(other.neumannOrder_)
     , diffusion_(other.diffusion_)
     , force_(other.force_)
     , dirichlet_(other.dirichlet_)
+    , neumann_(other.neumann_)
   {}
 
   static const std::string id()
   {
-    return "detailed.solvers.stationary.linear.elliptic.model.default";
+    return BaseType::id() + ".default";
   }
 
   virtual const Dune::shared_ptr< const DiffusionType > diffusion() const
@@ -115,29 +119,35 @@ public:
     return dirichletOrder_;
   }
 
+  virtual const Dune::shared_ptr< const NeumannType > neumann() const
+  {
+    return neumann_;
+  }
+
+  virtual int neumannOrder() const
+  {
+    return neumannOrder_;
+  }
+
 private:
   ThisType& operator=(const ThisType&);
 
   int diffusionOrder_;
   int forceOrder_;
   int dirichletOrder_;
+  int neumannOrder_;
   Dune::shared_ptr< DiffusionType > diffusion_;
   Dune::shared_ptr< ForceType > force_;
   Dune::shared_ptr< DirichletType > dirichlet_;
+  Dune::shared_ptr< NeumannType > neumann_;
 }; // class Default
 
 } // namespace Model
-
 } // namespace Elliptic
-
 } // namespace Linear
-
 } // namespace Stationary
-
 } // namespace Solvers
-
 } // namespace Detailed
-
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_DEFAULT_HH
