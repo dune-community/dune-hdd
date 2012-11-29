@@ -230,9 +230,9 @@ public:
       Dune::FieldVector<DomainFieldType,dimDomain> face_center = intersection.geometry().center();
       RangeType face_volume = intersection.geometry().volume();
 
-      /*
+
       // do things depending on boundary condition type
-      if (localBoundaryInfo_.isDirichlet(intersection))
+      if (localBoundaryInfo_.dirichlet(intersection))
       {
           RangeType g = 0.0;
           localModel_.dirichlet()->evaluate(face_center,g);
@@ -244,15 +244,15 @@ public:
           residual_s.accumulate(trialFunction_s,0,-a*(g-trialVector_s(trialFunction_s,0))*face_volume/distance);
           return;
       }
-      else if (localBoundaryInfo_.isNeumann(intersection))
+      else if (localBoundaryInfo_.neumann(intersection))
       {
           RangeType j; if (face_center[1]<0.5) j = 1.0; else j = -1.0;
           residual_s.accumulate(trialFunction_s,0,j*face_volume);
           return;
       }
-      */
 
 
+/*
       // evaluate boundary condition type
       int boundaryType;
 //      if (face_center[0]>1.0-1e-6)
@@ -279,6 +279,7 @@ public:
           residual_s.accumulate(trialFunction_s,0,-a*(g-trialVector_s(trialFunction_s,0))*face_volume/distance);
           return;
         }
+        */
     } // void alpha_boundary()
 
   private:
