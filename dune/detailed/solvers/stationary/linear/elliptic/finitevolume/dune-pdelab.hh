@@ -88,6 +88,7 @@ namespace Elliptic {
 
 namespace FiniteVolume {
 
+// sind diese todos noch aktuell?
 /**
  *  \todo Add method to create a discrete function.
  *  \todo Change id -> static id()
@@ -104,25 +105,25 @@ public:
   typedef DunePdelab< ModelType, GridViewType, BoundaryInfoType, polOrder > ThisType;
 
   static const int dimDomain = ModelType::dimDomain;
+  static const int dimRange = ModelType::dimRange;
 
-  //TODO: which types should be private?
+//  TODO: which types should be private?
 
   // Choose domain and range field type
   typedef typename GridViewType::Grid::ctype CoordinateType;
   typedef double RangeFieldType;
-  static const int dim = GridViewType::dimension;
 
   // Make grid function space
-  typedef Dune::PDELab::P0LocalFiniteElementMap<CoordinateType,RangeFieldType,dim> FiniteElementMap;
+  typedef Dune::PDELab::P0LocalFiniteElementMap<CoordinateType,RangeFieldType,dimDomain> FiniteElementMap;
   typedef Dune::PDELab::NoConstraints ConstraintsType;
   typedef Dune::PDELab::EigenVectorBackend VectorBackendType;
   typedef Dune::PDELab::GridFunctionSpace<GridViewType,FiniteElementMap,ConstraintsType,VectorBackendType> GridFunctionSpace;
 
   /** a local operator for solving the equation
    *
-   *   - \Delta u + a*u = f   in \Omega
-   *                  u = g   on \Gamma_D\subseteq\partial\Omega
-   *  -\nabla u \cdot n = j   on \Gamma_N = \partial\Omega\setminus\Gamma_D
+   *  -\nabla \cdot (a*\nabla u) + b*u = f   in \Omega
+   *                                 u = g   on \Gamma_D\subseteq\partial\Omega
+   *               -a*\nabla u \cdot n = j   on \Gamma_N = \partial\Omega\setminus\Gamma_D
    *
    * with cell-centered finite volumes on axiparallel, structured grids
    *
@@ -150,6 +151,12 @@ public:
     enum { doAlphaSkeleton  = true };                             // assemble skeleton term
     enum { doAlphaBoundary  = true };
 
+
+    //Constructor
+    EllipticLocalOperator(const ModelType& model, const BoundaryInfoType& boundaryInfo)
+        : localModel_(model), localBoundaryInfo_(boundaryInfo)
+    {}
+
     // volume integral depending on test and ansatz functions
     template<typename EntityType, typename TrialFunctionSpaceType, typename TrialVector, typename TestFunctionSpaceType, typename ResidualType>
     void alpha_volume (const EntityType& entity, const TrialFunctionSpaceType& trialFunction, const TrialVector& trialVector,
@@ -158,14 +165,18 @@ public:
       // domain and range field type
       typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
         Traits::LocalBasisType::Traits::DomainFieldType DomainFieldType;
-      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
-        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
+//      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
+//        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
+        typedef  Dune::FieldVector<DomainFieldType,dimDomain> DomainType;
+        typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
 
       // evaluate reaction term
-      RangeType a = 0.0;
-      RangeType f = 0.0;
+      DomainType center = entity.geometry().center();
+      RangeType b = 0.0;
+      RangeType f = 1.0;
+      localModel_.force()->evaluate(center,f);
 
-      residual.accumulate(trialFunction,0,(a*trialVector(trialFunction,0)-f)*entity.geometry().volume());
+      residual.accumulate(trialFunction,0,(b*trialVector(trialFunction,0)-f)*entity.geometry().volume());
     } // void alpha_volume()
 
     // skeleton integral depending on test and ansatz functions
@@ -180,21 +191,25 @@ public:
       // domain and range field type
       typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
         Traits::LocalBasisType::Traits::DomainFieldType DomainFieldType;
-      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
-        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
+//      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
+//        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
+        typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
+
 
       // distance between cell centers in global coordinates
-      Dune::FieldVector<DomainFieldType,dim> inside_global = intersection.inside()->geometry().center();
-      Dune::FieldVector<DomainFieldType,dim> outside_global = intersection.outside()->geometry().center();
-      inside_global -= outside_global;
-      RangeType distance = inside_global.two_norm();
+      Dune::FieldVector<DomainFieldType,dimDomain> inside_global = intersection.inside()->geometry().center();
+      Dune::FieldVector<DomainFieldType,dimDomain> outside_global = intersection.outside()->geometry().center();
+      outside_global -= inside_global;
+      RangeType distance = outside_global.two_norm();
 
       // face geometry
       RangeType face_volume = intersection.geometry().volume();
 
       // diffusive flux for both sides
-      residual_s.accumulate(trialFunction_s,0,-(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))*face_volume/distance);
-      residual_n.accumulate(trialFunction_n,0,(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))*face_volume/distance);
+      RangeType a;// = 1.0;
+      localModel_.diffusion()->evaluate(inside_global,a);
+      residual_s.accumulate(trialFunction_s,0,-a*(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))*face_volume/distance);
+      residual_n.accumulate(trialFunction_n,0, a*(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))*face_volume/distance);
     } // void alpha_skeleton()
 
     // skeleton integral depending on test and ansatz functions
@@ -207,18 +222,42 @@ public:
       // domain and range field type
       typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
         Traits::LocalBasisType::Traits::DomainFieldType DomainFieldType;
-      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
-        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
+//      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
+//        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
+      typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
 
       // face geometry
-      Dune::FieldVector<DomainFieldType,dim> face_center = intersection.geometry().center();
+      Dune::FieldVector<DomainFieldType,dimDomain> face_center = intersection.geometry().center();
       RangeType face_volume = intersection.geometry().volume();
+
+      /*
+      // do things depending on boundary condition type
+      if (localBoundaryInfo_.isDirichlet(intersection))
+      {
+          RangeType g = 0.0;
+          localModel_.dirichlet()->evaluate(face_center,g);
+          RangeType a = 1.0;
+          localModel_.diffusion()->evaluate(face_center,a);
+          Dune::FieldVector<DomainFieldType,dimDomain> inside_global = intersection.inside()->geometry().center();
+          inside_global -= face_center;
+          RangeType distance = inside_global.two_norm();
+          residual_s.accumulate(trialFunction_s,0,-a*(g-trialVector_s(trialFunction_s,0))*face_volume/distance);
+          return;
+      }
+      else if (localBoundaryInfo_.isNeumann(intersection))
+      {
+          RangeType j; if (face_center[1]<0.5) j = 1.0; else j = -1.0;
+          residual_s.accumulate(trialFunction_s,0,j*face_volume);
+          return;
+      }
+      */
+
 
       // evaluate boundary condition type
       int boundaryType;
-      if (face_center[0]>1.0-1e-6)
-        boundaryType = 0; // Neumann
-      else
+//      if (face_center[0]>1.0-1e-6)
+//        boundaryType = 0; // Neumann
+//      else
         boundaryType = 1; // Dirichlet
 
       // do things depending on boundary condition type
@@ -228,21 +267,23 @@ public:
           residual_s.accumulate(trialFunction_s,0,j*face_volume);
           return;
         }
-
       if (boundaryType==1) // Dirichlet boundary
         {
-          RangeType g;
-          if (face_center[0]<1E-6 && face_center[1]>0.25 && face_center[1]<0.5)
-            g = 1.0;
-          else
-            g = 0.0;
-          Dune::FieldVector<DomainFieldType,dim> inside_global = intersection.inside()->geometry().center();
+          RangeType g = 0.0;
+          localModel_.dirichlet()->evaluate(face_center,g);
+          RangeType a = 1.0;
+          localModel_.diffusion()->evaluate(face_center,a);
+          Dune::FieldVector<DomainFieldType,dimDomain> inside_global = intersection.inside()->geometry().center();
           inside_global -= face_center;
           RangeType distance = inside_global.two_norm();
-          residual_s.accumulate(trialFunction_s,0,-(g-trialVector_s(trialFunction_s,0))*face_volume/distance);
+          residual_s.accumulate(trialFunction_s,0,-a*(g-trialVector_s(trialFunction_s,0))*face_volume/distance);
           return;
         }
     } // void alpha_boundary()
+
+  private:
+    const ModelType& localModel_;
+    const BoundaryInfoType& localBoundaryInfo_;
 
   }; // class EllipticLocalOperator
 
@@ -251,17 +292,18 @@ public:
   typedef EllipticLocalOperator LocalOperatorType;
   typedef VectorBackendType::MatrixBackend MatrixBackendType;
   typedef Dune::PDELab::EmptyTransformation ConstraintsContainer;
-  typedef Dune::PDELab::GridOperator<GridFunctionSpace,GridFunctionSpace,LocalOperatorType,MatrixBackendType,RangeFieldType,RangeFieldType,RangeFieldType,ConstraintsContainer,ConstraintsContainer> GridOperator;
+  typedef Dune::PDELab::GridOperator<GridFunctionSpace,GridFunctionSpace,LocalOperatorType,MatrixBackendType,
+                                     RangeFieldType,RangeFieldType,RangeFieldType,ConstraintsContainer,
+                                     ConstraintsContainer> GridOperator;
 
   typedef typename GridOperator::template MatrixContainer<RangeFieldType>::Type MatrixContainer;
   typedef typename GridOperator::Traits::TrialGridFunctionSpace TrialGridFunctionSpace;
-  //TODO: replace DiscreteTrialFunction and/or TrialVectorType with VectorBackendType?
+//  TODO: replace DiscreteTrialFunction and/or TrialVectorType with VectorBackendType? oder andersrum?
   typedef typename Dune::PDELab::BackendVectorSelector<TrialGridFunctionSpace,RangeFieldType>::Type DiscreteTrialFunction;
 
   typedef Dune::PDELab::EigenBackend_BiCGSTAB_Diagonal LinearSolverType;
 
   typedef typename GridOperator::Traits::Domain TrialVectorType; // Dof-vector for a discrete function
-
   typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpace,TrialVectorType> DiscreteGridFunction;
 
   DunePdelab(const Dune::shared_ptr< const ModelType > model,
@@ -309,7 +351,7 @@ public:
       // grid operator (left hand side)
       out << prefix << "initializing operator... " << std::flush;
       timer.reset();
-      LocalOperatorType localOperator;
+      LocalOperatorType localOperator(*model_, *boundaryInfo_);
       gridOperator_ = Dune::shared_ptr< GridOperator >(new GridOperator(*gridFunctionSpace_,*gridFunctionSpace_,localOperator));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
@@ -337,7 +379,7 @@ public:
     } // if !(initialized_)
   } // void init()
 
-
+//    diese Methoden machen nichts? wo ist deren Definition?
 //  Dune::shared_ptr< VectorBackendType > createVector() const
 //  {
 //    assert(initialized_ && "A vector can only be created after init() has been called!");
@@ -355,8 +397,7 @@ public:
 //  } // ... createDiscreteFunction(...)
 
 
-    //TODO: adapt function to interface
-  void solve(//VectorBackendType& solution,
+  void solve(TrialVectorType& solution,
              const Dune::ParameterTree paramTree = Dune::ParameterTree(),
              const std::string prefix = "",
              std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
@@ -370,7 +411,7 @@ public:
     LinearSolverType linearSolver(100);
 
     typename TrialVectorType::ElementType defect = linearSolver.norm(*residual_);
-    // die beiden folgenden Werte wurden im pdelab-Beispiel als Argumente übergeben
+//    die beiden folgenden Werte wurden im pdelab-Beispiel als Argumente übergeben. was bewirken die?
     typename TrialVectorType::ElementType mindefect = 1e-99;
     typename TrialVectorType::ElementType reduction = 1e-10;
 
@@ -385,13 +426,14 @@ public:
     // (5) update u = u0 - update
     *solution_ -= update;
 
-    //TODO: *rhs_ and *residual_ must be of the same type
-    //*rhs_ = -*residual_;
+//    TODO: *rhs_ and *residual_ must be of the same type
+//    *rhs_ = -*residual_;
     out << prefix << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    solution = *solution_;
   } // void solve()
 
 
-  void visualize(//VectorBackendType& vector,
+  void visualize(TrialVectorType& vector,
                  const std::string filename = "solution",
                  const std::string name = "solution",
                  const std::string prefix = "",
@@ -411,7 +453,6 @@ public:
 
     DiscreteGridFunction discreteGridFunction(*gridFunctionSpace_,*solution_);
     Dune::VTKWriter<GridViewType> vtkwriter(*gridView_,Dune::VTK::conforming);
-    //TODO: fix
     vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunction>(discreteGridFunction,name));
     vtkwriter.write(filename,Dune::VTK::appendedraw);
 
@@ -420,7 +461,7 @@ public:
 
 
 #if 0
-  //TODO: replace DiscreteFunctionType with DiscreteGridFunction?
+//  TODO: replace DiscreteFunctionType with DiscreteGridFunction?
   void visualize(Dune::shared_ptr< DiscreteFunctionType > discreteFunction,
                  const std::string filename = "solution",
                  const std::string prefix = "",
@@ -447,6 +488,8 @@ public:
   vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunction>(discreteGridFunction,"solution"));
   vtkwriter.write("dune-pdelab",Dune::VTK::appendedraw);
   }
+#endif // visualize()
+
 
   const Dune::shared_ptr< const MatrixBackendType > systemMatrix() const
   {
@@ -472,13 +515,39 @@ public:
     return rhs_;
   }
 
+//  kann das weg?
+#if 0
   const Dune::shared_ptr< const PatternType > pattern() const
   {
     assert(initialized_);
     return pattern_;
   }
+#endif
 
-#endif // visualize, ...
+
+  Dune::shared_ptr< TrialVectorType > solution() const
+  {
+      assert(initialized_);
+      return solution_;
+  }
+
+  Dune::shared_ptr< FiniteElementMap >finiteElementMap() const
+  {
+      assert(initialized_);
+      return finiteElementMap_;
+  }
+
+  Dune::shared_ptr< GridFunctionSpace > gridFunctionSpace() const
+  {
+      assert(initialized_);
+      return gridFunctionSpace_;
+  }
+
+  Dune::shared_ptr< GridOperator > gridOperator() const
+  {
+      assert(initialized_);
+      return gridOperator_;
+  }
 
 
 private:
@@ -488,6 +557,7 @@ private:
   bool initialized_;
 //  Dune::shared_ptr< const PatternType > pattern_;
   Dune::shared_ptr< MatrixContainer> matrix_;
+//  TODO: VectorBackendType ändern in ...?
   Dune::shared_ptr< VectorBackendType > rhs_;
   Dune::shared_ptr< TrialVectorType > solution_;
   Dune::shared_ptr< DiscreteTrialFunction > residual_;
