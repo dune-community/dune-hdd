@@ -194,14 +194,15 @@ int main(int argc, char** argv)
     solver.init("  ", debug);
 
     info << "solving:" << std::endl;
-    typedef SolverType::VectorBackendType DofVectorType;
-//    Dune::shared_ptr< DofVectorType > solution = solver.createVector();
-//    solver.solve(*solution, paramTree.sub(SolverType::id()).sub("solve"), "  ", debug);
-    //TODO: adapt function call to former interface
-      solver.solve(paramTree.sub(SolverType::id()).sub("solve"), "  ", debug);
+    typedef SolverType::TrialVectorType SolutionType;
+    typedef Dune::shared_ptr<SolutionType> solution_ptr;
+    solution_ptr solution = solution_ptr(new SolutionType(*(solver.gridFunctionSpace()),0.0));
+//    evtl. dieses Anlegen des Vektors in eine Methode createVector() auslagern (die in DunePdelab liegt)?!
+//    solution_ptr solution = solver.createVector();
+    solver.solve(*solution, paramTree.sub(SolverType::id()).sub("solve"), "  ", debug);
 
     info << "postprocessing:" << std::endl;
-    solver.visualize(//*solution,
+    solver.visualize(*solution,
                      paramTree.sub(SolverType::id()).sub("visualize").get("filename", id + "_solution"),
                      paramTree.sub(SolverType::id()).sub("visualize").get("name", "solution"),
                      "  ",
