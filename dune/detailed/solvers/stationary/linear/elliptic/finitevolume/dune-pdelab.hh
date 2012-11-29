@@ -65,14 +65,6 @@
 #include <dune/pdelab/localoperator/pattern.hh>
 #include <dune/pdelab/localoperator/flags.hh>
 
-// dune-istl
-//#include <dune/istl/bvector.hh>
-//#include <dune/istl/operators.hh>
-//#include <dune/istl/solvers.hh>
-//#include <dune/istl/preconditioners.hh>
-//#include <dune/istl/io.hh>
-//#include <dune/istl/superlu.hh>
-
 
 namespace Dune {
 
@@ -88,7 +80,6 @@ namespace Elliptic {
 
 namespace FiniteVolume {
 
-// sind diese todos noch aktuell?
 /**
  *  \todo Add method to create a discrete function.
  *  \todo Change id -> static id()
@@ -101,23 +92,22 @@ public:
   typedef GridViewImp GridViewType;
   typedef BoundaryInfoImp BoundaryInfoType;
   static const int polOrder = polynomialOrder;
+  typedef std::map<unsigned int, std::set<unsigned int> > PatternType;
 
   typedef DunePdelab< ModelType, GridViewType, BoundaryInfoType, polOrder > ThisType;
 
   static const int dimDomain = ModelType::dimDomain;
   static const int dimRange = ModelType::dimRange;
 
-//  TODO: which types should be private?
-
   // Choose domain and range field type
   typedef typename GridViewType::Grid::ctype CoordinateType;
   typedef double RangeFieldType;
 
   // Make grid function space
-  typedef Dune::PDELab::P0LocalFiniteElementMap<CoordinateType,RangeFieldType,dimDomain> FiniteElementMap;
+  typedef Dune::PDELab::P0LocalFiniteElementMap<CoordinateType,RangeFieldType,dimDomain> FiniteElementMapType;
   typedef Dune::PDELab::NoConstraints ConstraintsType;
   typedef Dune::PDELab::EigenVectorBackend VectorBackendType;
-  typedef Dune::PDELab::GridFunctionSpace<GridViewType,FiniteElementMap,ConstraintsType,VectorBackendType> GridFunctionSpace;
+  typedef Dune::PDELab::GridFunctionSpace<GridViewType,FiniteElementMapType,ConstraintsType,VectorBackendType> GridFunctionSpaceType;
 
   /** a local operator for solving the equation
    *
@@ -152,7 +142,7 @@ public:
     enum { doAlphaBoundary  = true };
 
 
-    //Constructor
+    // constructor
     EllipticLocalOperator(const ModelType& model, const BoundaryInfoType& boundaryInfo)
         : localModel_(model), localBoundaryInfo_(boundaryInfo)
     {}
@@ -165,10 +155,8 @@ public:
       // domain and range field type
       typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
         Traits::LocalBasisType::Traits::DomainFieldType DomainFieldType;
-//      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
-//        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
-        typedef  Dune::FieldVector<DomainFieldType,dimDomain> DomainType;
-        typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
+      typedef  Dune::FieldVector<DomainFieldType,dimDomain> DomainType;
+      typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
 
       // evaluate reaction term
       DomainType center = entity.geometry().center();
@@ -191,10 +179,7 @@ public:
       // domain and range field type
       typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
         Traits::LocalBasisType::Traits::DomainFieldType DomainFieldType;
-//      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
-//        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
-        typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
-
+      typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
 
       // distance between cell centers in global coordinates
       Dune::FieldVector<DomainFieldType,dimDomain> inside_global = intersection.inside()->geometry().center();
@@ -206,7 +191,7 @@ public:
       RangeType face_volume = intersection.geometry().volume();
 
       // diffusive flux for both sides
-      RangeType a;// = 1.0;
+      RangeType a;
       localModel_.diffusion()->evaluate(inside_global,a);
       residual_s.accumulate(trialFunction_s,0,-a*(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))*face_volume/distance);
       residual_n.accumulate(trialFunction_n,0, a*(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))*face_volume/distance);
@@ -222,14 +207,11 @@ public:
       // domain and range field type
       typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
         Traits::LocalBasisType::Traits::DomainFieldType DomainFieldType;
-//      typedef typename TrialFunctionSpaceType::Traits::FiniteElementType::
-//        Traits::LocalBasisType::Traits::RangeFieldType RangeType;
       typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
 
       // face geometry
       Dune::FieldVector<DomainFieldType,dimDomain> face_center = intersection.geometry().center();
       RangeType face_volume = intersection.geometry().volume();
-
 
       // do things depending on boundary condition type
       if (localBoundaryInfo_.dirichlet(intersection))
@@ -291,22 +273,23 @@ public:
 
   // Make grid operator (left hand side)
   typedef EllipticLocalOperator LocalOperatorType;
-  typedef VectorBackendType::MatrixBackend MatrixBackendType;
-  typedef Dune::PDELab::EmptyTransformation ConstraintsContainer;
-  typedef Dune::PDELab::GridOperator<GridFunctionSpace,GridFunctionSpace,LocalOperatorType,MatrixBackendType,
-                                     RangeFieldType,RangeFieldType,RangeFieldType,ConstraintsContainer,
-                                     ConstraintsContainer> GridOperator;
-
-  typedef typename GridOperator::template MatrixContainer<RangeFieldType>::Type MatrixContainer;
-  typedef typename GridOperator::Traits::TrialGridFunctionSpace TrialGridFunctionSpace;
-//  TODO: replace DiscreteTrialFunction and/or TrialVectorType with VectorBackendType? oder andersrum?
-  typedef typename Dune::PDELab::BackendVectorSelector<TrialGridFunctionSpace,RangeFieldType>::Type DiscreteTrialFunction;
+  typedef VectorBackendType::MatrixBackend PdelabMatrixBackendType;
+  typedef Dune::PDELab::EmptyTransformation ConstraintsContainerType;
+  typedef Dune::PDELab::GridOperator<GridFunctionSpaceType,GridFunctionSpaceType,LocalOperatorType,PdelabMatrixBackendType,
+                                     RangeFieldType,RangeFieldType,RangeFieldType,ConstraintsContainerType,
+                                     ConstraintsContainerType> GridOperatorType;
+public:
+  typedef typename GridOperatorType::template MatrixContainer<RangeFieldType>::Type MatrixBackendType;
+//private:
+  typedef typename GridOperatorType::Traits::TrialGridFunctionSpace TrialGridFunctionSpaceType;
+  typedef typename Dune::PDELab::BackendVectorSelector<TrialGridFunctionSpaceType,RangeFieldType>::Type DiscreteTrialFunctionType;
 
   typedef Dune::PDELab::EigenBackend_BiCGSTAB_Diagonal LinearSolverType;
 
-  typedef typename GridOperator::Traits::Domain TrialVectorType; // Dof-vector for a discrete function
-  typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpace,TrialVectorType> DiscreteGridFunction;
+  typedef typename GridOperatorType::Traits::Domain TrialVectorType;
+  typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpaceType,TrialVectorType> DiscreteGridFunctionType;
 
+public:
   DunePdelab(const Dune::shared_ptr< const ModelType > model,
                               const Dune::shared_ptr< const GridViewType > gridView,
                               const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo)
@@ -314,7 +297,27 @@ public:
     , gridView_(gridView)
     , boundaryInfo_(boundaryInfo)
     , initialized_(false)
-  {}
+  {
+//      dies noch löschen
+//      std::string a = *residual_;
+
+      //Type von matrix_ : Dune::Pdelab::SparseEigenMatrixBackend::Matrix<double>
+      //Type von *rhs_ : Dune::Pdelab::EigenVectorBackend
+      //Type von *residual_ :
+//      Dune::PDELab::EigenVectorBackend::VectorContainer
+//              <Dune::PDELab::GridFunctionSpace
+//              <Dune::GridView
+//              <Dune::DefaultLeafGridViewTraits<const Dune::SGrid<2, 2>, (Dune::PartitionIteratorType)4u>
+//              >,
+//              Dune::PDELab::P0LocalFiniteElementMap<double, double, 2>, Dune::PDELab::NoConstraints,
+//              Dune::PDELab::EigenVectorBackend, Dune::PDELab::GridFunctionGeneralMapper
+//              >, double
+//              >
+
+//        wir wollen: typedef Dune::PDELab::EigenVectorBackend::VectorContainer VectorBackendType;
+//                    typedef Dune::Pdelab::SparseEigenMatrixBackend::Matrix<double>;
+
+  }
 
   static const std::string id()
   {
@@ -345,34 +348,34 @@ public:
       // function space
       out << prefix << "initializing function space... " << std::flush;
       timer.reset();
-      finiteElementMap_ = Dune::shared_ptr< FiniteElementMap >(new FiniteElementMap(Dune::GeometryType(gridView_->template begin< 0 >()->geometry().type())));
-      gridFunctionSpace_ = Dune::shared_ptr< GridFunctionSpace >(new GridFunctionSpace(*gridView_, *finiteElementMap_));
+      finiteElementMap_ = Dune::shared_ptr< FiniteElementMapType >(new FiniteElementMapType(Dune::GeometryType(gridView_->template begin< 0 >()->geometry().type())));
+      gridFunctionSpace_ = Dune::shared_ptr< GridFunctionSpaceType >(new GridFunctionSpaceType(*gridView_, *finiteElementMap_));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // grid operator (left hand side)
       out << prefix << "initializing operator... " << std::flush;
       timer.reset();
       LocalOperatorType localOperator(*model_, *boundaryInfo_);
-      gridOperator_ = Dune::shared_ptr< GridOperator >(new GridOperator(*gridFunctionSpace_,*gridFunctionSpace_,localOperator));
+      gridOperator_ = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*gridFunctionSpace_,*gridFunctionSpace_,localOperator));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // Newton method (5 steps):
-      // (1) given a start vector u0 (here: *solution_ )
-      solution_ = Dune::shared_ptr<TrialVectorType> (new TrialVectorType(*gridFunctionSpace_,0.0));
+      // (1) given a start vector u0=0
+      TrialVectorType u0(*gridFunctionSpace_,0.0);
 
-      // (2) assemble jacobian system A = \nabla R(u0) (here: matrix_ = \nabla R(*solution_) )
+      // (2) assemble jacobian system matrix_ = \nabla R(u0) (with residualoperator R)
       out << prefix << "assembling matrix... " << std::flush;
       timer.reset();
-      matrix_ = Dune::shared_ptr< MatrixContainer >(new MatrixContainer(*gridOperator_));
+      matrix_ = Dune::shared_ptr< MatrixBackendType >(new MatrixBackendType(*gridOperator_));
       *matrix_ = 0.0;
-      gridOperator_->jacobian(*solution_,*matrix_);
+      gridOperator_->jacobian(u0,*matrix_);
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // (3) compute the residual r = R(u0)
       out << prefix << "assembling residual... " << std::flush;
       timer.reset();
-      residual_ = Dune::shared_ptr< DiscreteTrialFunction >(new DiscreteTrialFunction(gridOperator_->testGridFunctionSpace(),0.0));
-      gridOperator_->residual(*solution_,*residual_);
+      residual_ = Dune::shared_ptr< DiscreteTrialFunctionType >(new DiscreteTrialFunctionType(gridOperator_->testGridFunctionSpace(),0.0));
+      gridOperator_->residual(u0,*residual_);
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // done
@@ -380,11 +383,12 @@ public:
     } // if !(initialized_)
   } // void init()
 
-//    diese Methoden machen nichts? wo ist deren Definition?
-//  Dune::shared_ptr< VectorBackendType > createVector() const
-//  {
-//    assert(initialized_ && "A vector can only be created after init() has been called!");
-//  }
+  Dune::shared_ptr< TrialVectorType/*VectorBackendType*/ > createVector() const
+  {
+    assert(initialized_ && "A vector can only be created after init() has been called!");
+    Dune::shared_ptr<TrialVectorType> vector  = Dune::shared_ptr<TrialVectorType> (new TrialVectorType(*gridFunctionSpace_,0.0));
+    return vector;
+  }
 
 //  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(const std::string name = "discrete_function") const
 //  {
@@ -412,7 +416,6 @@ public:
     LinearSolverType linearSolver(100);
 
     typename TrialVectorType::ElementType defect = linearSolver.norm(*residual_);
-//    die beiden folgenden Werte wurden im pdelab-Beispiel als Argumente übergeben. was bewirken die?
     typename TrialVectorType::ElementType mindefect = 1e-99;
     typename TrialVectorType::ElementType reduction = 1e-10;
 
@@ -421,16 +424,14 @@ public:
     TrialVectorType update(gridOperator_->trialGridFunctionSpace(),0.0);
     typename TrialVectorType::ElementType red = std::min(reduction,defect/(mindefect));
 
-    // (4) solve A*update = residual_ for update
+    // (4) solve matrix_*update = residual_ for update
     linearSolver.apply(*matrix_,update,*residual_,red); // solver makes right hand side consistent
 
-    // (5) update u = u0 - update
-    *solution_ -= update;
-
-//    TODO: *rhs_ and *residual_ must be of the same type
-//    *rhs_ = -*residual_;
+    // (5) and store the solution u = u0 - update = -update
+    update*=-1; //Alternative: solver mit -residual aufrufen (d.h. mit *rhs_)
+    solution = update;
     out << prefix << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    solution = *solution_;
+
   } // void solve()
 
 
@@ -452,9 +453,9 @@ public:
       out << ".vtu";
     out << "'... " << std::flush;
 
-    DiscreteGridFunction discreteGridFunction(*gridFunctionSpace_,*solution_);
+    DiscreteGridFunctionType discreteGridFunction(*gridFunctionSpace_,vector);
     Dune::VTKWriter<GridViewType> vtkwriter(*gridView_,Dune::VTK::conforming);
-    vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunction>(discreteGridFunction,name));
+    vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunctionType>(discreteGridFunction,name));
     vtkwriter.write(filename,Dune::VTK::appendedraw);
 
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
@@ -462,7 +463,6 @@ public:
 
 
 #if 0
-//  TODO: replace DiscreteFunctionType with DiscreteGridFunction?
   void visualize(Dune::shared_ptr< DiscreteFunctionType > discreteFunction,
                  const std::string filename = "solution",
                  const std::string prefix = "",
@@ -483,10 +483,10 @@ public:
     vtkWriter.write(filename);
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-  typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpace,TrialVectorType> DiscreteGridFunction;
-  DiscreteGridFunction discreteGridFunction(gridFunctionSpace_,solution);
+  typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpaceType,TrialVectorType> DiscreteGridFunctionType;
+  DiscreteGridFunctionType discreteGridFunction(gridFunctionSpace_,solution);
   Dune::VTKWriter<GridViewType> vtkwriter(gridView_,Dune::VTK::conforming);
-  vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunction>(discreteGridFunction,"solution"));
+  vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunctionType>(discreteGridFunction,"solution"));
   vtkwriter.write("dune-pdelab",Dune::VTK::appendedraw);
   }
 #endif // visualize()
@@ -516,35 +516,27 @@ public:
     return rhs_;
   }
 
-//  kann das weg?
-#if 0
+
   const Dune::shared_ptr< const PatternType > pattern() const
   {
-    assert(initialized_);
+    assert(false && "Implement me!");
     return pattern_;
   }
-#endif
 
 
-  Dune::shared_ptr< TrialVectorType > solution() const
-  {
-      assert(initialized_);
-      return solution_;
-  }
-
-  Dune::shared_ptr< FiniteElementMap >finiteElementMap() const
+  Dune::shared_ptr< FiniteElementMapType >finiteElementMap() const
   {
       assert(initialized_);
       return finiteElementMap_;
   }
 
-  Dune::shared_ptr< GridFunctionSpace > gridFunctionSpace() const
+  Dune::shared_ptr< GridFunctionSpaceType > gridFunctionSpace() const
   {
       assert(initialized_);
       return gridFunctionSpace_;
   }
 
-  Dune::shared_ptr< GridOperator > gridOperator() const
+  Dune::shared_ptr< GridOperatorType > gridOperator() const
   {
       assert(initialized_);
       return gridOperator_;
@@ -556,15 +548,13 @@ private:
   const Dune::shared_ptr< const GridViewType > gridView_;
   const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo_;
   bool initialized_;
-//  Dune::shared_ptr< const PatternType > pattern_;
-  Dune::shared_ptr< MatrixContainer> matrix_;
-//  TODO: VectorBackendType ändern in ...?
+  Dune::shared_ptr< const PatternType > pattern_;
+  Dune::shared_ptr< MatrixBackendType> matrix_;
   Dune::shared_ptr< VectorBackendType > rhs_;
-  Dune::shared_ptr< TrialVectorType > solution_;
-  Dune::shared_ptr< DiscreteTrialFunction > residual_;
-  Dune::shared_ptr< FiniteElementMap > finiteElementMap_;
-  Dune::shared_ptr< GridFunctionSpace > gridFunctionSpace_;
-  Dune::shared_ptr< GridOperator> gridOperator_;
+  Dune::shared_ptr< DiscreteTrialFunctionType > residual_;
+  Dune::shared_ptr< FiniteElementMapType > finiteElementMap_;
+  Dune::shared_ptr< GridFunctionSpaceType > gridFunctionSpace_;
+  Dune::shared_ptr< GridOperatorType> gridOperator_;
 
 }; // class DunePdelab
 
