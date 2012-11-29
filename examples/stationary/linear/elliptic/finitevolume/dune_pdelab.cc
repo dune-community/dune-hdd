@@ -178,8 +178,19 @@ int main(int argc, char** argv)
         ::Model::Interface<  DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
     const Dune::shared_ptr< const ModelType >
         model = createModel< DomainFieldType, dimDomain, RangeFieldType, dimRange >(paramTree);
-    typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
-    const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
+    typedef Dune::Stuff::Grid::BoundaryInfo::IdBased BoundaryInfoType;
+    typedef typename BoundaryInfoType::IdSetType IdSetType;
+    typedef typename BoundaryInfoType::IdSetMapType IdSetMapType;
+    Dune::shared_ptr< IdSetMapType > boundaryIdSetMap(new IdSetMapType());
+    IdSetType dirichletSet;
+    dirichletSet.insert(1);
+    IdSetType neumannSet;
+    neumannSet.insert(2);
+    neumannSet.insert(3);
+    neumannSet.insert(4);
+    boundaryIdSetMap->insert(std::pair< std::string, IdSetType >("dirichlet", dirichletSet));
+    boundaryIdSetMap->insert(std::pair< std::string, IdSetType >("neumann", neumannSet));
+    const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType(boundaryIdSetMap));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // solver
