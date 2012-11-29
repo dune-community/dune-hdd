@@ -206,10 +206,7 @@ int main(int argc, char** argv)
 
     info << "solving:" << std::endl;
     typedef SolverType::TrialVectorType SolutionType;
-    typedef Dune::shared_ptr<SolutionType> solution_ptr;
-    solution_ptr solution = solution_ptr(new SolutionType(*(solver.gridFunctionSpace()),0.0));
-//    evtl. dieses Anlegen des Vektors in eine Methode createVector() auslagern (die in DunePdelab liegt)?!
-//    solution_ptr solution = solver.createVector();
+    Dune::shared_ptr<SolutionType> solution = solver.createVector();
     solver.solve(*solution, paramTree.sub(SolverType::id()).sub("solve"), "  ", debug);
 
     info << "postprocessing:" << std::endl;
