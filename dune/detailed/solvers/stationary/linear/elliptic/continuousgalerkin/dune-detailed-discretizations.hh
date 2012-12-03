@@ -1,19 +1,15 @@
 #ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_CONTINUOUSGALERKIN_DUNE_DETAILED_DISCRETIZATIONS_HH
 #define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_CONTINUOUSGALERKIN_DUNE_DETAILED_DISCRETIZATIONS_HH
 
-// system
 #include <sstream>
 
-// dune-common
 #include <dune/common/exceptions.hh>
 #include <dune/common/parametertree.hh>
 #include <dune/common/shared_ptr.hh>
 #include <dune/common/timer.hh>
 
-// dune-fem
 #include <dune/fem/space/common/functionspace.hh>
 
-// dune-detailed-discretizations
 #include <dune/detailed/discretizations/discretefunctionspace/continuous/lagrange.hh>
 #include <dune/detailed/discretizations/discretefunctionspace/sub/linear.hh>
 #include <dune/detailed/discretizations/discretefunction/default.hh>
@@ -29,23 +25,16 @@
 #include <dune/detailed/discretizations/la/backend/solver/eigen.hh>
 #include <dune/detailed/discretizations/discretefunction/default.hh>
 
-// dune-stuff
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/discretefunction/projection/dirichlet.hh>
 
 namespace Dune {
-
 namespace Detailed {
-
 namespace Solvers {
-
 namespace Stationary {
-
 namespace Linear {
-
 namespace Elliptic {
-
 namespace ContinuousGalerkin {
 
 /**
@@ -65,8 +54,6 @@ public:
   static const int polOrder = polynomialOrder;
 
   typedef DuneDetailedDiscretizations< ModelType, GridPartType, BoundaryInfoType, polOrder > ThisType;
-
-  static const std::string id;
 
 private:
   typedef typename ModelType::DomainFieldType DomainFieldType;
@@ -98,6 +85,11 @@ public:
 
   typedef typename AnsatzSpaceType::PatternType PatternType;
 
+  static const std::string id()
+  {
+    return "detailed.solvers.stationary.linear.elliptic.continuousgalerkin";
+  }
+
   DuneDetailedDiscretizations(const Dune::shared_ptr< const ModelType > model,
                               const Dune::shared_ptr< const GridPartType > gridPart,
                               const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo)
@@ -105,7 +97,8 @@ public:
     , gridPart_(gridPart)
     , boundaryInfo_(boundaryInfo)
     , initialized_(false)
-  {}
+  {
+  }
 
   const Dune::shared_ptr< const ModelType > model() const
   {
@@ -204,16 +197,15 @@ public:
   } // ... createDiscreteFunction(...)
 
   void solve(VectorBackendType& solution,
-             const Dune::ParameterTree paramTree = Dune::ParameterTree(),
+             const std::string type = "eigen.bicgstab.incompletelut",
+             const unsigned int maxIter = 5000,
+             const double precision = 1e-12,
              const std::string prefix = "",
              std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
     // preparations
     assert(initialized_ && "The system can only be solved after init() has been called! ");
     assert(solution.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
-    const std::string type = paramTree.get("type", "eigen.bicgstab.incompletelut");
-    const unsigned int maxIter = paramTree.get("maxIter", 5000);
-    const double precision = paramTree.get("precision", 1e-12);
     Dune::Timer timer;
     // solve
     typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabIlut BicgstabIlutSolver;
@@ -237,13 +229,8 @@ public:
     } else if (type == "eigen.simplicialcholesky.lower"){
       SimplicialcholeskyLowerSolver::apply(*matrix_, solution, *rhs_, maxIter, precision);
     } else {
-      std::stringstream msg;
-      msg << "Error";
-      if (id != "") {
-        msg << " in " << id;
-      }
-      msg << ": solver type '" << type << "not supported!" << std::endl;
-      DUNE_THROW(Dune::InvalidStateException, msg.str());
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: wrong 'type' given (" << type << ")!");
     }
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve()
@@ -347,21 +334,12 @@ private:
   Dune::shared_ptr< VectorBackendType > affineShift_;
 }; // class DuneDetailedDiscretizations
 
-template< class ModelType, class GridPartType, class BoundaryInfoType, int polOrder >
-const std::string DuneDetailedDiscretizations< ModelType, GridPartType, BoundaryInfoType, polOrder >::id = "detailed.solvers.stationary.linear.elliptic.continuousgalerkin";
-
 } // namespace ContinuousGalerkin
-
 } // namespace Elliptic
-
 } // namespace Linear
-
 } // namespace Stationary
-
 } // namespace Solvers
-
 } // namespace Detailed
-
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_CONTINUOUSGALERKIN_DUNE_DETAILED_DISCRETIZATIONS_HH
