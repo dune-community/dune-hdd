@@ -26,6 +26,9 @@
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/provider/cube.hh>
+#if HAVE_ALUGRID
+  #include <dune/stuff/grid/provider/gmsh.hh>
+#endif // HAVE_ALUGRID
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/function/expression.hh>
 #include <dune/stuff/discretefunction/norm.hh>
@@ -58,6 +61,7 @@ void ensureParamFile(std::string filename)
     std::ofstream file;
     file.open(filename);
     file << "[" << id << "]" << std::endl;
+    file << "grid = stuff.grid.provider.cube" << std::endl;
     file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
     file << "exact_solution.order = 2" << std::endl;
     file << "exact_solution.variable = x" << std::endl;
@@ -120,7 +124,7 @@ void compute_errors(const Dune::ParameterTree& paramTree,
       RangeFieldType,
       DiscreteFunctionType::dimRange >
     FunctionType;
-  const FunctionType function(paramTree);
+  const FunctionType function = FunctionType::createFromParamTree(paramTree);
   const unsigned int functionOrder = paramTree.get("order", 100);
   // compute norms
   out << prefix << " norm | exact solution | discrete solution | error (abs) | error (rel)" << std::endl;
@@ -139,25 +143,57 @@ void compute_errors(const Dune::ParameterTree& paramTree,
   out << prefix << "------+----------------+-------------------+-------------+-------------" << std::endl;
 } // void compute_norms(...)
 
-template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > >
-  createModel(const Dune::Stuff::Common::ExtendedParameterTree& paramTree)
+Dune::Stuff::Grid::Provider::Interface<>* createProvider(const Dune::Stuff::Common::ExtendedParameterTree& paramTree)
 {
   // prepare
-  paramTree.assertKey(id + ".model");
-  const std::string modelId = paramTree.sub(id).get("model", "default_value");
-  typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelInterfaceType;
+  if (!paramTree.hasKey(id + ".grid"))
+    DUNE_THROW(Dune::RangeError,
+               "\nMissing key '" << id << ".grid' in the following Dune::ParameterTree:\n" << paramTree.reportString("  "));
+  const std::string providerId = paramTree.get(id + ".grid", "meaningless_default_value");
+  // choose provider
+  if (providerId == "stuff.grid.provider.cube") {
+    typedef Dune::Stuff::Grid::Provider::Cube<> CubeProviderType;
+    CubeProviderType* cubeProvider = new CubeProviderType(CubeProviderType::createFromParamTree(paramTree));
+    return cubeProvider;
+#if HAVE_ALUGRID
+  } else if (providerId == "stuff.grid.provider.gmsh") {
+    typedef Dune::Stuff::Grid::Provider::Gmsh<> GmshProviderType;
+    GmshProviderType* gmshProvider = new GmshProviderType(GmshProviderType::createFromParamTree(paramTree));
+    return gmshProvider;
+#endif // HAVE_ALUGRID
+  } else
+    DUNE_THROW(Dune::RangeError,
+               "\nError: unknown provider ('" << providerId << "') given in the following Dune::Parametertree:\n" << paramTree.reportString("  "));
+} // ... createProvider(...)
+
+template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
+Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >*
+createModel(const Dune::Stuff::Common::ExtendedParameterTree& paramTree)
+{
+  // prepare
+  if (!paramTree.hasKey(id + ".model"))
+    DUNE_THROW(Dune::RangeError,
+               "\nMissing key '" << id << ".model' in the following Dune::ParameterTree:\n" << paramTree.reportString("  "));
+  const std::string modelId = paramTree.sub(id).get("model", "meaningless_default_value");
   // choose model
   if (modelId == "detailed.solvers.stationary.linear.elliptic.model.default") {
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id(), id);
-    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id())));
-    return model;
+    typedef Dune::Detailed::Solvers
+        ::Stationary
+        ::Linear
+        ::Elliptic
+        ::Model
+        ::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      DefaultModelType;
+    return new DefaultModelType(DefaultModelType::createFromParamTree(paramTree));
   } else if (modelId == "detailed.solvers.stationary.linear.elliptic.model.thermalblock") {
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id(), id);
-    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id())));
-    return model;
+    typedef Dune::Detailed::Solvers
+        ::Stationary
+        ::Linear
+        ::Elliptic
+        ::Model
+        ::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      ThermalblockModelType;
+    return new ThermalblockModelType(ThermalblockModelType::createFromParamTree(paramTree));
   } else {
     std::stringstream msg;
     msg << std::endl << "Error in " << id << ": unknown model ('" << modelId << "') given in the following Dune::Parametertree" << std::endl;
@@ -176,6 +212,9 @@ int main(int argc, char** argv)
     const std::string filename = id + ".param";
     ensureParamFile(filename);
     Dune::Stuff::Common::ExtendedParameterTree paramTree(argc, argv, filename);
+    if (!paramTree.hasSub(id))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: missing sub '" << id << "' in the following Dune::Parametertree:\n" << paramTree.reportString("  "));
 
     // logger
     Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
@@ -190,11 +229,10 @@ int main(int argc, char** argv)
     // grid
     info << "setting up grid: " << std::endl;
     debug.suspend();
-    typedef Dune::Stuff::Grid::Provider::UnitCube<> GridProviderType;
-    paramTree.assertSub(GridProviderType::id(), id);
-    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id()));
+    typedef Dune::Stuff::Grid::Provider::Interface<> GridProviderType;
+    const GridProviderType* gridProvider = createProvider(paramTree);
     typedef GridProviderType::GridType GridType;
-    const Dune::shared_ptr< const GridType > grid = gridProvider.gridPtr();
+    const Dune::shared_ptr< const GridType > grid = gridProvider->grid();
     typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
     const Dune::shared_ptr< const GridPartType > gridPart(new GridPartType(*grid));
     info << "  done (took " << timer.elapsed()
@@ -205,7 +243,7 @@ int main(int argc, char** argv)
          << Dune::GridWidth::calcGridWidth(*gridPart) << ")" << std::endl;
     info << "visualizing grid... " << std::flush;
     timer.reset();
-    gridProvider.visualize(paramTree.sub(GridProviderType::id()).get("filename", id + "_grid"));
+    gridProvider->visualize(id + ".grid");
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
@@ -216,9 +254,14 @@ int main(int argc, char** argv)
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
-    paramTree.assertSub(id, id);
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    const Dune::shared_ptr< const ModelType > model = createModel< DomainFieldType, dimDomain, RangeFieldType, dimRange >(paramTree);
+    typedef Dune::Detailed::Solvers
+        ::Stationary
+        ::Linear
+        ::Elliptic
+        ::Model
+        ::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      ModelType;
+    const Dune::shared_ptr< const ModelType > model(createModel< DomainFieldType, dimDomain, RangeFieldType, dimRange >(paramTree));
     typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
@@ -226,29 +269,60 @@ int main(int argc, char** argv)
     // solver
     info << "initializing solver:" << std::endl;
 //    timer.reset();
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType,
-                                                                                                                    GridPartType,
-                                                                                                                    BoundaryInfoType,
-                                                                                                                    polOrder > SolverType;
-    paramTree.assertSub(SolverType::id, id);
+    typedef Dune::Detailed::Solvers
+        ::Stationary
+        ::Linear
+        ::Elliptic
+        ::ContinuousGalerkin::DuneDetailedDiscretizations< ModelType, GridPartType, BoundaryInfoType, polOrder >
+        SolverType;
     SolverType solver(model, gridPart, boundaryInfo);
     solver.init("  ", info);
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "solving:" << std::endl;
 //    timer.reset();
+    if (!paramTree.hasSub(solver.id()))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: missing sub '" << solver.id() << "' in the following Dune::Parametertree:\n" << paramTree.reportString("  "));
+    if (!paramTree.sub(solver.id()).hasSub("solve"))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: missing sub '" << solver.id() << ".solve' in the following Dune::Parametertree:\n" << paramTree.reportString("  "));
+    std::string type = "eigen.bicgstab.incompletelut";
+    unsigned int maxIter = 5000;
+    double precision = 1e-12;
+    if (!paramTree.sub(solver.id()).sub("solve").hasKey("type"))
+      std::cout << "Warning in " << id << ": no key '" << solver.id() << ".solve.type' given, defaulting to " << type << "!" << std::endl;
+    else
+      type = paramTree.sub(solver.id()).sub("solve").get("type", type);
+    if (!paramTree.sub(solver.id()).sub("solve").hasKey("maxIter"))
+      std::cout << "Warning in " << id << ": no key '" << solver.id() << ".solve.maxIter' given, defaulting to " << maxIter << "!" << std::endl;
+    else
+      maxIter = paramTree.sub(solver.id()).sub("solve").get("maxIter", maxIter);
+    if (!paramTree.sub(solver.id()).sub("solve").hasKey("precision"))
+      std::cout << "Warning in " << id << ": no key '" << solver.id() << ".solve.precision' given, defaulting to " << precision << "!" << std::endl;
+    else
+      precision = paramTree.sub(solver.id()).sub("solve").get("precision", precision);
     typedef SolverType::VectorBackendType DofVectorType;
     Dune::shared_ptr< DofVectorType > solution = solver.createVector();
-    solver.solve(*solution, paramTree.sub(SolverType::id).sub("solve"), "  ", info);
+    solver.solve(*solution, type, maxIter, precision, "  ", info);
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "postprocessing:" << std::endl;
 //    timer.reset();
-    solver.visualize(*solution,
-                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + "_solution"),
-                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
-                     "  ",
-                     info);
+    if (!paramTree.sub(solver.id()).hasSub("visualize"))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: missing sub '" << solver.id() << ".visualize' in the following Dune::Parametertree:\n" << paramTree.reportString("  "));
+    std::string visualize_filename = id + ".solution";
+    std::string name = "solution";
+    if (!paramTree.sub(solver.id()).sub("visualize").hasKey("filename"))
+      std::cout << "Warning in " << id << ": no key '" << solver.id() << ".visualize.filename' given, defaulting to " << visualize_filename << "!" << std::endl;
+    else
+      visualize_filename = paramTree.sub(solver.id()).sub("visualize").get("filename", visualize_filename);
+    if (!paramTree.sub(solver.id()).sub("visualize").hasKey("name"))
+      std::cout << "Warning in " << id << ": no key '" << solver.id() << ".visualize.name' given, defaulting to " << name << "!" << std::endl;
+    else
+      name = paramTree.sub(solver.id()).sub("visualize").get("name", name);
+    solver.visualize(*solution, visualize_filename, name, "  ", info);
 //    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     if (dimDomain == 1) {
