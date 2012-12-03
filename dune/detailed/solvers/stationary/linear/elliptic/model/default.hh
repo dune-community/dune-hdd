@@ -1,14 +1,11 @@
 #ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_DEFAULT_HH
 #define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_DEFAULT_HH
 
-// dune-common
 #include <dune/common/shared_ptr.hh>
 
-// dune-stuff
 #include <dune/stuff/function/expression.hh>
 #include <dune/stuff/common/parameter/tree.hh>
 
-// local
 #include "interface.hh"
 
 namespace Dune {
@@ -44,49 +41,106 @@ public:
 
   typedef typename BaseType::NeumannType NeumannType;
 
-  Default(const Dune::Stuff::Common::ExtendedParameterTree paramTree)
-    : diffusionOrder_(-1)
-    , forceOrder_(-1)
-    , dirichletOrder_(-1)
-    , neumannOrder_(-1)
+  static const std::string id()
   {
-    // check parametertree
-    paramTree.assertSub("diffusion", id());
-    paramTree.assertSub("force", id());
-    paramTree.assertSub("dirichlet", id());
-    paramTree.assertSub("neumann", id());
-    paramTree.assertKey("diffusion.order", id());
-    paramTree.assertKey("force.order", id());
-    paramTree.assertKey("dirichlet.order", id());
-    paramTree.assertKey("neumann.order", id());
+    return BaseType::id() + ".default";
+  }
+
+  Default(const Dune::shared_ptr< const DiffusionType > _diffusion,
+          const Dune::shared_ptr< const ForceType > _force,
+          const Dune::shared_ptr< const DirichletType > _dirichlet,
+          const Dune::shared_ptr< const NeumannType > _neumann,
+          const int _diffusionOrder = -1,
+          const int _forceOrder = -1,
+          const int _dirichletOrder = -1,
+          const int _neumannOrder = -1)
+    : diffusion_(_diffusion)
+    , force_(_force)
+    , dirichlet_(_dirichlet)
+    , neumann_(_neumann)
+    , diffusionOrder_(_diffusionOrder)
+    , forceOrder_(_forceOrder)
+    , dirichletOrder_(_dirichletOrder)
+    , neumannOrder_(_neumannOrder)
+  {}
+
+  Default(const ThisType& other)
+    : diffusion_(other.diffusion_)
+    , force_(other.force_)
+    , dirichlet_(other.dirichlet_)
+    , neumann_(other.neumann_)
+    , diffusionOrder_(other.diffusionOrder_)
+    , forceOrder_(other.forceOrder_)
+    , dirichletOrder_(other.dirichletOrder_)
+    , neumannOrder_(other.neumannOrder_)
+  {}
+
+  static ThisType createFromParamTree(const Dune::ParameterTree& paramTree, const std::string subName = id())
+  {
+    // get correct paramTree
+    Dune::Stuff::Common::ExtendedParameterTree extendedParamTree;
+    if (paramTree.hasSub(subName))
+      extendedParamTree = paramTree.sub(subName);
+    else
+      extendedParamTree = paramTree;
     // build functions
     typedef Dune::Stuff::Function::Expression<  DomainFieldType, dimDomain,
                                                 RangeFieldType, dimRange >
       ExpressionFunctionType;
-    diffusion_ = Dune::shared_ptr< DiffusionType >(new ExpressionFunctionType(paramTree.sub("diffusion")));
-    force_ = Dune::shared_ptr< ForceType >(new ExpressionFunctionType(paramTree.sub("force")));
-    dirichlet_ = Dune::shared_ptr< DirichletType >(new ExpressionFunctionType(paramTree.sub("dirichlet")));
-    neumann_ = Dune::shared_ptr< NeumannType >(new ExpressionFunctionType(paramTree.sub("neumann")));
-    // set orders
-    diffusionOrder_ = paramTree.sub("diffusion").get("order", -1);
-    forceOrder_ = paramTree.sub("force").get("order", -1);
-    dirichletOrder_ = paramTree.sub("neumann").get("order", -1);
-  }
+    //   * diffusion
+    if (!extendedParamTree.hasSub("diffusion"))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: sub 'diffusion' not found in the following Dune::ParameterTree:\n" << extendedParamTree.reportString("  "));
+    const Dune::shared_ptr< const ExpressionFunctionType > _diffusion = Dune::shared_ptr< ExpressionFunctionType >(new ExpressionFunctionType(
+        ExpressionFunctionType::createFromParamTree(extendedParamTree.sub("diffusion"))));
+    if (!extendedParamTree.sub("diffusion").hasKey("order"))
+      std::cout << "Warning in " << id() << ": no key 'diffusion.order' given, defaulting to 0!" << std::endl;
+    const int _diffusionOrder = extendedParamTree.sub("diffusion").get("order", 0);
+    //   * force
+    if (!extendedParamTree.hasSub("force"))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: sub 'force' not found in the following Dune::ParameterTree:\n" << extendedParamTree.reportString("  "));
+    const Dune::shared_ptr< const ExpressionFunctionType > _force = Dune::shared_ptr< ExpressionFunctionType >(new ExpressionFunctionType(
+        ExpressionFunctionType::createFromParamTree(extendedParamTree.sub("force"))));
+    if (!extendedParamTree.sub("force").hasKey("order"))
+      std::cout << "Warning in " << id() << ": no key 'force.order' given, defaulting to 0!" << std::endl;
+    const int _forceOrder = extendedParamTree.sub("force").get("order", 0);
+    //   * dirichlet
+    if (!extendedParamTree.hasSub("dirichlet"))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: sub 'dirichlet' not found in the following Dune::ParameterTree:\n" << extendedParamTree.reportString("  "));
+    const Dune::shared_ptr< const ExpressionFunctionType > _dirichlet = Dune::shared_ptr< ExpressionFunctionType >(new ExpressionFunctionType(
+        ExpressionFunctionType::createFromParamTree(extendedParamTree.sub("dirichlet"))));
+    if (!extendedParamTree.sub("dirichlet").hasKey("order"))
+      std::cout << "Warning in " << id() << ": no key 'dirichlet.order' given, defaulting to 0!" << std::endl;
+    const int _dirichletOrder = extendedParamTree.sub("dirichlet").get("order", 0);
+    //   * neumann
+    if (!extendedParamTree.hasSub("neumann"))
+      DUNE_THROW(Dune::RangeError,
+                 "\nError: sub 'neumann' not found in the following Dune::ParameterTree:\n" << extendedParamTree.reportString("  "));
+    const Dune::shared_ptr< const ExpressionFunctionType > _neumann = Dune::shared_ptr< ExpressionFunctionType >(new ExpressionFunctionType(
+        ExpressionFunctionType::createFromParamTree(extendedParamTree.sub("neumann"))));
+    if (!extendedParamTree.sub("neumann").hasKey("order"))
+      std::cout << "Warning in " << id() << ": no key 'neumann.order' given, defaulting to 0!" << std::endl;
+    const int _neumannOrder = extendedParamTree.sub("neumann").get("order", 0);
+    // create and return
+    Default d(_diffusion, _force, _dirichlet, _neumann, _diffusionOrder, _forceOrder, _dirichletOrder, _neumannOrder);
+    return d;
+  } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree)
 
-  Default(const ThisType& other)
-    : diffusionOrder_(other.diffusionOrder_)
-    , forceOrder_(other.forceOrder_)
-    , dirichletOrder_(other.dirichletOrder_)
-    , neumannOrder_(other.neumannOrder_)
-    , diffusion_(other.diffusion_)
-    , force_(other.force_)
-    , dirichlet_(other.dirichlet_)
-    , neumann_(other.neumann_)
-  {}
-
-  static const std::string id()
+  ThisType& operator=(const ThisType& other)
   {
-    return BaseType::id() + ".default";
+    if (this != &other) {
+      diffusion_ = other.diffusion();
+      force_ = other.force();
+      dirichlet_ = other.dirichlet();
+      neumann_ = other.neumann();
+      diffusionOrder_ = other.diffusionOrder();
+      forceOrder_ = other.forceOrder();
+      dirichletOrder_ = other.dirichletOrder();
+      neumannOrder_ = other.neumannOrder();
+    }
+    return this;
   }
 
   virtual const Dune::shared_ptr< const DiffusionType > diffusion() const
@@ -130,16 +184,14 @@ public:
   }
 
 private:
-  ThisType& operator=(const ThisType&);
-
+  Dune::shared_ptr< const DiffusionType > diffusion_;
+  Dune::shared_ptr< const ForceType > force_;
+  Dune::shared_ptr< const DirichletType > dirichlet_;
+  Dune::shared_ptr< const NeumannType > neumann_;
   int diffusionOrder_;
   int forceOrder_;
   int dirichletOrder_;
   int neumannOrder_;
-  Dune::shared_ptr< DiffusionType > diffusion_;
-  Dune::shared_ptr< ForceType > force_;
-  Dune::shared_ptr< DirichletType > dirichlet_;
-  Dune::shared_ptr< NeumannType > neumann_;
 }; // class Default
 
 } // namespace Model
