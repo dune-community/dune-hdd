@@ -1,11 +1,9 @@
 #ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_INTERFACE_HH
 #define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_INTERFACE_HH
 
-// dune-common
 #include <dune/common/shared_ptr.hh>
 
-// dune-stuffInterface
-#include <dune/stuff/function/expression.hh>
+#include <dune/stuff/function/interface.hh>
 
 namespace Dune {
 
@@ -64,17 +62,11 @@ public:
 }; // class Interface
 
 } // namespace Model
-
 } // namespace Elliptic
-
 } // namespace Linear
-
 } // namespace Stationary
-
 } // namespace Solvers
-
 } // namespace Detailed
-
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_INTERFACE_HH
