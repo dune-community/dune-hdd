@@ -4,43 +4,38 @@
   #include "config.h"
 #endif // ifdef HAVE_CMAKE_CONFIG
 
-// system
 #include <vector>
 
-// boost
 #include <boost/filesystem.hpp>
 
-// dune-common
 #include <dune/common/exceptions.hh>
 #include <dune/common/mpihelper.hh>
 #include <dune/common/timer.hh>
 
-// dune-grid-multiscale
 #include <dune/grid/multiscale/provider/cube.hh>
 
-// dune-fem
 #include <dune/fem/misc/mpimanager.hh>
 #include <dune/fem/misc/gridwidth.hh>
 
-// dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/discretefunction/norm.hh>
 #include <dune/stuff/function/expression.hh>
 
-// dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
 #ifdef POLORDER
-const int polOrder = POLORDER;
+  const int polOrder = POLORDER;
 #else
-const int polOrder = 1;
+  const int polOrder = 1;
 #endif
 
-const std::string id = "stationary.linear.elliptic.ms.semicg.ddd";
+const std::string id = "stationary.linear.elliptic.ms.semidg.ddd";
+
+using namespace Dune;
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -142,20 +137,19 @@ int main(int argc, char** argv)
 {
   try {
     // mpi
-    Dune::MPIManager::initialize(argc, argv);
+    MPIManager::initialize(argc, argv);
 
     // parameter
     const std::string filename = id + ".param";
     ensureParamFile(filename);
-    Dune::Stuff::Common::ExtendedParameterTree paramTree(argc, argv, filename);
+    Stuff::Common::ParameterTreeX paramTree(argc, argv, filename);
 
     // logger
-    Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
-                                         Dune::Stuff::Common::LOG_CONSOLE |
-                                         Dune::Stuff::Common::LOG_DEBUG);
-//    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-    std::ostream& info = std::cout;
-    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
+    Stuff::Common::Logger().create(Stuff::Common::LOG_INFO |
+                                   Stuff::Common::LOG_CONSOLE |
+                                   Stuff::Common::LOG_DEBUG);
+    Stuff::Common::LogStream& info = Stuff::Common::Logger().info();
+    Stuff::Common::LogStream& debug = Stuff::Common::Logger().debug();
 
     // timer
     Dune::Timer timer;
@@ -163,12 +157,11 @@ int main(int argc, char** argv)
     info << "setting up grid: " << std::endl;
     debug.suspend();
     typedef Dune::grid::Multiscale::Provider::Cube<> GridProviderType;
-    paramTree.assertSub(GridProviderType::id(), id);
-    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id()));
+    const GridProviderType gridProvider = GridProviderType::createFromParamTree(paramTree);
     typedef GridProviderType::MsGridType MsGridType;
-    const Dune::shared_ptr< const MsGridType > msGrid = gridProvider.msGridPtr();
+    const Dune::shared_ptr< const MsGridType > msGrid = gridProvider.msGrid();
     info << "  took " << timer.elapsed()
-         << " sec (has " << gridProvider.grid().size(0) << " elements, "
+         << " sec (has " << gridProvider.grid()->size(0) << " elements, "
          << msGrid->size() << " subdomain";
     if (msGrid->size() > 1)
       info << "s";
@@ -189,11 +182,10 @@ int main(int argc, char** argv)
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id(), id);
-    const Dune::shared_ptr< const ModelType > model(new ModelType(paramTree.sub(ModelType::id())));
-    typedef Dune::Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
-    const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
+    typedef Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+    const shared_ptr< const ModelType > model(new ModelType(ModelType::createFromParamTree(paramTree)));
+    typedef Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
+    const shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
     debug.resume();
 
@@ -203,18 +195,19 @@ int main(int argc, char** argv)
     info << "... " << std::flush;
     debug.suspend();
     timer.reset();
-    typedef Dune::Detailed::Solvers
+    typedef Detailed::Solvers
         ::Stationary
         ::Linear
         ::Elliptic
         ::Multiscale
         ::SemicontinuousGalerkin::DuneDetailedDiscretizations< ModelType, MsGridType, BoundaryInfoType, polOrder >
         SolverType;
-    paramTree.assertSub(SolverType::id, id);
-    SolverType solver(model, msGrid, boundaryInfo, paramTree.sub(SolverType::id));
+    const Stuff::Common::ParameterTreeX solverTree = paramTree.sub(SolverType::id());
+    const Stuff::Common::ParameterTreeX discretizationTree = solverTree.sub("discretization");
+    SolverType solver(model, msGrid, boundaryInfo, discretizationTree.get< RangeFieldType >("penaltyFactor"));
     solver.init("  ", debug);
-    debug.resume();
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    debug.resume();
 
     info << "solving";
 //    info << ":" << std::endl;
@@ -223,9 +216,14 @@ int main(int argc, char** argv)
     timer.reset();
     typedef SolverType::VectorBackendType VectorType;
     Dune::shared_ptr< std::vector< VectorType > > solution = solver.createVector();
-    solver.solve(*solution, paramTree.sub(SolverType::id).sub("solve"), "  ", debug);
-    debug.resume();
+    solver.solve(*solution,
+                 solverTree.get("solve.type", "eigen.bicgstab.diagonal"),
+                 solverTree.get("solve.maxIter", 5000u),
+                 solverTree.get("solve.precision", 1e-12),
+                 "  ",
+                 debug);
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    debug.resume();
 
 //    info << "computing detailed reference solution... " << std::flush;
 //    debug.suspend();
@@ -249,8 +247,8 @@ int main(int argc, char** argv)
     debug.suspend();
     timer.reset();
     solver.visualize(*solution,
-                     paramTree.sub(SolverType::id).sub("visualize").get("filename", id + ".solution"),
-                     paramTree.sub(SolverType::id).sub("visualize").get("name", "solution"),
+                     solverTree.get("visualize.filename", id + ".solution"),
+                     solverTree.get("visualize.name", "solution"),
                      "  ",
                      debug);
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
