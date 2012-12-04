@@ -23,7 +23,7 @@
 #include <dune/stuff/discretefunction/norm.hh>
 #include <dune/stuff/function/expression.hh>
 
-#include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/model.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
@@ -36,6 +36,7 @@
 const std::string id = "stationary.linear.elliptic.ms.semidg.ddd";
 
 using namespace Dune;
+using namespace Dune::Detailed::Solvers;
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -52,6 +53,7 @@ void ensureParamFile(std::string filename)
     std::ofstream file;
     file.open(filename);
     file << "[" << id << "]" << std::endl;
+    file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
     file << "exact_solution.order = 2" << std::endl;
     file << "exact_solution.variable = x" << std::endl;
     file << "exact_solution.expression.0 = -0.5*x[0]*x[0] + 0.5*x[0]" << std::endl;
@@ -182,8 +184,13 @@ int main(int argc, char** argv)
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
-    typedef Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    const shared_ptr< const ModelType > model(new ModelType(ModelType::createFromParamTree(paramTree)));
+    typedef Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain,
+                                                            RangeFieldType, dimRange >
+        ModelType;
+    const std::string modelType = paramTree.get< std::string >(id + ".model");
+    const shared_ptr< const ModelType > model(
+          Stationary::Linear::Elliptic::Model::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(modelType,
+                                                                                                              paramTree));
     typedef Stuff::Grid::BoundaryInfo::AllDirichlet BoundaryInfoType;
     const shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType());
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
