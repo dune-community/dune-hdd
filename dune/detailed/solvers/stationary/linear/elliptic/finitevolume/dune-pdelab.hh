@@ -1,11 +1,12 @@
 #ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_FINITEVOLUME_DUNE_PDELAB_HH
 #define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_FINITEVOLUME_DUNE_PDELAB_HH
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifdef HAVE_CMAKE_CONFIG
+  #include "cmake_config.h"
+#elif defined (HAVE_CONFIG_H)
+  #include "config.h"
+#endif // ifdef HAVE_CMAKE_CONFIG
 
-// system
 #include <sstream>
 #include <math.h>
 #include <iostream>
