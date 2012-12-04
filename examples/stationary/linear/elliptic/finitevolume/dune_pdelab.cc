@@ -148,9 +148,12 @@ int main(int argc, char** argv)
                                                             RangeFieldType, dimRange >
         ModelType;
     const std::string modelType = paramTree.get< std::string >(id + ".model");
-    const shared_ptr< const ModelType > model(Stationary::Linear::Elliptic::Model::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(modelType, paramTree));
+    const shared_ptr< const ModelType > model(
+          Stationary::Linear::Elliptic::Model::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(modelType,
+                                                                                                              paramTree));
     typedef Stuff::Grid::BoundaryInfo::IdBased BoundaryInfoType;
-    const shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType(BoundaryInfoType::createFromParamTree(paramTree)));
+    const shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType(
+          BoundaryInfoType::createFromParamTree(paramTree)));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // solver
