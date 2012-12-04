@@ -12,11 +12,11 @@
 
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
-#include <dune/stuff/grid/provider/interface.hh>
+#include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/function/expression.hh>
 
-#include <dune/detailed/solvers/stationary/linear/elliptic/model/interface.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/model.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/finitevolume/dune-pdelab.hh>
 
 #ifdef POLORDER
