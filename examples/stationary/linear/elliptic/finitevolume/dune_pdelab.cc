@@ -4,36 +4,31 @@
   #include "config.h"
 #endif // ifdef HAVE_CMAKE_CONFIG
 
-// system
-#include <sstream>
-
-// boost
 #include <boost/filesystem.hpp>
 
-// dune-common
 #include <dune/common/exceptions.hh>
 #include <dune/common/mpihelper.hh>
 #include <dune/common/timer.hh>
 
-// dune-stuff
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
-#include <dune/stuff/grid/provider/cube.hh>
+#include <dune/stuff/grid/provider/interface.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/function/expression.hh>
 
-// dune-detailed-solvers
-#include <dune/detailed/solvers/stationary/linear/elliptic/model/default.hh>
-#include <dune/detailed/solvers/stationary/linear/elliptic/model/thermalblock.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/model/interface.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/finitevolume/dune-pdelab.hh>
 
 #ifdef POLORDER
-const int polOrder = POLORDER;
+  const int polOrder = POLORDER;
 #else
-const int polOrder = 1;
+  const int polOrder = 1;
 #endif
 
 const std::string id = "stationary.linear.elliptic.fv.dp";
+
+using namespace Dune;
+using namespace Dune::Detailed::Solvers;
 
 /**
   \brief      Creates a parameter file if it does not exist.
@@ -50,12 +45,16 @@ void ensureParamFile(std::string filename)
     std::ofstream file;
     file.open(filename);
     file << "[" << id << "]" << std::endl;
+    file << "grid = stuff.grid.provider.cube" << std::endl;
     file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
+    file << "filename = " << id << std::endl;
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "lowerLeft = [0.0; 0.0; 0.0]" << std::endl;
     file << "upperRight = [1.0; 1.0; 1.0]" << std::endl;
     file << "numElements = 4" << std::endl;
-    file << "filename = " << id << ".grid" << std::endl;
+    file << "[stuff.boundaryinfo.idbased]" << std::endl;
+    file << "dirichlet = [1; 2; 3]" << std::endl;
+    file << "neumann = [4]" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
     file << "diffusion.variable = x" << std::endl;
@@ -88,78 +87,53 @@ void ensureParamFile(std::string filename)
     file << "solve.type = eigen.bicgstab.incompletelut" << std::endl;
     file << "solve.maxIter = 5000"  << std::endl;
     file << "solve.precision = 1e-12"  << std::endl;
-    file << "visualize.filename = " << id << ".solution"  << std::endl;
     file << "visualize.name = solution"  << std::endl;
     file.close();
   } // only write param file if there is none
 } // void ensureParamFile()
 
-template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-Dune::shared_ptr< Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > >
-  createModel(const Dune::Stuff::Common::ExtendedParameterTree& paramTree)
-{
-  // prepare
-  paramTree.assertKey(id + ".model");
-  const std::string modelId = paramTree.sub(id).get("model", "default_value");
-  typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelInterfaceType;
-  // choose model
-  if (modelId == "detailed.solvers.stationary.linear.elliptic.model.default") {
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id(), id);
-    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id())));
-    return model;
-  } else if (modelId == "detailed.solvers.stationary.linear.elliptic.model.thermalblock") {
-    typedef Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    paramTree.assertSub(ModelType::id(), id);
-    Dune::shared_ptr< ModelInterfaceType > model(new ModelType(paramTree.sub(ModelType::id())));
-    return model;
-  } else {
-    std::stringstream msg;
-    msg << std::endl << "Error in " << id << ": unknown model ('" << modelId << "') given in the following Dune::Parametertree" << std::endl;
-    paramTree.report(msg);
-    DUNE_THROW(Dune::InvalidStateException, msg.str());
-  } // choose model
-} // ... createModel(...)
 
 int main(int argc, char** argv)
 {
   try {
     // mpi
-    Dune::MPIHelper::instance(argc, argv);
+    MPIHelper::instance(argc, argv);
 
     // parameter
     const std::string filename = id + ".param";
     ensureParamFile(filename);
-    Dune::Stuff::Common::ExtendedParameterTree paramTree(argc, argv, filename);
+    Stuff::Common::ParameterTreeX paramTree(argc, argv, filename);
+    paramTree.assertSub(id);
 
     // logger
-    Dune::Stuff::Common::Logger().create(Dune::Stuff::Common::LOG_INFO |
-                                         Dune::Stuff::Common::LOG_CONSOLE |
-                                         Dune::Stuff::Common::LOG_DEBUG);
-    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
-    Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
+    Stuff::Common::Logger().create(Stuff::Common::LOG_INFO |
+                                   Stuff::Common::LOG_CONSOLE |
+                                   Stuff::Common::LOG_DEBUG);
+    Stuff::Common::LogStream& info = Stuff::Common::Logger().info();
+    Stuff::Common::LogStream& debug = Stuff::Common::Logger().debug();
 
     // timer
-    Dune::Timer timer;
+    Timer timer;
 
     // grid
     info << "setting up grid: " << std::endl;
     debug.suspend();
-    typedef Dune::Stuff::Grid::Provider::Cube<> GridProviderType;
-    paramTree.assertSub(GridProviderType::id(), id);
-    const GridProviderType gridProvider(paramTree.sub(GridProviderType::id()));
+    typedef Stuff::Grid::Provider::Interface<> GridProviderType;
+    const std::string gridType = paramTree.get< std::string >(id + ".grid");
+    const GridProviderType* gridProvider = Stuff::Grid::Provider::create(gridType,
+                                                                         paramTree);
     typedef GridProviderType::GridType GridType;
-    const GridType& grid = gridProvider.grid();
+    const shared_ptr< const GridType > grid = gridProvider->grid();
     typedef GridType::LeafGridView GridViewType;
-    const Dune::shared_ptr< const GridViewType > gridView(new GridViewType(grid.leafView()));
+    const shared_ptr< const GridViewType > gridView(new GridViewType(grid->leafView()));
     info << "  done (took " << timer.elapsed()
-         << " sec, has " << grid.size(0) << " element";
-    if (grid.size(0) > 1)
+         << " sec, has " << grid->size(0) << " element";
+    if (grid->size(0) > 1)
       info << "s";
     info << ")" << std::endl;
     info << "visualizing grid... " << std::flush;
     timer.reset();
-    gridProvider.visualize(paramTree.sub(GridProviderType::id()).get("filename", id + "_grid"));
+    gridProvider->visualize(paramTree.get(id + ".filename", id) + ".grid");
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
@@ -170,49 +144,35 @@ int main(int argc, char** argv)
     const unsigned int DUNE_UNUSED(dimRange) = 1;
     typedef GridProviderType::CoordinateType::value_type DomainFieldType;
     typedef DomainFieldType RangeFieldType;
-    paramTree.assertSub(id, id);
-    typedef Dune::Detailed::Solvers
-        ::Stationary
-        ::Linear
-        ::Elliptic
-        ::Model::Interface<  DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-    const Dune::shared_ptr< const ModelType >
-        model = createModel< DomainFieldType, dimDomain, RangeFieldType, dimRange >(paramTree);
-    typedef Dune::Stuff::Grid::BoundaryInfo::IdBased BoundaryInfoType;
-    typedef typename BoundaryInfoType::IdSetType IdSetType;
-    typedef typename BoundaryInfoType::IdSetMapType IdSetMapType;
-    Dune::shared_ptr< IdSetMapType > boundaryIdSetMap(new IdSetMapType());
-    IdSetType dirichletSet;
-    dirichletSet.insert(1);
-    IdSetType neumannSet;
-    neumannSet.insert(2);
-    neumannSet.insert(3);
-    neumannSet.insert(4);
-    boundaryIdSetMap->insert(std::pair< std::string, IdSetType >("dirichlet", dirichletSet));
-    boundaryIdSetMap->insert(std::pair< std::string, IdSetType >("neumann", neumannSet));
-    const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType(boundaryIdSetMap));
+    typedef Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain,
+                                                            RangeFieldType, dimRange >
+        ModelType;
+    const std::string modelType = paramTree.get< std::string >(id + ".model");
+    const shared_ptr< const ModelType > model(Stationary::Linear::Elliptic::Model::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(modelType, paramTree));
+    typedef Stuff::Grid::BoundaryInfo::IdBased BoundaryInfoType;
+    const shared_ptr< const BoundaryInfoType > boundaryInfo(new BoundaryInfoType(BoundaryInfoType::createFromParamTree(paramTree)));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // solver
     info << "initializing solver:" << std::endl;
-    typedef Dune::Detailed::Solvers
-        ::Stationary
-        ::Linear
-        ::Elliptic
-        ::FiniteVolume::DunePdelab< ModelType, GridViewType, BoundaryInfoType, polOrder > SolverType;
-    paramTree.assertSub(SolverType::id(), id);
+    typedef Stationary::Linear::Elliptic::FiniteVolume::DunePdelab< ModelType,
+                                                                    GridViewType,
+                                                                    BoundaryInfoType,
+                                                                    polOrder >
+        SolverType;
+    const Stuff::Common::ParameterTreeX solverTree = paramTree.sub(SolverType::id());
     SolverType solver(model, gridView, boundaryInfo);
     solver.init("  ", debug);
 
     info << "solving:" << std::endl;
     typedef SolverType::TrialVectorType SolutionType;
-    Dune::shared_ptr<SolutionType> solution = solver.createVector();
-    solver.solve(*solution, paramTree.sub(SolverType::id()).sub("solve"), "  ", debug);
+    Dune::shared_ptr< SolutionType > solution = solver.createVector();
+    solver.solve(*solution, paramTree, "  ", debug);
 
     info << "postprocessing:" << std::endl;
     solver.visualize(*solution,
-                     paramTree.sub(SolverType::id()).sub("visualize").get("filename", id + "_solution"),
-                     paramTree.sub(SolverType::id()).sub("visualize").get("name", "solution"),
+                     paramTree.get(id + ".filename", id) + ".solution",
+                     solverTree.get("visualize.name", "solution"),
                      "  ",
                      debug);
 
