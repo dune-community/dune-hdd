@@ -1,23 +1,24 @@
 #ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MULTISCALE_SEMICONTINUOUSGALERKIN_DUNE_DETAILED_DISCRETIZATIONS_HH
 #define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MULTISCALE_SEMICONTINUOUSGALERKIN_DUNE_DETAILED_DISCRETIZATIONS_HH
 
-// system
+#ifdef HAVE_CMAKE_CONFIG
+  #include "cmake_config.h"
+#elif defined (HAVE_CONFIG_H)
+  #include "config.h"
+#endif // ifdef HAVE_CMAKE_CONFIG
+
 #include <vector>
 #include <sstream>
 
-// dune-common
 #include <dune/common/exceptions.hh>
 #include <dune/common/timer.hh>
 
-// dune-grid-multiscale
 #include <dune/grid/multiscale/default.hh>
 
-// dune-stuff
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 
-// dune-detailed-discretizations
 #include <dune/detailed/discretizations/mapper/multiscale.hh>
 #include <dune/detailed/discretizations/la/factory/eigen.hh>
 #include <dune/detailed/discretizations/discretefunction/multiscale.hh>
@@ -30,28 +31,19 @@
 #include <dune/detailed/discretizations/assembler/local/codim1/matrix.hh>
 #include <dune/detailed/discretizations/assembler/multiscale/coupling.hh>
 
-// dune-detailed-solvers
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/interface.hh>
 #include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
 namespace Dune {
-
 namespace Detailed {
-
 namespace Solvers {
-
 namespace Stationary {
-
 namespace Linear {
-
 namespace Elliptic {
-
 namespace Multiscale {
-
 namespace SemicontinuousGalerkin {
 
 /**
- *  \todo Change id -> static id()
  *  \todo Implement non-zero dirichlet and neumann values in assembleBoundaryContribution()
  */
 template< class ModelImp, class MsGridImp, class BoundaryInfoImp, int polynomialOrder >
@@ -67,8 +59,6 @@ public:
   static const int polOrder = polynomialOrder;
 
   typedef DuneDetailedDiscretizations< ModelType, MsGridType, BoundaryInfoType, polOrder > ThisType;
-
-  static const std::string id;
 
   typedef typename MsGridType::GlobalGridPartType GlobalGridPartType;
 
@@ -119,35 +109,30 @@ public:
 
   typedef typename Dune::Detailed::Discretizations::DiscreteFunction::Multiscale< MsGridType, LocalDiscreteFunctionType > DiscreteFunctionType;
 
+  static const std::string id()
+  {
+    return "detailed.solvers.stationary.linear.elliptic.multiscale.semicontinuousgalerkin";
+  }
+
   DuneDetailedDiscretizations(const Dune::shared_ptr< const ModelType > model,
                               const Dune::shared_ptr< const MsGridType > msGrid,
                               const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo,
-                              const Dune::Stuff::Common::ExtendedParameterTree paramTree)
+                              const RangeFieldType& _penaltyFactor)
     : model_(model)
     , msGrid_(msGrid)
     , boundaryInfo_(boundaryInfo)
-    , paramTree_(paramTree)
+    , penaltyFactor_(_penaltyFactor)
     , initialized_(false)
-    , penaltyFactor_(-1)
     , ansatzMapper_()
     , testMapper_()
     , localSolvers_(msGrid_->size())
     , pattern_(Dune::shared_ptr< PatternType >(new PatternType()))
   {
-    // get penalty factor
-    std::string key = "discretization.penaltyFactor";
-    paramTree.assertKey(key, id);
-    penaltyFactor_ = paramTree.get(key, RangeFieldType(-1.0));
-    if (!penaltyFactor_ > 0) {
-      std::stringstream msg;
-      msg << std::endl << "Error in " << id << ":"
-          << "wrong '" << key << "' given (should be posititve double, is '" << penaltyFactor_ << "') in the following Dune::ParameterTree:" << std::endl;
-      paramTree.report(msg);
-      DUNE_THROW(Dune::InvalidStateException, msg.str());
-    }
+    // test penalty factor
+    assert(penaltyFactor_ > 0 && "Please provide a positive penalty factor!");
     // test orders
-    assert(model_->diffusionOrder() >= 0 && "Please provide a nonnegative order for the diffusion!");
-    assert(model_->forceOrder() >= 0 && "Please provide a nonnegative order for the force!");
+    assert(model_->diffusionOrder() >= 0 && "Please provide a nonnegative integration order for the diffusion!");
+    assert(model_->forceOrder() >= 0 && "Please provide a nonnegative integration order for the force!");
   } // DuneDetailedDiscretizations()
 
   const Dune::shared_ptr< const ModelType > model() const
@@ -459,16 +444,16 @@ public:
   }
 
   void solve(std::vector< VectorBackendType >& solution,
-             const Dune::ParameterTree paramTree = Dune::ParameterTree(),
+             const std::string type = "eigen.bicgstab.diagonal",
+             const unsigned int maxIter = 5000,
+             const double precision = 1e-12,
              const std::string prefix = "",
              std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
     // preparations
     assert(initialized_ && "The system can only be solved after init() has been called! ");
     assert(solution.size() == msGrid_->size() && "Given vector has wrong size!");
-    const std::string type = paramTree.get("type", "eigen.bicgstab.incompletelut");
-    const unsigned int maxIter = paramTree.get("maxIter", 5000);
-    const double precision = paramTree.get("precision", 1e-12);
+    assert(precision > 0 && "Please provide a positive precision!");
     Dune::Timer timer;
     // create global solution vector
     VectorBackendType tmpSolution = ContainerFactory::createDenseVector(testMapper_.size());
@@ -496,7 +481,7 @@ public:
     } else {
       std::stringstream msg;
       msg << "Error";
-      if (id != "") {
+      if (id() != "") {
         msg << " in " << id;
       }
       msg << ": solver type '" << type << "not supported!" << std::endl;
@@ -747,9 +732,8 @@ private:
   const Dune::shared_ptr< const ModelType > model_;
   const Dune::shared_ptr< const MsGridType > msGrid_;
   const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo_;
-  const Dune::ParameterTree& paramTree_;
-  bool initialized_;
   RangeFieldType penaltyFactor_;
+  bool initialized_;
   AnsatzMapperType ansatzMapper_;
   TestMapperType testMapper_;
   std::vector< Dune::shared_ptr< LocalSolverType > > localSolvers_;
@@ -758,23 +742,13 @@ private:
   Dune::shared_ptr< VectorBackendType > rhs_;
 }; // class DuneDetailedDiscretizations
 
-template< class ModelType, class GridPartType, class BoundaryInfoType, int polOrder >
-const std::string DuneDetailedDiscretizations< ModelType, GridPartType, BoundaryInfoType, polOrder >::id = "detailed.solvers.stationary.linear.elliptic.multiscale.semicontinuousgalerkin";
-
 } // namespace SemicontinuousGalerkin
-
 } // namespace Multiscale
-
 } // namespace Elliptic
-
 } // namespace Linear
-
 } // namespace Stationary
-
 } // namespace Solvers
-
 } // namespace Detailed
-
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MULTISCALE_SEMICONTINUOUSGALERKIN_DUNE_DETAILED_DISCRETIZATIONS_HH
