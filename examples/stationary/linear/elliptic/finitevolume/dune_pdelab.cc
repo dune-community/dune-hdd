@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     solver.init("  ", debug);
 
     info << "solving:" << std::endl;
-    typedef SolverType::TrialVectorType SolutionType;
+    typedef SolverType::VectorBackendType SolutionType;
     Dune::shared_ptr< SolutionType > solution = solver.createVector();
     solver.solve(*solution, paramTree, "  ", debug);
 
