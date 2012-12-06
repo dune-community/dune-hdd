@@ -162,7 +162,7 @@ int main(int argc, char** argv)
                                                                     GridViewType,
                                                                     BoundaryInfoType,
                                                                     polOrder >
-        SolverType;
+             SolverType;
     const Stuff::Common::ParameterTreeX solverTree = paramTree.sub(SolverType::id());
     SolverType solver(model, gridView, boundaryInfo);
     solver.init("  ", debug);
@@ -170,12 +170,19 @@ int main(int argc, char** argv)
     info << "solving:" << std::endl;
     typedef SolverType::VectorBackendType SolutionType;
     Dune::shared_ptr< SolutionType > solution = solver.createVector();
-    solver.solve(*solution, paramTree, "  ", debug);
+    solver.solve(*solution, paramTree, "  ", debug);   
 
     info << "postprocessing:" << std::endl;
-    solver.visualize(*solution,
+
+//    solver.visualize(*solution,
+//                     paramTree.get(id + ".filename", id) + ".solution",
+//                     solverTree.get("visualize.name", "solution"),
+//                     "  ",
+//                     debug);
+
+    Dune::shared_ptr< SolverType::DiscreteGridFunctionType > discreteFunction = solver.createDiscreteFunction(*solution,"discreteFunction");
+    solver.visualize(discreteFunction,
                      paramTree.get(id + ".filename", id) + ".solution",
-                     solverTree.get("visualize.name", "solution"),
                      "  ",
                      debug);
 

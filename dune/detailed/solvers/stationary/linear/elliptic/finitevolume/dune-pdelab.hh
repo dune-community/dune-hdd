@@ -287,7 +287,6 @@ private:
   typedef Dune::PDELab::EigenBackend_BiCGSTAB_Diagonal LinearSolverType;
 public:
   typedef typename GridOperatorType::Traits::Domain VectorBackendType;
-private:
   typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpaceType,VectorBackendType> DiscreteGridFunctionType;
 
 
@@ -411,7 +410,7 @@ public:
       // (3) compute the residual R(u0)
       out << prefix << "assembling residual... " << std::flush;
       timer.reset();
-      VectorBackendType residual(*gridFunctionSpace_,0.0)  ;
+      VectorBackendType residual(*gridFunctionSpace_,0.0);
       gridOperator_->residual(u0,residual);
       rhs_ = Dune::shared_ptr< VectorBackendType >(new VectorBackendType(gridOperator_->testGridFunctionSpace(),0.0));
       *rhs_ -= residual;
@@ -424,20 +423,29 @@ public:
   Dune::shared_ptr< VectorBackendType > createVector() const
   {
     assert(initialized_ && "A vector can only be created after init() has been called!");
-    Dune::shared_ptr<VectorBackendType> vector  = Dune::shared_ptr<VectorBackendType> (new VectorBackendType(*gridFunctionSpace_,0.0));
+    Dune::shared_ptr<VectorBackendType> vector = Dune::shared_ptr<VectorBackendType> (new VectorBackendType(*gridFunctionSpace_,0.0));
     return vector;
   }
 
-//  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(const std::string name = "discrete_function") const
-//  {
-//    assert(initialized_ && "Please call init() before calling createDiscreteFunction()!");
-//  } // ... createDiscreteFunction(...)
+  Dune::shared_ptr< DiscreteGridFunctionType > createDiscreteFunction(const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() before calling createDiscreteFunction()!");
+    VectorBackendType vector(*gridFunctionSpace_,0.0);
+    Dune::shared_ptr< DiscreteGridFunctionType > discreteGridFunction = Dune::shared_ptr<DiscreteGridFunctionType> (new DiscreteGridFunctionType(*gridFunctionSpace_,vector));
+    return discreteGridFunction;
+    // wofür brauche ich hier den string name? unten will ich zwar discFunc->name() aufrufen, aber die Klasse
+    // DiscreteGridFunctionType hat gar kein member named 'name'
+    // dito für die zweite Methode createDiscreteFunction()
 
-//  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(VectorBackendType vector,
-//                                                                  const std::string name = "discrete_function") const
-//  {
-//    assert(initialized_ && "Please call init() before calling createDiscreteFunction()!");
-//  } // ... createDiscreteFunction(...)
+  } // ... createDiscreteFunction()
+
+  Dune::shared_ptr< DiscreteGridFunctionType > createDiscreteFunction(VectorBackendType& vector,
+                                                                  const std::string name = "discrete_function") const
+  {
+    assert(initialized_ && "Please call init() before calling createDiscreteFunction()!");
+    Dune::shared_ptr< DiscreteGridFunctionType > discreteGridFunction = Dune::shared_ptr<DiscreteGridFunctionType> (new DiscreteGridFunctionType(*gridFunctionSpace_,vector));
+    return discreteGridFunction;
+  } // ... createDiscreteFunction()
 
 
   void solve(VectorBackendType& solution,
@@ -496,11 +504,15 @@ public:
     vtkwriter.write(filename,Dune::VTK::appendedraw);
 
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-  }
+
+    //alternativ Aufrufen der anderen visualize-Methode
+//    Dune::shared_ptr< DiscreteGridFunctionType > discreteGridFunction = Dune::shared_ptr<DiscreteGridFunctionType> (new DiscreteGridFunctionType(*gridFunctionSpace_,vector));
+//    this->visualize(discreteGridFunction, filename, prefix, out);
+
+  } // void visualize()
 
 
-#if 0
-  void visualize(Dune::shared_ptr< DiscreteFunctionType > discreteFunction,
+  void visualize(Dune::shared_ptr< DiscreteGridFunctionType > discreteGridFunction,
                  const std::string filename = "solution",
                  const std::string prefix = "",
                  std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
@@ -508,25 +520,21 @@ public:
     // preparations
     assert(initialized_ && "A discrete function can only be visualized after init() has been called! ");
     Dune::Timer timer;
-    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
+
+    out << prefix << "writing '" << "name" /*discreteGridFunction->name()*/ << "' to '" << filename;    //es gibt kein discreteGridFunction->name() !?!
     if (dimDomain == 1)
       out << ".vtp";
     else
       out << ".vtu";
     out << "'... " << std::flush;
-    typedef Dune::VTKWriter< typename AnsatzSpaceType::GridViewType > VTKWriterType;
-    VTKWriterType vtkWriter(ansatzSpace_->gridView());
-    vtkWriter.addVertexData(discreteFunction);
-    vtkWriter.write(filename);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-  typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpaceType,VectorBackendType> DiscreteGridFunctionType;
-  DiscreteGridFunctionType discreteGridFunction(gridFunctionSpace_,solution);
-  Dune::VTKWriter<GridViewType> vtkwriter(gridView_,Dune::VTK::conforming);
-  vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunctionType>(discreteGridFunction,"solution"));
-  vtkwriter.write("dune-pdelab",Dune::VTK::appendedraw);
-  }
-#endif // visualize()
+    Dune::VTKWriter<GridViewType> vtkwriter(*gridView_,Dune::VTK::conforming);
+    vtkwriter.addCellData(new Dune::PDELab::VTKGridFunctionAdapter<DiscreteGridFunctionType>(*discreteGridFunction,"solution")); /*discreteGridFunction->name()*/
+    vtkwriter.write(filename,Dune::VTK::appendedraw);
+
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualize()
+
 
 
   const Dune::shared_ptr< const MatrixBackendType > systemMatrix() const
