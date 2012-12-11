@@ -51,10 +51,10 @@ void ensureParamFile(std::string filename)
     file << "[stuff.grid.provider.cube]" << std::endl;
     file << "lowerLeft = [0.0; 0.0; 0.0]" << std::endl;
     file << "upperRight = [1.0; 1.0; 1.0]" << std::endl;
-    file << "numElements = 4" << std::endl;
+    file << "numElements = 20" << std::endl;
     file << "[stuff.boundaryinfo.idbased]" << std::endl;
-    file << "dirichlet = [1; 2; 3]" << std::endl;
-    file << "neumann = [4]" << std::endl;
+    file << "dirichlet = [1; 4]" << std::endl;
+    file << "neumann = [2; 3]" << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
     file << "diffusion.variable = x" << std::endl;
@@ -64,10 +64,10 @@ void ensureParamFile(std::string filename)
     file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
     file << "dirichlet.order = 0"  << std::endl;
     file << "dirichlet.variable = x" << std::endl;
-    file << "dirichlet.expression = [1.0; 1.0; 1.0]"  << std::endl;
+    file << "dirichlet.expression = [0.0; 0.0; 0.0]"  << std::endl;
     file << "neumann.order = 0"  << std::endl;
     file << "neumann.variable = x" << std::endl;
-    file << "neumann.expression = [1.0; 1.0; 1.0]"  << std::endl;
+    file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
     file << "[detailed.solvers.stationary.linear.elliptic.model.thermalblock]" << std::endl;
     file << "diffusion.order = 0"  << std::endl;
     file << "diffusion.lowerLeft = [0.0; 0.0; 0.0]" << std::endl; // should coincide with the grid
@@ -170,19 +170,18 @@ int main(int argc, char** argv)
     info << "solving:" << std::endl;
     typedef SolverType::VectorBackendType SolutionType;
     Dune::shared_ptr< SolutionType > solution = solver.createVector();
-    solver.solve(*solution, paramTree, "  ", debug);   
+    solver.solve(*solution,
+                 paramTree,
+                 solverTree.get("solve.maxIter", 1000),
+                 solverTree.get("solve.precision", 1e-12),
+                 "  ",
+                 debug);
 
     info << "postprocessing:" << std::endl;
-
-//    solver.visualize(*solution,
-//                     paramTree.get(id + ".filename", id) + ".solution",
-//                     solverTree.get("visualize.name", "solution"),
-//                     "  ",
-//                     debug);
-
-    Dune::shared_ptr< SolverType::DiscreteGridFunctionType > discreteFunction = solver.createDiscreteFunction(*solution,"discreteFunction");
+    Dune::shared_ptr< SolverType::DiscreteFunctionType > discreteFunction = solver.createDiscreteFunction(*solution);
     solver.visualize(discreteFunction,
                      paramTree.get(id + ".filename", id) + ".solution",
+                     solverTree.get("visualize.name", "solution"),
                      "  ",
                      debug);
 
