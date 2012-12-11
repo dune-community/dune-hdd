@@ -173,7 +173,7 @@ int main(int argc, char** argv)
     info << "visualizing grid... " << std::flush;
     timer.reset();
     debug.suspend();
-    msGrid->visualize(paramTree.sub(GridProviderType::id()).get("filename", id + "_msGrid"));
+    gridProvider.visualize(paramTree.sub(GridProviderType::id()).get("filename", id + "_msGrid"));
     info << "done (took " << timer.elapsed() << " sek)" << std::endl;
     debug.resume();
 
