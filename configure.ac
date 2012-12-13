@@ -28,11 +28,11 @@ AC_CONFIG_FILES([
   dune/detailed/solvers/stationary/Makefile
   dune/detailed/solvers/stationary/linear/Makefile
   dune/detailed/solvers/stationary/linear/elliptic/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/finitevolume/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/cg/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/fv/Makefile
   dune/detailed/solvers/stationary/linear/elliptic/model/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/multiscale/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/ms/Makefile
+  dune/detailed/solvers/stationary/linear/elliptic/ms/semicg/Makefile
   m4/Makefile
   dune-detailed-solvers.pc
   examples/Makefile

@@ -1,3 +1,3 @@
-SUBDIRS = continuousgalerkin finitevolume model multiscale
+SUBDIRS = cg fv model ms
 
 include $(top_srcdir)/am/global-rules
