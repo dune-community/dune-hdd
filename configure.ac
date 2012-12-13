@@ -39,10 +39,10 @@ AC_CONFIG_FILES([
   examples/stationary/Makefile
   examples/stationary/linear/Makefile
   examples/stationary/linear/elliptic/Makefile
-  examples/stationary/linear/elliptic/continuousgalerkin/Makefile
-  examples/stationary/linear/elliptic/finitevolume/Makefile
-  examples/stationary/linear/elliptic/multiscale/Makefile
-  examples/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/Makefile
+  examples/stationary/linear/elliptic/cg/Makefile
+  examples/stationary/linear/elliptic/fv/Makefile
+  examples/stationary/linear/elliptic/ms/Makefile
+  examples/stationary/linear/elliptic/ms/semicg/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information

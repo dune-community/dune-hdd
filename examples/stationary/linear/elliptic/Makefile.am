@@ -1,3 +1,3 @@
-SUBDIRS = continuousgalerkin finitevolume multiscale
+SUBDIRS = cg fv ms
 
 include $(top_srcdir)/am/global-rules

@@ -1,3 +1,3 @@
-add_subdirectory(continuousgalerkin)
-add_subdirectory(finitevolume)
-add_subdirectory(multiscale)
+add_subdirectory(cg)
+add_subdirectory(fv)
+add_subdirectory(ms)

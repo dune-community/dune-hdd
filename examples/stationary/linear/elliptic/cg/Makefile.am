@@ -1,16 +1,16 @@
 
 SUBDIRS =
 
-noinst_PROGRAMS = dune_detailed_discretizations
+noinst_PROGRAMS = detailed_discretizations
 
-dune_detailed_discretizations_SOURCES = dune_detailed_discretizations.cc
+detailed_discretizations_SOURCES = detailed_discretizations.cc
 
 GRIDDIM=2
 GRIDTYPE=SGRID
 
 CUSTOM_CPPFLAGS = -D$(GRIDTYPE) -DGRIDDIM=$(GRIDDIM) -Wall -O0 -DDEBUG -g -fdiagnostics-show-option -std=c++0x
 
-dune_detailed_discretizations_CPPFLAGS = $(AM_CPPFLAGS) \
+detailed_discretizations_CPPFLAGS = $(AM_CPPFLAGS) \
 	$(DUNEMPICPPFLAGS) \
 	$(UG_CPPFLAGS) \
 	$(AMIRAMESH_CPPFLAGS) \
@@ -23,7 +23,7 @@ dune_detailed_discretizations_CPPFLAGS = $(AM_CPPFLAGS) \
 # last).  Also, due to some misunderstanding, a lot of libraries include the
 # -L option in LDFLAGS instead of LIBS -- so we have to include the LDFLAGS
 # here as well.
-dune_detailed_discretizations_LDADD = \
+detailed_discretizations_LDADD = \
 	$(DUNE_LDFLAGS) $(DUNE_LIBS) \
 	$(ALUGRID_LDFLAGS) $(ALUGRID_LIBS) \
 	$(ALBERTA_LDFLAGS) $(ALBERTA_LIBS) \
@@ -34,7 +34,7 @@ dune_detailed_discretizations_LDADD = \
   $(BOOST_LDADD) \
   -lboost_system \
   -lboost_filesystem
-dune_detailed_discretizations_LDFLAGS = $(AM_LDFLAGS) \
+detailed_discretizations_LDFLAGS = $(AM_LDFLAGS) \
 	$(DUNEMPILDFLAGS) \
 	$(UG_LDFLAGS) \
 	$(AMIRAMESH_LDFLAGS) \
