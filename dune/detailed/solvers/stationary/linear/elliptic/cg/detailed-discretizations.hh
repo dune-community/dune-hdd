@@ -11,6 +11,7 @@
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/discretefunction/projection/dirichlet.hh>
+#include <dune/stuff/la/solver/eigen.hh>
 
 #include <dune/grid/part/interface.hh>
 
@@ -98,15 +99,27 @@ public:
 
   typedef Dune::Detailed::Discretizations
       ::DiscreteFunction
+      ::Default< TestSpaceType, VectorType >
+    DiscreteTestFunctionType;
+
+private:
+  typedef Dune::Detailed::Discretizations
+      ::DiscreteFunction
       ::Default< LagrangeSpaceType, VectorType >
     DiscreteFunctionType;
 
+public:
   typedef typename Dune::Detailed::Discretizations
       ::DiscreteFunctionSpace
       ::Sub
       ::Affine
       ::Dirichlet< TestSpaceType, VectorType >
     AnsatzSpaceType;
+
+  typedef Dune::Detailed::Discretizations
+      ::DiscreteFunction
+      ::Default< AnsatzSpaceType, VectorType >
+    DiscreteAnsatzFunctionType;
 
   static const std::string id()
   {
@@ -272,159 +285,217 @@ public:
       systemAssembler.addLocalVectorAssembler(localforceVectorAssembler, forceVector);
       systemAssembler.addLocalVectorAssembler(localNeumannVectorAssembler, neumannVector);
       systemAssembler.assemble();
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // done
       initialized_ = true;
     } // if !(initialized_)
   } // void init()
 
-//  Dune::shared_ptr< VectorBackendType > createVector() const
-//  {
-//    assert(initialized_ && "A vector can only be created after init() has been called!");
-//    Dune::shared_ptr< VectorBackendType > ret(new VectorBackendType(ContainerFactory::createDenseVector(*ansatzSpace_)));
-//    return ret;
-//  }
+  const AnsatzSpaceType& ansatzSpace() const
+  {
+    assert(initialized_);
+    return *ansatzSpace_;
+  }
 
-//  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(const std::string name = "discrete_function") const
-//  {
-//    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
-//    return createDiscreteFunction(ContainerFactory::createDenseVector(*ansatzSpace_), name);
-//  } // ... createDiscreteFunction(...)
+  const TestSpaceType& testSpace() const
+  {
+    assert(initialized_);
+    return *testSpace_;
+  }
 
-//  Dune::shared_ptr< DiscreteFunctionType > createDiscreteFunction(VectorBackendType vector,
-//                                                                  const std::string name = "discrete_function") const
-//  {
-//    assert(initialized_ && "Please call init() beafore calling createDiscreteFunction()!");
-//    assert(vector.size() == ansatzSpace_->map().size());
-//    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*ansatzSpace_,
-//                                                                                       vector,
-//                                                                                       name));
-//    return discreteFunction;
-//  } // ... createDiscreteFunction(...)
+  Dune::shared_ptr< VectorType > createAnsatzVector() const
+  {
+    assert(initialized_ && "Please call init() before calling createAnsatzVector()!");
+    Dune::shared_ptr< VectorType > vector(ContainerFactory::createDenseVector(*ansatzSpace_));
+    return vector;
+  } // Dune::shared_ptr< VectorType > createAnsatzVector() const
 
-//  void solve(VectorBackendType& solution,
-//             const std::string type = "eigen.bicgstab.incompletelut",
-//             const unsigned int maxIter = 5000,
-//             const double precision = 1e-12,
-//             const std::string prefix = "",
-//             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-//  {
-//    // preparations
-//    assert(initialized_ && "The system can only be solved after init() has been called! ");
-//    assert(solution.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
-//    Dune::Timer timer;
-//    // solve
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabIlut BicgstabIlutSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::BicgstabDiagonal BicgstabDiagonalSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalUpper CgDiagonalUpperSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::CgDiagonalLower CgDiagonalLowerSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyUpper SimplicialcholeskyUpperSolver;
-//    typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyLower SimplicialcholeskyLowerSolver;
-//    out << prefix << "solving linear system of size " << matrix_->rows() << "x" << matrix_->cols() << std::endl
-//        << prefix << "  using " << type << "... " << std::flush;
-//    if (type == "eigen.bicgstab.incompletelut"){
-//      BicgstabIlutSolver::apply(*matrix_, solution, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.bicgstab.diagonal"){
-//      BicgstabDiagonalSolver::apply(*matrix_, solution, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.cg.diagonal.upper"){
-//      CgDiagonalUpperSolver::apply(*matrix_, solution, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.cg.diagonal.lower"){
-//      CgDiagonalLowerSolver::apply(*matrix_, solution, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.simplicialcholesky.upper"){
-//      SimplicialcholeskyUpperSolver::apply(*matrix_, solution, *rhs_, maxIter, precision);
-//    } else if (type == "eigen.simplicialcholesky.lower"){
-//      SimplicialcholeskyLowerSolver::apply(*matrix_, solution, *rhs_, maxIter, precision);
-//    } else {
-//      DUNE_THROW(Dune::RangeError,
-//                 "\nError: wrong 'type' given (" << type << ")!");
-//    }
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  } // void solve()
+  Dune::shared_ptr< VectorType > createTestVector() const
+  {
+    assert(initialized_ && "Please call init() before calling createAnsatzVector()!");
+    Dune::shared_ptr< VectorType > vector(ContainerFactory::createDenseVector(*testSpace_));
+    return vector;
+  } // Dune::shared_ptr< VectorType > createAnsatzVector() const
 
-//  void visualize(VectorBackendType& vector,
-//                 const std::string filename = "solution",
-//                 const std::string name = "solution",
-//                 const std::string prefix = "",
-//                 std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-//  {
-//    // preparations
-//    assert(initialized_ && "A vector can only be visualized after init() has been called! ");
-//    assert(vector.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
-//    Dune::Timer timer;
-//    out << prefix << "writing '" << name << "' to '" << filename;
-//    if (dimDomain == 1)
-//      out << ".vtp";
-//    else
-//      out << ".vtu";
-//    out << "'... " << std::flush;
-//    Dune::shared_ptr< DiscreteFunctionType > discreteFunction(new DiscreteFunctionType(*ansatzSpace_, vector, name));
-//    visualize(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  }
+  Dune::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(const std::string name = "ansatzFunction") const
+  {
+    assert(initialized_ && "Please call init() before calling createAnsatzFunction()!");
+    Dune::shared_ptr< DiscreteAnsatzFunctionType > ansatzFunction(new DiscreteAnsatzFunctionType(
+                                                                    *ansatzSpace_,
+                                                                    name));
+    return ansatzFunction;
+  } // Dune::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(...) const
 
-//  void visualize(Dune::shared_ptr< DiscreteFunctionType > discreteFunction,
-//                 const std::string filename = "solution",
-//                 const std::string prefix = "",
-//                 std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-//  {
-//    // preparations
-//    assert(initialized_ && "A discrete function can only be visualized after init() has been called! ");
-//    assert(discreteFunction->size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
-//    Dune::Timer timer;
-//    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
-//    if (dimDomain == 1)
-//      out << ".vtp";
-//    else
-//      out << ".vtu";
-//    out << "'... " << std::flush;
-//    typedef Dune::VTKWriter< typename AnsatzSpaceType::GridViewType > VTKWriterType;
-//    VTKWriterType vtkWriter(ansatzSpace_->gridView());
-//    vtkWriter.addVertexData(discreteFunction);
-//    vtkWriter.write(filename);
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  }
+  Dune::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(Dune::shared_ptr< VectorType > vector,
+                                                                      const std::string name = "ansatzFunction") const
+  {
+    assert(initialized_ && "Please call init() before calling createAnsatzFunction()!");
+    Dune::shared_ptr< DiscreteAnsatzFunctionType > ansatzFunction(new DiscreteAnsatzFunctionType(
+                                                                    *ansatzSpace_,
+                                                                    vector,
+                                                                    name));
+    return ansatzFunction;
+  } // Dune::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(...) const
 
-//  const AnsatzSpaceType& ansatzSpace() const
-//  {
-//    assert(initialized_);
-//    return *ansatzSpace_;
-//  }
+  Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(const std::string name = "testFunction") const
+  {
+    assert(initialized_ && "Please call init() before calling createTestFunction()!");
+    Dune::shared_ptr< DiscreteTestFunctionType > testFunction(new DiscreteTestFunctionType(
+                                                                *testSpace_,
+                                                                name));
+    return testFunction;
+  } // Dune::shared_ptr< DiscreteAnsatzFunctionType > createTestFunction(...) const
 
-//  const TestSpaceType& testSpace() const
-//  {
-//    assert(initialized_);
-//    return *testSpace_;
-//  }
+  Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(Dune::shared_ptr< VectorType > vector,
+                                                                  const std::string name = "testFunction") const
+  {
+    assert(initialized_ && "Please call init() before calling createTestFunction()!");
+    Dune::shared_ptr< DiscreteTestFunctionType > testFunction(new DiscreteTestFunctionType(
+                                                                *testSpace_,
+                                                                vector,
+                                                                name));
+    return testFunction;
+  } // Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
 
-//  const Dune::shared_ptr< const MatrixBackendType > systemMatrix() const
-//  {
-//    assert(initialized_);
-//    return matrix_;
-//  }
+  void solve(VectorType& solutionVector,
+             const std::string linearSolverType = "eigen.iterative.bicgstab.diagonal",
+             const unsigned int linearSolverMaxIter = 5000,
+             const double linearSolverPrecision = 1e-12,
+             const std::string prefix = "",
+             std::ostream& out = Dune::Stuff::Common::Logger().debug())
+  {
+    out << prefix << "applying constraints... " << std::flush;
+    Dune::Timer timer;
+    // compute system matrix and right hand side
+    // * therefore get matrix and vectors
+    MatrixType& systemMatrix = *(matrices_["diffusion"]);
+    const VectorType& forceVector = *(vectors_["force"]);
+    const VectorType& neumannVector = *(vectors_["neumann"]);
+    const VectorType& dirichletVector = *(ansatzSpace_->affineShift()->vector());
+    // * compute right hand side
+    VectorType rhsVector(testSpace_->map().size());
+    rhsVector.base() = forceVector.base()
+        + neumannVector.base()
+        - systemMatrix.base() * dirichletVector.base();
+    // * create a system assembler
+    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+    SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+    // * and apply the constraints
+    systemAssembler.applyConstraints(systemMatrix, rhsVector);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//  Dune::shared_ptr< MatrixBackendType > systemMatrix()
-//  {
-//    assert(initialized_);
-//    return matrix_;
-//  }
+    out << prefix << "solving linear system (of size " << systemMatrix.rows()
+        << "x" << systemMatrix.cols() << ")" << std::endl;
+    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
+    timer.reset();
+    typedef typename Dune::Stuff::LA::Solver::Eigen::Interface< MatrixType > SolverType;
+    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType >(linearSolverType);
+    solver->init(systemMatrix);
+    const bool success = solver->apply(rhsVector,
+                                       solutionVector,
+                                       linearSolverMaxIter,
+                                       linearSolverPrecision);
+    if (!success)
+      DUNE_THROW(Dune::MathError,
+                 "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
+    if (solutionVector.size() != ansatzSpace_->map().size())
+      DUNE_THROW(Dune::MathError,
+                 "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
+                 << solutionVector.size() << ", should be " << ansatzSpace_->map().size() << ")!");
+    solutionVector.base() += dirichletVector.base();
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void solve(...)
 
-//  const Dune::shared_ptr< const VectorBackendType > rightHandSide() const
-//  {
-//    assert(initialized_);
-//    return rhs_;
-//  }
+  void visualizeAnsatzVector(VectorType& vector,
+                             const std::string filename = id() + ".ansatzVector",
+                             const std::string name = id() + "ansatzVector",
+                             const std::string prefix = "",
+                             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "Please call init() before calling visualize()");
+    assert(vector.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
+    Dune::Timer timer;
+    out << prefix << "writing '" << name << "'" << std::endl;
+    out << prefix << "     to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
+    const Dune::shared_ptr< const DiscreteAnsatzFunctionType > discreteFunction
+        = createAnsatzFunction(tmpVectorPtr, name);
+    visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualizeAnsatzVector(...)
 
-//  Dune::shared_ptr< VectorBackendType > rightHandSide()
-//  {
-//    assert(initialized_);
-//    return rhs_;
-//  }
+  void visualizeTestVector(VectorType& vector,
+                           const std::string filename = id() + ".testVector",
+                           const std::string name = id() + "testVector",
+                           const std::string prefix = "",
+                           std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "Please call init() before calling visualize()");
+    assert(vector.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
+    Dune::Timer timer;
+    out << prefix << "writing '" << name << "'" << std::endl;
+    out << prefix << "     to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
+    const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction
+        = createTestFunction(tmpVectorPtr, name);
+    visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualizeAnsatzVector(...)
 
-//  const Dune::shared_ptr< const PatternType > pattern() const
-//  {
-//    assert(initialized_);
-//    return pattern_;
-//  }
+  void visualizeFunction(const Dune::shared_ptr< const DiscreteAnsatzFunctionType > discreteFunction,
+                         const std::string filename = id() + ".discreteAnsatzFunction",
+                         const std::string prefix = "",
+                         std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "Please call init() before calling visualize()");
+    Dune::Timer timer;
+    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    typedef Dune::VTKWriter< typename DiscreteAnsatzFunctionType::DiscreteFunctionSpaceType::GridViewType > VTKWriterType;
+    VTKWriterType vtkWriter(discreteFunction->space().gridView());
+    vtkWriter.addVertexData(discreteFunction);
+    vtkWriter.write(filename);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualizeFunction(...)
+
+  void visualizeFunction(const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction,
+                         const std::string filename = id() + ".discreteTestFunction",
+                         const std::string prefix = "",
+                         std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "Please call init() before calling visualize()");
+    Dune::Timer timer;
+    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    typedef Dune::VTKWriter< typename DiscreteAnsatzFunctionType::DiscreteFunctionSpaceType::GridViewType > VTKWriterType;
+    VTKWriterType vtkWriter(discreteFunction->space().gridView());
+    vtkWriter.addVertexData(discreteFunction);
+    vtkWriter.write(filename);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualizeFunction(...)
 
 private:
   const Dune::shared_ptr< const GridPartType > gridPart_;
