@@ -43,9 +43,9 @@ void writeParamFile(const std::string filename)
   file << "        detailed.solvers.stationary.linear.elliptic.model.thermalblock" << std::endl;
   file << "filename = " << id << std::endl;
   file << "[logging]" << std::endl;
-  file << "info     = true" << std::endl;
-  file << "debug    = false" << std::endl;
-  file << "file     = false" << std::endl;
+  file << "info  = true" << std::endl;
+  file << "debug = false" << std::endl;
+  file << "file  = false" << std::endl;
   file << "[stuff.grid.provider.cube]" << std::endl;
   file << "lowerLeft   = [0.0; 0.0; 0.0]" << std::endl;
   file << "upperRight  = [1.0; 1.0; 1.0]" << std::endl;
@@ -84,12 +84,10 @@ void writeParamFile(const std::string filename)
   file << "neumann.variable   = x" << std::endl;
   file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
   file << "[solver.linear]" << std::endl;
-  file << "type      = eigen.bicgstab.incompletelut" << std::endl;
-  file << "            eigen.bicgstab.diagonal" << std::endl;
-  file << "            eigen.cg.diagonal.upper" << std::endl;
-  file << "            eigen.cg.diagonal.lower" << std::endl;
-  file << "            eigen.simplicialcholesky.upper" << std::endl;
-  file << "            eigen.simplicialcholesky.lower" << std::endl;
+  file << "type      = eigen.iterative.bicgstab.diagonal" << std::endl;
+  file << "            eigen.iterative.bicgstab.incompletelut" << std::endl;
+  file << "            eigen.iterative.cg.diagonal" << std::endl;
+  file << "            eigen.iterative.cg.incompletelut" << std::endl;
   file << "maxIter   = 5000"  << std::endl;
   file << "precision = 1e-12"  << std::endl;
   file.close();
@@ -112,12 +110,12 @@ int run(int argc, char** argv)
     // logger
     const ParamTreeType& logParams = paramTree.sub("logging");
     int logFlags = Dune::Stuff::Common::LOG_CONSOLE;
-    const bool debugLogging = logParams.get< bool >("debug");
+    const bool debugLogging = logParams.get< bool >("debug", false);
     if (logParams.get< bool >("info"))
       logFlags = logFlags | Dune::Stuff::Common::LOG_INFO;
     if (debugLogging)
       logFlags = logFlags | Dune::Stuff::Common::LOG_DEBUG;
-    if (logParams.get< bool >("file"))
+    if (logParams.get< bool >("file", false))
       logFlags = logFlags | Dune::Stuff::Common::LOG_FILE;
     Dune::Stuff::Common::Logger().create(logFlags, id, "", "");
     Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
@@ -140,7 +138,7 @@ int run(int argc, char** argv)
       info << "s";
     info << " and a width of "
          << Dune::GridWidth::calcGridWidth(*gridPart) << ")" << std::endl;
-    info << "visualizing grid" << std::flush;
+    info << "visualizing grid... " << std::flush;
     timer.reset();
     gridProvider->visualize(filename + ".grid");
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
@@ -188,33 +186,37 @@ int run(int argc, char** argv)
     if (!debugLogging)
       info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    info << "solving... " << std::flush;
-//    debug.suspend();
-//    timer.reset();
-//    const Dune::Stuff::Common::ExtendedParameterTree solverTree = paramTree.sub(solver.id());
-//    typedef SolverType::VectorBackendType DofVectorType;
-//    Dune::shared_ptr< DofVectorType > solution = solver.createVector();
-//    solver.solve(*solution,
-//                 solverTree.get("solve.type", "eigen.bicgstab.diagonal"),
-//                 solverTree.get("solve.maxIter", 1000),
-//                 solverTree.get("solve.precision", 1e-12),
-//                 "  ",
-//                 debug);
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//    debug.resume();
+    info << "solving";
+    if (!debugLogging)
+      info << "... " << std::flush;
+    else
+      info << ":" << std::endl;
+    timer.reset();
+    const ParamTreeType& linearSolverParams = paramTree.sub("solver.linear");
+    typedef typename SolverType::VectorType VectorType;
+    Dune::shared_ptr< VectorType > solutionVector = solver.createAnsatzVector();
+    solver.solve(*solutionVector,
+                 linearSolverParams.get< std::string >( "type",      "eigen.iterative.bicgstab.diagonal"),
+                 linearSolverParams.get< unsigned int >("maxIter",   5000),
+                 linearSolverParams.get< double >(      "precision", 1e-12),
+                 "  ",
+                 debug);
+    if (!debugLogging)
+      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    info << "postprocessing:" << std::endl;
-//    solver.visualize(*solution,
-//                     paramTree.get< std::string >(id + ".filename") + ".solution",
-//                     solverTree.get< std::string >("visualize.name"),
-//                     "  ",
-//                     info);
-
-//    if (dimDomain == 1) {
-//      info << "computing errors:" << std::endl;
-//      const Dune::shared_ptr< const SolverType::DiscreteFunctionType > discreteFunction = solver.createDiscreteFunction(*solution, "discrete_solution");
-//      compute_errors(paramTree.sub(id).sub("exact_solution"), *discreteFunction, info, "  ");
-//    }
+    info << "postprocessing";
+    if (!debugLogging)
+      info << "... " << std::flush;
+    else
+      info << ":" << std::endl;
+    timer.reset();
+    solver.visualizeAnsatzVector(*solutionVector,
+                                 filename + ".solution",
+                                 id + ".solution",
+                                 "  ",
+                                 debug);
+    if (!debugLogging)
+      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
   } catch(Dune::Exception& e) {
     std::cerr << "Dune reported error: " << e.what() << std::endl;
