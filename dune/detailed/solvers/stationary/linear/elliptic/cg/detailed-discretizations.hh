@@ -123,7 +123,7 @@ public:
 
   static const std::string id()
   {
-    return "detailed.solvers.stationary.linear.elliptic.continuousgalerkin";
+    return "detailed.solvers.stationary.linear.elliptic.cg.detailed_discretizations";
   }
 
   DetailedDiscretizations(const Dune::shared_ptr< const GridPartType > _gridPart,
@@ -365,6 +365,7 @@ public:
              const std::string prefix = "",
              std::ostream& out = Dune::Stuff::Common::Logger().debug())
   {
+    assert(initialized_ && "Please call init() before calling solve()!");
     out << prefix << "applying constraints... " << std::flush;
     Dune::Timer timer;
     // compute system matrix and right hand side
