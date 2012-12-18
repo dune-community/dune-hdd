@@ -717,7 +717,7 @@ public:
         out << prefix << "  " << model_->diffusion()->numComponents() << " diffusion operators... "
             << std::flush;
         for (unsigned int qq = 0; qq < model_->diffusion()->numComponents(); ++qq) {
-          diffusions.push_back(model_->diffusion()->component(qq));
+          diffusions.push_back(model_->diffusion()->components()[qq]);
         }
       } else {
         out << prefix << "  1 diffusion operator... " << std::flush;
@@ -750,7 +750,7 @@ public:
         out << prefix << "  " << model_->force()->numComponents() << " force functionals... "
             << std::flush;
         for (unsigned int qq = 0; qq < model_->force()->numComponents(); ++qq) {
-          forces.push_back(model_->force()->component(qq));
+          forces.push_back(model_->force()->components()[qq]);
         }
       } else {
         out << prefix << "  1 force functional... " << std::flush;
@@ -783,7 +783,7 @@ public:
         out << prefix << "  " << model_->neumann()->numComponents() << " neumann functionals... "
             << std::flush;
         for (unsigned int qq = 0; qq < model_->neumann()->numComponents(); ++qq) {
-          neumanns.push_back(model_->neumann()->component(qq));
+          neumanns.push_back(model_->neumann()->components()[qq]);
         }
       } else {
         out << prefix << "  1 neumann functional... " << std::flush;
@@ -1119,7 +1119,7 @@ private:
     for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
       const Dune::shared_ptr< const MatrixType >
           componentMatrix = matrices_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second;
-      const ParamType coefficient = function.coefficient(qq)->evaluate(mu);
+      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
       assert(coefficient.size() == 1);
       ret->base() += componentMatrix->base() * coefficient[0];
     }
@@ -1140,7 +1140,7 @@ private:
   {
     for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
       const VectorType& componentVector = *(vectors_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second);
-      const ParamType coefficient = function.coefficient(qq)->evaluate(mu);
+      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
       assert(coefficient.size() == 1);
       vector += componentVector * coefficient[0];
     }
