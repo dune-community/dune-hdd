@@ -97,7 +97,7 @@ private:
 public:
   typedef typename ContainerFactory::DenseVectorType VectorType;
 
-  typedef typename ContainerFactory::SparseMatrixType MatrixType;
+  typedef typename ContainerFactory::RowMajorSparseMatrixType MatrixType;
 
   typedef typename TestSpaceType::PatternType PatternType;
 
@@ -394,8 +394,8 @@ public:
         << "x" << systemMatrix.cols() << ")" << std::endl;
     out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
     timer.reset();
-    typedef typename Dune::Stuff::LA::Solver::Eigen::Interface< MatrixType > SolverType;
-    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType >(linearSolverType);
+    typedef typename Dune::Stuff::LA::Solver::Eigen::Interface< MatrixType, VectorType > SolverType;
+    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
     solver->init(systemMatrix);
     const bool success = solver->apply(rhsVector,
                                        solutionVector,
