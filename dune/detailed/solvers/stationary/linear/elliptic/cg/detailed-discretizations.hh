@@ -35,6 +35,8 @@
 #if HAVE_DUNE_RB
   #include <dune/rb/model/stationary/linear/elliptic/interface.hh>
 #endif // HAVE_DUNE_RB
+  #include <dune/rb/common/container.hh>
+  #include <dune/rb/la/container/separable.hh>
 
 namespace Dune {
 namespace Detailed {
@@ -577,10 +579,14 @@ public:
 private:
   typedef typename Dune::Detailed::Discretizations::LA::Container::Factory::Eigen< RangeFieldType > ContainerFactory;
 
-public:
   typedef typename ContainerFactory::DenseVectorType VectorType;
 
   typedef typename ContainerFactory::RowMajorSparseMatrixType MatrixType;
+
+public:
+  typedef typename Dune::RB::LA::Container::Separable< MatrixType, ParamFieldType, maxParams > SeparableMatrixType;
+
+  typedef typename Dune::RB::LA::Container::Separable< VectorType, ParamFieldType, maxParams > SeparableVectorType;
 
   typedef typename TestSpaceType::PatternType PatternType;
 
@@ -643,6 +649,14 @@ public:
     }
     if (throw_up)
       DUNE_THROW(Dune::InvalidStateException, msg.str());
+    assert(model_->diffusion()->separable()
+           && "Please wrap nonparametric and nonseparable functions using Dune::RB::Function::Parametric::Separable::Wrapper!");
+    assert(model_->force()->separable()
+           && "Please wrap nonparametric and nonseparable functions using Dune::RB::Function::Parametric::Separable::Wrapper!");
+    assert(model_->dirichlet()->separable()
+           && "Please wrap nonparametric and nonseparable functions using Dune::RB::Function::Parametric::Separable::Wrapper!");
+    assert(model_->neumann()->separable()
+           && "Please wrap nonparametric and nonseparable functions using Dune::RB::Function::Parametric::Separable::Wrapper!");
     // sanity checks
     if (model_->diffusionOrder() < 0)
       DUNE_THROW(Dune::RangeError,
@@ -698,39 +712,46 @@ public:
       timer.reset();
       // * left hand side
       //   * elliptic operator
+      out << prefix << "  " << model_->diffusion()->numComponents() << " diffusion operator";
+      if (model_->diffusion()->numComponents() > 1)
+        out << "s";
+      out << "... " << std::flush;
       typedef Dune::Detailed::Discretizations
           ::Evaluation
           ::Local
           ::Binary
           ::Elliptic< FunctionSpaceType, typename ModelType::DiffusionType::ComponentType >
-        EllipticEvaluationType;
+        DiffusionEvaluationType;
       typedef Dune::Detailed::Discretizations
           ::DiscreteOperator
           ::Local
           ::Codim0
-          ::Integral< EllipticEvaluationType >
-        EllipticOperatorType;
-      std::vector< Dune::shared_ptr< const typename ModelType::DiffusionType::ComponentType > > diffusions;
-      std::vector< const EllipticEvaluationType* > ellipticEvaluations;
-      std::vector< const EllipticOperatorType* > ellipticOperators;
-      if (model_->diffusion()->separable()) {
-        out << prefix << "  " << model_->diffusion()->numComponents() << " diffusion operators... "
-            << std::flush;
-        for (unsigned int qq = 0; qq < model_->diffusion()->numComponents(); ++qq) {
-          diffusions.push_back(model_->diffusion()->components()[qq]);
-        }
-      } else {
-        out << prefix << "  1 diffusion operator... " << std::flush;
-        diffusions.push_back(model_->diffusion());
+          ::Integral< DiffusionEvaluationType >
+        DiffusionOperatorType;
+      std::vector< const DiffusionEvaluationType* > diffusionEvaluationPtrs;
+      std::vector< Dune::shared_ptr< DiffusionOperatorType > > diffusionOperatorPtrs;
+      for (unsigned int qq = 0; qq < model_->diffusion()->numComponents(); ++qq) {
+        diffusionEvaluationPtrs.push_back(new DiffusionEvaluationType(model_->diffusion()->components()[qq],
+                                                                     model_->diffusionOrder()));
+        diffusionOperatorPtrs.push_back(Dune::shared_ptr< DiffusionOperatorType >(new DiffusionOperatorType(
+                                                                                    *(diffusionEvaluationPtrs[qq]))));
       }
-      for (unsigned int qq = 0; qq < diffusions.size(); ++qq) {
-        ellipticEvaluations.push_back(new EllipticEvaluationType(diffusions[qq],
-                                                                 model_->diffusionOrder()));
-        ellipticOperators.push_back(new EllipticOperatorType(*(ellipticEvaluations[qq])));
-      }
-      out << "done" << std::endl;
+      typedef Dune::RB
+          ::Common
+          ::Container
+          ::Separable< DiffusionOperatorType, typename ModelType::DiffusionType::CoefficientType >
+        SeparableDiffusionOperatorType;
+      const SeparableDiffusionOperatorType separableDiffusionOperator(model_->diffusion()->parametric() ? model_->diffusion()->paramSize() : 0,
+                                                                      diffusionOperatorPtrs,
+                                                                      model_->diffusion()->coefficients());
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       // * right hand side
       //   * L2 force functional
+      out << prefix << "  " << model_->force()->numComponents() << " force functional";
+      if (model_->force()->numComponents() > 1)
+        out << "s";
+      out << "... " << std::flush;
+      timer.reset();
       typedef Dune::Detailed::Discretizations
           ::Evaluation
           ::Local
@@ -742,27 +763,30 @@ public:
           ::Local
           ::Codim0
           ::Integral< ForceEvaluationType >
-        L2ForceFunctionalType;
-      std::vector< Dune::shared_ptr< const typename ModelType::ForceType::ComponentType > > forces;
-      std::vector< const ForceEvaluationType* > forceEvaluations;
-      std::vector< const L2ForceFunctionalType* > forceFunctionals;
-      if (model_->force()->separable()) {
-        out << prefix << "  " << model_->force()->numComponents() << " force functionals... "
-            << std::flush;
-        for (unsigned int qq = 0; qq < model_->force()->numComponents(); ++qq) {
-          forces.push_back(model_->force()->components()[qq]);
-        }
-      } else {
-        out << prefix << "  1 force functional... " << std::flush;
-        forces.push_back(model_->force());
+        ForceFunctionalType;
+      std::vector< const ForceEvaluationType* > forceEvaluationPtrs;
+      std::vector< Dune::shared_ptr< ForceFunctionalType > > forceFunctionalPtrs;
+      for (unsigned int qq = 0; qq < model_->force()->numComponents(); ++qq) {
+        forceEvaluationPtrs.push_back(new ForceEvaluationType(model_->force()->components()[qq],
+                                                              model_->forceOrder()));
+        forceFunctionalPtrs.push_back(Dune::shared_ptr< ForceFunctionalType >(new ForceFunctionalType(
+                                                                                *(forceEvaluationPtrs[qq]))));
       }
-      for (unsigned int qq = 0; qq < forces.size(); ++qq) {
-        forceEvaluations.push_back(new ForceEvaluationType(forces[qq],
-                                                           model_->forceOrder()));
-        forceFunctionals.push_back(new L2ForceFunctionalType(*(forceEvaluations[qq])));
-      }
-      out << "done" << std::endl;
+      typedef Dune::RB
+          ::Common
+          ::Container
+          ::Separable< ForceFunctionalType, typename ModelType::ForceType::CoefficientType >
+        SeparableForceFunctionalType;
+      const SeparableForceFunctionalType separableForceFunctional(model_->force()->parametric() ? model_->force()->paramSize() : 0,
+                                                                  forceFunctionalPtrs,
+                                                                  model_->force()->coefficients());
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       //   * L2 neumann functional
+      out << prefix << "  " << model_->neumann()->numComponents() << " neumann functional";
+      if (model_->neumann()->numComponents() > 1)
+        out << "s";
+      out << "... " << std::flush;
+      timer.reset();
       typedef Dune::Detailed::Discretizations
           ::Evaluation
           ::Local
@@ -775,111 +799,120 @@ public:
           ::Codim1
           ::Integral
           ::Boundary< NeumannEvaluationType >
-        L2NeumannFunctionalType;
-      std::vector< Dune::shared_ptr< const typename ModelType::NeumannType::ComponentType > > neumanns;
-      std::vector< const NeumannEvaluationType* > neumannEvaluations;
-      std::vector< const L2NeumannFunctionalType* > neumannFunctionals;
-      if (model_->neumann()->separable()) {
-        out << prefix << "  " << model_->neumann()->numComponents() << " neumann functionals... "
-            << std::flush;
-        for (unsigned int qq = 0; qq < model_->neumann()->numComponents(); ++qq) {
-          neumanns.push_back(model_->neumann()->components()[qq]);
-        }
-      } else {
-        out << prefix << "  1 neumann functional... " << std::flush;
-        neumanns.push_back(model_->neumann());
+        NeumannFunctionalType;
+      std::vector< const NeumannEvaluationType* > neumannEvaluationPtrs;
+      std::vector< Dune::shared_ptr< NeumannFunctionalType > > neumannFunctionalPtrs;
+      for (unsigned int qq = 0; qq < model_->neumann()->numComponents(); ++qq) {
+        neumannEvaluationPtrs.push_back(new NeumannEvaluationType(model_->neumann()->components()[qq],
+                                                                  model_->neumannOrder()));
+        neumannFunctionalPtrs.push_back(Dune::shared_ptr< NeumannFunctionalType >(new NeumannFunctionalType(
+                                                                                    *(neumannEvaluationPtrs[qq]))));
       }
-      for (unsigned int qq = 0; qq < neumanns.size(); ++qq) {
-        neumannEvaluations.push_back(new NeumannEvaluationType(neumanns[qq],
-                                                               model_->neumannOrder()));
-        neumannFunctionals.push_back(new L2NeumannFunctionalType(*(neumannEvaluations[qq])));
-      }
-      out << "done" << std::endl;
+      typedef Dune::RB
+          ::Common
+          ::Container
+          ::Separable< NeumannFunctionalType, typename ModelType::NeumannType::CoefficientType >
+        SeparableNeumannFunctionalType;
+      const SeparableNeumannFunctionalType separableNeumannFunctional(model_->neumann()->parametric() ? model_->neumann()->paramSize() : 0,
+                                                                      neumannFunctionalPtrs,
+                                                                      model_->neumann()->coefficients());
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       out << prefix << "initializing matrices and vectors:" << std::endl;
       timer.reset();
       // * create left hand side matrices
       //   * therefore create the pattern
       Dune::shared_ptr< const PatternType > diffusionPattern = testSpace_->computePattern(*ansatzSpace_);
+      patterns_.insert(std::pair< const std::string, Dune::shared_ptr< const PatternType > >("diffusion",
+                                                                                             diffusionPattern));
       //   * and the matrices
-      if (ellipticOperators.size() == 1)
-        out << prefix << "  1 diffusion matrix... " << std::flush;
+      out << prefix << "  " << separableDiffusionOperator.numComponents() << " diffusion matri";
+      if (separableDiffusionOperator.numComponents() > 1)
+        out << "ces";
       else
-        out << prefix << "  " << ellipticOperators.size() << " diffusion matrices... " << std::flush;
-      for (unsigned int qq = 0; qq < ellipticOperators.size(); ++ qq) {
-        patterns_.insert(std::pair< const std::string, Dune::shared_ptr< const PatternType > >(
-                           "diffusion_" + Dune::Stuff::Common::toString(qq),
-                           diffusionPattern));
-        Dune::shared_ptr< MatrixType > diffusionMatrix = Dune::shared_ptr< MatrixType >(
-              new MatrixType(testSpace_->map().size(), ansatzSpace_->map().size(), *diffusionPattern));
-        matrices_.insert(std::pair< const std::string, Dune::shared_ptr< MatrixType > >(
-                           "diffusion_" + Dune::Stuff::Common::toString(qq),
-                           diffusionMatrix));
-      }
+        out << "x";
+      out << "... " << std::flush;
+      std::vector< Dune::shared_ptr< MatrixType > > diffusionMatrixPtrs;
+      for (unsigned int qq = 0; qq < separableDiffusionOperator.numComponents(); ++ qq)
+        diffusionMatrixPtrs.push_back(Dune::shared_ptr< MatrixType >(new MatrixType(
+            testSpace_->map().size(),
+            ansatzSpace_->map().size(),
+            *diffusionPattern)));
+      Dune::shared_ptr< SeparableMatrixType > diffusionMatrix(new SeparableMatrixType(separableDiffusionOperator.paramSize(),
+                                                                                      diffusionMatrixPtrs,
+                                                                                      separableDiffusionOperator.coefficients()));
+      matrices_.insert(std::pair< const std::string, Dune::shared_ptr< SeparableMatrixType > >("diffusion",
+                                                                                               diffusionMatrix));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-      // create the right hand side vectors
+      // * create the right hand side vectors
       //   * for the force
-      if (forceFunctionals.size() == 1)
-        out << prefix << "  1 force vector... " << std::flush;
-      else
-        out << prefix << "  " << forceFunctionals.size() << " force vectors... " << std::flush;
+      out << prefix << "  " << separableForceFunctional.numComponents() << " force vector";
+      if (separableForceFunctional.numComponents() > 1)
+        out << "s";
+      out << "... " << std::flush;
       timer.reset();
-      for (unsigned int qq = 0; qq < forceFunctionals.size(); ++qq)
-        vectors_.insert(std::pair< const std::string, Dune::shared_ptr< VectorType > >(
-                          "force_" + Dune::Stuff::Common::toString(qq),
-                          Dune::shared_ptr< VectorType >(ContainerFactory::createDenseVector(*testSpace_))));
+      std::vector< Dune::shared_ptr< VectorType > > forceVectorPtrs;
+      for (unsigned int qq = 0; qq < separableForceFunctional.numComponents(); ++qq)
+        forceVectorPtrs.push_back(Dune::shared_ptr< VectorType >(ContainerFactory::createDenseVector(*testSpace_)));
+      Dune::shared_ptr< SeparableVectorType > forceVector(new SeparableVectorType(separableForceFunctional.paramSize(),
+                                                                                  forceVectorPtrs,
+                                                                                  separableForceFunctional.coefficients()));
+      vectors_.insert(std::pair< const std::string, Dune::shared_ptr< SeparableVectorType > >("force", forceVector));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       //   * for the neumann
-      if (neumannFunctionals.size() == 1)
-        out << prefix << "  1 neumann vector... " << std::flush;
-      else
-        out << prefix << "  " << neumannFunctionals.size() << " neumann vectors... " << std::flush;
+      out << prefix << "  " << separableNeumannFunctional.numComponents() << " neumann vector";
+      if (separableNeumannFunctional.numComponents() > 1)
+        out << "s";
+      out << "... " << std::flush;
       timer.reset();
-      for (unsigned int qq = 0; qq < neumannFunctionals.size(); ++qq)
-        vectors_.insert(std::pair< const std::string, Dune::shared_ptr< VectorType > >(
-                          "neumann_" + Dune::Stuff::Common::toString(qq),
-                          Dune::shared_ptr< VectorType >(ContainerFactory::createDenseVector(*testSpace_))));
+      std::vector< Dune::shared_ptr< VectorType > > neumannVectorPtrs;
+      for (unsigned int qq = 0; qq < separableNeumannFunctional.numComponents(); ++qq)
+        neumannVectorPtrs.push_back(Dune::shared_ptr< VectorType >(ContainerFactory::createDenseVector(*testSpace_)));
+      Dune::shared_ptr< SeparableVectorType > neumannVector(new SeparableVectorType(separableNeumannFunctional.paramSize(),
+                                                                                    neumannVectorPtrs,
+                                                                                    separableNeumannFunctional.coefficients()));
+      vectors_.insert(std::pair< const std::string, Dune::shared_ptr< SeparableVectorType > >("neumann", neumannVector));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-      out << prefix << "assembing system... " << std::flush;
-      timer.reset();
-      typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-      SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
-      // * local matrix assembler
-      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType >
-          LocalMatrixAssemblerType;
-      for (unsigned int qq = 0; qq < ellipticOperators.size(); ++qq) {
-        const Dune::shared_ptr< const LocalMatrixAssemblerType > localMatrixAssembler(
-              new LocalMatrixAssemblerType(*(ellipticOperators[qq])));
-        Dune::shared_ptr< MatrixType > diffusionMatrix
-            = matrices_.find("diffusion_" + Dune::Stuff::Common::toString(qq))->second;
-        systemAssembler.addLocalMatrixAssembler(localMatrixAssembler, diffusionMatrix);
-      }
-      // * local vector assemblers
-      //   * force vector
-      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2ForceFunctionalType >
-          LocalForceVectorAssemblerType;
-      for (unsigned int qq = 0; qq < forceFunctionals.size(); ++qq) {
-        const Dune::shared_ptr< const LocalForceVectorAssemblerType > localForceVectorAssembler(
-              new LocalForceVectorAssemblerType(*(forceFunctionals[qq])));
-        Dune::shared_ptr< VectorType > forceVector
-            = vectors_.find("force_" + Dune::Stuff::Common::toString(qq))->second;
-        systemAssembler.addLocalVectorAssembler(localForceVectorAssembler, forceVector);
-      }
-      //   * neumann vector
-      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Vector::Neumann< L2NeumannFunctionalType,
-                                                                                          BoundaryInfoType >
-          LocalNeumannVectorAssemblerType;
-      for (unsigned int qq = 0; qq < neumannFunctionals.size(); ++qq) {
-        const Dune::shared_ptr< const LocalNeumannVectorAssemblerType > localNeumannVectorAssembler(
-              new LocalNeumannVectorAssemblerType(*(neumannFunctionals[qq]), boundaryInfo_));
-        Dune::shared_ptr< VectorType > neumannVector
-            = vectors_.find("neumann_" + Dune::Stuff::Common::toString(qq))->second;
-        systemAssembler.addLocalVectorAssembler(localNeumannVectorAssembler, neumannVector);
-      }
-      // * system assembler
-      systemAssembler.assemble();
-      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//      out << prefix << "assembing system... " << std::flush;
+//      timer.reset();
+//      typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+//      SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+//      // * local matrix assembler
+//      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType >
+//          LocalMatrixAssemblerType;
+//      for (unsigned int qq = 0; qq < ellipticOperators.size(); ++qq) {
+//        const Dune::shared_ptr< const LocalMatrixAssemblerType > localMatrixAssembler(
+//              new LocalMatrixAssemblerType(*(ellipticOperators[qq])));
+//        Dune::shared_ptr< MatrixType > diffusionMatrix
+//            = matrices_.find("diffusion_" + Dune::Stuff::Common::toString(qq))->second;
+//        systemAssembler.addLocalMatrixAssembler(localMatrixAssembler, diffusionMatrix);
+//      }
+//      // * local vector assemblers
+//      //   * force vector
+//      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2ForceFunctionalType >
+//          LocalForceVectorAssemblerType;
+//      for (unsigned int qq = 0; qq < forceFunctionals.size(); ++qq) {
+//        const Dune::shared_ptr< const LocalForceVectorAssemblerType > localForceVectorAssembler(
+//              new LocalForceVectorAssemblerType(*(forceFunctionals[qq])));
+//        Dune::shared_ptr< VectorType > forceVector
+//            = vectors_.find("force_" + Dune::Stuff::Common::toString(qq))->second;
+//        systemAssembler.addLocalVectorAssembler(localForceVectorAssembler, forceVector);
+//      }
+//      //   * neumann vector
+//      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Vector::Neumann< L2NeumannFunctionalType,
+//                                                                                          BoundaryInfoType >
+//          LocalNeumannVectorAssemblerType;
+//      for (unsigned int qq = 0; qq < neumannFunctionals.size(); ++qq) {
+//        const Dune::shared_ptr< const LocalNeumannVectorAssemblerType > localNeumannVectorAssembler(
+//              new LocalNeumannVectorAssemblerType(*(neumannFunctionals[qq]), boundaryInfo_));
+//        Dune::shared_ptr< VectorType > neumannVector
+//            = vectors_.find("neumann_" + Dune::Stuff::Common::toString(qq))->second;
+//        systemAssembler.addLocalVectorAssembler(localNeumannVectorAssembler, neumannVector);
+//      }
+//      // * system assembler
+//      systemAssembler.assemble();
+//      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       initialized_ = true;
     }
@@ -962,57 +995,57 @@ public:
     assert(initialized_ && "Please call init() before calling solve()!");
     out << prefix << "computing system matrix and right hand side... " << std::flush;
     Dune::Timer timer;
-    // compute the system matrix
-    Dune::shared_ptr< MatrixType > systemMatrix;
-    if (model_->diffusion()->separable()) {
-      const ParamType muDiffusion = model_->getDiffusionParam(mu);
-      systemMatrix = fixMatrix(*(model_->diffusion()), "diffusion", muDiffusion);
-    } else {
-      systemMatrix = Dune::shared_ptr< MatrixType >(new MatrixType(testSpace_->map().size(),
-                                                                   ansatzSpace_->map().size()));
-      systemMatrix->base() = matrices_.find("diffusion_0")->second->base();
-    }
-    // compute the right hand side
-    Dune::shared_ptr< VectorType > rhsVector = ContainerFactory::createDenseVector(*testSpace_);
-    // * add up force
-    if (model_->force()->separable()) {
-      const ParamType muForce = model_->getForceParam(mu);
-      fixAndAddVector(*(model_->force()), "force", muForce, *rhsVector);
-    } else
-      rhsVector->base() = vectors_.find("force_0")->second->base();
-    // * add up neumann
-    if (model_->neumann()->separable()) {
-      const ParamType muNeumann = model_->getNeumannParam(mu);
-      fixAndAddVector(*(model_->neumann()), "neumann", muNeumann, *rhsVector);
-    } else
-      rhsVector->base() += vectors_.find("neumann_0")->second->base();
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    // compute the system matrix
+//    Dune::shared_ptr< MatrixType > systemMatrix;
+//    if (model_->diffusion()->separable()) {
+//      const ParamType muDiffusion = model_->getDiffusionParam(mu);
+//      systemMatrix = fixMatrix(*(model_->diffusion()), "diffusion", muDiffusion);
+//    } else {
+//      systemMatrix = Dune::shared_ptr< MatrixType >(new MatrixType(testSpace_->map().size(),
+//                                                                   ansatzSpace_->map().size()));
+//      systemMatrix->base() = matrices_.find("diffusion_0")->second->base();
+//    }
+//    // compute the right hand side
+//    Dune::shared_ptr< VectorType > rhsVector = ContainerFactory::createDenseVector(*testSpace_);
+//    // * add up force
+//    if (model_->force()->separable()) {
+//      const ParamType muForce = model_->getForceParam(mu);
+//      fixAndAddVector(*(model_->force()), "force", muForce, *rhsVector);
+//    } else
+//      rhsVector->base() = vectors_.find("force_0")->second->base();
+//    // * add up neumann
+//    if (model_->neumann()->separable()) {
+//      const ParamType muNeumann = model_->getNeumannParam(mu);
+//      fixAndAddVector(*(model_->neumann()), "neumann", muNeumann, *rhsVector);
+//    } else
+//      rhsVector->base() += vectors_.find("neumann_0")->second->base();
+//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    out << prefix << "applying constraints... " << std::flush;
-    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-    SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
-    systemAssembler.applyConstraints(*systemMatrix, *rhsVector);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    out << prefix << "applying constraints... " << std::flush;
+//    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+//    SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+//    systemAssembler.applyConstraints(*systemMatrix, *rhsVector);
+//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    out << prefix << "solving linear system (of size " << systemMatrix->rows()
-        << "x" << systemMatrix->cols() << ")" << std::endl;
-    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
-    timer.reset();
-    typedef typename Dune::Stuff::LA::Solver::Eigen::Interface< MatrixType, VectorType > SolverType;
-    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
-    solver->init(*systemMatrix);
-    const bool success = solver->apply(*rhsVector,
-                                       solutionVector,
-                                       linearSolverMaxIter,
-                                       linearSolverPrecision);
-    if (!success)
-      DUNE_THROW(Dune::MathError,
-                 "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
-    if (solutionVector.size() != ansatzSpace_->map().size())
-      DUNE_THROW(Dune::MathError,
-                 "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
-                 << solutionVector.size() << ", should be " << ansatzSpace_->map().size() << ")!");
-//    solutionVector.base() += dirichletVector.base();
+//    out << prefix << "solving linear system (of size " << systemMatrix->rows()
+//        << "x" << systemMatrix->cols() << ")" << std::endl;
+//    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
+//    timer.reset();
+//    typedef typename Dune::Stuff::LA::Solver::Eigen::Interface< MatrixType, VectorType > SolverType;
+//    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
+//    solver->init(*systemMatrix);
+//    const bool success = solver->apply(*rhsVector,
+//                                       solutionVector,
+//                                       linearSolverMaxIter,
+//                                       linearSolverPrecision);
+//    if (!success)
+//      DUNE_THROW(Dune::MathError,
+//                 "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
+//    if (solutionVector.size() != ansatzSpace_->map().size())
+//      DUNE_THROW(Dune::MathError,
+//                 "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
+//                 << solutionVector.size() << ", should be " << ansatzSpace_->map().size() << ")!");
+////    solutionVector.base() += dirichletVector.base();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
@@ -1107,49 +1140,49 @@ public:
   } // void visualizeFunction(...)
 
 private:
-  template< class FunctionType >
-  Dune::shared_ptr< MatrixType > fixMatrix(const FunctionType& function,
-                                           const std::string& name,
-                                           const ParamType& mu)
-  {
-    Dune::shared_ptr< MatrixType > ret(new MatrixType(testSpace_->map().size(),
-                                                      ansatzSpace_->map().size(),
-                                                      *(patterns_.begin()->second)));
-    // summ up all components which have a coefficient
-    for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
-      const Dune::shared_ptr< const MatrixType >
-          componentMatrix = matrices_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second;
-      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
-      assert(coefficient.size() == 1);
-      ret->base() += componentMatrix->base() * coefficient[0];
-    }
-    // and add the nonparametric contribution
-    if (function.numComponents() > function.numCoefficients()) {
-      const Dune::shared_ptr< const MatrixType >
-          componentMatrix = matrices_.find(name + "_" + Dune::Stuff::Common::toString(function.numComponents()))->second;
-      ret->base() += componentMatrix->base();
-    }
-    return ret;
-  } // Dune::shared_ptr< MatrixType > completeMatrix(...)
+//  template< class FunctionType >
+//  Dune::shared_ptr< MatrixType > fixMatrix(const FunctionType& function,
+//                                           const std::string& name,
+//                                           const ParamType& mu)
+//  {
+//    Dune::shared_ptr< MatrixType > ret(new MatrixType(testSpace_->map().size(),
+//                                                      ansatzSpace_->map().size(),
+//                                                      *(patterns_.begin()->second)));
+//    // summ up all components which have a coefficient
+//    for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
+//      const Dune::shared_ptr< const MatrixType >
+//          componentMatrix = matrices_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second;
+//      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
+//      assert(coefficient.size() == 1);
+//      ret->base() += componentMatrix->base() * coefficient[0];
+//    }
+//    // and add the nonparametric contribution
+//    if (function.numComponents() > function.numCoefficients()) {
+//      const Dune::shared_ptr< const MatrixType >
+//          componentMatrix = matrices_.find(name + "_" + Dune::Stuff::Common::toString(function.numComponents()))->second;
+//      ret->base() += componentMatrix->base();
+//    }
+//    return ret;
+//  } // Dune::shared_ptr< MatrixType > completeMatrix(...)
 
-  template< class FunctionType >
-  void fixAndAddVector(const FunctionType& function,
-                       const std::string& name,
-                       const ParamType& mu,
-                       VectorType& vector) const
-  {
-    for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
-      const VectorType& componentVector = *(vectors_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second);
-      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
-      assert(coefficient.size() == 1);
-      vector += componentVector * coefficient[0];
-    }
-    if (function.numComponents() > function.numCoefficients()) {
-      const VectorType&
-          componentVector= *(vectors_.find(name + "_" + Dune::Stuff::Common::toString(function.numComponents()))->second);
-      vector += componentVector;
-    }
-  } // void fixAndAddVector(...)
+//  template< class FunctionType >
+//  void fixAndAddVector(const FunctionType& function,
+//                       const std::string& name,
+//                       const ParamType& mu,
+//                       VectorType& vector) const
+//  {
+//    for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
+//      const VectorType& componentVector = *(vectors_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second);
+//      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
+//      assert(coefficient.size() == 1);
+//      vector += componentVector * coefficient[0];
+//    }
+//    if (function.numComponents() > function.numCoefficients()) {
+//      const VectorType&
+//          componentVector= *(vectors_.find(name + "_" + Dune::Stuff::Common::toString(function.numComponents()))->second);
+//      vector += componentVector;
+//    }
+//  } // void fixAndAddVector(...)
 
   const shared_ptr< const ModelType > model_;
   const shared_ptr< const GridPartType > gridPart_;
@@ -1159,8 +1192,8 @@ private:
   Dune::shared_ptr< const TestSpaceType > testSpace_;
   Dune::shared_ptr< const AnsatzSpaceType > ansatzSpace_;
   std::map< const std::string, Dune::shared_ptr< const PatternType > > patterns_;
-  std::map< const std::string, Dune::shared_ptr< MatrixType > > matrices_;
-  std::map< const std::string, Dune::shared_ptr< VectorType > > vectors_;
+  std::map< const std::string, Dune::shared_ptr< SeparableMatrixType > > matrices_;
+  std::map< const std::string, Dune::shared_ptr< SeparableVectorType > > vectors_;
 }; // class DetailedDiscretizations
 
 
