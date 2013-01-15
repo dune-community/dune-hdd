@@ -579,17 +579,19 @@ public:
 private:
   typedef typename Dune::Detailed::Discretizations::LA::Container::Factory::Eigen< RangeFieldType > ContainerFactory;
 
+public:
   typedef typename ContainerFactory::DenseVectorType VectorType;
 
   typedef typename ContainerFactory::RowMajorSparseMatrixType MatrixType;
 
-public:
   typedef typename Dune::RB::LA::Container::Separable< MatrixType, ParamFieldType, maxParams > SeparableMatrixType;
 
   typedef typename Dune::RB::LA::Container::Separable< VectorType, ParamFieldType, maxParams > SeparableVectorType;
 
+private:
   typedef typename TestSpaceType::PatternType PatternType;
 
+public:
   typedef Dune::Detailed::Discretizations
       ::DiscreteFunction
       ::Default< TestSpaceType, VectorType >
@@ -696,7 +698,6 @@ public:
       if (model_->dirichlet()->parametric())
         DUNE_THROW(Dune::InvalidStateException,
                    "\nERROR: not implemented for parametric dirichlet values!");
-
       out << prefix << "initializing discrete function spaces... " << std::flush;
       lagrangeSpace_ = Dune::shared_ptr< const LagrangeSpaceType >(new LagrangeSpaceType(*gridPart_));
       testSpace_ = Dune::shared_ptr< const TestSpaceType >(new TestSpaceType(*lagrangeSpace_, boundaryInfo_));
@@ -989,57 +990,57 @@ public:
     assert(initialized_ && "Please call init() before calling solve()!");
     out << prefix << "computing system matrix and right hand side... " << std::flush;
     Dune::Timer timer;
-//    // compute the system matrix
-//    Dune::shared_ptr< MatrixType > systemMatrix;
-//    if (model_->diffusion()->separable()) {
-//      const ParamType muDiffusion = model_->getDiffusionParam(mu);
-//      systemMatrix = fixMatrix(*(model_->diffusion()), "diffusion", muDiffusion);
-//    } else {
-//      systemMatrix = Dune::shared_ptr< MatrixType >(new MatrixType(testSpace_->map().size(),
-//                                                                   ansatzSpace_->map().size()));
-//      systemMatrix->base() = matrices_.find("diffusion_0")->second->base();
-//    }
-//    // compute the right hand side
-//    Dune::shared_ptr< VectorType > rhsVector = ContainerFactory::createDenseVector(*testSpace_);
-//    // * add up force
-//    if (model_->force()->separable()) {
-//      const ParamType muForce = model_->getForceParam(mu);
-//      fixAndAddVector(*(model_->force()), "force", muForce, *rhsVector);
-//    } else
-//      rhsVector->base() = vectors_.find("force_0")->second->base();
-//    // * add up neumann
-//    if (model_->neumann()->separable()) {
-//      const ParamType muNeumann = model_->getNeumannParam(mu);
-//      fixAndAddVector(*(model_->neumann()), "neumann", muNeumann, *rhsVector);
-//    } else
-//      rhsVector->base() += vectors_.find("neumann_0")->second->base();
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    // compute the system matrix
+    assert(matrices_.find("diffusion") != matrices_.end());
+    Dune::shared_ptr< MatrixType > systemMatrix;
+    const Dune::shared_ptr< const SeparableMatrixType > diffusionMatrix =  matrices_["diffusion"];
+    if (model_->diffusion()->parametric())
+      systemMatrix = diffusionMatrix->fix(model_->getDiffusionParam(mu));
+    else
+      systemMatrix = diffusionMatrix->fix();
+    // compute the right hand side
+    Dune::shared_ptr< VectorType > rhsVector = ContainerFactory::createDenseVector(*testSpace_);
+    // * add up force
+    assert(vectors_.find("force") != vectors_.end());
+    Dune::shared_ptr< SeparableVectorType > forceVector = vectors_["force"];
+    if (model_->force()->parametric())
+      rhsVector->base() += forceVector->fix(model_->getForceParam(mu))->base();
+    else
+      rhsVector->base() += forceVector->fix()->base();
+    // * add up neumann
+    assert(vectors_.find("neumann") != vectors_.end());
+    Dune::shared_ptr< SeparableVectorType > neumannVector = vectors_["neumann"];
+    if (model_->neumann()->parametric())
+      rhsVector->base() += neumannVector->fix(model_->getNeumannParam(mu))->base();
+    else
+      rhsVector->base() += neumannVector->fix()->base();
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    out << prefix << "applying constraints... " << std::flush;
-//    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-//    SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
-//    systemAssembler.applyConstraints(*systemMatrix, *rhsVector);
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    out << prefix << "applying constraints... " << std::flush;
+    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+    SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+    systemAssembler.applyConstraints(*systemMatrix, *rhsVector);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    out << prefix << "solving linear system (of size " << systemMatrix->rows()
-//        << "x" << systemMatrix->cols() << ")" << std::endl;
-//    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
-//    timer.reset();
-//    typedef typename Dune::Stuff::LA::Solver::Eigen::Interface< MatrixType, VectorType > SolverType;
-//    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
-//    solver->init(*systemMatrix);
-//    const bool success = solver->apply(*rhsVector,
-//                                       solutionVector,
-//                                       linearSolverMaxIter,
-//                                       linearSolverPrecision);
-//    if (!success)
-//      DUNE_THROW(Dune::MathError,
-//                 "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
-//    if (solutionVector.size() != ansatzSpace_->map().size())
-//      DUNE_THROW(Dune::MathError,
-//                 "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
-//                 << solutionVector.size() << ", should be " << ansatzSpace_->map().size() << ")!");
-////    solutionVector.base() += dirichletVector.base();
+    out << prefix << "solving linear system (of size " << systemMatrix->rows()
+        << "x" << systemMatrix->cols() << ")" << std::endl;
+    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
+    timer.reset();
+    typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
+    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
+    solver->init(*systemMatrix);
+    const bool success = solver->apply(*rhsVector,
+                                       solutionVector,
+                                       linearSolverMaxIter,
+                                       linearSolverPrecision);
+    if (!success)
+      DUNE_THROW(Dune::MathError,
+                 "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
+    if (solutionVector.size() != ansatzSpace_->map().size())
+      DUNE_THROW(Dune::MathError,
+                 "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
+                 << solutionVector.size() << ", should be " << ansatzSpace_->map().size() << ")!");
+    solutionVector.base() += ansatzSpace_->affineShift()->vector()->base();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
@@ -1134,50 +1135,6 @@ public:
   } // void visualizeFunction(...)
 
 private:
-//  template< class FunctionType >
-//  Dune::shared_ptr< MatrixType > fixMatrix(const FunctionType& function,
-//                                           const std::string& name,
-//                                           const ParamType& mu)
-//  {
-//    Dune::shared_ptr< MatrixType > ret(new MatrixType(testSpace_->map().size(),
-//                                                      ansatzSpace_->map().size(),
-//                                                      *(patterns_.begin()->second)));
-//    // summ up all components which have a coefficient
-//    for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
-//      const Dune::shared_ptr< const MatrixType >
-//          componentMatrix = matrices_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second;
-//      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
-//      assert(coefficient.size() == 1);
-//      ret->base() += componentMatrix->base() * coefficient[0];
-//    }
-//    // and add the nonparametric contribution
-//    if (function.numComponents() > function.numCoefficients()) {
-//      const Dune::shared_ptr< const MatrixType >
-//          componentMatrix = matrices_.find(name + "_" + Dune::Stuff::Common::toString(function.numComponents()))->second;
-//      ret->base() += componentMatrix->base();
-//    }
-//    return ret;
-//  } // Dune::shared_ptr< MatrixType > completeMatrix(...)
-
-//  template< class FunctionType >
-//  void fixAndAddVector(const FunctionType& function,
-//                       const std::string& name,
-//                       const ParamType& mu,
-//                       VectorType& vector) const
-//  {
-//    for (unsigned int qq = 0; qq < function.numCoefficients(); ++qq) {
-//      const VectorType& componentVector = *(vectors_.find(name + "_" + Dune::Stuff::Common::toString(qq))->second);
-//      const ParamType coefficient = function.coefficients()[qq]->evaluate(mu);
-//      assert(coefficient.size() == 1);
-//      vector += componentVector * coefficient[0];
-//    }
-//    if (function.numComponents() > function.numCoefficients()) {
-//      const VectorType&
-//          componentVector= *(vectors_.find(name + "_" + Dune::Stuff::Common::toString(function.numComponents()))->second);
-//      vector += componentVector;
-//    }
-//  } // void fixAndAddVector(...)
-
   const shared_ptr< const ModelType > model_;
   const shared_ptr< const GridPartType > gridPart_;
   const shared_ptr< const BoundaryInfoType > boundaryInfo_;
