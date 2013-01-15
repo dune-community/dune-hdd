@@ -729,7 +729,7 @@ public:
           ::Integral< DiffusionEvaluationType >
         DiffusionOperatorType;
       std::vector< const DiffusionEvaluationType* > diffusionEvaluationPtrs;
-      std::vector< Dune::shared_ptr< DiffusionOperatorType > > diffusionOperatorPtrs;
+      std::vector< Dune::shared_ptr< const DiffusionOperatorType > > diffusionOperatorPtrs;
       for (unsigned int qq = 0; qq < model_->diffusion()->numComponents(); ++qq) {
         diffusionEvaluationPtrs.push_back(new DiffusionEvaluationType(model_->diffusion()->components()[qq],
                                                                      model_->diffusionOrder()));
@@ -765,7 +765,7 @@ public:
           ::Integral< ForceEvaluationType >
         ForceFunctionalType;
       std::vector< const ForceEvaluationType* > forceEvaluationPtrs;
-      std::vector< Dune::shared_ptr< ForceFunctionalType > > forceFunctionalPtrs;
+      std::vector< Dune::shared_ptr< const ForceFunctionalType > > forceFunctionalPtrs;
       for (unsigned int qq = 0; qq < model_->force()->numComponents(); ++qq) {
         forceEvaluationPtrs.push_back(new ForceEvaluationType(model_->force()->components()[qq],
                                                               model_->forceOrder()));
@@ -801,7 +801,7 @@ public:
           ::Boundary< NeumannEvaluationType >
         NeumannFunctionalType;
       std::vector< const NeumannEvaluationType* > neumannEvaluationPtrs;
-      std::vector< Dune::shared_ptr< NeumannFunctionalType > > neumannFunctionalPtrs;
+      std::vector< Dune::shared_ptr< const NeumannFunctionalType > > neumannFunctionalPtrs;
       for (unsigned int qq = 0; qq < model_->neumann()->numComponents(); ++qq) {
         neumannEvaluationPtrs.push_back(new NeumannEvaluationType(model_->neumann()->components()[qq],
                                                                   model_->neumannOrder()));
@@ -874,45 +874,39 @@ public:
       vectors_.insert(std::pair< const std::string, Dune::shared_ptr< SeparableVectorType > >("neumann", neumannVector));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//      out << prefix << "assembing system... " << std::flush;
-//      timer.reset();
-//      typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-//      SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
-//      // * local matrix assembler
-//      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType >
-//          LocalMatrixAssemblerType;
-//      for (unsigned int qq = 0; qq < ellipticOperators.size(); ++qq) {
-//        const Dune::shared_ptr< const LocalMatrixAssemblerType > localMatrixAssembler(
-//              new LocalMatrixAssemblerType(*(ellipticOperators[qq])));
-//        Dune::shared_ptr< MatrixType > diffusionMatrix
-//            = matrices_.find("diffusion_" + Dune::Stuff::Common::toString(qq))->second;
-//        systemAssembler.addLocalMatrixAssembler(localMatrixAssembler, diffusionMatrix);
-//      }
-//      // * local vector assemblers
-//      //   * force vector
-//      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2ForceFunctionalType >
-//          LocalForceVectorAssemblerType;
-//      for (unsigned int qq = 0; qq < forceFunctionals.size(); ++qq) {
-//        const Dune::shared_ptr< const LocalForceVectorAssemblerType > localForceVectorAssembler(
-//              new LocalForceVectorAssemblerType(*(forceFunctionals[qq])));
-//        Dune::shared_ptr< VectorType > forceVector
-//            = vectors_.find("force_" + Dune::Stuff::Common::toString(qq))->second;
-//        systemAssembler.addLocalVectorAssembler(localForceVectorAssembler, forceVector);
-//      }
-//      //   * neumann vector
-//      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Vector::Neumann< L2NeumannFunctionalType,
-//                                                                                          BoundaryInfoType >
-//          LocalNeumannVectorAssemblerType;
-//      for (unsigned int qq = 0; qq < neumannFunctionals.size(); ++qq) {
-//        const Dune::shared_ptr< const LocalNeumannVectorAssemblerType > localNeumannVectorAssembler(
-//              new LocalNeumannVectorAssemblerType(*(neumannFunctionals[qq]), boundaryInfo_));
-//        Dune::shared_ptr< VectorType > neumannVector
-//            = vectors_.find("neumann_" + Dune::Stuff::Common::toString(qq))->second;
-//        systemAssembler.addLocalVectorAssembler(localNeumannVectorAssembler, neumannVector);
-//      }
-//      // * system assembler
-//      systemAssembler.assemble();
-//      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      out << prefix << "assembing system... " << std::flush;
+      timer.reset();
+      typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+      SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+      // * local matrix assemblers
+      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< DiffusionOperatorType >
+          LocalDiffusionMatrixAssemblerType;
+      for (unsigned int qq = 0; qq < separableDiffusionOperator.numComponents(); ++qq) {
+        const Dune::shared_ptr< const LocalDiffusionMatrixAssemblerType > localDiffusionMatrixAssembler(
+              new LocalDiffusionMatrixAssemblerType(*(separableDiffusionOperator.components()[qq])));
+        systemAssembler.addLocalMatrixAssembler(localDiffusionMatrixAssembler, diffusionMatrix->components()[qq]);
+      }
+      // * local vector assemblers
+      //   * force vector
+      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< ForceFunctionalType >
+          LocalForceVectorAssemblerType;
+      for (unsigned int qq = 0; qq < separableForceFunctional.numComponents(); ++qq) {
+        const Dune::shared_ptr< const LocalForceVectorAssemblerType > localForceVectorAssembler(
+              new LocalForceVectorAssemblerType(*(separableForceFunctional.components()[qq])));
+        systemAssembler.addLocalVectorAssembler(localForceVectorAssembler, forceVector->components()[qq]);
+      }
+      //   * neumann vector
+      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Vector::Neumann< NeumannFunctionalType,
+                                                                                          BoundaryInfoType >
+          LocalNeumannVectorAssemblerType;
+      for (unsigned int qq = 0; qq < separableNeumannFunctional.numComponents(); ++qq) {
+        const Dune::shared_ptr< const LocalNeumannVectorAssemblerType > localNeumannVectorAssembler(
+              new LocalNeumannVectorAssemblerType(*(separableNeumannFunctional.components()[qq]), boundaryInfo_));
+        systemAssembler.addLocalVectorAssembler(localNeumannVectorAssembler, neumannVector->components()[qq]);
+      }
+      // * system assembler
+      systemAssembler.assemble();
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       initialized_ = true;
     }
