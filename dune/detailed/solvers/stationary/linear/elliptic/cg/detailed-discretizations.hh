@@ -34,9 +34,9 @@
 
 #if HAVE_DUNE_RB
   #include <dune/rb/model/stationary/linear/elliptic/interface.hh>
-#endif // HAVE_DUNE_RB
   #include <dune/rb/common/container.hh>
   #include <dune/rb/la/container/separable.hh>
+#endif // HAVE_DUNE_RB
 
 namespace Dune {
 namespace Detailed {
