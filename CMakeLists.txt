@@ -1,8 +1,4 @@
-PROJECT( dune-detailed-solvers )
-
-SET( CMAKE_CXX_COMPILER
-  "g++-4.6" CACHE FORCE
-  "" )
+PROJECT(dune-detailed-solvers)
 
 #set minimum cmake version
 cmake_minimum_required(VERSION 2.6)
@@ -19,6 +15,10 @@ SET( CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".lib" ".la" ".a" )
 SET( CMAKE_COLOR_MAKEFILE ON )
 
 # user settings
+set(ENABLE_MPI
+    "0" CACHE STRING
+    "set to 1 to enable mpi")
+
 SET( BLAS_LIB
   "blas" CACHE STRING
   "BLAS_LIB" )
@@ -51,17 +51,11 @@ SET( CUSTOM_FLAGS
   "-Wall -O0 -DDEBUG -g -fdiagnostics-show-option" CACHE LIST
   "CUSTOM_FLAGS" )
 
-# superlu
-find_package( SuperLU REQUIRED)
-include_directories( ${SUPERLU_INCLUDES} )
-link_directories( ${SUPERLU_LIBRARY_DIRS} )
-
 # eigen3
 set( EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../local/include/eigen3")
 find_package( Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-SET_CONFIGHEADER_VARS()
 # needs to come first to include correct config.h
 include_dir( ${dune-detailed-solvers_SOURCE_DIR} )
 INCLUDE_DIR( ${dune-detailed-solvers_BINARY_DIR} )
@@ -77,8 +71,8 @@ ENDIF( ${GRIDTYPE} STREQUAL "UGGRID" )
 
 SET( ENABLE_ALUGRID OFF )
 IF( ${GRIDTYPE} MATCHES "ALUGRID" )
-  INCLUDE_SYS_DIR(  ${GRAPE_PATH} 
-    ${ALUGRID_BASE_PATH}/include 
+  INCLUDE_SYS_DIR(  ${GRAPE_PATH}
+    ${ALUGRID_BASE_PATH}/include
     ${ALUGRID_BASE_PATH}/include/serial
     ${ALUGRID_BASE_PATH}/include/duneinterface )
   LINK_DIRECTORIES( "${ALUGRID_BASE_PATH}/lib" )
@@ -92,7 +86,7 @@ ENDIF( ${GRIDTYPE} MATCHES "ALUGRID" )
 
 SET( ENABLE_ALBERTA OFF )
 IF( ${GRIDTYPE} MATCHES "ALBERTAGRID" )
-  INCLUDE_SYS_DIR(  ${ALBERTA_GRID_BASE_PATH}/include 
+  INCLUDE_SYS_DIR(  ${ALBERTA_GRID_BASE_PATH}/include
     ${ALBERTA_GRID_BASE_PATH}/include/alberta )
   LINK_DIRECTORIES( "${ALBERTA_GRID_BASE_PATH}/lib" )
   SET( GRIDLIBS alberta_utilities alberta_2d dunealbertagrid_2d dunegrid)
@@ -104,12 +98,20 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURR
 
 # other dune modules
 ADD_DUNE_MODULES(common fem istl geometry grid grid-howto grid-multiscale localfunctions stuff detailed-discretizations pdelab pdelab-howto)
-set( COMMON_LIBS "dunefem" "dunegrid" "dunecommon" "dunegeometry"
-  ${BLAS_LIB} ${GRIDLIBS} ${ParaLIBS} 
-  "boost_filesystem" "boost_system" )
-FILE( GLOB_RECURSE header "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
-set( COMMON_HEADER ${header} ${DUNE_HEADERS} )
-
+set(COMMON_LIBS
+    ${DUNE_LIBS}
+    ${BLAS_LIB}
+    "GL"
+    ${PARALIBS}
+    ${CCGNU_LIBRARIES}
+    "boost_system" "boost_filesystem"
+    ${GRIDLIBS})
+FILE(GLOB_RECURSE
+    header
+    "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh")
+set(COMMON_HEADER
+    ${header}
+    ${DUNE_HEADERS})
 set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
 add_subdirectory(doc)
