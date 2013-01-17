@@ -4,6 +4,7 @@
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #pragma GCC diagnostic ignored "-Wtype-limits"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   #ifdef HAVE_CMAKE_CONFIG
     #include "cmake_config.h"
   #elif defined (HAVE_CONFIG_H)
