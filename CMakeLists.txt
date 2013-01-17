@@ -55,11 +55,6 @@ SET( CUSTOM_FLAGS
   "-Wall -O0 -DDEBUG -g -fdiagnostics-show-option" CACHE LIST
   "CUSTOM_FLAGS" )
 
-# eigen3
-set( EIGEN3_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../local/include/eigen3")
-find_package( Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
-
 # needs to come first to include correct config.h
 include_dir( ${dune-detailed-solvers_SOURCE_DIR} )
 INCLUDE_DIR( ${dune-detailed-solvers_BINARY_DIR} )
@@ -97,6 +92,9 @@ IF( ${GRIDTYPE} MATCHES "ALBERTAGRID" )
   SET( ENABLE_ALBERTA ON )
   ADD_DEFINITIONS( -DENABLE_ALBERTA=1 -DDEBUG )
 ENDIF( ${GRIDTYPE} MATCHES "ALBERTAGRID" )
+
+#eigen
+pkg_check_modules(Eigen3, eigen3, REQUIRED)
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
 
