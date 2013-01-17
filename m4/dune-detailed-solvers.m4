@@ -8,18 +8,11 @@ dnl -*- autoconf -*-
 # well as by dune-detailed-solvers itself
 AC_DEFUN([DUNE_DETAILED_SOLVERS_CHECKS],
 [
-    AX_BOOST_BASE([1.48.0])
-    AX_BOOST_FILESYSTEM([1.48.0])
-
-    PKG_CHECK_MODULES([EIGEN], [eigen3], [
-      AC_DEFINE([HAVE_EIGEN],
-        [1],
-        [Define wether the eigen includes were found.])
-    ])
-
-    AC_DEFINE([HAVE_EIGEN],[1],
-      [Define wether the eigen includes were found.])
-
+  PKG_CHECK_MODULES([EIGEN],
+                    [eigen3],
+                    [AC_DEFINE([HAVE_EIGEN],
+                               [1],
+                               [Define wether the eigen includes were found.])])
 ])
 
 # Additional checks needed to find dune-detailed-solvers
