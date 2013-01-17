@@ -94,7 +94,7 @@ IF( ${GRIDTYPE} MATCHES "ALBERTAGRID" )
 ENDIF( ${GRIDTYPE} MATCHES "ALBERTAGRID" )
 
 #eigen
-pkg_check_modules(Eigen3, eigen3, REQUIRED)
+pkg_check_modules(Eigen3 eigen3 REQUIRED)
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
 
