@@ -17,7 +17,7 @@
 
   #include <dune/fem/misc/mpimanager.hh>
   #include <dune/fem/misc/gridwidth.hh>
-#pragma GCC diagnostic push
+#pragma GCC diagnostic pop
 
 #include <dune/grid/part/leaf.hh>
 
@@ -151,7 +151,15 @@ int run(int argc, char** argv)
     gridProvider->visualize(filename + ".grid");
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
 
-    info << "setting up model... " << std::flush;
+    info << "setting up model";
+    const std::string modelType = paramTree.get< std::string >(id + ".model");
+    if (!debugLogging)
+      info << "... ";
+    else {
+      info << ":" << std::endl;
+      info << "  '" << modelType << "'... ";
+    }
+    info << std::flush;
     timer.reset();
     const unsigned int DUNE_UNUSED(dimDomain) = GridProviderType::dim;
     const unsigned int DUNE_UNUSED(dimRange) = 1;
@@ -164,7 +172,7 @@ int run(int argc, char** argv)
         ::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >ModelType;
     const Dune::shared_ptr< const ModelType > model(Dune::Detailed::Solvers
         ::Stationary::Linear::Elliptic::Model::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(
-                                                      paramTree.get< std::string >(id + ".model"),
+                                                      modelType,
                                                       paramTree));
     typedef Dune::Stuff::Grid::BoundaryInfo::Interface< typename GridPartType::GridViewType > BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(
