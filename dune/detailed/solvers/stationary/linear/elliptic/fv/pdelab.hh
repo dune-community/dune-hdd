@@ -136,7 +136,7 @@ private:
     template<typename EntityType, typename TrialFunctionSpaceType, typename TrialVector,
                 typename TestFunctionSpaceType, typename ResidualType>
     void alpha_volume (const EntityType& entity, const TrialFunctionSpaceType& trialFunction,
-                       const TrialVector& trialVector, const TestFunctionSpaceType& testFunction,
+                       const TrialVector& /*trialVector*/, const TestFunctionSpaceType& /*testFunction*/,
                        ResidualType& residual) const
     {
       // domain and range field type
@@ -158,8 +158,8 @@ private:
                 typename TestFunctionSpaceType, typename ResidualType>
     void alpha_skeleton (const IntersectionType& intersection,
                          const TrialFunctionSpaceType& trialFunction_s, const TrialVector& trialVector_s,
-                         const TestFunctionSpaceType& testFunction_s, const TrialFunctionSpaceType& trialFunction_n,
-                         const TrialVector& trialVector_n, const TestFunctionSpaceType& testFunction_n,
+                         const TestFunctionSpaceType& /*testFunction_s*/, const TrialFunctionSpaceType& trialFunction_n,
+                         const TrialVector& trialVector_n, const TestFunctionSpaceType& /*testFunction_n*/,
                          ResidualType& residual_s, ResidualType& residual_n) const
     {
       // domain and range field type
@@ -177,8 +177,7 @@ private:
       RangeType face_volume = intersection.geometry().volume();
 
       // diffusive flux for both sides
-      RangeType a;
-      localModel_.diffusion()->evaluate(inside_global,a);
+      RangeType a = localModel_.diffusion()->evaluate(inside_global);
       residual_s.accumulate(trialFunction_s,0,-a*(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))
                                                                                                 *face_volume/distance);
       residual_n.accumulate(trialFunction_n,0, a*(trialVector_n(trialFunction_n,0)-trialVector_s(trialFunction_s,0))

@@ -1,25 +1,16 @@
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#pragma GCC diagnostic ignored "-Wtype-limits"
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#pragma GCC diagnostic ignored "-Wunused-variable"
-  #ifdef HAVE_CMAKE_CONFIG
-    #include "cmake_config.h"
-  #elif defined (HAVE_CONFIG_H)
-    #include "config.h"
-  #endif // ifdef HAVE_CMAKE_CONFIG
+#ifdef HAVE_CMAKE_CONFIG
+  #include "cmake_config.h"
+#elif defined (HAVE_CONFIG_H)
+  #include "config.h"
+#endif // ifdef HAVE_CMAKE_CONFIG
 
-  #include <boost/filesystem.hpp>
+#include <boost/filesystem.hpp>
 
-  #include <dune/common/exceptions.hh>
-  #include <dune/common/mpihelper.hh>
-  #include <dune/common/timer.hh>
+#include <dune/common/exceptions.hh>
+#include <dune/common/mpihelper.hh>
+#include <dune/common/timer.hh>
 
-  #include <dune/fem/misc/gridwidth.hh>
-#pragma GCC diagnostic pop
+#include <dune/fem/misc/gridwidth.hh>
 
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
