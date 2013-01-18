@@ -76,9 +76,9 @@ public:
       ::Elliptic
       ::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
 
+private:
   typedef Dune::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange > FunctionSpaceType;
 
-private:
   typedef Dune::Detailed::Discretizations
       ::DiscreteFunctionSpace
       ::Continuous
@@ -416,7 +416,7 @@ public:
 
   void visualizeAnsatzVector(VectorType& vector,
                              const std::string filename = id() + ".ansatzVector",
-                             const std::string name = id() + "ansatzVector",
+                             const std::string name = id() + ".ansatzVector",
                              const std::string prefix = "",
                              std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
@@ -440,7 +440,7 @@ public:
 
   void visualizeTestVector(VectorType& vector,
                            const std::string filename = id() + ".testVector",
-                           const std::string name = id() + "testVector",
+                           const std::string name = id() + ".testVector",
                            const std::string prefix = "",
                            std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
