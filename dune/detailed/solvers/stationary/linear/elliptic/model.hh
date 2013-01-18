@@ -43,7 +43,7 @@ Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >* create(const 
     return new ThermalblockModelType(ThermalblockModelType::createFromParamTree(paramTree));
   } else
     DUNE_THROW(Dune::RangeError,
-               "\nError: unknown model '" << type << "'given!");
+               "\nError: unknown model '" << type << "' requested!");
 } // Interface* create(const std::string type, const Dune::ParameterTree paramTree = Dune::ParameterTree())
 
 } // namespace Model
