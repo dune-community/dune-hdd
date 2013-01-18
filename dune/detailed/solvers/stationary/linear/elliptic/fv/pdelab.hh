@@ -146,12 +146,10 @@ private:
       typedef  Dune::FieldVector<RangeFieldType,dimRange> RangeType;
 
       // evaluate reaction term
-      DomainType center = entity.geometry().center();
-      RangeType b = 0.0;
-      RangeType f = 1.0;
-      localModel_.force()->evaluate(center,f);
-
-      residual.accumulate(trialFunction,0,(b*trialVector(trialFunction,0)-f)*entity.geometry().volume());
+      const DomainType center = entity.geometry().center();
+//      RangeType b = 0.0;
+      const RangeType f = localModel_.force()->evaluate(center);
+      residual.accumulate(trialFunction, 0, (/*b*trialVector(trialFunction, 0)*/ - f)*entity.geometry().volume());
     } // void alpha_volume()
 
     // skeleton integral depending on test and ansatz functions
@@ -206,17 +204,16 @@ private:
 
       // do things depending on boundary condition type (call intersection() to get original intersection)
       if (localBoundaryInfo_.dirichlet(intersection.intersection())) {
-          RangeType g = 0.0;
-          localModel_.dirichlet()->evaluate(face_center,g);
-          RangeType a = 1.0;
-          localModel_.diffusion()->evaluate(face_center,a);
+          const RangeType g = localModel_.dirichlet()->evaluate(face_center);
+          const RangeType a = localModel_.diffusion()->evaluate(face_center);
           Dune::FieldVector<DomainFieldType,dimDomain> inside_global = intersection.inside()->geometry().center();
           inside_global -= face_center;
           RangeType distance = inside_global.two_norm();
           residual_s.accumulate(trialFunction_s, 0, -a*(g-trialVector_s(trialFunction_s,0))*face_volume/distance);
           return;
       } else if (localBoundaryInfo_.neumann(intersection.intersection())) {
-          residual_s.accumulate(trialFunction_s, 0, -face_volume);
+          const RangeType neumannValue = localModel_.neumann()->evaluate(face_center);
+          residual_s.accumulate(trialFunction_s, 0, -neumannValue * face_volume);
           return;
       }
     } // void alpha_boundary()
