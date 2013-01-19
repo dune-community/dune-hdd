@@ -36,6 +36,7 @@
 
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/la/container/eigen.hh>
+#include <dune/stuff/common/logging.hh>
 
 #include "../model/interface.hh"
 

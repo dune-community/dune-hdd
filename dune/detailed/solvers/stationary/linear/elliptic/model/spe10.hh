@@ -1,10 +1,9 @@
-
 #ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_SPE10_HH
 #define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_SPE10_HH
 
-// dune-stuff
 #include <dune/stuff/data/provider/spe10/model1.hh>
 #include <dune/stuff/function/expression.hh>
+#include <dune/stuff/common/parameter/tree.hh>
 
 namespace Dune {
 
@@ -49,7 +48,7 @@ public:
 
   typedef ForceType DirichletType;
 
-  Default(const Dune::ParameterTree& paramTree)
+  One(const Dune::ParameterTree& paramTree)
     : forceOrder_(-1)
     , dirichletOrder_(-1)
   {
