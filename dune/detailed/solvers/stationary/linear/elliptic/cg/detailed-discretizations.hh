@@ -369,7 +369,7 @@ public:
              const unsigned int linearSolverMaxIter = 5000,
              const double linearSolverPrecision = 1e-12,
              const std::string prefix = "",
-             std::ostream& out = Dune::Stuff::Common::Logger().debug())
+             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
     assert(initialized_ && "Please call init() before calling solve()!");
     out << prefix << "applying constraints... " << std::flush;
@@ -985,15 +985,15 @@ public:
              const unsigned int linearSolverMaxIter = 5000,
              const double linearSolverPrecision = 1e-12,
              const std::string prefix = "",
-             std::ostream& out = Dune::Stuff::Common::Logger().debug())
+             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
     assert(initialized_ && "Please call init() before calling solve()!");
     out << prefix << "computing system matrix and right hand side... " << std::flush;
     Dune::Timer timer;
     // compute the system matrix
-    assert(matrices_.find("diffusion") != matrices_.end());
     Dune::shared_ptr< MatrixType > systemMatrix;
-    const Dune::shared_ptr< const SeparableMatrixType > diffusionMatrix =  matrices_["diffusion"];
+    assert(matrices_.find("diffusion") != matrices_.end());
+    const Dune::shared_ptr< const SeparableMatrixType > diffusionMatrix =  matrices_.find("diffusion")->second;
     if (model_->diffusion()->parametric())
       systemMatrix = diffusionMatrix->fix(model_->getDiffusionParam(mu));
     else
@@ -1002,14 +1002,14 @@ public:
     Dune::shared_ptr< VectorType > rhsVector = ContainerFactory::createDenseVector(*testSpace_);
     // * add up force
     assert(vectors_.find("force") != vectors_.end());
-    Dune::shared_ptr< SeparableVectorType > forceVector = vectors_["force"];
+    Dune::shared_ptr< SeparableVectorType > forceVector = vectors_.find("force")->second;
     if (model_->force()->parametric())
       rhsVector->base() += forceVector->fix(model_->getForceParam(mu))->base();
     else
       rhsVector->base() += forceVector->fix()->base();
     // * add up neumann
     assert(vectors_.find("neumann") != vectors_.end());
-    Dune::shared_ptr< SeparableVectorType > neumannVector = vectors_["neumann"];
+    Dune::shared_ptr< SeparableVectorType > neumannVector = vectors_.find("neumann")->second;
     if (model_->neumann()->parametric())
       rhsVector->base() += neumannVector->fix(model_->getNeumannParam(mu))->base();
     else
