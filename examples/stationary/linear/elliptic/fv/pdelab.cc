@@ -8,8 +8,5 @@ int main(int argc, char** argv)
   if (!boost::filesystem::exists(paramFilename))
     writeParamFile(paramFilename);
 
-  run(argc, argv);
-
-  // if we came that far we can as well be happy about it
-  return 0;
+  return run(argc, argv);
 } // main
