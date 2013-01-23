@@ -79,4 +79,4 @@ set( COMMON_LIBS
 add_subdirectory(doc)
 add_subdirectory(examples)
 
-HEADERCHECK( ${header} )
+HEADERCHECK( ${detailed-solvers} )
