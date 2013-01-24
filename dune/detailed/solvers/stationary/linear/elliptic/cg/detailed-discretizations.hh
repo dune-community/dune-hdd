@@ -370,7 +370,7 @@ public:
     return testFunction;
   } // Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
 
-  void solve(VectorType& solutionVector,
+  void solve(Dune::shared_ptr< VectorType > solutionVector,
              const std::string linearSolverType = "eigen.iterative.bicgstab.diagonal",
              const unsigned int linearSolverMaxIter = 5000,
              const double linearSolverPrecision = 1e-12,
@@ -382,10 +382,15 @@ public:
     Dune::Timer timer;
     // compute system matrix and right hand side
     // * therefore get matrix and vectors
-    MatrixType& systemMatrix = *(matrices_["diffusion"]);
-    const VectorType& forceVector = *(vectors_["force"]);
-    const VectorType& neumannVector = *(vectors_["neumann"]);
+    assert(matrices_.find("diffusion") != matrices_.end());
+    assert(vectors_.find("force") != vectors_.end());
+    assert(vectors_.find("neumann") != vectors_.end());
+    const MatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
+    const VectorType& forceVector = *(vectors_.find("force")->second);
+    const VectorType& neumannVector = *(vectors_.find("neumann")->second);
     const VectorType& dirichletVector = *(ansatzSpace_->affineShift()->vector());
+    // * compute the system matrix
+    MatrixType systemMatrix(diffusionMatrix.base());
     // * compute right hand side
     VectorType rhsVector(testSpace_->map().size());
     rhsVector.base() = forceVector.base()
@@ -406,21 +411,21 @@ public:
     SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
     solver->init(systemMatrix);
     const bool success = solver->apply(rhsVector,
-                                       solutionVector,
+                                       *solutionVector,
                                        linearSolverMaxIter,
                                        linearSolverPrecision);
     if (!success)
       DUNE_THROW(Dune::MathError,
                  "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
-    if (solutionVector.size() != ansatzSpace_->map().size())
+    if (solutionVector->size() != ansatzSpace_->map().size())
       DUNE_THROW(Dune::MathError,
                  "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
-                 << solutionVector.size() << ", should be " << ansatzSpace_->map().size() << ")!");
-    solutionVector.base() += dirichletVector.base();
+                 << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
+    solutionVector->base() += dirichletVector.base();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
-  void visualizeAnsatzVector(VectorType& vector,
+  void visualizeAnsatzVector(Dune::shared_ptr< VectorType > vector,
                              const std::string filename = id() + ".ansatzVector",
                              const std::string name = id() + ".ansatzVector",
                              const std::string prefix = "",
@@ -428,7 +433,7 @@ public:
   {
     // preparations
     assert(initialized_ && "Please call init() before calling visualize()");
-    assert(vector.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
+    assert(vector->size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
     Dune::Timer timer;
     out << prefix << "writing '" << name << "'" << std::endl;
     out << prefix << "     to '" << filename;
@@ -437,14 +442,13 @@ public:
     else
       out << ".vtu";
     out << "'... " << std::flush;
-    Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
     const Dune::shared_ptr< const DiscreteAnsatzFunctionType > discreteFunction
-        = createAnsatzFunction(tmpVectorPtr, name);
+        = createAnsatzFunction(vector, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
 
-  void visualizeTestVector(VectorType& vector,
+  void visualizeTestVector(Dune::shared_ptr< VectorType > vector,
                            const std::string filename = id() + ".testVector",
                            const std::string name = id() + ".testVector",
                            const std::string prefix = "",
@@ -452,7 +456,7 @@ public:
   {
     // preparations
     assert(initialized_ && "Please call init() before calling visualize()");
-    assert(vector.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
+    assert(vector->size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
     Dune::Timer timer;
     out << prefix << "writing '" << name << "'" << std::endl;
     out << prefix << "     to '" << filename;
@@ -461,9 +465,8 @@ public:
     else
       out << ".vtu";
     out << "'... " << std::flush;
-    Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
     const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction
-        = createTestFunction(tmpVectorPtr, name);
+        = createTestFunction(vector, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
@@ -986,7 +989,7 @@ public:
   } // Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
 
   void solve(const ParamType& mu,
-             VectorType& solutionVector,
+             Dune::shared_ptr< VectorType > solutionVector,
              const std::string linearSolverType = "eigen.iterative.bicgstab.diagonal",
              const unsigned int linearSolverMaxIter = 5000,
              const double linearSolverPrecision = 1e-12,
@@ -1034,23 +1037,23 @@ public:
     timer.reset();
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
     SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
-    solver->init(*systemMatrix);
-    const bool success = solver->apply(*rhsVector,
-                                       solutionVector,
+    const bool success = solver->apply(*systemMatrix,
+                                       *rhsVector,
+                                       *solutionVector,
                                        linearSolverMaxIter,
                                        linearSolverPrecision);
     if (!success)
       DUNE_THROW(Dune::MathError,
                  "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
-    if (solutionVector.size() != ansatzSpace_->map().size())
+    if (solutionVector->size() != ansatzSpace_->map().size())
       DUNE_THROW(Dune::MathError,
                  "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
-                 << solutionVector.size() << ", should be " << ansatzSpace_->map().size() << ")!");
-    solutionVector.base() += ansatzSpace_->affineShift()->vector()->base();
+                 << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
+    solutionVector->base() += ansatzSpace_->affineShift()->vector()->base();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
-  void visualizeAnsatzVector(VectorType& vector,
+  void visualizeAnsatzVector(Dune::shared_ptr< VectorType > vector,
                              const std::string filename = id() + ".ansatzVector",
                              const std::string name = id() + "ansatzVector",
                              const std::string prefix = "",
@@ -1058,7 +1061,7 @@ public:
   {
     // preparations
     assert(initialized_ && "Please call init() before calling visualize()");
-    assert(vector.size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
+    assert(vector->size() == ansatzSpace_->map().size() && "Given vector has wrong size!");
     Dune::Timer timer;
     out << prefix << "writing '" << name << "'" << std::endl;
     out << prefix << "     to '" << filename;
@@ -1067,14 +1070,13 @@ public:
     else
       out << ".vtu";
     out << "'... " << std::flush;
-    Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
     const Dune::shared_ptr< const DiscreteAnsatzFunctionType > discreteFunction
-        = createAnsatzFunction(tmpVectorPtr, name);
+        = createAnsatzFunction(vector, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
 
-  void visualizeTestVector(VectorType& vector,
+  void visualizeTestVector(Dune::shared_ptr< VectorType > vector,
                            const std::string filename = id() + ".testVector",
                            const std::string name = id() + "testVector",
                            const std::string prefix = "",
@@ -1091,9 +1093,8 @@ public:
     else
       out << ".vtu";
     out << "'... " << std::flush;
-    Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
     const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction
-        = createTestFunction(tmpVectorPtr, name);
+        = createTestFunction(vector, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
@@ -1139,6 +1140,23 @@ public:
     vtkWriter.write(filename);
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeFunction(...)
+
+  Dune::shared_ptr< MatrixType > getSystemMatrix(const ParamType& mu) const
+  {
+    // compute the system matrix
+    Dune::shared_ptr< MatrixType > systemMatrix;
+    assert(matrices_.find("diffusion") != matrices_.end());
+    const Dune::shared_ptr< const SeparableMatrixType > diffusionMatrix =  matrices_.find("diffusion")->second;
+    if (model_->diffusion()->parametric())
+      systemMatrix = diffusionMatrix->fix(model_->getDiffusionParam(mu));
+    else
+      systemMatrix = diffusionMatrix->fix();
+    // apply constraints
+    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+    SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+    systemAssembler.applyMatrixConstraints(*systemMatrix);
+    return systemMatrix;
+  }
 
 private:
   const shared_ptr< const ModelType > model_;
