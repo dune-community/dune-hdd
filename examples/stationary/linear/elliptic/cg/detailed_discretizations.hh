@@ -203,7 +203,7 @@ int run(int argc, char** argv)
     const ParamTreeType& linearSolverParams = paramTree.sub("solver.linear");
     typedef typename SolverType::VectorType VectorType;
     Dune::shared_ptr< VectorType > solutionVector = solver.createAnsatzVector();
-    solver.solve(*solutionVector,
+    solver.solve(solutionVector,
                  linearSolverParams.get< std::string >( "type",      "eigen.iterative.bicgstab.diagonal"),
                  linearSolverParams.get< unsigned int >("maxIter",   5000),
                  linearSolverParams.get< double >(      "precision", 1e-12),
@@ -218,7 +218,7 @@ int run(int argc, char** argv)
     else
       info << ":" << std::endl;
     timer.reset();
-    solver.visualizeAnsatzVector(*solutionVector,
+    solver.visualizeAnsatzVector(solutionVector,
                                  filename + ".solution",
                                  id + ".solution",
                                  "  ",
