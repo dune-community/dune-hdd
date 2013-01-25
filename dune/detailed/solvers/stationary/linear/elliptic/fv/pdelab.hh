@@ -51,7 +51,6 @@ namespace FV {
 template< class GridPartImp, int polynomialOrder, class RangeFieldImp, int dimensionRange >
 class Pdelab;
 
-//template< class ModelImp, class GridViewImp, class BoundaryInfoImp, int polynomialOrder >
 template< class GridPartImp, int polynomialOrder, class RangeFieldImp >
 class Pdelab< GridPartImp, polynomialOrder, RangeFieldImp, 1 >
 {
@@ -245,9 +244,9 @@ private:
 //  typedef typename GridOperatorType::Traits::Domain VectorBackendType;
 
 public:
-  typedef Dune::Stuff::LA::Container::Eigen::RowMajorSparseMatrix< RangeFieldType > MatrixType;
+  typedef Dune::Stuff::LA::Container::EigenRowMajorSparseMatrix< RangeFieldType > MatrixType;
 
-  typedef Dune::Stuff::LA::Container::Eigen::DenseVector< RangeFieldType > VectorType;
+  typedef Dune::Stuff::LA::Container::EigenDenseVector< RangeFieldType > VectorType;
 
 private:
   typedef Dune::PDELab::DiscreteGridFunction< AnsatzSpaceType, PdelabVectorType > PdelabDiscreteAnsatzFunctionType;
@@ -509,27 +508,6 @@ public:
     vtkWriter.write(filename, Dune::VTK::appendedraw);
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeFunction(...)
-
-//  void visualizeFunction(const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction,
-//                         const std::string filename = id() + ".discreteTestFunction",
-//                         const std::string prefix = "",
-//                         std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-//  {
-//    // preparations
-//    assert(initialized_ && "Please call init() before calling visualize()");
-//    Dune::Timer timer;
-//    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
-//    if (dimDomain == 1)
-//      out << ".vtp";
-//    else
-//      out << ".vtu";
-//    out << "'... " << std::flush;
-//    typedef Dune::VTKWriter< GridViewType > VTKWriterType;
-//    VTKWriterType vtkWriter(*gridView_, Dune::VTK::conforming);
-//    vtkWriter.addCellData(discreteFunction);
-//    vtkWriter.write(filename, Dune::VTK::appendedraw);
-//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//  } // void visualizeFunction(...)
 
 private:
   const Dune::shared_ptr< const GridPartType > gridPart_;

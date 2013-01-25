@@ -17,7 +17,7 @@
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/discretefunction/projection/dirichlet.hh>
-#include <dune/stuff/la/solver/eigen.hh>
+#include <dune/stuff/la/solver.hh>
 
 #include <dune/grid/part/interface.hh>
 
@@ -414,9 +414,9 @@ public:
     out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
     timer.reset();
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
-    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
-    solver->init(systemMatrix);
-    const bool success = solver->apply(rhsVector,
+    Dune::shared_ptr< SolverType > solver = Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType);
+    const bool success = solver->apply(systemMatrix,
+                                       rhsVector,
                                        *solutionVector,
                                        linearSolverMaxIter,
                                        linearSolverPrecision);

@@ -84,10 +84,11 @@ void writeParamFile(const std::string filename)
   file << "neumann.variable   = x" << std::endl;
   file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
   file << "[solver.linear]" << std::endl;
-  file << "type      = eigen.iterative.bicgstab.diagonal" << std::endl;
-  file << "            eigen.iterative.bicgstab.incompletelut" << std::endl;
-  file << "            eigen.iterative.cg.diagonal" << std::endl;
-  file << "            eigen.iterative.cg.incompletelut" << std::endl;
+  file << "type      = bicgstab.diagonal" << std::endl;
+  file << "            bicgstab.ilut" << std::endl;
+  file << "            bicgstab" << std::endl;
+  file << "            cg.diagonal" << std::endl;
+  file << "            cg" << std::endl;
   file << "maxIter   = 5000"  << std::endl;
   file << "precision = 1e-12"  << std::endl;
   file.close();
