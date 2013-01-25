@@ -120,6 +120,11 @@ private:
       ::Default< LagrangeSpaceType, VectorType >
     DiscreteFunctionType;
 
+  typedef Dune::Detailed::Discretizations
+      ::DiscreteFunction
+      ::DefaultConst< LagrangeSpaceType, VectorType >
+    ConstDiscreteFunctionType;
+
 public:
   typedef typename Dune::Detailed::Discretizations
       ::DiscreteFunctionSpace
@@ -185,12 +190,13 @@ public:
       out << prefix << "initializing discrete function spaces... " << std::flush;
       lagrangeSpace_ = Dune::shared_ptr< const LagrangeSpaceType >(new LagrangeSpaceType(*gridPart_));
       testSpace_ = Dune::shared_ptr< const TestSpaceType >(new TestSpaceType(*lagrangeSpace_, boundaryInfo_));
-      Dune::shared_ptr< DiscreteFunctionType > discreteDirichlet(new DiscreteFunctionType(*lagrangeSpace_,
-                                                                                          "dirichlet"));
+      DiscreteFunctionType discreteDirichlet(*lagrangeSpace_, "dirichlet");
       Dune::Stuff::DiscreteFunction::Projection::Dirichlet::project(*boundaryInfo_,
                                                                     *(model_->dirichlet()),
-                                                                    *discreteDirichlet);
-      ansatzSpace_ = Dune::shared_ptr< const AnsatzSpaceType >(new AnsatzSpaceType(*testSpace_, discreteDirichlet));
+                                                                    discreteDirichlet);
+      const Dune::shared_ptr< const ConstDiscreteFunctionType >
+          discreteDirichletConst(new ConstDiscreteFunctionType(discreteDirichlet));
+      ansatzSpace_ = Dune::shared_ptr< const AnsatzSpaceType >(new AnsatzSpaceType(*testSpace_, discreteDirichletConst));
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       out << prefix << "initializing operator and functionals... " << std::flush;
