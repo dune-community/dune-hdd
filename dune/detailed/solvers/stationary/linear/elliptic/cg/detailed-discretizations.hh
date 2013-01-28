@@ -1037,7 +1037,7 @@ public:
     out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
     timer.reset();
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
-    SolverType* solver = Dune::Stuff::LA::Solver::Eigen::create< MatrixType, VectorType >(linearSolverType);
+    Dune::shared_ptr< SolverType > solver = Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType);
     const bool success = solver->apply(*systemMatrix,
                                        *rhsVector,
                                        *solutionVector,
