@@ -389,7 +389,7 @@ public:
   {
     assert(initialized_ && "Please call init() before calling createAnsatzFunction()!");
     Dune::shared_ptr< PdelabVectorType > pdelabVector(new PdelabVectorType(*ansatzSpace_, 0.0));
-    pdelabVector->base() = vector->base();
+    pdelabVector->base() = vector->backend();
     Dune::shared_ptr< PdelabDiscreteAnsatzFunctionType > pdelabAnsatzFunction(
           new PdelabDiscreteAnsatzFunctionType(ansatzSpace_, pdelabVector));
     Dune::shared_ptr< DiscreteAnsatzFunctionType > ansatzFunction(new DiscreteAnsatzFunctionType(pdelabAnsatzFunction,
@@ -413,7 +413,7 @@ public:
   {
     assert(initialized_ && "Please call init() before calling createTestFunction()!");
     Dune::shared_ptr< PdelabVectorType > pdelabVector(new PdelabVectorType(*ansatzSpace_, 0.0));
-    pdelabVector->base() = vector->base();
+    pdelabVector->base() = vector->backend();
     Dune::shared_ptr< PdelabDiscreteTestFunctionType > pdelabTestFunction(
           new PdelabDiscreteTestFunctionType(ansatzSpace_, pdelabVector));
     Dune::shared_ptr< DiscreteTestFunctionType > testFunction(new DiscreteTestFunctionType(pdelabTestFunction,
@@ -440,7 +440,7 @@ public:
     // solve matrix_ * update = residual = -*rhs_ for update
     linearSolver.apply(*matrix_, update, *rhs_, red);
     // and store the solution u = u0 + update = update (u0 = 0)
-    solutionVector.base() = update.base();
+    solutionVector.backend() = update.base();
     out << prefix << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
