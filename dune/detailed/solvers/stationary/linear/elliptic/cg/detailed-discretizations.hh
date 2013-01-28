@@ -18,6 +18,8 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/discretefunction/projection/dirichlet.hh>
 #include <dune/stuff/la/solver.hh>
+#include <dune/stuff/la/container/separable.hh>
+#include <dune/stuff/common/separable-container.hh>
 
 #include <dune/grid/part/interface.hh>
 
@@ -40,8 +42,6 @@
 
 #if HAVE_DUNE_RB
   #include <dune/rb/model/stationary/linear/elliptic/interface.hh>
-  #include <dune/rb/common/container.hh>
-  #include <dune/rb/la/container/separable.hh>
 #endif // HAVE_DUNE_RB
 
 namespace Dune {
@@ -591,9 +591,9 @@ public:
 
   typedef typename ContainerFactory::RowMajorSparseMatrixType MatrixType;
 
-  typedef typename Dune::RB::LA::Container::Separable< MatrixType, ParamFieldType, maxParams > SeparableMatrixType;
+  typedef typename Dune::Stuff::LA::Container::Separable< MatrixType, ParamFieldType, maxParams > SeparableMatrixType;
 
-  typedef typename Dune::RB::LA::Container::Separable< VectorType, ParamFieldType, maxParams > SeparableVectorType;
+  typedef typename Dune::Stuff::LA::Container::Separable< VectorType, ParamFieldType, maxParams > SeparableVectorType;
 
 private:
   typedef typename TestSpaceType::PatternType PatternType;
@@ -745,10 +745,9 @@ public:
         diffusionOperatorPtrs.push_back(Dune::shared_ptr< DiffusionOperatorType >(new DiffusionOperatorType(
                                                                                     *(diffusionEvaluationPtrs[qq]))));
       }
-      typedef Dune::RB
+      typedef Dune::Stuff
           ::Common
-          ::Container
-          ::Separable< DiffusionOperatorType, typename ModelType::DiffusionType::CoefficientType >
+          ::SeparableContainer< DiffusionOperatorType, typename ModelType::DiffusionType::CoefficientType >
         SeparableDiffusionOperatorType;
       const SeparableDiffusionOperatorType separableDiffusionOperator(model_->diffusion()->parametric() ? model_->diffusion()->paramSize() : 0,
                                                                       diffusionOperatorPtrs,
@@ -782,10 +781,9 @@ public:
                                                                                   //!TODO don't use naked refs
                                                                                 *(forceEvaluationPtrs[qq]))));
       }
-      typedef Dune::RB
+      typedef Dune::Stuff
           ::Common
-          ::Container
-          ::Separable< ForceFunctionalType, typename ModelType::ForceType::CoefficientType >
+          ::SeparableContainer< ForceFunctionalType, typename ModelType::ForceType::CoefficientType >
         SeparableForceFunctionalType;
       const SeparableForceFunctionalType separableForceFunctional(model_->force()->parametric() ? model_->force()->paramSize() : 0,
                                                                   forceFunctionalPtrs,
@@ -819,10 +817,9 @@ public:
                                                                                       //!TODO don't use naked refs
                                                                                     *(neumannEvaluationPtrs[qq]))));
       }
-      typedef Dune::RB
+      typedef Dune::Stuff
           ::Common
-          ::Container
-          ::Separable< NeumannFunctionalType, typename ModelType::NeumannType::CoefficientType >
+          ::SeparableContainer< NeumannFunctionalType, typename ModelType::NeumannType::CoefficientType >
         SeparableNeumannFunctionalType;
       const SeparableNeumannFunctionalType separableNeumannFunctional(model_->neumann()->parametric() ? model_->neumann()->paramSize() : 0,
                                                                       neumannFunctionalPtrs,
