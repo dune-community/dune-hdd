@@ -388,12 +388,12 @@ public:
     const VectorType& neumannVector = *(vectors_.find("neumann")->second);
     const VectorType& dirichletVector = *(ansatzSpace_->affineShift()->vector());
     // * compute the system matrix
-    MatrixType systemMatrix(diffusionMatrix.base());
+    MatrixType systemMatrix = diffusionMatrix;
     // * compute right hand side
     VectorType rhsVector(testSpace_->map().size());
-    rhsVector.base() = forceVector.base()
-        + neumannVector.base()
-        - systemMatrix.base() * dirichletVector.base();
+    rhsVector.backend() = forceVector.backend()
+        + neumannVector.backend()
+        - systemMatrix.backend() * dirichletVector.backend();
     // * create a system assembler
     typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
     SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
@@ -419,7 +419,7 @@ public:
       DUNE_THROW(Dune::MathError,
                  "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
                  << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
-    solutionVector->base() += dirichletVector.base();
+    solutionVector->backend() += dirichletVector.backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
@@ -1014,16 +1014,16 @@ public:
     assert(vectors_.find("force") != vectors_.end());
     Dune::shared_ptr< SeparableVectorType > forceVector = vectors_.find("force")->second;
     if (model_->force()->parametric())
-      rhsVector->base() += forceVector->fix(model_->getForceParam(mu))->base();
+      rhsVector->backend() += forceVector->fix(model_->getForceParam(mu))->backend();
     else
-      rhsVector->base() += forceVector->fix()->base();
+      rhsVector->backend() += forceVector->fix()->backend();
     // * add up neumann
     assert(vectors_.find("neumann") != vectors_.end());
     Dune::shared_ptr< SeparableVectorType > neumannVector = vectors_.find("neumann")->second;
     if (model_->neumann()->parametric())
-      rhsVector->base() += neumannVector->fix(model_->getNeumannParam(mu))->base();
+      rhsVector->backend() += neumannVector->fix(model_->getNeumannParam(mu))->backend();
     else
-      rhsVector->base() += neumannVector->fix()->base();
+      rhsVector->backend() += neumannVector->fix()->backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     out << prefix << "applying constraints... " << std::flush;
@@ -1050,7 +1050,7 @@ public:
       DUNE_THROW(Dune::MathError,
                  "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
                  << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
-    solutionVector->base() += ansatzSpace_->affineShift()->vector()->base();
+    solutionVector->backend() += ansatzSpace_->affineShift()->vector()->backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
