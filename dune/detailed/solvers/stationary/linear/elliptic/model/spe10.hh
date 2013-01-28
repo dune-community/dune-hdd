@@ -57,6 +57,7 @@ public:
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "force", id);
     Dune::Stuff::Common::Parameter::Tree::assertSub(paramTree, "dirichlet", id);
     // build functions
+    //!TODO could go into init list
     diffusion_ = DiffusionCreator::create(paramTree.sub("diffusion"), "  ", std::cout);
     force_ = Dune::shared_ptr< ForceType >(new ForceType(paramTree.sub("force")));
     dirichlet_ = Dune::shared_ptr< DirichletType >(new DirichletType(paramTree.sub("dirichlet")));

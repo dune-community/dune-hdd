@@ -54,7 +54,7 @@ namespace CG {
 
 
 template< class GridPartImp, int polynomialOrder, class RangeFieldImp, int dimensionRange >
-class DetailedDiscretizations;
+class DetailedDiscretizations;//!TODO this meant to be empty imp base for specialization??
 
 template< class GridPartImp, int polynomialOrder, class RangeFieldImp >
 class DetailedDiscretizations< GridPartImp, polynomialOrder, RangeFieldImp, 1 >
@@ -261,11 +261,8 @@ public:
                          "diffusion",
                          diffusionPattern));
       //   * and the matrix
-      Dune::shared_ptr< MatrixType > diffusionMatrix = Dune::shared_ptr< MatrixType >(
-            new MatrixType(testSpace_->map().size(), ansatzSpace_->map().size(), *diffusionPattern));
-      matrices_.insert(std::pair< const std::string, Dune::shared_ptr< MatrixType > >(
-                         "diffusion",
-                         diffusionMatrix));
+      auto diffusionMatrix = Dune::make_shared< MatrixType >(testSpace_->map().size(), ansatzSpace_->map().size(), *diffusionPattern);
+      matrices_.insert(std::make_pair( "diffusion", diffusionMatrix));
       // create the right hand side vectors
       Dune::shared_ptr< VectorType > forceVector = ContainerFactory::createDenseVector(*testSpace_);
       vectors_.insert(std::pair< const std::string, Dune::shared_ptr< VectorType > >(
@@ -313,12 +310,14 @@ public:
   const AnsatzSpaceType& ansatzSpace() const
   {
     assert(initialized_);
+    //!TODO don't use naked refs
     return *ansatzSpace_;
   }
 
   const TestSpaceType& testSpace() const
   {
     assert(initialized_);
+    //!TODO don't use naked refs
     return *testSpace_;
   }
 
@@ -689,6 +688,7 @@ public:
                  "\nERROR: negative integration order given in model.neumannOrder()!");
   } // DuneDetailedSolvers(...)
 
+  //!TODO shared_ptr namespace
   const shared_ptr< const ModelType > model() const
   {
     return model_;
@@ -780,12 +780,13 @@ public:
           ::Codim0
           ::Integral< ForceEvaluationType >
         ForceFunctionalType;
-      std::vector< const ForceEvaluationType* > forceEvaluationPtrs;
+      std::vector< const ForceEvaluationType* > forceEvaluationPtrs;//!TODO leaks
       std::vector< Dune::shared_ptr< const ForceFunctionalType > > forceFunctionalPtrs;
       for (unsigned int qq = 0; qq < model_->force()->numComponents(); ++qq) {
         forceEvaluationPtrs.push_back(new ForceEvaluationType(model_->force()->components()[qq],
                                                               model_->forceOrder()));
         forceFunctionalPtrs.push_back(Dune::shared_ptr< ForceFunctionalType >(new ForceFunctionalType(
+                                                                                  //!TODO don't use naked refs
                                                                                 *(forceEvaluationPtrs[qq]))));
       }
       typedef Dune::RB
@@ -816,12 +817,13 @@ public:
           ::Integral
           ::Boundary< NeumannEvaluationType >
         NeumannFunctionalType;
-      std::vector< const NeumannEvaluationType* > neumannEvaluationPtrs;
+      std::vector< const NeumannEvaluationType* > neumannEvaluationPtrs;//!TODO leaks
       std::vector< Dune::shared_ptr< const NeumannFunctionalType > > neumannFunctionalPtrs;
       for (unsigned int qq = 0; qq < model_->neumann()->numComponents(); ++qq) {
         neumannEvaluationPtrs.push_back(new NeumannEvaluationType(model_->neumann()->components()[qq],
                                                                   model_->neumannOrder()));
         neumannFunctionalPtrs.push_back(Dune::shared_ptr< NeumannFunctionalType >(new NeumannFunctionalType(
+                                                                                      //!TODO don't use naked refs
                                                                                     *(neumannEvaluationPtrs[qq]))));
       }
       typedef Dune::RB

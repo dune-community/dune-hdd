@@ -198,7 +198,7 @@ public:
         addLocalToGlobalPattern(*(localSolvers_[subdomain]->pattern()),
                                 subdomain,
                                 subdomain,
-                                *pattern_);
+                                *pattern_);//!TODO don't use naked refs
         // create the boundary pattern
         const typename LocalSolverType::AnsatzSpaceType& innerAnsatzSpace = localSolvers_[subdomain]->ansatzSpace();
         const typename LocalSolverType::TestSpaceType& innerTestSpace = localSolvers_[subdomain]->testSpace();
@@ -466,6 +466,7 @@ public:
     typedef Dune::Detailed::Discretizations::LA::Solver::Eigen::SimplicialcholeskyLower SimplicialcholeskyLowerSolver;
     out << prefix << "solving linear system of size " << matrix_->rows() << "x" << matrix_->cols() << std::endl
         << prefix << "  using " << type << "... " << std::flush;
+    //!TODO obsolete switch?
     if (type == "eigen.bicgstab.incompletelut"){
       BicgstabIlutSolver::apply(*matrix_, tmpSolution, *rhs_, maxIter, precision);
     } else if (type == "eigen.bicgstab.diagonal"){

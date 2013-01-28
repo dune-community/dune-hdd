@@ -97,6 +97,7 @@ public:
     if (!extendedParamTree.hasSub("diffusion"))
       DUNE_THROW(Dune::RangeError,
                  "\nError: sub 'diffusion' not found in the following Dune::ParameterTree:\n" << extendedParamTree.reportString("  "));
+    //!TODO make_shared
     const Dune::shared_ptr< const ExpressionFunctionType > _diffusion = Dune::shared_ptr< ExpressionFunctionType >(new ExpressionFunctionType(
         ExpressionFunctionType::createFromParamTree(extendedParamTree.sub("diffusion"))));
     if (!extendedParamTree.sub("diffusion").hasKey("order"))

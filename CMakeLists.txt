@@ -35,7 +35,7 @@ SET( POLORDER
   "POLORDER" )
 
 SET( CUSTOM_FLAGS
-     "-Wall Wextra -O0 -DDEBUG -g -fdiagnostics-show-option" CACHE LIST
+     "-Wall -Wextra -O0 -DDEBUG -g -fdiagnostics-show-option" CACHE LIST
      "CUSTOM_FLAGS" )
 
 # we need eigen

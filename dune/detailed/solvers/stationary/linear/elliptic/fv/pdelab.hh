@@ -349,6 +349,7 @@ public:
   const AnsatzSpaceType& ansatzSpace() const
   {
     assert(initialized_);
+    //!TODO don't use naked refs
     return *ansatzSpace_;
   }
 
@@ -361,6 +362,7 @@ public:
   Dune::shared_ptr< VectorType > createAnsatzVector() const
   {
     assert(initialized_ && "Please call init() before calling createAnsatzVector()!");
+    //!TODO don't use naked refs
     PdelabVectorType pdelabVector(*ansatzSpace_, 0.0);
     Dune::shared_ptr< VectorType > vector(new VectorType(pdelabVector));
     return vector;
@@ -459,8 +461,7 @@ public:
       out << ".vtu";
     out << "'... " << std::flush;
     Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
-    const Dune::shared_ptr< const DiscreteAnsatzFunctionType > discreteFunction
-        = createAnsatzFunction(tmpVectorPtr, name);
+    const auto discreteFunction = createAnsatzFunction(tmpVectorPtr, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
@@ -482,8 +483,7 @@ public:
       out << ".vtu";
     out << "'... " << std::flush;
     Dune::shared_ptr< VectorType > tmpVectorPtr(new VectorType(vector));
-    const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction
-        = createTestFunction(tmpVectorPtr, name);
+    const auto discreteFunction = createTestFunction(tmpVectorPtr, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
