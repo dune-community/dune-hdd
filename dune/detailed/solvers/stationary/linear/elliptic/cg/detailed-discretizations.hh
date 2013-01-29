@@ -18,8 +18,6 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/discretefunction/projection/dirichlet.hh>
 #include <dune/stuff/la/solver.hh>
-#include <dune/stuff/la/container/separable.hh>
-#include <dune/stuff/common/separable-container.hh>
 
 #include <dune/grid/part/interface.hh>
 
