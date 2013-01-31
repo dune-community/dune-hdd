@@ -59,6 +59,4 @@ examples/stationary/linear/elliptic/continuousgalerkin/dune_detailed_discretizat
 examples/stationary/linear/elliptic/discontinuousgalerkin/dune_detailed_discretizations
 *.o
 demos
-
-# cmake build dirs
-/build-*
+demos-gcc-4.6
