@@ -20,6 +20,7 @@
 #include <dune/stuff/la/solver.hh>
 #include <dune/stuff/la/container/separable.hh>
 #include <dune/stuff/common/separable-container.hh>
+#include <dune/stuff/common/color.hh>
 
 #include <dune/grid/part/interface.hh>
 
@@ -407,17 +408,24 @@ public:
     timer.reset();
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
     Dune::shared_ptr< SolverType > solver = Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType);
-    const bool success = solver->apply(systemMatrix,
-                                       rhsVector,
-                                       *solutionVector,
-                                       linearSolverMaxIter,
-                                       linearSolverPrecision);
-    if (!success)
+    const unsigned int failure = solver->apply(systemMatrix,
+                                               rhsVector,
+                                               *solutionVector,
+                                               linearSolverMaxIter,
+                                               linearSolverPrecision);
+    if (failure)
       DUNE_THROW(Dune::MathError,
-                 "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
+                 "\n"
+                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " linear solver '" << linearSolverType << "' reported error code " << failure << "!\n"
+                 << "  1: did not converge\n"
+                 << "  2: had numerical issues\n"
+                 << "  3: dude, I have no idea");
     if (solutionVector->size() != ansatzSpace_->map().size())
       DUNE_THROW(Dune::MathError,
-                 "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
+                 "\n"
+                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
                  << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
     solutionVector->backend() += dirichletVector.backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
@@ -1035,17 +1043,24 @@ public:
     timer.reset();
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
     Dune::shared_ptr< SolverType > solver = Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType);
-    const bool success = solver->apply(*systemMatrix,
+    const unsigned int failure = solver->apply(*systemMatrix,
                                        *rhsVector,
                                        *solutionVector,
                                        linearSolverMaxIter,
                                        linearSolverPrecision);
-    if (!success)
+    if (failure)
       DUNE_THROW(Dune::MathError,
-                 "\nERROR: linear solver '" << linearSolverType << "' reported a problem!");
+                 "\n"
+                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " linear solver '" << linearSolverType << "' reported error code " << failure << "!\n"
+                 << "  1: did not converge\n"
+                 << "  2: had numerical issues\n"
+                 << "  3: dude, I have no idea");
     if (solutionVector->size() != ansatzSpace_->map().size())
       DUNE_THROW(Dune::MathError,
-                 "\nERROR: linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
+                 "\n"
+                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
                  << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
     solutionVector->backend() += ansatzSpace_->affineShift()->vector()->backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
