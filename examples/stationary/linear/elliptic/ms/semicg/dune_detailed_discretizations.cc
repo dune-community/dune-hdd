@@ -24,8 +24,8 @@
 #include <dune/stuff/function/expression.hh>
 
 #include <dune/detailed/solvers/stationary/linear/elliptic/model.hh>
-#include <dune/detailed/solvers/stationary/linear/elliptic/ms/semicg/detailed-discretizations.hh>
-#include <dune/detailed/solvers/stationary/linear/elliptic/cg/detailed-discretizations.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/multiscale/semicontinuousgalerkin/dune-detailed-discretizations.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
 #ifdef POLORDER
   const int polOrder = POLORDER;

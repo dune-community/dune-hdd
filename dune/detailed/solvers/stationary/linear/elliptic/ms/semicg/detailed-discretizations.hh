@@ -20,7 +20,7 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 
 #include <dune/detailed/discretizations/mapper/multiscale.hh>
-#include <dune/detailed/discretizations/la/container/factory/eigen.hh>
+#include <dune/detailed/discretizations/la/factory/eigen.hh>
 #include <dune/detailed/discretizations/discretefunction/multiscale.hh>
 #include <dune/detailed/discretizations/evaluation/local/binary/ipdgfluxes.hh>
 #include <dune/detailed/discretizations/discreteoperator/local/codim1/boundaryintegral.hh>
@@ -32,7 +32,7 @@
 #include <dune/detailed/discretizations/assembler/multiscale/coupling.hh>
 
 #include <dune/detailed/solvers/stationary/linear/elliptic/model/interface.hh>
-#include <dune/detailed/solvers/stationary/linear/elliptic/cg/detailed-discretizations.hh>
+#include <dune/detailed/solvers/stationary/linear/elliptic/continuousgalerkin/dune-detailed-discretizations.hh>
 
 namespace Dune {
 namespace Detailed {
@@ -73,7 +73,7 @@ private:
 
   static const int dimRange = ModelType::dimRange;
 
-  typedef Dune::Detailed::Discretizations::LA::Container::Factory::Eigen< RangeFieldType > ContainerFactory;
+  typedef Dune::Detailed::Discretizations::LA::Factory::Eigen< RangeFieldType > ContainerFactory;
 
   typedef typename ContainerFactory::SparseMatrixType MatrixBackendType;
 
