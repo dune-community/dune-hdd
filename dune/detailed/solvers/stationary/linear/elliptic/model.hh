@@ -7,9 +7,16 @@
   #include "config.h"
 #endif // ifdef HAVE_CMAKE_CONFIG
 
+#include <dune/common/shared_ptr.hh>
+#include <dune/common/exceptions.hh>
+#include <dune/common/parametertree.hh>
+
+#include <dune/stuff/common/color.hh>
+
 #include "model/interface.hh"
-#include "model/default.hh"
-#include "model/thermalblock.hh"
+#include "model/nonparametric/default.hh"
+//#include "model/default.hh"
+//#include "model/thermalblock.hh"
 
 namespace Dune {
 namespace Detailed {
@@ -19,32 +26,39 @@ namespace Linear {
 namespace Elliptic {
 namespace Model {
 
-template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >* create(const std::string type, const Dune::ParameterTree paramTree = Dune::ParameterTree())
+
+template< class DomainFieldType, int dimDomain,
+          class RangeFieldType, int dimRange,
+          class ParamFieldType = double, int maxParams = 0 >
+Dune::shared_ptr< Interface<  DomainFieldType, dimDomain,
+                              RangeFieldType, dimRange,
+                              ParamFieldType, maxParams > >
+  create(const std::string type, const Dune::ParameterTree paramTree = Dune::ParameterTree())
 {
   // choose model
-  if (type == "detailed.solvers.stationary.linear.elliptic.model.default") {
+  if (type == "model.stationary.linear.elliptic.nonparametric.default") {
     typedef Dune::Detailed::Solvers
         ::Stationary
         ::Linear
         ::Elliptic
         ::Model
-        ::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >
-      DefaultModelType;
-    return new DefaultModelType(DefaultModelType::createFromParamTree(paramTree));
-  } else if (type == "detailed.solvers.stationary.linear.elliptic.model.thermalblock") {
-    typedef Dune::Detailed::Solvers
-        ::Stationary
-        ::Linear
-        ::Elliptic
-        ::Model
-        ::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >
-      ThermalblockModelType;
-    return new ThermalblockModelType(ThermalblockModelType::createFromParamTree(paramTree));
+        ::NonparametricDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange, ParamFieldType, maxParams >
+      ModelType;
+    return Dune::make_shared< ModelType >(ModelType::createFromParamTree(paramTree));
+//  } else if (type == "detailed.solvers.stationary.linear.elliptic.model.thermalblock") {
+//    typedef Dune::Detailed::Solvers
+//        ::Stationary
+//        ::Linear
+//        ::Elliptic
+//        ::Model
+//        ::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >
+//      ThermalblockModelType;
+//    return new ThermalblockModelType(ThermalblockModelType::createFromParamTree(paramTree));
   } else
     DUNE_THROW(Dune::RangeError,
-               "\nError: unknown model '" << type << "' requested!");
+               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " unknown model '" << type << "' requested!");
 } // Interface* create(const std::string type, const Dune::ParameterTree paramTree = Dune::ParameterTree())
+
 
 } // namespace Model
 } // namespace Elliptic
