@@ -19,7 +19,7 @@
 #include <dune/stuff/discretefunction/projection/dirichlet.hh>
 #include <dune/stuff/la/solver.hh>
 #include <dune/stuff/la/container/separable.hh>
-#include <dune/stuff/common/separable-container.hh>
+//#include <dune/stuff/common/separable-container.hh>
 #include <dune/stuff/common/color.hh>
 
 #include <dune/grid/part/interface.hh>
@@ -41,10 +41,6 @@
 
 #include "../model/interface.hh"
 
-#if HAVE_DUNE_RB
-  #include <dune/rb/model/stationary/linear/elliptic/interface.hh>
-#endif // HAVE_DUNE_RB
-
 namespace Dune {
 namespace Detailed {
 namespace Solvers {
@@ -55,84 +51,50 @@ namespace CG {
 
 
 template< class GridPartImp, int polynomialOrder, class RangeFieldImp, int dimensionRange >
-class DetailedDiscretizations;//!TODO this meant to be empty imp base for specialization??
+class DetailedDiscretizations;
+
 
 template< class GridPartImp, int polynomialOrder, class RangeFieldImp >
 class DetailedDiscretizations< GridPartImp, polynomialOrder, RangeFieldImp, 1 >
 {
 public:
   typedef DetailedDiscretizations< GridPartImp, polynomialOrder, RangeFieldImp, 1 > ThisType;
+  static const int                                                                  polOrder = polynomialOrder;
 
   typedef Dune::grid::Part::Interface< typename GridPartImp::Traits > GridPartType;
-
-  static const int polOrder = polynomialOrder;
-
-  typedef typename GridPartType::ctype DomainFieldType;
-
-  static const int dimDomain = GridPartType::dimension;
-
-  typedef RangeFieldImp RangeFieldType;
-
-  static const int dimRange = 1;
+  typedef typename GridPartType::ctype                                DomainFieldType;
+  static const int                                                    dimDomain = GridPartType::dimension;
+  typedef RangeFieldImp                                               RangeFieldType;
+  static const int                                                    dimRange = 1;
 
   typedef Dune::Stuff::Grid::BoundaryInfo::Interface< typename GridPartType::GridViewType > BoundaryInfoType;
-
-  typedef typename Dune::Detailed::Solvers
-      ::Stationary
-      ::Linear
-      ::Elliptic
-      ::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+  typedef typename Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+  typedef typename ModelType::ParamFieldType                                                ParamFieldType;
+  static const int maxDimParam = ModelType::maxDimParam;
 
 private:
-  typedef Dune::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange > FunctionSpaceType;
-
-  typedef Dune::Detailed::Discretizations
-      ::DiscreteFunctionSpace
-      ::Continuous
-      ::Lagrange< FunctionSpaceType, GridPartType, polOrder >
-    LagrangeSpaceType;
-
+  typedef Dune::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange >               FunctionSpaceType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Continuous::Lagrange< FunctionSpaceType,
+                                                                                        GridPartType,
+                                                                                        polOrder >  LagrangeSpaceType;
 public:
-  typedef Dune::Detailed::Discretizations
-      ::DiscreteFunctionSpace
-      ::Sub
-      ::Linear
-      ::Dirichlet< LagrangeSpaceType >
-    TestSpaceType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< LagrangeSpaceType >
+                                                                                                    TestSpaceType;
+  typedef TestSpaceType                                                                             AnsatzSpaceType;
 
 private:
   typedef typename Dune::Detailed::Discretizations::LA::Container::Factory::Eigen< RangeFieldType > ContainerFactory;
-
 public:
-  typedef typename ContainerFactory::DenseVectorType VectorType;
+  typedef typename ContainerFactory::RowMajorSparseMatrixType                                       MatrixType;
+  typedef Dune::Stuff::LA::Container::Separable< MatrixType, ParamFieldType, maxDimParam >          SeparableMatrixType;
+  typedef typename ContainerFactory::DenseVectorType                                                VectorType;
+  typedef Dune::Stuff::LA::Container::Separable< VectorType, ParamFieldType, maxDimParam >          SeparableVectorType;
+  typedef typename TestSpaceType::PatternType                                                       PatternType;
 
-  typedef typename ContainerFactory::RowMajorSparseMatrixType MatrixType;
-
-  typedef typename TestSpaceType::PatternType PatternType;
-
-  typedef Dune::Detailed::Discretizations
-      ::DiscreteFunction
-      ::Default< TestSpaceType, VectorType >
-    DiscreteTestFunctionType;
-
-private:
-  typedef Dune::Detailed::Discretizations
-      ::DiscreteFunction
-      ::Default< LagrangeSpaceType, VectorType >
-    DiscreteFunctionType;
-
-public:
-  typedef typename Dune::Detailed::Discretizations
-      ::DiscreteFunctionSpace
-      ::Sub
-      ::Affine
-      ::Dirichlet< TestSpaceType, VectorType >
-    AnsatzSpaceType;
-
-  typedef Dune::Detailed::Discretizations
-      ::DiscreteFunction
-      ::Default< AnsatzSpaceType, VectorType >
-    DiscreteAnsatzFunctionType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< TestSpaceType, VectorType >
+                                                                                          DiscreteTestFunctionType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorType >
+                                                                                          DiscreteAnsatzFunctionType;
 
   static const std::string id()
   {
@@ -146,33 +108,86 @@ public:
     , boundaryInfo_(_boundaryInfo)
     , model_(_model)
     , initialized_(false)
+    , systemComputed_(false)
   {
     // sanity checks
-    if (model_->diffusionOrder() < 0)
-      DUNE_THROW(Dune::RangeError,
-                 "\nERROR: negative integration order given in model.diffusionOrder()!");
-    if (model_->forceOrder() < 0)
-      DUNE_THROW(Dune::RangeError,
-                 "\nERROR: negative integration order given in model.forceOrder()!");
-    if (model_->dirichletOrder() < 0)
-      DUNE_THROW(Dune::RangeError,
-                 "\nERROR: negative integration order given in model.dirichletOrder()!");
-    if (model_->neumannOrder() < 0)
-      DUNE_THROW(Dune::RangeError,
-                 "\nERROR: negative integration order given in model.neumannOrder()!");
+    std::stringstream msg;
+    unsigned int throw_up = 0;
+    // * integration orders
+    if (model_->diffusion()->order() < 0) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " negative integration order given for the diffusion!";
+      ++throw_up;
+    }
+    if (model_->force()->order() < 0) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " negative integration order given for the force!";
+      ++throw_up;
+    }
+    if (model_->neumann()->order() < 0) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " negative integration order given for the neumann values!";
+      ++throw_up;
+    }
+    // * parametrization
+    if (!model_->parametric()) {
+      if (model_->diffusion()->parametric()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " nonparametric model has a parametric diffusion!";
+        ++throw_up;
+      }
+      if (model_->force()->parametric()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " nonparametric model has a parametric force!";
+        ++throw_up;
+      }
+      if (model_->dirichlet()->parametric()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " nonparametric model has parametric dirichlet values!";
+        ++throw_up;
+      }
+      if (model_->neumann()->parametric()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " nonparametric model has parametric neumann values!";
+        ++throw_up;
+      }
+    } else {
+      if (model_->diffusion()->parametric() && !model_->diffusion()->separable()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " only implemented for nonparametric or separable-parametric diffusion!";
+        ++throw_up;
+      }
+      if (model_->force()->parametric() && !model_->force()->separable()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " only implemented for nonparametric or separable-parametric force!";
+        ++throw_up;
+      }
+      if (model_->dirichlet()->parametric() && !model_->dirichlet()->separable()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " only implemented for nonparametric or separable-parametric dirichlet values!";
+        ++throw_up;
+      }
+      if (model_->neumann()->parametric() && !model_->neumann()->separable()) {
+        msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+            << " only implemented for nonparametric or separable-parametric neumann!";
+        ++throw_up;
+      }
+      if (throw_up)
+        DUNE_THROW(Dune::InvalidStateException, msg.str());
+    }
   } // DetailedDiscretizations
 
-  const Dune::shared_ptr< const GridPartType > gridPart() const
+  Dune::shared_ptr< const GridPartType > gridPart() const
   {
     return gridPart_;
   }
 
-  const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo() const
+  Dune::shared_ptr< const BoundaryInfoType > boundaryInfo() const
   {
     return boundaryInfo_;
   }
 
-  const Dune::shared_ptr< const ModelType > model() const
+  Dune::shared_ptr< const ModelType > model() const
   {
     return model_;
   }
@@ -184,135 +199,222 @@ public:
       Dune::Timer timer;
 
       out << prefix << "initializing discrete function spaces... " << std::flush;
-      lagrangeSpace_ = Dune::shared_ptr< const LagrangeSpaceType >(new LagrangeSpaceType(*gridPart_));
-      testSpace_ = Dune::shared_ptr< const TestSpaceType >(new TestSpaceType(*lagrangeSpace_, boundaryInfo_));
-      DiscreteFunctionType discreteDirichlet(*lagrangeSpace_, "dirichlet");
-      Dune::Stuff::DiscreteFunction::Projection::Dirichlet::project(*boundaryInfo_,
-                                                                    *(model_->dirichlet()),
-                                                                    discreteDirichlet);
-      ansatzSpace_ = Dune::shared_ptr< const AnsatzSpaceType >(new AnsatzSpaceType(*testSpace_, discreteDirichlet.createConst()));
+      lagrangeSpace_ = Dune::make_shared< const LagrangeSpaceType >(*gridPart_);
+      testSpace_ = Dune::make_shared< const TestSpaceType >(*lagrangeSpace_, boundaryInfo_);
+      ansatzSpace_ = Dune::make_shared< const AnsatzSpaceType >(*lagrangeSpace_, boundaryInfo_);
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-      out << prefix << "initializing operator and functionals... " << std::flush;
-      timer.reset();
+      out << prefix << "projecting dirichlet boundary values... " << std::flush;
+      Dune::shared_ptr< SeparableVectorType > dirichletVector;
+      // if the dirichlet values are not parametric
+      if (!model_->diffusion()->parametric()) {
+        // project them
+        DiscreteAnsatzFunctionType dirichlet(*lagrangeSpace_);
+        Dune::Stuff::DiscreteFunction::Projection::Dirichlet::project(*boundaryInfo_,
+                                                                      *(model_->dirichlet()),
+                                                                      dirichlet);
+        dirichletVector = Dune::make_shared< SeparableVectorType >(dirichlet.vector());
+      } else {
+        // we can assume they are separable (see constructor)
+        // so we project each component
+        std::vector< Dune::shared_ptr< VectorType > > dirichletComponents;
+        for (std::size_t qq = 0; qq < model_->diffusion()->numComponents(); ++qq) {
+          DiscreteAnsatzFunctionType dirichlet(*lagrangeSpace_); // <- this is supposed to be here and not before for!
+          Dune::Stuff::DiscreteFunction::Projection::Dirichlet::project(*boundaryInfo_,
+                                                                        *(model_->dirichlet()->components()[qq]),
+                                                                        dirichlet);
+          dirichletComponents.push_back(dirichlet.vector());
+        }
+        dirichletVector = Dune::make_shared< SeparableVectorType >(model_->dirichlet()->paramSize(),
+                                                                   dirichletComponents,
+                                                                   model_->dirichlet()->coefficients());
+
+      } // if the dirichlet values are not parametric
+      vectors_.insert(std::make_pair("dirichlet", dirichletVector));
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+      out << prefix << "initializing operators and functionals:" << std::endl;
       // * left hand side
-      //   * elliptic operator
-      typedef Dune::Detailed::Discretizations
-          ::Evaluation
-          ::Local
-          ::Binary
-          ::Elliptic< FunctionSpaceType, typename ModelType::DiffusionType >
+      //   * diffusion operators
+      typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::Elliptic< FunctionSpaceType,
+                                                                                    typename ModelType::FunctionType >
         EllipticEvaluationType;
-      const EllipticEvaluationType ellipticEvaluation(model_->diffusion(), model_->diffusionOrder());
-      typedef Dune::Detailed::Discretizations
-          ::DiscreteOperator
-          ::Local
-          ::Codim0
-          ::Integral< EllipticEvaluationType >
+      std::vector< EllipticEvaluationType* > diffusionEvaluations;
+      typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim0::Integral< EllipticEvaluationType >
         EllipticOperatorType;
-      const EllipticOperatorType ellipticOperator(ellipticEvaluation);
+      std::vector< EllipticOperatorType* > diffusionOperators;
+      timer.reset();
+      if (!model_->diffusion()->parametric()) {
+        out << prefix << "  1 diffusion operator...   " << std::flush;
+        diffusionEvaluations.push_back(new EllipticEvaluationType(model_->diffusion(), model_->diffusion()->order()));
+        diffusionOperators.push_back(new EllipticOperatorType(*(diffusionEvaluations[0])));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       // * right hand side
       //   * L2 force functional
-      typedef Dune::Detailed::Discretizations
-          ::Evaluation
-          ::Local
-          ::Unary
-          ::Scale< FunctionSpaceType, typename ModelType::ForceType >
-        ForceEvaluationType;
-      const ForceEvaluationType forceEvaluation(model_->force(), model_->forceOrder());
-      typedef Dune::Detailed::Discretizations
-          ::DiscreteFunctional
-          ::Local
-          ::Codim0
-          ::Integral< ForceEvaluationType >
+      typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType,
+                                                                                typename ModelType::FunctionType >
+        ProductEvaluationType;
+      std::vector< ProductEvaluationType* > forceEvaluations;
+      typedef Dune::Detailed::Discretizations::DiscreteFunctional::Local::Codim0::Integral< ProductEvaluationType >
         L2VolumeFunctionalType;
-      const L2VolumeFunctionalType forceFunctional(forceEvaluation);
-      //   * L2 neumann functional
-      typedef Dune::Detailed::Discretizations
-          ::Evaluation
-          ::Local
-          ::Unary
-          ::Scale< FunctionSpaceType, typename ModelType::NeumannType >
-        NeumannEvaluationType;
-      const NeumannEvaluationType neumannEvaluation(model_->neumann(), model_->neumannOrder());
-      typedef typename Dune::Detailed::Discretizations
-          ::DiscreteFunctional
-          ::Local
-          ::Codim1
-          ::Integral
-          ::Boundary< NeumannEvaluationType >
-        L2BoundaryFunctionalType;
-      const L2BoundaryFunctionalType neumannFunctional(neumannEvaluation);
-      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-
-      out << prefix << "initializing matrix (of size " << testSpace_->map().size() << "x" << ansatzSpace_->map().size()
-           << ") and vectors... " << std::flush;
+      std::vector< L2VolumeFunctionalType* > forceFunctionals;
       timer.reset();
-      // * create the left hand side matrix
-      //   * therefore create the pattern
-      Dune::shared_ptr< const PatternType > diffusionPattern = testSpace_->computePattern(*ansatzSpace_);
-      patterns_.insert(std::pair< const std::string, Dune::shared_ptr< const PatternType > >(
-                         "diffusion",
-                         diffusionPattern));
-      //   * and the matrix
-      auto diffusionMatrix = Dune::make_shared< MatrixType >(testSpace_->map().size(), ansatzSpace_->map().size(), *diffusionPattern);
-      matrices_.insert(std::make_pair( "diffusion", diffusionMatrix));
-      // create the right hand side vectors
-      Dune::shared_ptr< VectorType > forceVector = ContainerFactory::createDenseVector(*testSpace_);
-      vectors_.insert(std::pair< const std::string, Dune::shared_ptr< VectorType > >(
-                        "force",
-                        forceVector));
-      Dune::shared_ptr< VectorType > neumannVector = ContainerFactory::createDenseVector(*testSpace_);
-      vectors_.insert(std::pair< const std::string, Dune::shared_ptr< VectorType > >(
-                        "neumann",
-                        neumannVector));
+      if (!model_->force()->parametric())
+      {
+        out << prefix << "  1 force     functional... " << std::flush;
+        forceEvaluations.push_back(new ProductEvaluationType(model_->force(), model_->force()->order()));
+        forceFunctionals.push_back(new L2VolumeFunctionalType(*(forceEvaluations[0])));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      timer.reset();
+      //   * L2 neumann functional
+      std::vector< ProductEvaluationType* > neumannEvaluations;
+      std::vector< L2VolumeFunctionalType* > neumannFunctionals;
+      if (!model_->neumann()->parametric())
+      {
+        out << prefix << "  1 neumann   functional... " << std::flush;
+        neumannEvaluations.push_back(new ProductEvaluationType(model_->neumann(), model_->neumann()->order()));
+        neumannFunctionals.push_back(new L2VolumeFunctionalType(*(neumannEvaluations[0])));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-      out << prefix << "assembing system... " << std::flush;
+      out << prefix << "initializing matrices and vectors:" << std::endl;
+      timer.reset();
+      // create the left hand side matrices for the diffusion
+      // * therefore create the pattern
+      Dune::shared_ptr< const PatternType > diffusionPattern = testSpace_->computePattern(*ansatzSpace_);
+      patterns_.insert(std::make_pair("diffusion", diffusionPattern));
+      // * and the matrices
+      Dune::shared_ptr< SeparableMatrixType > diffusionMatrices;
+      if (!model_->diffusion()->parametric()) {
+        out << prefix << "  1 diffusion matrix (of size "
+            << testSpace_->map().size() << "x" << ansatzSpace_->map().size() << ")... " << std::flush;
+        diffusionMatrices
+            = Dune::make_shared < SeparableMatrixType >(ContainerFactory::createRowMajorSparseMatrix(*testSpace_,
+                                                                                                     *ansatzSpace_,
+                                                                                                     *diffusionPattern));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      matrices_.insert(std::make_pair("diffusion", diffusionMatrices));
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      // create the right hand side vectors
+      // * for the force
+      Dune::shared_ptr< SeparableVectorType > forceVectors;
+      if (!model_->force()->parametric()) {
+        out << prefix << "  1 force     vector (of size " << testSpace_->map().size() << ")... "
+            << " " << Dune::Stuff::Common::whitespaceify(ansatzSpace_->map().size()) << std::flush;
+        forceVectors
+            = Dune::make_shared < SeparableVectorType >(ContainerFactory::createDenseVector(*testSpace_));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      vectors_.insert(std::make_pair("force", forceVectors));
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      // * for the neumann values
+      Dune::shared_ptr< SeparableVectorType > neumannVectors;
+      if (!model_->neumann()->parametric()) {
+        out << prefix << "  1 neumann   vector (of size " << testSpace_->map().size() << ")... "
+            << " " << Dune::Stuff::Common::whitespaceify(ansatzSpace_->map().size()) << std::flush;
+        neumannVectors
+            = Dune::make_shared < SeparableVectorType >(ContainerFactory::createDenseVector(*testSpace_));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      vectors_.insert(std::make_pair("neumann", neumannVectors));
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+      out << prefix << "initialiting assemblers:" << std::endl;
       timer.reset();
       // * local matrix assembler
       typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Matrix< EllipticOperatorType >
-          LocalMatrixAssemblerType;
-      const Dune::shared_ptr< const LocalMatrixAssemblerType > localMatrixAssembler(
-            new LocalMatrixAssemblerType(ellipticOperator));
+          LocalDiffusionMatrixAssemblerType;
+      std::vector< Dune::shared_ptr< const LocalDiffusionMatrixAssemblerType > > localDiffusionMatrixAssemblers;
+      if (!model_->diffusion()->parametric()) {
+        out << prefix << "  1 diffusion matrix assembler... " << std::flush;
+        localDiffusionMatrixAssemblers.push_back(
+              Dune::make_shared< LocalDiffusionMatrixAssemblerType >(*(diffusionOperators[0])));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      timer.reset();
       // * local vector assemblers
       //   * force vector
       typedef Dune::Detailed::Discretizations::Assembler::Local::Codim0::Vector< L2VolumeFunctionalType >
-          LocalVolumeVectorAssemblerType;
-      const Dune::shared_ptr< const LocalVolumeVectorAssemblerType > localforceVectorAssembler(
-            new LocalVolumeVectorAssemblerType(forceFunctional));
+          LocalFunctionalVectorAssemblerType;
+      std::vector< Dune::shared_ptr< const LocalFunctionalVectorAssemblerType > > localForceVectorAssemblers;
+      if (!model_->force()->parametric()) {
+        out << prefix << "  1 force     vector assembler... " << std::flush;
+        localForceVectorAssemblers.push_back(
+              Dune::make_shared< LocalFunctionalVectorAssemblerType >(*(forceFunctionals[0])));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      timer.reset();
       //   * neumann vector
-      typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Vector::Neumann< L2BoundaryFunctionalType,
-                                                                                          BoundaryInfoType >
-          LocalNeumannVectorAssemblerType;
-      const Dune::shared_ptr< const LocalNeumannVectorAssemblerType > localNeumannVectorAssembler(
-            new LocalNeumannVectorAssemblerType(neumannFunctional, boundaryInfo_));
-      typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+      std::vector< Dune::shared_ptr< const LocalFunctionalVectorAssemblerType > > localNeumannVectorAssemblers;
+      if (!model_->neumann()->parametric()) {
+        out << prefix << "  1 neumann   vector assembler... " << std::flush;
+        localNeumannVectorAssemblers.push_back(
+              Dune::make_shared< LocalFunctionalVectorAssemblerType >(*(neumannFunctionals[0])));
+      } else {
+        assert(false && "Implement me for parametric models!");
+      }
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       // * system assembler
+      out << prefix << "assembling system... " << std::flush;
+      typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
       SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
-      systemAssembler.addLocalMatrixAssembler(localMatrixAssembler, diffusionMatrix);
-      systemAssembler.addLocalVectorAssembler(localforceVectorAssembler, forceVector);
-      systemAssembler.addLocalVectorAssembler(localNeumannVectorAssembler, neumannVector);
+      for (std::size_t qq = 0; qq < localDiffusionMatrixAssemblers.size(); ++qq)
+        systemAssembler.addLocalMatrixAssembler(localDiffusionMatrixAssemblers[qq],
+                                                diffusionMatrices->components()[qq]);
+      for (std::size_t qq = 0; qq < localForceVectorAssemblers.size(); ++qq)
+        systemAssembler.addLocalVectorAssembler(localForceVectorAssemblers[qq],
+                                                forceVectors->components()[qq]);
+      for (std::size_t qq = 0; qq < localNeumannVectorAssemblers.size(); ++qq)
+        systemAssembler.addLocalVectorAssembler(localNeumannVectorAssemblers[qq],
+                                                neumannVectors->components()[qq]);
       systemAssembler.assemble();
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+      // clean up
+      for (std::size_t ii = 0; ii < neumannFunctionals.size(); ++ii)
+        delete neumannFunctionals[ii];
+      for (std::size_t ii = 0; ii < neumannEvaluations.size(); ++ii)
+        delete neumannEvaluations[ii];
+      for (std::size_t ii = 0; ii < forceFunctionals.size(); ++ii)
+        delete forceFunctionals[ii];
+      for (std::size_t ii = 0; ii < forceEvaluations.size(); ++ii)
+        delete forceEvaluations[ii];
+      for (std::size_t ii = 0; ii < diffusionOperators.size(); ++ii)
+        delete diffusionOperators[ii];
+      for (std::size_t ii = 0; ii < diffusionEvaluations.size(); ++ii)
+        delete diffusionEvaluations[ii];
 
       // done
       initialized_ = true;
     } // if !(initialized_)
   } // void init()
 
-  const AnsatzSpaceType& ansatzSpace() const
+  Dune::shared_ptr< const AnsatzSpaceType > ansatzSpace() const
   {
     assert(initialized_);
-    //!TODO don't use naked refs
-    return *ansatzSpace_;
+    return ansatzSpace_;
   }
 
-  const TestSpaceType& testSpace() const
+  Dune::shared_ptr< const TestSpaceType > testSpace() const
   {
     assert(initialized_);
-    //!TODO don't use naked refs
-    return *testSpace_;
+    return testSpace_;
   }
 
   Dune::shared_ptr< VectorType > createAnsatzVector() const
@@ -369,6 +471,11 @@ public:
     return testFunction;
   } // Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
 
+  /**
+   *  \todo In order to only compute the system matrix and the right hand side once, ceratin members need to be
+   *        mutable. Maybe, someone knows a better solution? Since neither the right hand side nor the system matrix
+   *        is going to change, the overall scenario of more than one solve might be stupid anyway...
+   */
   void solve(Dune::shared_ptr< VectorType > solutionVector,
              const std::string linearSolverType = "eigen.iterative.bicgstab.diagonal",
              const unsigned int linearSolverMaxIter = 5000,
@@ -376,40 +483,51 @@ public:
              const std::string prefix = "",
              std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
-    assert(initialized_ && "Please call init() before calling solve()!");
-    out << prefix << "applying constraints... " << std::flush;
-    Dune::Timer timer;
-    // compute system matrix and right hand side
-    // * therefore get matrix and vectors
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " call init() before calling solve()!");
+    // check, that we are really in the nonparametric setting!
     assert(matrices_.find("diffusion") != matrices_.end());
     assert(vectors_.find("force") != vectors_.end());
     assert(vectors_.find("neumann") != vectors_.end());
-    const MatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
-    const VectorType& forceVector = *(vectors_.find("force")->second);
-    const VectorType& neumannVector = *(vectors_.find("neumann")->second);
-    const VectorType& dirichletVector = *(ansatzSpace_->affineShift()->vector());
-    // * compute the system matrix
-    MatrixType systemMatrix = diffusionMatrix;
-    // * compute right hand side
-    VectorType rhsVector(testSpace_->map().size());
-    rhsVector.backend() = forceVector.backend()
-        + neumannVector.backend()
-        - systemMatrix.backend() * dirichletVector.backend();
-    // * create a system assembler
-    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-    SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
-    // * and apply the constraints
-    systemAssembler.applyConstraints(systemMatrix, rhsVector);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-
-    out << prefix << "solving linear system (of size " << systemMatrix.rows()
-        << "x" << systemMatrix.cols() << ")" << std::endl;
+    assert(vectors_.find("dirichlet") != vectors_.end());
+    const SeparableMatrixType& diffusionMatrices = *(matrices_.find("diffusion")->second);
+    const SeparableVectorType& forceVectors = *(vectors_.find("force")->second);
+    const SeparableVectorType& neumannVectors = *(vectors_.find("neumann")->second);
+    const SeparableVectorType& dirichletVectors = *(vectors_.find("dirichlet")->second);
+    if (model_->parametric())
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " nonparametric solve() called for a parametric model!");
+    // since we are in a nonparametric setting, we need to compute the system matrix and the right hand side only once
+    Dune::Timer timer;
+    if (!systemComputed_) {
+      out << prefix << "computing system matrix...   " << std::flush;
+      systemMatrix_ = Dune::shared_ptr< MatrixType >(new MatrixType(*(diffusionMatrices.components()[0])));
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      out << prefix << "computing right hand side... " << std::flush;
+      timer.reset();
+      rightHandSide_ = ContainerFactory::createDenseVector(*testSpace_);
+      rightHandSide_->backend() = forceVectors.components()[0]->backend()
+          + neumannVectors.components()[0]->backend()
+          - systemMatrix_->backend() * dirichletVectors.components()[0]->backend();
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      out << prefix << "applying constraints...      " << std::flush;
+      timer.reset();
+      typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+      const SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+      systemAssembler.applyConstraints(*systemMatrix_, *rightHandSide_);
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      systemComputed_ = true;
+    } // since we are in a nonparametric setting, we need to compute the system matrix and the right hand side only once
+    out << prefix << "solving linear system (of size " << systemMatrix_->rows()
+        << "x" << systemMatrix_->cols() << ")" << std::endl;
     out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
     timer.reset();
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
     Dune::shared_ptr< SolverType > solver = Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType);
-    const unsigned int failure = solver->apply(systemMatrix,
-                                               rhsVector,
+    const unsigned int failure = solver->apply(*systemMatrix_,
+                                               *rightHandSide_,
                                                *solutionVector,
                                                linearSolverMaxIter,
                                                linearSolverPrecision);
@@ -427,7 +545,7 @@ public:
                  << Dune::Stuff::Common::colorStringRed("ERROR:")
                  << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
                  << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
-    solutionVector->backend() += dirichletVector.backend();
+    solutionVector->backend() += dirichletVectors.components()[0]->backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
@@ -498,42 +616,46 @@ public:
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeFunction(...)
 
-  void visualizeFunction(const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction,
-                         const std::string filename = id() + ".discreteTestFunction",
-                         const std::string prefix = "",
-                         std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-  {
-    // preparations
-    assert(initialized_ && "Please call init() before calling visualize()");
-    Dune::Timer timer;
-    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
-    if (dimDomain == 1)
-      out << ".vtp";
-    else
-      out << ".vtu";
-    out << "'... " << std::flush;
-    typedef Dune::VTKWriter< typename DiscreteAnsatzFunctionType::DiscreteFunctionSpaceType::GridViewType > VTKWriterType;
-    VTKWriterType vtkWriter(discreteFunction->space().gridView());
-    vtkWriter.addVertexData(discreteFunction);
-    vtkWriter.write(filename);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-  } // void visualizeFunction(...)
+//  void visualizeFunction(const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction,
+//                         const std::string filename = id() + ".discreteTestFunction",
+//                         const std::string prefix = "",
+//                         std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+//  {
+//    // preparations
+//    assert(initialized_ && "Please call init() before calling visualize()");
+//    Dune::Timer timer;
+//    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
+//    if (dimDomain == 1)
+//      out << ".vtp";
+//    else
+//      out << ".vtu";
+//    out << "'... " << std::flush;
+//    typedef Dune::VTKWriter< typename DiscreteAnsatzFunctionType::DiscreteFunctionSpaceType::GridViewType > VTKWriterType;
+//    VTKWriterType vtkWriter(discreteFunction->space().gridView());
+//    vtkWriter.addVertexData(discreteFunction);
+//    vtkWriter.write(filename);
+//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//  } // void visualizeFunction(...)
 
 private:
   const Dune::shared_ptr< const GridPartType > gridPart_;
   const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo_;
   const Dune::shared_ptr< const ModelType > model_;
   bool initialized_;
+  mutable bool systemComputed_;
   Dune::shared_ptr< const LagrangeSpaceType > lagrangeSpace_;
   Dune::shared_ptr< const TestSpaceType > testSpace_;
   Dune::shared_ptr< const AnsatzSpaceType > ansatzSpace_;
   std::map< const std::string, Dune::shared_ptr< const PatternType > > patterns_;
-  std::map< const std::string, Dune::shared_ptr< MatrixType > > matrices_;
-  std::map< const std::string, Dune::shared_ptr< VectorType > > vectors_;
+  std::map< const std::string, Dune::shared_ptr< SeparableMatrixType > > matrices_;
+  std::map< const std::string, Dune::shared_ptr< SeparableVectorType > > vectors_;
+  mutable Dune::shared_ptr< MatrixType > systemMatrix_;
+  mutable Dune::shared_ptr< VectorType > rightHandSide_;
 }; // class DetailedDiscretizations
 
 
-#if HAVE_DUNE_RB
+#define ENABLED 0
+#if ENABLED
 namespace Parametric {
 
 template< class GridPartImp, int polynomialOrder,
@@ -1186,7 +1308,7 @@ private:
 
 
 } // namespace Parametric
-#endif // HAVE_DUNE_RB
+#endif // ENABLED
 
 } // namespace CG
 } // namespace Elliptic
