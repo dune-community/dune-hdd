@@ -41,9 +41,8 @@ void writeParamFile(const std::string filename, const std::string _id = id())
   file << "boundaryinfo = stuff.grid.boundaryinfo.idbased" << std::endl;
   file << "               stuff.grid.boundaryinfo.alldirichlet" << std::endl;
   file << "               stuff.grid.boundaryinfo.allneumann" << std::endl;
-  file << "model = detailed.solvers.stationary.linear.elliptic.model.default" << std::endl;
-  file << "        detailed.solvers.stationary.linear.elliptic.model.thermalblock" << std::endl;
-  file << "filename = " << id << std::endl;
+  file << "model = model.stationary.linear.elliptic.nonparametric.default" << std::endl;
+  file << "filename = " << _id << std::endl;
   file << "[logging]" << std::endl;
   file << "info  = true" << std::endl;
   file << "debug = false" << std::endl;
@@ -57,34 +56,23 @@ void writeParamFile(const std::string filename, const std::string _id = id())
   file << "[stuff.grid.boundaryinfo.idbased]" << std::endl;
   file << "dirichlet = [1; 2; 3]" << std::endl;
   file << "neumann   = [4]" << std::endl;
-  file << "[detailed.solvers.stationary.linear.elliptic.model.default]" << std::endl;
+  file << "[model.stationary.linear.elliptic.nonparametric.default]" << std::endl;
   file << "diffusion.order      = 0"  << std::endl;
   file << "diffusion.variable   = x" << std::endl;
   file << "diffusion.expression = [1.0; 1.0; 1.0]"  << std::endl;
+  file << "diffusion.name       = constant diffusion"  << std::endl;
   file << "force.order      = 0"  << std::endl;
   file << "force.variable   = x" << std::endl;
   file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
+  file << "force.name       = constant force"  << std::endl;
   file << "dirichlet.order      = 1"  << std::endl;
   file << "dirichlet.variable   = x" << std::endl;
   file << "dirichlet.expression = [0.1*x[0]; 0.0; 0.0]"  << std::endl;
+  file << "dirichlet.name       = linear dirichlet"  << std::endl;
   file << "neumann.order      = 0"  << std::endl;
   file << "neumann.variable   = x" << std::endl;
   file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
-  file << "[detailed.solvers.stationary.linear.elliptic.model.thermalblock]" << std::endl;
-  file << "diffusion.order = 0"  << std::endl;
-  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0]" << std::endl; // should coincide with the grid
-  file << "diffusion.upperRight  = [1.0; 1.0; 1.0]" << std::endl; // should coincide with the grid
-  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
-  file << "diffusion.components  = [1.0; 10.0; 3.0; 2.1]"  << std::endl;
-  file << "force.order      = 0"  << std::endl;
-  file << "force.variable   = x" << std::endl;
-  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "dirichlet.order      = 0"  << std::endl;
-  file << "dirichlet.variable   = x" << std::endl;
-  file << "dirichlet.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "neumann.order      = 0"  << std::endl;
-  file << "neumann.variable   = x" << std::endl;
-  file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
+  file << "neumann.name       = constant neumann"  << std::endl;
   file << "[solver.linear]" << std::endl;
   file << "type      = bicgstab.diagonal" << std::endl;
   file << "            bicgstab.ilut" << std::endl;
@@ -164,20 +152,34 @@ int run(int argc, char** argv)
         ::Stationary
         ::Linear
         ::Elliptic
-        ::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >ModelType;
-    const Dune::shared_ptr< const ModelType > model(Dune::Detailed::Solvers
-        ::Stationary::Linear::Elliptic::Model::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(
-                                                      modelType,
-                                                      paramTree));
-    typedef Dune::Stuff::Grid::BoundaryInfo::Interface< typename GridPartType::GridViewType > BoundaryInfoType;
-    const Dune::shared_ptr< const BoundaryInfoType > boundaryInfo(
-          Dune::Stuff::Grid::BoundaryInfo::create< typename GridPartType::GridViewType >(
-            paramTree.get< std::string >(id + ".boundaryinfo"),
-            paramTree));
+        ::Model::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      ModelType;
+    const Dune::shared_ptr< ModelType > model = Dune::Detailed::Solvers
+                                                ::Stationary
+                                                ::Linear
+                                                ::Elliptic
+                                                ::Model::create<  DomainFieldType, dimDomain,
+                                                                  RangeFieldType, dimRange >(modelType, paramTree);
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    info << "visualizing model... " << std::flush;
+//    info << "visualizing model... " << std::flush;
+//    timer.reset();
+//    model->visualize(gridPart->gridView(), filename + ".model");
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+    info << "setting up boundaryinfo";
+    const std::string boundaryInfoType = paramTree.get< std::string >(id() + ".boundaryinfo");
+    if (!debugLogging)
+      info << "... ";
+    else {
+      info << ":" << std::endl;
+      info << "  '" << boundaryInfoType << "'... ";
+    }
+    info << std::flush;
     timer.reset();
-    model->visualize(gridPart->gridView(), filename + ".model");
+    typedef typename GridPartType::GridViewType GridViewType;
+    typedef Dune::Stuff::Grid::BoundaryInfo::Interface< GridViewType > BoundaryInfoType;
+    const Dune::shared_ptr< const BoundaryInfoType >
+        boundaryInfo = Dune::Stuff::Grid::BoundaryInfo::create< GridViewType >(boundaryInfoType, paramTree);
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "initializing solver";
