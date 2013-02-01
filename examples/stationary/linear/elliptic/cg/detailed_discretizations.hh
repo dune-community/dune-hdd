@@ -161,10 +161,10 @@ int run(int argc, char** argv)
                                                 ::Model::create<  DomainFieldType, dimDomain,
                                                                   RangeFieldType, dimRange >(modelType, paramTree);
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//    info << "visualizing model... " << std::flush;
-//    timer.reset();
-//    model->visualize(gridPart->gridView(), filename + ".model");
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    info << "visualizing model... " << std::flush;
+    timer.reset();
+    model->visualize(gridPart->gridView(), filename + ".model");
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "setting up boundaryinfo";
     const std::string boundaryInfoType = paramTree.get< std::string >(id() + ".boundaryinfo");
