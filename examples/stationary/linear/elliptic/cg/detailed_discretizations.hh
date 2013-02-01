@@ -27,13 +27,15 @@
   const int polOrder = 1;
 #endif
 
-const std::string id = "stationary.linear.elliptic.cg.detailed_discretizations";
+std::string id(){
+  return "stationary.linear.elliptic.cg.detailed_discretizations";
+}
 
-void writeParamFile(const std::string filename)
+void writeParamFile(const std::string filename, const std::string _id = id())
 {
   std::ofstream file;
   file.open(filename);
-  file << "[" << id << "]" << std::endl;
+  file << "[" << _id << "]" << std::endl;
   file << "grid = stuff.grid.provider.cube" << std::endl;
   file << "       stuff.grid.provider.gmsh" << std::endl;
   file << "boundaryinfo = stuff.grid.boundaryinfo.idbased" << std::endl;
@@ -102,11 +104,11 @@ int run(int argc, char** argv)
     Dune::MPIManager::initialize(argc, argv);
 
     // parameter
-    const std::string paramFilename = id + ".param";
+    const std::string paramFilename = id() + ".param";
     typedef Dune::Stuff::Common::ExtendedParameterTree ParamTreeType;
     const ParamTreeType paramTree(argc, argv, paramFilename);
-    paramTree.assertSub(id);
-    const std::string filename = paramTree.get(id + ".filename", id);
+    paramTree.assertSub(id());
+    const std::string filename = paramTree.get(id() + ".filename", id());
 
     // logger
     const ParamTreeType& logParams = paramTree.sub("logging");
@@ -118,7 +120,7 @@ int run(int argc, char** argv)
       logFlags = logFlags | Dune::Stuff::Common::LOG_DEBUG;
     if (logParams.get< bool >("file", false))
       logFlags = logFlags | Dune::Stuff::Common::LOG_FILE;
-    Dune::Stuff::Common::Logger().create(logFlags, id, "", "");
+    Dune::Stuff::Common::Logger().create(logFlags, id(), "", "");
     Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
@@ -127,7 +129,7 @@ int run(int argc, char** argv)
     info << "setting up grid: " << std::endl;
     typedef Dune::Stuff::Grid::Provider::Interface<> GridProviderType;
     const GridProviderType* gridProvider
-        = Dune::Stuff::Grid::Provider::create(paramTree.get< std::string >(id + ".grid", "stuff.grid.provider.cube"),
+        = Dune::Stuff::Grid::Provider::create(paramTree.get< std::string >(id() + ".grid", "stuff.grid.provider.cube"),
                                               paramTree);
     typedef GridProviderType::GridType GridType;
     const Dune::shared_ptr< const GridType > grid = gridProvider->grid();
@@ -145,7 +147,7 @@ int run(int argc, char** argv)
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
 
     info << "setting up model";
-    const std::string modelType = paramTree.get< std::string >(id + ".model");
+    const std::string modelType = paramTree.get< std::string >(id() + ".model");
     if (!debugLogging)
       info << "... ";
     else {
@@ -221,7 +223,7 @@ int run(int argc, char** argv)
     timer.reset();
     solver.visualizeAnsatzVector(solutionVector,
                                  filename + ".solution",
-                                 id + ".solution",
+                                 id() + ".solution",
                                  "  ",
                                  debug);
     if (!debugLogging)

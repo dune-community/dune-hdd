@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv)
 {
-  const std::string paramFilename = id + ".param";
+  const std::string paramFilename = id() + ".param";
   if (!boost::filesystem::exists(paramFilename))
     writeParamFile(paramFilename);
 
