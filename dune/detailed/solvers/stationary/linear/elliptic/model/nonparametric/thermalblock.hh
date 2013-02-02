@@ -12,11 +12,7 @@
 
 #include <dune/common/shared_ptr.hh>
 
-#include <dune/stuff/function/expression.hh>
-#include <dune/stuff/function/interface.hh>
-#include <dune/stuff/function/checkerboard.hh>
-#include <dune/stuff/common/parameter/tree.hh>
-#include <dune/stuff/common/print.hh>
+#include <dune/stuff/function/nonparametric/checkerboard.hh>
 
 #include "default.hh"
 
@@ -29,120 +25,86 @@ namespace Elliptic {
 namespace Model {
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class Thermalblock
-  : public Default < DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
+class NonparametricThermalblock
+  : public NonparametricDefault< DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
 {
 public:
-  typedef DomainFieldImp DomainFieldType;
+  typedef NonparametricDefault< DomainFieldImp, domainDim, RangeFieldImp, rangeDim >      BaseType;
+  typedef NonparametricThermalblock< DomainFieldImp, domainDim, RangeFieldImp, rangeDim > ThisType;
 
-  static const int dimDomain = domainDim;
+  typedef typename BaseType::DomainFieldType  DomainFieldType;
+  static const int                            dimDomain = BaseType::dimDomain;
+  typedef typename BaseType::RangeFieldType   RangeFieldType;
+  static const int                            dimRange = BaseType::dimRange;
 
-  typedef RangeFieldImp RangeFieldType;
-
-  static const int dimRange = rangeDim;
-
-  typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > BaseType;
-
-  typedef Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange > ThisType;
-
-  typedef typename Dune::Stuff::Function::Checkerboard< DomainFieldType, dimDomain,
-                                                        RangeFieldType, dimRange >
-    CheckerboardFunctionType;
-
-  typedef typename BaseType::DiffusionType DiffusionType;
-
-  typedef typename DiffusionType::DomainType DomainType;
-
-  typedef typename BaseType::ForceType ForceType;
-
-  typedef typename BaseType::DirichletType DirichletType;
-
-  typedef typename BaseType::NeumannType NeumannType;
+  typedef typename BaseType::FunctionType   FunctionType;
+  typedef typename Dune::Stuff::Function::NonparametricCheckerboard<  DomainFieldType, dimDomain,
+                                                                      RangeFieldType, dimRange >
+                                            CheckerboardFunctionType;
+  typedef typename FunctionType::DomainType DomainType;
 
   static const std::string id()
   {
-    return BaseType::BaseType::id() + ".thermalblock";
+    return BaseType::BaseType::id() + ".nonparametric.thermalblock";
   }
 
-  Thermalblock(const DomainType& _lowerLeft,
-               const DomainType& _upperRight,
-               const std::vector< unsigned int > _numElements,
-               const std::vector< RangeFieldType > _components,
-               const Dune::shared_ptr< const ForceType > _force,
-               const Dune::shared_ptr< const DirichletType > _dirichlet,
-               const Dune::shared_ptr< const NeumannType > _neumann,
-               const int _diffusionOrder = 0,
-               const int _forceOrder = -1,
-               const int _dirichletOrder = -1,
-               const int _neumannOrder = -1)
+  NonparametricThermalblock(const DomainType& _lowerLeft,
+                            const DomainType& _upperRight,
+                            const std::vector< unsigned int > _numElements,
+                            const std::vector< RangeFieldType > _components,
+                            const Dune::shared_ptr< const FunctionType > _force,
+                            const Dune::shared_ptr< const FunctionType > _dirichlet,
+                            const Dune::shared_ptr< const FunctionType > _neumann)
     : BaseType(Dune::shared_ptr< const CheckerboardFunctionType >(new CheckerboardFunctionType(_lowerLeft,
                                                                                                _upperRight,
                                                                                                _numElements,
                                                                                                _components)),
-               _force, _dirichlet, _neumann, _diffusionOrder, _forceOrder, _dirichletOrder, _neumannOrder)
+               _force, _dirichlet, _neumann)
   {}
 
-  Thermalblock(const Dune::shared_ptr< const CheckerboardFunctionType > _diffusion,
-               const Dune::shared_ptr< const ForceType > _force,
-               const Dune::shared_ptr< const DirichletType > _dirichlet,
-               const Dune::shared_ptr< const NeumannType > _neumann,
-               const int _diffusionOrder = 0,
-               const int _forceOrder = -1,
-               const int _dirichletOrder = -1,
-               const int _neumannOrder = -1)
-    : BaseType(_diffusion, _force, _dirichlet, _neumann, _diffusionOrder, _forceOrder, _dirichletOrder, _neumannOrder)
+  NonparametricThermalblock(const Dune::shared_ptr< const CheckerboardFunctionType > _diffusion,
+                            const Dune::shared_ptr< const FunctionType > _force,
+                            const Dune::shared_ptr< const FunctionType > _dirichlet,
+                            const Dune::shared_ptr< const FunctionType > _neumann)
+    : BaseType(_diffusion, _force, _dirichlet, _neumann)
   {}
 
-  Thermalblock(const ThisType& other)
-    :BaseType(other.diffusion(),
-              other.force(),
-              other.dirichlet(),
-              other.neumann(),
-              other.diffusionOrder(),
-              other.forceOrder(),
-              other.dirichletOrder(),
-              other.neumannOrder())
+  NonparametricThermalblock(const ThisType& _other)
+    :BaseType(_other.diffusion(),
+              _other.force(),
+              _other.dirichlet(),
+              _other.neumann())
   {}
 
-  static ThisType createFromParamTree(const Dune::ParameterTree& paramTree, const std::string subName = id())
+  ThisType& operator=(const ThisType& _other)
+  {
+    if (this != &_other) {
+      BaseType::operator=(_other);
+    }
+    return this;
+  } // ThisType& operator=(const ThisType& other)
+
+  static ThisType createFromParamTree(const Dune::ParameterTree& _paramTree, const std::string _subName = id())
   {
     // get correct paramTree
-    Dune::Stuff::Common::ExtendedParameterTree extendedParamTree;
-    if (paramTree.hasSub(subName))
-      extendedParamTree = paramTree.sub(subName);
+    Dune::Stuff::Common::ExtendedParameterTree paramTree;
+    if (_paramTree.hasSub(_subName))
+      paramTree = _paramTree.sub(_subName);
     else
-      extendedParamTree = paramTree;
+      paramTree = _paramTree;
     // create the corrent diffusion
-    if (!extendedParamTree.hasSub("diffusion"))
-      DUNE_THROW(Dune::RangeError,
-                 "\nError: sub 'diffusion' not found in the following Dune::ParameterTree\n:" << extendedParamTree.reportString("  "));
-    const Dune::Stuff::Common::ExtendedParameterTree& diffusionTree = extendedParamTree.sub("diffusion");
-    std::vector< DomainFieldType > lowerLefts;
-    std::vector< DomainFieldType > upperRights;
-    std::vector< unsigned int > numElements;
-    std::vector< RangeFieldType > components;
-    if (!diffusionTree.hasKey("lowerLeft"))
-      std::cout << "Warning in " << id() << ": neither vector nor key 'lowerLeft' given, defaulting to 0.0!" << std::endl;
-    if (!diffusionTree.hasKey("upperRight"))
-      std::cout << "Warning in " << id() << ": neither vector nor key 'upperRight' given, defaulting to 1.0!" << std::endl;
-    if (!diffusionTree.hasKey("numElements"))
-      std::cout << "Warning in " << id() << ": neither vector nor key 'numElements' given, defaulting to 1!" << std::endl;
-    if (!diffusionTree.hasKey("components"))
-      std::cout << "Warning in " << id() << ": neither vector nor key 'components' given, defaulting to 1!" << std::endl;
-    if (!diffusionTree.hasKey("order"))
-      std::cout << "Warning in " << id() << ": no key 'order' given, defaulting to 0!" << std::endl;
-    const unsigned int _diffusionOrder = diffusionTree.get("order", 0u);
-    lowerLefts = diffusionTree.getVector("lowerLeft", DomainFieldType(0), dimDomain);
-    upperRights = diffusionTree.getVector("upperRight", DomainFieldType(1), dimDomain);
-    numElements = diffusionTree.getVector("numElements", 1u, dimDomain);
-    components = diffusionTree.getVector("components", RangeFieldType(1), dimDomain);
+    const Dune::Stuff::Common::ExtendedParameterTree& diffusionTree = paramTree.sub("diffusion");
+    std::vector< DomainFieldType > lowerLefts = diffusionTree.getVector("lowerLeft", DomainFieldType(0), dimDomain);
+    std::vector< DomainFieldType > upperRights = diffusionTree.getVector("upperRight", DomainFieldType(1), dimDomain);
+    std::vector< unsigned int > numElements = diffusionTree.getVector("numElements", 1u, dimDomain);
+    std::vector< RangeFieldType > components = diffusionTree.getVector("components", RangeFieldType(1), dimDomain);
     assert(int(lowerLefts.size()) >= dimDomain && "Given vector is too short!");
     assert(int(upperRights.size()) >= dimDomain && "Given vector is too short!");
     assert(int(numElements.size()) >= dimDomain && "Given vector is too short!");
     assert(int(components.size()) >= dimDomain && "Given vector is too short!");
     Dune::FieldVector< DomainFieldType, dimDomain > lowerLeft;
     Dune::FieldVector< DomainFieldType, dimDomain > upperRight;
-    unsigned int numSubdomains = 1;
+    size_t numSubdomains = 1;
     for (int d = 0; d < dimDomain; ++d) {
       lowerLeft[d] = lowerLefts[d];
       upperRight[d] = upperRights[d];
@@ -153,32 +115,15 @@ public:
                                                                                          numElements,
                                                                                          components));
     // use method from base to create the rest, therefore create a copy of the paramtree to fake the diffusion
-    Dune::Stuff::Common::ExtendedParameterTree fakeParamTree(extendedParamTree);
+    Dune::Stuff::Common::ExtendedParameterTree fakeParamTree(paramTree);
     fakeParamTree["diffusion.variable"] = "x";
     fakeParamTree["diffusion.expression"] = "[1.0; 1.0; 1.0]";
     fakeParamTree["diffusion.order"] = "0";
+    fakeParamTree["diffusion.name"] = "diffusion";
     const BaseType base = BaseType::createFromParamTree(fakeParamTree);
     // create and return
-    return ThisType(_diffusion, base.force(), base.dirichlet(), base.neumann(),
-                    _diffusionOrder, base.forceOrder(), base.dirichletOrder(), base.neumannOrder());
+    return ThisType(_diffusion, base.force(), base.dirichlet(), base.neumann());
   } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree, const std::string subName = id())
-
-  ThisType& operator=(const ThisType& other)
-  {
-    if (this != &other) {
-      BaseType::operator=(other);
-    }
-    return this;
-  } // ThisType& operator=(const ThisType& other)
-
-private:
-  Dune::shared_ptr< const DiffusionType > diffusion_;
-  Dune::shared_ptr< const ForceType > force_;
-  Dune::shared_ptr< const DirichletType > dirichlet_;
-  Dune::shared_ptr< const NeumannType > neumann_;
-  int forceOrder_;
-  int dirichletOrder_;
-  int neumannOrder_;
 }; // class Thermalblock
 
 } // namespace Model
