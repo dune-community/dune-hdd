@@ -15,8 +15,7 @@
 
 #include "model/interface.hh"
 #include "model/nonparametric/default.hh"
-//#include "model/default.hh"
-//#include "model/thermalblock.hh"
+#include "model/nonparametric/thermalblock.hh"
 
 namespace Dune {
 namespace Detailed {
@@ -45,19 +44,19 @@ Dune::shared_ptr< Interface<  DomainFieldType, dimDomain,
         ::NonparametricDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange, ParamFieldType, maxParams >
       ModelType;
     return Dune::make_shared< ModelType >(ModelType::createFromParamTree(paramTree));
-//  } else if (type == "detailed.solvers.stationary.linear.elliptic.model.thermalblock") {
-//    typedef Dune::Detailed::Solvers
-//        ::Stationary
-//        ::Linear
-//        ::Elliptic
-//        ::Model
-//        ::Thermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >
-//      ThermalblockModelType;
-//    return new ThermalblockModelType(ThermalblockModelType::createFromParamTree(paramTree));
+  } else if (type == "model.stationary.linear.elliptic.nonparametric.thermalblock") {
+    typedef Dune::Detailed::Solvers
+        ::Stationary
+        ::Linear
+        ::Elliptic
+        ::Model
+        ::NonparametricThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      ThermalblockModelType;
+    return Dune::make_shared< ThermalblockModelType >(ThermalblockModelType::createFromParamTree(paramTree));
   } else
     DUNE_THROW(Dune::RangeError,
                "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " unknown model '" << type << "' requested!");
-} // Interface* create(const std::string type, const Dune::ParameterTree paramTree = Dune::ParameterTree())
+} // ... create(...)
 
 
 } // namespace Model
