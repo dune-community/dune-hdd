@@ -14,8 +14,10 @@
 #include <dune/stuff/common/color.hh>
 
 #include "model/interface.hh"
-#include "model/nonparametric/default.hh"
-#include "model/nonparametric/thermalblock.hh"
+#include "model/default.hh"
+#include "model/thermalblock.hh"
+#include "model/parametric/separable/default.hh"
+#include "model/parametric/separable/thermalblock.hh"
 
 namespace Dune {
 namespace Detailed {
@@ -26,33 +28,29 @@ namespace Elliptic {
 namespace Model {
 
 
-template< class DomainFieldType, int dimDomain,
-          class RangeFieldType, int dimRange,
-          class ParamFieldType = double, int maxParams = 0 >
-Dune::shared_ptr< Interface<  DomainFieldType, dimDomain,
-                              RangeFieldType, dimRange,
-                              ParamFieldType, maxParams > >
-  create(const std::string type, const Dune::ParameterTree paramTree = Dune::ParameterTree())
+template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
+Dune::shared_ptr< Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > >
+  create(const std::string type, const Dune::ParameterTree description = Dune::ParameterTree())
 {
   // choose model
-  if (type == "model.stationary.linear.elliptic.nonparametric.default") {
-    typedef Dune::Detailed::Solvers
-        ::Stationary
-        ::Linear
-        ::Elliptic
-        ::Model
-        ::NonparametricDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange, ParamFieldType, maxParams >
+  if (type == "model.stationary.linear.elliptic.default") {
+    typedef Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >
       ModelType;
-    return Dune::make_shared< ModelType >(ModelType::createFromParamTree(paramTree));
-  } else if (type == "model.stationary.linear.elliptic.nonparametric.thermalblock") {
-    typedef Dune::Detailed::Solvers
-        ::Stationary
-        ::Linear
-        ::Elliptic
-        ::Model
-        ::NonparametricThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >
-      ThermalblockModelType;
-    return Dune::make_shared< ThermalblockModelType >(ThermalblockModelType::createFromParamTree(paramTree));
+    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
+  } else if (type == "model.stationary.linear.elliptic.thermalblock") {
+    typedef Stationary::Linear::Elliptic::Model::Thermalblock<  DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      ModelType;
+    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
+  } else if (type == "model.stationary.linear.elliptic.parametric.separable.default") {
+    typedef Stationary::Linear::Elliptic::Model::SeparableDefault<  DomainFieldType, dimDomain,
+                                                                    RangeFieldType, dimRange >
+      ModelType;
+    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
+  } else if (type == "model.stationary.linear.elliptic.parametric.separable.thermalblock") {
+    typedef Stationary::Linear::Elliptic::Model::SeparableThermalblock< DomainFieldType, dimDomain,
+                                                                        RangeFieldType, dimRange >
+      ModelType;
+    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
   } else
     DUNE_THROW(Dune::RangeError,
                "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " unknown model '" << type << "' requested!");
