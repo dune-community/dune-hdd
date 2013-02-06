@@ -15,6 +15,7 @@
 
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/common/color.hh>
+#include <dune/stuff/common/parameter.hh>
 #include <dune/stuff/function/interface.hh>
 
 namespace Dune {
@@ -26,22 +27,15 @@ namespace Elliptic {
 namespace Model {
 
 
-template< class DomainFieldImp, int domainDim,
-          class RangeFieldImp, int rangeDim,
-          class ParamFieldImp = double, int maxParamDim = 0 >
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
 class Interface;
 
 
-
-template< class DomainFieldImp, int domainDim,
-          class RangeFieldImp,
-          class ParamFieldImp, int maxParamDim >
-class Interface< DomainFieldImp, domainDim, RangeFieldImp, 1, ParamFieldImp, maxParamDim >
+template< class DomainFieldImp, int domainDim, class RangeFieldImp >
+class Interface< DomainFieldImp, domainDim, RangeFieldImp, 1 >
 {
 public:
-  typedef Interface<  DomainFieldImp, domainDim,
-                      RangeFieldImp, 1,
-                      ParamFieldImp, maxParamDim > ThisType;
+  typedef Interface< DomainFieldImp, domainDim, RangeFieldImp, 1 > ThisType;
 
   typedef DomainFieldImp  DomainFieldType;
   static const int        dimDomain = domainDim;
@@ -49,24 +43,42 @@ public:
   typedef RangeFieldImp   RangeFieldType;
   static const int        dimRange = 1;
 
-  typedef ParamFieldImp   ParamFieldType;
-  static const int        maxDimParam = maxParamDim;
+  typedef typename Stuff::Common::Parameter::FieldType  ParamFieldType;
+  static const int                                      maxParamDim = Stuff::Common::Parameter::maxDim;
+  typedef typename Stuff::Common::Parameter::Type       ParamType;
 
-  typedef Dune::Stuff::Function::Interface< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange,
-                                            ParamFieldImp, maxDimParam >  FunctionType;
-
-  typedef typename FunctionType::ParamType                              ParamType;
-  typedef typename FunctionType::size_type                              size_type;
+  typedef Dune::Stuff::Function::Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > FunctionType;
 
   static const std::string id()
   {
     return "model.stationary.linear.elliptic";
   }
 
-  /** \defgroup purevirtual-type ´´These methods have to be implemented and determine the type of the model (and also, which of the below methods have to be implemented).'' */
+  /** \defgroup type ´´These methods determine the type of the model (and also, which of the below methods have to be implemented).'' */
   /* @{ */
-  virtual bool parametric() const = 0;
+  virtual bool parametric() const
+  {
+    if (diffusion()->parametric() || force()->parametric() || dirichlet()->parametric() || neumann()->parametric())
+      return true;
+    else
+      return false;
+  }
+
+  virtual bool separable() const
+  {
+    if (parametric()) {
+      if (diffusion()->parametric() && !diffusion()->separable())
+        return false;
+      if (force()->parametric() && !force()->separable())
+        return false;
+      if (dirichlet()->parametric() && !dirichlet()->separable())
+        return false;
+      if (neumann()->parametric() && !neumann()->separable())
+        return false;
+      return true;
+    } else
+      return false;
+  }
   /* @} */
 
   /** \defgroup purevirtual ´´These methods have to be implemented.'' */
@@ -82,10 +94,13 @@ public:
 
   /** \defgroup parametric ´´These methods have to be implemented additionally, if parametric() == true.'' */
   /* @{ */
-  virtual size_type paramSize() const
+  virtual size_t paramSize() const
   {
-    DUNE_THROW(Dune::NotImplemented,
-               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
+    if (!parametric())
+      return 0;
+    else
+      DUNE_THROW(Dune::NotImplemented,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
   }
 
   virtual const std::vector< ParamType >& paramRange() const
@@ -112,8 +127,11 @@ public:
    */
   virtual ParamType mapParam(const ParamType& /*_globalMu*/, const std::string /*_id*/) const
   {
-    DUNE_THROW(Dune::NotImplemented,
-               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
+    if (!parametric())
+      return ParamType();
+    else
+      DUNE_THROW(Dune::NotImplemented,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
   }
   /* @} */
 
@@ -126,7 +144,7 @@ public:
 //    assert(paramRange().size() == 2);
 //    assert(paramRange()[0].size() == paramSize());
 //    assert(paramRange()[1].size() == paramSize());
-//    for (unsigned int pp = 0; pp < paramSize(); ++pp)
+//    for (size_t pp = 0; pp < paramSize(); ++pp)
 //      out << prefix << "  " << paramExplanation()[pp] << ", between " << paramRange()[0](pp) << " and " << paramRange()[1](pp) << std::endl;
 //  }
 
@@ -153,7 +171,7 @@ public:
       // do a piecewise constant projection of the data functions
       //   * diffusion
       if (diffusion()->parametric() && diffusion()->separable())
-        for (unsigned int qq = 0; qq < diffusion()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < diffusion()->numComponents(); ++qq)
           diffusionPlots[qq].second->operator[](index) = diffusion()->components()[qq]->evaluate(center);
       else if (!diffusion()->parametric())
         diffusionPlots[0].second->operator[](index) = diffusion()->evaluate(center);
@@ -163,7 +181,7 @@ public:
                    << " visualize() not yet implemented for parametric but not separable data functions!");
       //   * force
       if (force()->parametric() && force()->separable())
-        for (unsigned int qq = 0; qq < force()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < force()->numComponents(); ++qq)
           forcePlots[qq].second->operator[](index) = force()->components()[qq]->evaluate(center);
       else if (!force()->parametric())
         forcePlots[0].second->operator[](index) = force()->evaluate(center);
@@ -173,7 +191,7 @@ public:
                    << " visualize() not yet implemented for parametric but not separable data functions!");
       //   * dirichlet
       if (dirichlet()->parametric() && dirichlet()->separable())
-        for (unsigned int qq = 0; qq < dirichlet()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < dirichlet()->numComponents(); ++qq)
           dirichletPlots[qq].second->operator[](index) = dirichlet()->components()[qq]->evaluate(center);
       else if (!dirichlet()->parametric())
         dirichletPlots[0].second->operator[](index) = dirichlet()->evaluate(center);
@@ -183,7 +201,7 @@ public:
                    << " visualize() not yet implemented for parametric but not separable data functions!");
       //   * neumann
       if (neumann()->parametric() && neumann()->separable())
-        for (unsigned int qq = 0; qq < neumann()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < neumann()->numComponents(); ++qq)
           neumannPlots[qq].second->operator[](index) = neumann()->components()[qq]->evaluate(center);
       else if (!neumann()->parametric())
         neumannPlots[0].second->operator[](index) = neumann()->evaluate(center);
@@ -194,16 +212,16 @@ public:
     } // walk the grid view
     // write
     //   * diffusion
-    for (unsigned int qq = 0; qq < diffusionPlots.size(); ++qq)
+    for (size_t qq = 0; qq < diffusionPlots.size(); ++qq)
       vtkWriter.addCellData(*(diffusionPlots[qq].second), diffusionPlots[qq].first);
     //   * force
-    for (unsigned int qq = 0; qq < forcePlots.size(); ++qq)
+    for (size_t qq = 0; qq < forcePlots.size(); ++qq)
       vtkWriter.addCellData(*(forcePlots[qq].second), forcePlots[qq].first);
     //   * dirichlet
-    for (unsigned int qq = 0; qq < dirichletPlots.size(); ++qq)
+    for (size_t qq = 0; qq < dirichletPlots.size(); ++qq)
       vtkWriter.addCellData(*(dirichletPlots[qq].second), dirichletPlots[qq].first);
     //   * neumann
-    for (unsigned int qq = 0; qq < neumannPlots.size(); ++qq)
+    for (size_t qq = 0; qq < neumannPlots.size(); ++qq)
       vtkWriter.addCellData(*(neumannPlots[qq].second), neumannPlots[qq].first);
     vtkWriter.write(filename, Dune::VTK::ascii);
   } // void visualize(const GridViewType& gridView, std::string filename) const
@@ -218,7 +236,7 @@ private:
     if (function.parametric()) {
       if (function.separable()) {
         const std::vector< std::string >& paramExplanations = function.paramExplanation();
-        for (unsigned int qq = 0; qq < function.numComponents(); ++qq)
+        for (size_t qq = 0; qq < function.numComponents(); ++qq)
           ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
                           name + "_component_" + Dune::Stuff::Common::toString(qq) + ": " + paramExplanations[qq],
                           new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
