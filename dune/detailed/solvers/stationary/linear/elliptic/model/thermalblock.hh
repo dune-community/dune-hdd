@@ -133,38 +133,32 @@ public:
       description = _description.sub(_subName);
     else
       description = _description;
-    // create the corrent diffusion
+    // create the correct diffusion
     const Dune::Stuff::Common::ExtendedParameterTree& diffusionDescription = description.sub("diffusion");
-    std::vector< DomainFieldType > lowerLefts = diffusionDescription.getVector("lowerLeft", DomainFieldType(0), dimDomain);
-    std::vector< DomainFieldType > upperRights = diffusionDescription.getVector("upperRight", DomainFieldType(1), dimDomain);
-    std::vector< size_t > numElements = diffusionDescription.getVector("numElements", size_t(1), dimDomain);
-    std::vector< RangeFieldType > components = diffusionDescription.getVector("components", RangeFieldType(1), dimDomain);
-    assert(int(lowerLefts.size()) >= dimDomain && "Given vector is too short!");
-    assert(int(upperRights.size()) >= dimDomain && "Given vector is too short!");
-    assert(int(numElements.size()) >= dimDomain && "Given vector is too short!");
-    assert(int(components.size()) >= dimDomain && "Given vector is too short!");
-    Dune::FieldVector< DomainFieldType, dimDomain > lowerLeft;
-    Dune::FieldVector< DomainFieldType, dimDomain > upperRight;
-    size_t numSubdomains = 1;
-    for (int d = 0; d < dimDomain; ++d) {
-      lowerLeft[d] = lowerLefts[d];
-      upperRight[d] = upperRights[d];
-      numSubdomains *= numElements[d];
-    }
-    Dune::shared_ptr< CheckerboardFunctionType > _diffusion(new CheckerboardFunctionType(lowerLeft,
-                                                                                         upperRight,
-                                                                                         numElements,
-                                                                                         components));
-    // use method from base to create the rest, therefore create a copy of the paramtree to fake the diffusion
-    Dune::Stuff::Common::ExtendedParameterTree fakeDescription(description);
-    fakeDescription["diffusion.variable"] = "x";
-    fakeDescription["diffusion.expression"] = "[1.0; 1.0; 1.0]";
-    fakeDescription["diffusion.order"] = "0";
-    fakeDescription["diffusion.name"] = "diffusion";
-    const BaseType base = BaseType::createFromDescription(fakeDescription);
-    // create and return
-    return ThisType(_diffusion, base.force(), base.dirichlet(), base.neumann());
+    const Dune::shared_ptr< const CheckerboardFunctionType >
+        diffusion(new CheckerboardFunctionType(CheckerboardFunctionType::createFromDescription(diffusionDescription)));
+    return ThisType(diffusion,
+                    createFunction("force", description),
+                    createFunction("dirichlet", description),
+                    createFunction("neumann", description));
   } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree, const std::string subName = id())
+
+private:
+  static Dune::shared_ptr< const FunctionType > createFunction(const std::string& _id,
+                                                               const Dune::Stuff::Common::ExtendedParameterTree& _description)
+  {
+    const Dune::Stuff::Common::ExtendedParameterTree functionDescription = _description.sub(_id);
+    std::string type;
+    // we do this instead of using get() with 'function.expression' as a default in order to prevent get() from
+    // throwing a warning
+    if (functionDescription.hasKey("type"))
+      type = functionDescription.get< std::string >("type");
+    else
+      type = "function.expression";
+    return Dune::shared_ptr< const FunctionType >(Dune::Stuff::Function::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(type,
+                                                                                                 functionDescription));
+  }
+
 }; // class Thermalblock
 
 
