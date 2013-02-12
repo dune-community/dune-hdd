@@ -7,7 +7,6 @@
   #include "config.h"
 #endif // ifdef HAVE_CMAKE_CONFIG
 
-#include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
 #include <dune/common/parametertree.hh>
 
@@ -40,28 +39,28 @@ std::vector< std::string > types()
 
 
 template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
-Dune::shared_ptr< Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > >
+Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >*
   create(const std::string type, const Dune::ParameterTree description = Dune::ParameterTree())
 {
   // choose model
   if (type == "model.stationary.linear.elliptic.default") {
     typedef Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain, RangeFieldType, dimRange >
       ModelType;
-    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
+    return new ModelType(ModelType::createFromDescription(description));
   } else if (type == "model.stationary.linear.elliptic.thermalblock") {
     typedef Stationary::Linear::Elliptic::Model::Thermalblock<  DomainFieldType, dimDomain, RangeFieldType, dimRange >
       ModelType;
-    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
+    return new ModelType(ModelType::createFromDescription(description));
   } else if (type == "model.stationary.linear.elliptic.parametric.separable.default") {
     typedef Stationary::Linear::Elliptic::Model::SeparableDefault<  DomainFieldType, dimDomain,
                                                                     RangeFieldType, dimRange >
       ModelType;
-    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
+    return new ModelType(ModelType::createFromDescription(description));
   } else if (type == "model.stationary.linear.elliptic.parametric.separable.thermalblock") {
     typedef Stationary::Linear::Elliptic::Model::SeparableThermalblock< DomainFieldType, dimDomain,
                                                                         RangeFieldType, dimRange >
       ModelType;
-    return Dune::make_shared< ModelType >(ModelType::createFromDescription(description));
+    return new ModelType(ModelType::createFromDescription(description));
   } else
     DUNE_THROW(Dune::RangeError,
                "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " unknown model '" << type << "' requested!");
