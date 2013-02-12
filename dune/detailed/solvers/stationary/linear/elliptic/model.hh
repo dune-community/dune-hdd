@@ -28,6 +28,17 @@ namespace Elliptic {
 namespace Model {
 
 
+std::vector< std::string > types()
+{
+  std::vector< std::string > ret;
+  ret.push_back("model.stationary.linear.elliptic.default");
+  ret.push_back("model.stationary.linear.elliptic.thermalblock");
+  ret.push_back("model.stationary.linear.elliptic.parametric.separable.default");
+  ret.push_back("model.stationary.linear.elliptic.parametric.separable.thermalblock");
+  return ret;
+}
+
+
 template< class DomainFieldType, int dimDomain, class RangeFieldType, int dimRange >
 Dune::shared_ptr< Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange > >
   create(const std::string type, const Dune::ParameterTree description = Dune::ParameterTree())
