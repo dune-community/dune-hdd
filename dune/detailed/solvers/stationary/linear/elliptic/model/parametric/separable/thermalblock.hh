@@ -14,6 +14,7 @@
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/function/parametric/separable/checkerboard.hh>
+#include <dune/stuff/function.hh>
 
 #include "../../default.hh"
 #include "default.hh"
@@ -77,6 +78,40 @@ public:
     return *this;
   }
 
+  static Dune::ParameterTree createSampleDescription(const std::string subName = "")
+  {
+    Dune::Stuff::Common::ExtendedParameterTree description;
+    description.add(Dune::Stuff::Function::createSampleDescription< DomainFieldType, dimDomain,
+                                                                    RangeFieldType, dimRange >("function.separable.checkerboard"),
+                    "diffusion");
+    description["diffusion.name"] = "diffusion";
+    description.add(Dune::Stuff::Function::createSampleDescription< DomainFieldType, dimDomain,
+                                                                    RangeFieldType, dimRange >("function.expression"),
+                    "force");
+    description["force.name"] = "force";
+    description["force.expression"] = "1.0";
+    description["force.order"] = "0";
+    description.add(Dune::Stuff::Function::createSampleDescription< DomainFieldType, dimDomain,
+                                                                    RangeFieldType, dimRange >("function.expression"),
+                    "neumann");
+    description["neumann.name"] = "neumann";
+    description["neumann.expression"] = "0.1";
+    description["neumann.order"] = "0";
+    description.add(Dune::Stuff::Function::createSampleDescription< DomainFieldType, dimDomain,
+                                                                    RangeFieldType, dimRange >("function.expression"),
+                    "dirichlet");
+    description["dirichlet.name"] = "dirichlet";
+    description["dirichlet.expression"] = "0.1*x[0]";
+    description["dirichlet.order"] = "1";
+    if (subName.empty())
+      return description;
+    else {
+      Dune::Stuff::Common::ExtendedParameterTree extendedDescription;
+      extendedDescription.add(description, subName);
+      return extendedDescription;
+    }
+  }
+
   static ThisType createFromDescription(const Dune::ParameterTree& _description, const std::string _subName = id())
   {
     // get correct description
@@ -93,7 +128,7 @@ public:
     // create the rest of the functions
     //   * therefore create a fake diffusion subdescription,
     description.sub("diffusion") = CheckerboardFunctionType::createSampleDescription();
-    description["diffusion.type"] = "function.parametric.separable.checkerboard";
+    description["diffusion.type"] = "function.separable.checkerboard";
     //   * create a default model
     const BaseType baseModel = BaseType::createFromDescription(description);
     // create and return
