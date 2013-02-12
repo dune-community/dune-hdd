@@ -244,7 +244,7 @@ int run(int argc, char** argv)
     typedef typename GridPartType::GridViewType GridViewType;
     typedef Dune::Stuff::Grid::BoundaryInfo::Interface< GridViewType > BoundaryInfoType;
     const Dune::shared_ptr< const BoundaryInfoType >
-        boundaryInfo = Dune::Stuff::Grid::BoundaryInfo::create< GridViewType >(boundaryInfoType, description);
+        boundaryInfo(Dune::Stuff::Grid::BoundaryInfo::create< GridViewType >(boundaryInfoType, description));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     info << "visualizing grid... " << std::flush;
@@ -270,8 +270,8 @@ int run(int argc, char** argv)
     typedef Stationary::Linear::Elliptic::Model::Interface< DomainFieldType, dimDomain,
                                                             RangeFieldType, dimRange > ModelType;
     const Dune::shared_ptr< const ModelType >
-        model = Stationary::Linear::Elliptic::Model::create<  DomainFieldType, dimDomain,
-                                                              RangeFieldType, dimRange >(modelType, description);
+        model(Stationary::Linear::Elliptic::Model::create<  DomainFieldType, dimDomain,
+                                                              RangeFieldType, dimRange >(modelType, description));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
     if (model->parametric() && !model->separable())
       DUNE_THROW(Dune::NotImplemented,
