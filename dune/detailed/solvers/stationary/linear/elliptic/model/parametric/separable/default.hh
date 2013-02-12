@@ -410,8 +410,8 @@ private:
       type = functionDescription.get< std::string >("type");
     else
       type = "function.expression";
-    return Dune::Stuff::Function::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(type,
-                                                                                                 functionDescription);
+    return Dune::shared_ptr< const FunctionType >(Dune::Stuff::Function::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(type,
+                                                                                                 functionDescription));
   }
 
   shared_ptr< const FunctionType > diffusion_;
