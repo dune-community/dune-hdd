@@ -96,8 +96,12 @@ public:
 
   typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< TestSpaceType, VectorType >
                                                                                           DiscreteTestFunctionType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunction::DefaultConst< TestSpaceType, VectorType >
+                                                                                          DiscreteTestFunctionConstType;
   typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorType >
                                                                                           DiscreteAnsatzFunctionType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunction::DefaultConst< AnsatzSpaceType, VectorType >
+                                                                                          DiscreteAnsatzFunctionConstType;
 
   static const std::string id()
   {
@@ -456,6 +460,17 @@ public:
     return ansatzFunction;
   } // Dune::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(...) const
 
+  Dune::shared_ptr< DiscreteAnsatzFunctionConstType > createConstAnsatzFunction(const Dune::shared_ptr< const VectorType > vector,
+                                                                                const std::string name = "ansatzFunction") const
+  {
+    assert(initialized_ && "Please call init() before calling createAnsatzFunction()!");
+    Dune::shared_ptr< DiscreteAnsatzFunctionConstType > ansatzFunction(new DiscreteAnsatzFunctionConstType(
+                                                                         *ansatzSpace_,
+                                                                         vector,
+                                                                         name));
+    return ansatzFunction;
+  } // Dune::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(...) const
+
   Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(const std::string name = "testFunction") const
   {
     assert(initialized_ && "Please call init() before calling createTestFunction()!");
@@ -473,6 +488,17 @@ public:
                                                                 *testSpace_,
                                                                 vector,
                                                                 name));
+    return testFunction;
+  } // Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
+
+  Dune::shared_ptr< DiscreteTestFunctionConstType > createConstTestFunction(const Dune::shared_ptr< const VectorType > vector,
+                                                                            const std::string name = "testFunction") const
+  {
+    assert(initialized_ && "Please call init() before calling createTestFunction()!");
+    Dune::shared_ptr< DiscreteTestFunctionConstType > testFunction(new DiscreteTestFunctionConstType(
+                                                                     *testSpace_,
+                                                                     vector,
+                                                                     name));
     return testFunction;
   } // Dune::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
 
@@ -588,7 +614,7 @@ public:
                   prefix, out);
   }
 
-  void visualizeAnsatzVector(Dune::shared_ptr< VectorType > vector,
+  void visualizeAnsatzVector(const Dune::shared_ptr< const VectorType > vector,
                              const std::string filename = id() + ".ansatzVector",
                              const std::string name = id() + ".ansatzVector",
                              const std::string prefix = "",
@@ -605,13 +631,13 @@ public:
     else
       out << ".vtu";
     out << "'... " << std::flush;
-    const Dune::shared_ptr< const DiscreteAnsatzFunctionType > discreteFunction
-        = createAnsatzFunction(vector, name);
+    const Dune::shared_ptr< const DiscreteAnsatzFunctionConstType > discreteFunction
+        = createConstAnsatzFunction(vector, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
 
-  void visualizeTestVector(Dune::shared_ptr< VectorType > vector,
+  void visualizeTestVector(const Dune::shared_ptr< const VectorType > vector,
                            const std::string filename = id() + ".testVector",
                            const std::string name = id() + ".testVector",
                            const std::string prefix = "",
@@ -628,8 +654,8 @@ public:
     else
       out << ".vtu";
     out << "'... " << std::flush;
-    const Dune::shared_ptr< const DiscreteTestFunctionType > discreteFunction
-        = createTestFunction(vector, name);
+    const Dune::shared_ptr< const DiscreteTestFunctionConstType > discreteFunction
+        = createConstTestFunction(vector, name);
     visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeAnsatzVector(...)
@@ -649,6 +675,27 @@ public:
       out << ".vtu";
     out << "'... " << std::flush;
     typedef Dune::VTKWriter< typename DiscreteAnsatzFunctionType::DiscreteFunctionSpaceType::GridViewType > VTKWriterType;
+    VTKWriterType vtkWriter(discreteFunction->space().gridView());
+    vtkWriter.addVertexData(discreteFunction);
+    vtkWriter.write(filename);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void visualizeFunction(...)
+
+  void visualizeFunction(const Dune::shared_ptr< const DiscreteAnsatzFunctionConstType > discreteFunction,
+                         const std::string filename = id() + ".discreteAnsatzFunction",
+                         const std::string prefix = "",
+                         std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
+  {
+    // preparations
+    assert(initialized_ && "Please call init() before calling visualize()");
+    Dune::Timer timer;
+    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
+    if (dimDomain == 1)
+      out << ".vtp";
+    else
+      out << ".vtu";
+    out << "'... " << std::flush;
+    typedef Dune::VTKWriter< typename DiscreteAnsatzFunctionConstType::DiscreteFunctionSpaceType::GridViewType > VTKWriterType;
     VTKWriterType vtkWriter(discreteFunction->space().gridView());
     vtkWriter.addVertexData(discreteFunction);
     vtkWriter.write(filename);
