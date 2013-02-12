@@ -546,7 +546,7 @@ private:
     out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
     timer.reset();
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
-    Dune::shared_ptr< SolverType > solver = Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType);
+    const Dune::shared_ptr< const SolverType > solver(Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType));
     const unsigned int failure = solver->apply(*systemMatrix,
                                                rightHandSide,
                                                *solutionVector,
