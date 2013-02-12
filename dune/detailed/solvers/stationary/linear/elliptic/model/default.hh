@@ -7,8 +7,6 @@
   #include "config.h"
 #endif // ifdef HAVE_CMAKE_CONFIG
 
-#include <dune/common/shared_ptr.hh>
-
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/function.hh>
 
@@ -84,7 +82,12 @@ public:
   static Dune::ParameterTree createSampleDescription(const std::string subName = "")
   {
     Dune::Stuff::Common::ExtendedParameterTree description;
-    description["diffusion.type"] = "function.checkerboard";
+    description.add(Dune::Stuff::Function::createSampleDescription< DomainFieldType, dimDomain,
+                                                                    RangeFieldType, dimRange >("function.expression"),
+                    "diffusion");
+    description["diffusion.name"] = "diffusion";
+    description["diffusion.expression"] = "1.0";
+    description["diffusion.order"] = "0";
     description.add(Dune::Stuff::Function::createSampleDescription< DomainFieldType, dimDomain,
                                                                     RangeFieldType, dimRange >("function.expression"),
                     "force");
@@ -114,7 +117,7 @@ public:
 
   static ThisType createFromDescription(const Dune::ParameterTree& _description, const std::string _subName = id())
   {
-    // get correct paramTree
+    // get correct description
     Dune::Stuff::Common::ExtendedParameterTree description;
     if (_description.hasSub(_subName))
       description = _description.sub(_subName);
@@ -158,8 +161,8 @@ private:
       type = functionDescription.get< std::string >("type");
     else
       type = "function.expression";
-    return Dune::Stuff::Function::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(type,
-                                                                                                 functionDescription);
+    return Dune::shared_ptr< const FunctionType >(Dune::Stuff::Function::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(type,
+                                                                                                 functionDescription));
   }
 
   Dune::shared_ptr< const FunctionType > diffusion_;
