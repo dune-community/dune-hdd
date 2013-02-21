@@ -426,6 +426,63 @@ public:
     return testSpace_;
   }
 
+  Dune::shared_ptr< const PatternType > pattern() const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling pattern()!");
+    assert(patterns_.find("diffusion") != patterns_.end());
+    return  patterns_.find("diffusion")->second;
+  } // Dune::shared_ptr< const PatternType > pattern() const
+
+  Dune::shared_ptr< MatrixType > systemMatrix(const ParamType mu = ParamType()) const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling systemMatrix()!");
+    // first of all, get the corect parameters (the model returns empty ones for nonparametric functions)
+    const ParamType muDiffusion = model_->mapParam(mu, "diffusion");
+    assert(matrices_.find("diffusion") != matrices_.end());
+    const SeparableMatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
+    Dune::shared_ptr< MatrixType > systemMatrix = diffusionMatrix.fix(muDiffusion);
+    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+    const SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+    systemAssembler.applyMatrixConstraints(*systemMatrix);
+    return systemMatrix;
+  }
+
+  Dune::shared_ptr< VectorType > rightHandSide(const ParamType mu = ParamType()) const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling rightHandSide()!");
+    // first of all, get the corect parameters (the model returns empty ones for nonparametric functions)
+    const ParamType muDiffusion = model_->mapParam(mu, "diffusion");
+    const ParamType muForce = model_->mapParam(mu, "force");
+    const ParamType muDirichlet = model_->mapParam(mu, "dirichlet");
+    const ParamType muNeumann = model_->mapParam(mu, "neumann");
+    assert(matrices_.find("diffusion") != matrices_.end());
+    assert(vectors_.find("force") != vectors_.end());
+    assert(vectors_.find("neumann") != vectors_.end());
+    assert(vectors_.find("dirichlet") != vectors_.end());
+    const SeparableMatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
+    const SeparableVectorType& forceVector = *(vectors_.find("force")->second);
+    const SeparableVectorType& neumannVector = *(vectors_.find("neumann")->second);
+    const SeparableVectorType& dirichletVector = *(vectors_.find("dirichlet")->second);
+    Dune::shared_ptr< MatrixType > systemMatrix = diffusionMatrix.fix(muDiffusion);
+    Dune::shared_ptr< VectorType > rightHandSide(new VectorType());
+    rightHandSide->backend() = forceVector.fix(muForce)->backend()
+        + neumannVector.fix(muNeumann)->backend()
+        - systemMatrix->backend() * dirichletVector.fix(muDirichlet)->backend();
+    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
+    const SystemAssemblerType systemAssembler(*testSpace_, *ansatzSpace_);
+    systemAssembler.applyVectorConstraints(*rightHandSide);
+    return rightHandSide;
+  }
+
   Dune::shared_ptr< VectorType > createAnsatzVector() const
   {
     assert(initialized_ && "Please call init() before calling createAnsatzVector()!");
