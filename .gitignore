@@ -60,4 +60,5 @@ examples/stationary/linear/elliptic/discontinuousgalerkin/dune_detailed_discreti
 *.o
 demos
 demos-gcc-4.6
+demos-gcc-4.6-release
 demos-clang
