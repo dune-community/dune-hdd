@@ -38,7 +38,7 @@ using namespace Dune::Detailed::Solvers;
 
 
 std::string id(){
-  return "stationary.linear.elliptic.cg.detailed_discretizations";
+  return "stationary.linear.elliptic.cg.detailed-discretizations";
 }
 
 
@@ -210,7 +210,7 @@ int run(int argc, char** argv)
     if (logDescription.get< bool >("file", false))
       logFlags = logFlags | Dune::Stuff::Common::LOG_FILE;
     Dune::Stuff::Common::Logger().create(logFlags, id(), "", "");
-    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+    Dune::Stuff::Common::LogStream& info  = Dune::Stuff::Common::Logger().info();
     Dune::Stuff::Common::LogStream& debug = Dune::Stuff::Common::Logger().debug();
 
     Dune::Timer timer;
