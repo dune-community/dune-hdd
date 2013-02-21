@@ -55,9 +55,9 @@ void writeDescriptionFile(std::string filename)
   file.open(filename);
   file << "[" << id() << "]" << std::endl;
   file << "model = model.stationary.linear.elliptic.default" << std::endl;
-  file << "        model.stationary.linear.elliptic.thermalblock" << std::endl;
-  file << "        model.stationary.linear.elliptic.parametric.separable.default" << std::endl;
-  file << "        model.stationary.linear.elliptic.parametric.separable.thermalblock" << std::endl;
+//  file << "        model.stationary.linear.elliptic.thermalblock" << std::endl;
+//  file << "        model.stationary.linear.elliptic.parametric.separable.default" << std::endl;
+//  file << "        model.stationary.linear.elliptic.parametric.separable.thermalblock" << std::endl;
 //  file << "exact_solution.order = 2" << std::endl;
 //  file << "exact_solution.variable = x" << std::endl;
 //  file << "exact_solution.expression.0 = -0.5*x[0]*x[0] + 0.5*x[0]" << std::endl;
@@ -69,7 +69,13 @@ void writeDescriptionFile(std::string filename)
   file << "partitions = [2; 2; 2]" << std::endl;
   file << "[detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed_discretizations]" << std::endl;
   file << "penaltyFactor = 10.0" << std::endl;
-
+  file << "linearsolver.type = bicgstab.ilut" << std::endl;
+  file << "                    bicgstab.diagonal" << std::endl;
+  file << "                    bicgstab" << std::endl;
+  file << "                    cg.diagonal" << std::endl;
+  file << "                    cg" << std::endl;
+  file << "linearsolver.maxIter   = 5000"  << std::endl;
+  file << "linearsolver.precision = 1e-12"  << std::endl;
   file << "[model.stationary.linear.elliptic.default]" << std::endl;
   file << "diffusion.order      = 0"  << std::endl;
   file << "diffusion.variable   = x" << std::endl;
@@ -87,88 +93,88 @@ void writeDescriptionFile(std::string filename)
   file << "neumann.variable   = x" << std::endl;
   file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
   file << "neumann.name       = constant neumann"  << std::endl;
-  file << "[model.stationary.linear.elliptic.thermalblock]" << std::endl;
-  file << "diffusion.order = 0"  << std::endl;
-  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
-  file << "diffusion.components  = [1.0; 10.0; 3.0; 2.1]"  << std::endl;
-  file << "force.name       = constant force"  << std::endl;
-  file << "force.order      = 0"  << std::endl;
-  file << "force.variable   = x" << std::endl;
-  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "dirichlet.name       = constant dirichlet"  << std::endl;
-  file << "dirichlet.order      = 0"  << std::endl;
-  file << "dirichlet.variable   = x" << std::endl;
-  file << "dirichlet.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "neumann.name       = trivial neumann"  << std::endl;
-  file << "neumann.order      = 0"  << std::endl;
-  file << "neumann.variable   = x" << std::endl;
-  file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
-  file << "[model.stationary.linear.elliptic.parametric.separable.default]" << std::endl;
-  file << "diffusion.type = function.parametric.separable.default" << std::endl;
-  file << "diffusion.name = diffusion" << std::endl;
-  file << "diffusion.order = 0" << std::endl;
-  file << "diffusion.component.0 = x[0]" << std::endl;
-  file << "diffusion.component.1 = 2*x[0]" << std::endl;
-  file << "diffusion.coefficient.0 = mu[0]" << std::endl;
-  file << "diffusion.coefficient.1 = mu[1]" << std::endl;
-  file << "diffusion.paramSize = 2" << std::endl;
-  file << "diffusion.paramExplanation = [first diffusion param; second diffusion param]" << std::endl;
-  file << "diffusion.paramMin = [0.0; 0.0]" << std::endl;
-  file << "diffusion.paramMax = [1.0; 1.0]" << std::endl;
-  file << "force.type = function.parametric.separable.default" << std::endl;
-  file << "force.name = force" << std::endl;
-  file << "force.order = 0" << std::endl;
-  file << "force.component.0 = x[0]" << std::endl;
-  file << "force.component.1 = 2*x[0]" << std::endl;
-  file << "force.coefficient.0 = mu[0]" << std::endl;
-  file << "force.coefficient.1 = mu[1]" << std::endl;
-  file << "force.paramSize = 2" << std::endl;
-  file << "force.paramExplanation = [first force param; second force param]" << std::endl;
-  file << "force.paramMin = [0.0; 0.0]" << std::endl;
-  file << "force.paramMax = [1.0; 1.0]" << std::endl;
-  file << "dirichlet.type = function.parametric.separable.default" << std::endl;
-  file << "dirichlet.name = neumann" << std::endl;
-  file << "dirichlet.order = 0" << std::endl;
-  file << "dirichlet.component.0 = x[0]" << std::endl;
-  file << "dirichlet.component.1 = 2*x[0]" << std::endl;
-  file << "dirichlet.coefficient.0 = mu[0]" << std::endl;
-  file << "dirichlet.coefficient.1 = mu[1]" << std::endl;
-  file << "dirichlet.paramSize = 2" << std::endl;
-  file << "dirichlet.paramExplanation = [first dirichlet param; second dirichlet param]" << std::endl;
-  file << "dirichlet.paramMin = [0.0; 0.0]" << std::endl;
-  file << "dirichlet.paramMax = [1.0; 1.0]" << std::endl;
-  file << "neumann.type = function.parametric.separable.default" << std::endl;
-  file << "neumann.name = neumann" << std::endl;
-  file << "neumann.order = 0" << std::endl;
-  file << "neumann.component.0 = x[0]" << std::endl;
-  file << "neumann.component.1 = 2*x[0]" << std::endl;
-  file << "neumann.coefficient.0 = mu[0]" << std::endl;
-  file << "neumann.coefficient.1 = mu[1]" << std::endl;
-  file << "neumann.paramSize = 2" << std::endl;
-  file << "neumann.paramExplanation = [first neumann param; second neumann param]" << std::endl;
-  file << "neumann.paramMin = [0.0; 0.0]" << std::endl;
-  file << "neumann.paramMax = [1.0; 1.0]" << std::endl;
-  file << "[model.stationary.linear.elliptic.parametric.separable.thermalblock]" << std::endl;
-  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
-  file << "diffusion.paramMin    = [0.1; 0.1; 0.1; 0.1]" << std::endl;
-  file << "diffusion.paramMax    = [10.0; 10.0; 10.0; 10.0]" << std::endl;
-  file << "diffusion.order       = 0" << std::endl;
-  file << "force.variable   = x" << std::endl;
-  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "force.order      = 0" << std::endl;
-  file << "force.name       = constant force" << std::endl;
-  file << "dirichlet.variable   = x" << std::endl;
-  file << "dirichlet.expression = [0.1*x[0]; 0.0; 0.0]"  << std::endl;
-  file << "dirichlet.order      = 0"  << std::endl;
-  file << "dirichlet.name       = dirichlet"  << std::endl;
-  file << "neumann.variable   = x" << std::endl;
-  file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
-  file << "neumann.order      = 0"  << std::endl;
-  file << "neumann.name       = constant neumann"  << std::endl;
+//  file << "[model.stationary.linear.elliptic.thermalblock]" << std::endl;
+//  file << "diffusion.order = 0"  << std::endl;
+//  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
+//  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
+//  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
+//  file << "diffusion.components  = [1.0; 10.0; 3.0; 2.1]"  << std::endl;
+//  file << "force.name       = constant force"  << std::endl;
+//  file << "force.order      = 0"  << std::endl;
+//  file << "force.variable   = x" << std::endl;
+//  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
+//  file << "dirichlet.name       = constant dirichlet"  << std::endl;
+//  file << "dirichlet.order      = 0"  << std::endl;
+//  file << "dirichlet.variable   = x" << std::endl;
+//  file << "dirichlet.expression = [1.0; 1.0; 1.0]"  << std::endl;
+//  file << "neumann.name       = trivial neumann"  << std::endl;
+//  file << "neumann.order      = 0"  << std::endl;
+//  file << "neumann.variable   = x" << std::endl;
+//  file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
+//  file << "[model.stationary.linear.elliptic.parametric.separable.default]" << std::endl;
+//  file << "diffusion.type = function.parametric.separable.default" << std::endl;
+//  file << "diffusion.name = diffusion" << std::endl;
+//  file << "diffusion.order = 0" << std::endl;
+//  file << "diffusion.component.0 = x[0]" << std::endl;
+//  file << "diffusion.component.1 = 2*x[0]" << std::endl;
+//  file << "diffusion.coefficient.0 = mu[0]" << std::endl;
+//  file << "diffusion.coefficient.1 = mu[1]" << std::endl;
+//  file << "diffusion.paramSize = 2" << std::endl;
+//  file << "diffusion.paramExplanation = [first diffusion param; second diffusion param]" << std::endl;
+//  file << "diffusion.paramMin = [0.0; 0.0]" << std::endl;
+//  file << "diffusion.paramMax = [1.0; 1.0]" << std::endl;
+//  file << "force.type = function.parametric.separable.default" << std::endl;
+//  file << "force.name = force" << std::endl;
+//  file << "force.order = 0" << std::endl;
+//  file << "force.component.0 = x[0]" << std::endl;
+//  file << "force.component.1 = 2*x[0]" << std::endl;
+//  file << "force.coefficient.0 = mu[0]" << std::endl;
+//  file << "force.coefficient.1 = mu[1]" << std::endl;
+//  file << "force.paramSize = 2" << std::endl;
+//  file << "force.paramExplanation = [first force param; second force param]" << std::endl;
+//  file << "force.paramMin = [0.0; 0.0]" << std::endl;
+//  file << "force.paramMax = [1.0; 1.0]" << std::endl;
+//  file << "dirichlet.type = function.parametric.separable.default" << std::endl;
+//  file << "dirichlet.name = neumann" << std::endl;
+//  file << "dirichlet.order = 0" << std::endl;
+//  file << "dirichlet.component.0 = x[0]" << std::endl;
+//  file << "dirichlet.component.1 = 2*x[0]" << std::endl;
+//  file << "dirichlet.coefficient.0 = mu[0]" << std::endl;
+//  file << "dirichlet.coefficient.1 = mu[1]" << std::endl;
+//  file << "dirichlet.paramSize = 2" << std::endl;
+//  file << "dirichlet.paramExplanation = [first dirichlet param; second dirichlet param]" << std::endl;
+//  file << "dirichlet.paramMin = [0.0; 0.0]" << std::endl;
+//  file << "dirichlet.paramMax = [1.0; 1.0]" << std::endl;
+//  file << "neumann.type = function.parametric.separable.default" << std::endl;
+//  file << "neumann.name = neumann" << std::endl;
+//  file << "neumann.order = 0" << std::endl;
+//  file << "neumann.component.0 = x[0]" << std::endl;
+//  file << "neumann.component.1 = 2*x[0]" << std::endl;
+//  file << "neumann.coefficient.0 = mu[0]" << std::endl;
+//  file << "neumann.coefficient.1 = mu[1]" << std::endl;
+//  file << "neumann.paramSize = 2" << std::endl;
+//  file << "neumann.paramExplanation = [first neumann param; second neumann param]" << std::endl;
+//  file << "neumann.paramMin = [0.0; 0.0]" << std::endl;
+//  file << "neumann.paramMax = [1.0; 1.0]" << std::endl;
+//  file << "[model.stationary.linear.elliptic.parametric.separable.thermalblock]" << std::endl;
+//  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
+//  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
+//  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
+//  file << "diffusion.paramMin    = [0.1; 0.1; 0.1; 0.1]" << std::endl;
+//  file << "diffusion.paramMax    = [10.0; 10.0; 10.0; 10.0]" << std::endl;
+//  file << "diffusion.order       = 0" << std::endl;
+//  file << "force.variable   = x" << std::endl;
+//  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
+//  file << "force.order      = 0" << std::endl;
+//  file << "force.name       = constant force" << std::endl;
+//  file << "dirichlet.variable   = x" << std::endl;
+//  file << "dirichlet.expression = [0.1*x[0]; 0.0; 0.0]"  << std::endl;
+//  file << "dirichlet.order      = 0"  << std::endl;
+//  file << "dirichlet.name       = dirichlet"  << std::endl;
+//  file << "neumann.variable   = x" << std::endl;
+//  file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
+//  file << "neumann.order      = 0"  << std::endl;
+//  file << "neumann.name       = constant neumann"  << std::endl;
   file << "[logging]" << std::endl;
   file << "info  = true" << std::endl;
   file << "debug = true" << std::endl;
@@ -338,21 +344,25 @@ int main(int argc, char** argv)
     solver.init("  ", debug);
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    info << "solving";
-////    info << ":" << std::endl;
-//    info << "... " << std::flush;
-//    debug.suspend();
-//    timer.reset();
-//    typedef SolverType::VectorBackendType VectorType;
-//    Dune::shared_ptr< std::vector< VectorType > > solution = solver.createVector();
-//    solver.solve(*solution,
-//                 solverTree.get("solve.type", "eigen.bicgstab.diagonal"),
-//                 solverTree.get("solve.maxIter", 5000u),
-//                 solverTree.get("solve.precision", 1e-12),
-//                 "  ",
-//                 debug);
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//    debug.resume();
+    info << "solving";
+    if (!debugLogging)
+      info << "... " << std::flush;
+    else
+      info << ":" << std::endl;
+    const std::string linearSolverType =  discretizationDescription.get< std::string >("linearsolver.type",      "bicgstab.ilut");
+    const size_t linearSolverMaxIter = discretizationDescription.get< size_t >(        "linearsolver.maxIter",   5000u);
+    const double linearSolverPrecision = discretizationDescription.get< double >(      "linearsolver.precision", 1e-12);
+    timer.reset();
+    typedef SolverType::VectorType VectorType;
+    std::vector< Dune::shared_ptr< VectorType > > solution = solver.createVector();
+    solver.solve(solution,
+                 linearSolverType,
+                 linearSolverMaxIter,
+                 linearSolverPrecision,
+                 "  ",
+                 debug);
+    if (!debugLogging)
+      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
 ////    info << "computing detailed reference solution... " << std::flush;
 ////    debug.suspend();
@@ -370,18 +380,19 @@ int main(int argc, char** argv)
 ////    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 ////    debug.resume();
 
-//    info << "postprocessing";
-////    info << ":" << std::endl;
-//    info << "... " << std::flush;
-//    debug.suspend();
-//    timer.reset();
-//    solver.visualize(*solution,
-//                     solverTree.get("visualize.filename", id + ".solution"),
-//                     solverTree.get("visualize.name", "solution"),
-//                     "  ",
-//                     debug);
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//    debug.resume();
+    info << "writing solution to disc";
+    if (!debugLogging)
+      info << "... " << std::flush;
+    else
+      info << ":" << std::endl;
+    timer.reset();
+    solver.visualize(solution,
+                                 filename + ".solution",
+                                 id() + ".solution",
+                                 "  ",
+                                 debug);
+    if (!debugLogging)
+      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
 ////    if (dimDomain == 1) {
 ////      info << "computing norms:" << std::endl;
