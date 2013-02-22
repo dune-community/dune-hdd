@@ -26,10 +26,6 @@ set( ENABLE_MPI
      "0" CACHE STRING
      "set to 1 to enable mpi")
 
-SET( BLAS_LIB
-     "blas" CACHE STRING
-     "BLAS_LIB" )
-
 SET( POLORDER
   "1" CACHE STRING
   "POLORDER" )
