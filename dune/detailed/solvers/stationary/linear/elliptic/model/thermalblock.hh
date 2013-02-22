@@ -136,7 +136,7 @@ public:
     // create the correct diffusion
     const Dune::Stuff::Common::ExtendedParameterTree& diffusionDescription = description.sub("diffusion");
     const Dune::shared_ptr< const CheckerboardFunctionType >
-        diffusion(new CheckerboardFunctionType(CheckerboardFunctionType::createFromDescription(diffusionDescription)));
+        diffusion(CheckerboardFunctionType::createFromDescription(diffusionDescription));
     return ThisType(diffusion,
                     createFunction("force", description),
                     createFunction("dirichlet", description),

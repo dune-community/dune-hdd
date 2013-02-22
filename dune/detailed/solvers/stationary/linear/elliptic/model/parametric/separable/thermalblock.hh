@@ -123,8 +123,8 @@ public:
       description = _description;
     // create the checkerboard diffusion
     const DescriptionType diffusionDescription = description.sub("diffusion");
-    const shared_ptr< const CheckerboardFunctionType > diffusion(new CheckerboardFunctionType(
-        CheckerboardFunctionType::createFromDescription(diffusionDescription)));
+    const shared_ptr< const CheckerboardFunctionType >
+        diffusion(CheckerboardFunctionType::createFromDescription(diffusionDescription));
     // create the rest of the functions
     //   * therefore create a fake diffusion subdescription,
     description.sub("diffusion") = CheckerboardFunctionType::createSampleDescription();
