@@ -448,14 +448,24 @@ public:
     return testSpace_;
   }
 
-  Dune::shared_ptr< const PatternType > pattern() const
+  Dune::shared_ptr< const PatternType > systemPattern(const std::string type = "diffusion") const
   {
     if (!initialized_)
       DUNE_THROW(Dune::InvalidStateException,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
                  << " please call init() before calling pattern()!");
-    assert(patterns_.find("diffusion") != patterns_.end());
-    return  patterns_.find("diffusion")->second;
+    assert(patterns_.find(type) != patterns_.end());
+    return patterns_.find(type)->second;
+  } // Dune::shared_ptr< const PatternType > pattern() const
+
+  Dune::shared_ptr< const SeparableMatrixType > systemMatrix(const std::string type) const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling systemMatrix()!");
+    assert(matrices_.find(type) != matrices_.end());
+    return matrices_.find(type)->second;
   } // Dune::shared_ptr< const PatternType > pattern() const
 
   Dune::shared_ptr< MatrixType > systemMatrix(const ParamType mu = ParamType()) const
@@ -474,6 +484,16 @@ public:
     systemAssembler.applyMatrixConstraints(*systemMatrix);
     return systemMatrix;
   }
+
+  Dune::shared_ptr< const SeparableVectorType > systemVector(const std::string type) const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling systemVector()!");
+    assert(vectors_.find(type) != vectors_.end());
+    return vectors_.find(type)->second;
+  } // Dune::shared_ptr< const PatternType > pattern() const
 
   Dune::shared_ptr< VectorType > rightHandSide(const ParamType mu = ParamType()) const
   {
