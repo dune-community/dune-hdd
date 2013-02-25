@@ -122,13 +122,15 @@ public:
     else
       description = _description;
     // create the checkerboard diffusion
-    const DescriptionType diffusionDescription = description.sub("diffusion");
+    DescriptionType diffusionDescription = description.sub("diffusion");
+    diffusionDescription["diffusion.name"] = "checkerboard diffusion";
     const shared_ptr< const CheckerboardFunctionType >
         diffusion(CheckerboardFunctionType::createFromDescription(diffusionDescription));
     // create the rest of the functions
     //   * therefore create a fake diffusion subdescription,
     description.sub("diffusion") = CheckerboardFunctionType::createSampleDescription();
     description["diffusion.type"] = "function.separable.checkerboard";
+    description["diffusion.name"] = "checkerboard diffusion";
     //   * create a default model
     const BaseType baseModel = BaseType::createFromDescription(description);
     // create and return
