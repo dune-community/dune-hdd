@@ -17,6 +17,7 @@
 #include <dune/stuff/common/color.hh>
 #include <dune/stuff/common/parameter.hh>
 #include <dune/stuff/function/interface.hh>
+#include <dune/stuff/function/fixed.hh>
 
 namespace Dune {
 namespace Detailed {
@@ -27,6 +28,12 @@ namespace Elliptic {
 namespace Model {
 
 
+// forward of the nonparametric default
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+class Default;
+
+
+// forward to allow for specialization
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
 class Interface;
 
@@ -135,7 +142,17 @@ public:
   }
   /* @} */
 
-//  virtual const Dune::shared_ptr< const NonparametricType > fix(const ParamType&) const = 0;
+  virtual Dune::shared_ptr< const ThisType > fix(const ParamType& mu) const
+  {
+    typedef Dune::Stuff::Function::Fixed< DomainFieldType, dimDomain, RangeFieldType, dimRange > FixedFunctionType;
+    typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > DefaultModelType;
+    Dune::shared_ptr< DefaultModelType >
+        defaultModel(Dune::make_shared< DefaultModelType >(diffusion()->parametric() ? Dune::make_shared< const FixedFunctionType >(diffusion(), mapParam(mu, "diffusion")) : diffusion(),
+                                                      force()->parametric() ? Dune::make_shared< const FixedFunctionType >(force(), mapParam(mu, "force")) : force(),
+                                                      dirichlet()->parametric() ? Dune::make_shared< const FixedFunctionType >(dirichlet(), mapParam(mu, "dirichlet")) : dirichlet(),
+                                                      neumann()->parametric() ? Dune::make_shared< const FixedFunctionType >(neumann(), mapParam(mu, "neumann")) : neumann()));
+    return defaultModel;
+  }
 
 //  void report(std::ostream& out = std::cout, std::string prefix = "") const
 //  {
