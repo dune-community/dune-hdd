@@ -54,7 +54,7 @@ void writeDescriptionFile(std::string filename)
   std::ofstream file;
   file.open(filename);
   file << "[" << id() << "]" << std::endl;
-  file << "model = model.stationary.linear.elliptic.separable.thermalblock" << std::endl;
+  file << "model = model.stationary.linear.elliptic.parametric.separable.thermalblock" << std::endl;
 //  file << "        model.stationary.linear.elliptic.thermalblock" << std::endl;
 //  file << "        model.stationary.linear.elliptic.parametric.separable.default" << std::endl;
 //  file << "        model.stationary.linear.elliptic.parametric.separable.thermalblock" << std::endl;
@@ -67,7 +67,7 @@ void writeDescriptionFile(std::string filename)
   file << "numElements = [32; 32; 32]" << std::endl;
   file << "boundaryId = 7 # a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 in 3d (hopefully)" << std::endl;
   file << "partitions = [2; 2; 2]" << std::endl;
-  file << "[detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed_discretizations]" << std::endl;
+  file << "[detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed-discretizations]" << std::endl;
   file << "penaltyFactor = 10.0" << std::endl;
   file << "linearsolver.type = bicgstab.ilut" << std::endl;
   file << "                    bicgstab.diagonal" << std::endl;
@@ -335,33 +335,28 @@ int main(int argc, char** argv)
     const ParamType testParam = parameterDescription.getDynVector< ParamFieldType >("test", model->paramSize());
     assert(testParam.size() == model->paramSize());
 
-    // and create the nonparametric model for the training step
-    const Dune::shared_ptr< const ModelType > trainingModel = model->fix(trainingParam);
+//    // and create the nonparametric model for the training step
+//    const Dune::shared_ptr< const ModelType > trainingModel = model->fix(trainingParam);
 
-
-//    if (model->parametric())
-//      DUNE_THROW(Dune::NotImplemented,
-//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-//                 << " only implemented for nonparametric models at the moment!");
     info << "visualizing model... " << std::flush;
     timer.reset();
     model->visualize(msGrid->globalGridPart()->gridView(), filename + ".model");
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//    info << "setting up solver";
-//    typedef Stationary::Linear::Elliptic::MS::SemiCG::DetailedDiscretizations<  ModelType,
-//                                                                                MsGridType,
-//                                                                                BoundaryInfoType,
-//                                                                                polOrder > SolverType;
-//    if (!debugLogging)
-//      info << "... " << std::flush;
-//    else
-//      info << " '" << SolverType::id() << "':" << std::endl;
-//    timer.reset();
-//    const DescriptionType& discretizationDescription = description.sub(SolverType::id());
-//    SolverType solver(model, msGrid, boundaryInfo, discretizationDescription.get< RangeFieldType >("penaltyFactor"));
-//    solver.init("  ", debug);
-//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    info << "setting up solver";
+    typedef Stationary::Linear::Elliptic::MS::SemiCG::DetailedDiscretizations<  ModelType,
+                                                                                MsGridType,
+                                                                                BoundaryInfoType,
+                                                                                polOrder > SolverType;
+    if (!debugLogging)
+      info << "... " << std::flush;
+    else
+      info << " '" << SolverType::id() << "':" << std::endl;
+    timer.reset();
+    const DescriptionType& discretizationDescription = description.sub(SolverType::id());
+    SolverType solver(model, msGrid, boundaryInfo, discretizationDescription.get< RangeFieldType >("penaltyFactor"));
+    solver.init("  ", debug);
+    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
 //    info << "solving";
 //    if (!debugLogging)
