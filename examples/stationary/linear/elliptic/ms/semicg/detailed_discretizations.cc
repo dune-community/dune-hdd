@@ -54,7 +54,7 @@ void writeDescriptionFile(std::string filename)
   std::ofstream file;
   file.open(filename);
   file << "[" << id() << "]" << std::endl;
-  file << "model = model.stationary.linear.elliptic.default" << std::endl;
+  file << "model = model.stationary.linear.elliptic.separable.thermalblock" << std::endl;
 //  file << "        model.stationary.linear.elliptic.thermalblock" << std::endl;
 //  file << "        model.stationary.linear.elliptic.parametric.separable.default" << std::endl;
 //  file << "        model.stationary.linear.elliptic.parametric.separable.thermalblock" << std::endl;
@@ -64,7 +64,7 @@ void writeDescriptionFile(std::string filename)
   file << "[grid.multiscale.provider.cube]" << std::endl;
   file << "lowerLeft = [0.0; 0.0; 0.0]" << std::endl;
   file << "upperRight = [1.0; 1.0; 1.0]" << std::endl;
-  file << "numElements = [4; 4; 4]" << std::endl;
+  file << "numElements = [32; 32; 32]" << std::endl;
   file << "boundaryId = 7 # a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 in 3d (hopefully)" << std::endl;
   file << "partitions = [2; 2; 2]" << std::endl;
   file << "[detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed_discretizations]" << std::endl;
@@ -76,23 +76,23 @@ void writeDescriptionFile(std::string filename)
   file << "                    cg" << std::endl;
   file << "linearsolver.maxIter   = 5000"  << std::endl;
   file << "linearsolver.precision = 1e-12"  << std::endl;
-  file << "[model.stationary.linear.elliptic.default]" << std::endl;
-  file << "diffusion.order      = 0"  << std::endl;
-  file << "diffusion.variable   = x" << std::endl;
-  file << "diffusion.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "diffusion.name       = constant diffusion"  << std::endl;
-  file << "force.order      = 0"  << std::endl;
-  file << "force.variable   = x" << std::endl;
-  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "force.name       = constant force"  << std::endl;
-  file << "dirichlet.order      = 1"  << std::endl;
-  file << "dirichlet.variable   = x" << std::endl;
-  file << "dirichlet.expression = [0.1*x[0]; 0.0; 0.0]"  << std::endl;
-  file << "dirichlet.name       = linear dirichlet"  << std::endl;
-  file << "neumann.order      = 0"  << std::endl;
-  file << "neumann.variable   = x" << std::endl;
-  file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
-  file << "neumann.name       = constant neumann"  << std::endl;
+//  file << "[model.stationary.linear.elliptic.default]" << std::endl;
+//  file << "diffusion.order      = 0"  << std::endl;
+//  file << "diffusion.variable   = x" << std::endl;
+//  file << "diffusion.expression = [1.0; 1.0; 1.0]"  << std::endl;
+//  file << "diffusion.name       = constant diffusion"  << std::endl;
+//  file << "force.order      = 0"  << std::endl;
+//  file << "force.variable   = x" << std::endl;
+//  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
+//  file << "force.name       = constant force"  << std::endl;
+//  file << "dirichlet.order      = 1"  << std::endl;
+//  file << "dirichlet.variable   = x" << std::endl;
+//  file << "dirichlet.expression = [0.1*x[0]; 0.0; 0.0]"  << std::endl;
+//  file << "dirichlet.name       = linear dirichlet"  << std::endl;
+//  file << "neumann.order      = 0"  << std::endl;
+//  file << "neumann.variable   = x" << std::endl;
+//  file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
+//  file << "neumann.name       = constant neumann"  << std::endl;
 //  file << "[model.stationary.linear.elliptic.thermalblock]" << std::endl;
 //  file << "diffusion.order = 0"  << std::endl;
 //  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
@@ -156,29 +156,33 @@ void writeDescriptionFile(std::string filename)
 //  file << "neumann.paramExplanation = [first neumann param; second neumann param]" << std::endl;
 //  file << "neumann.paramMin = [0.0; 0.0]" << std::endl;
 //  file << "neumann.paramMax = [1.0; 1.0]" << std::endl;
-//  file << "[model.stationary.linear.elliptic.parametric.separable.thermalblock]" << std::endl;
-//  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
-//  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
-//  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
-//  file << "diffusion.paramMin    = [0.1; 0.1; 0.1; 0.1]" << std::endl;
-//  file << "diffusion.paramMax    = [10.0; 10.0; 10.0; 10.0]" << std::endl;
-//  file << "diffusion.order       = 0" << std::endl;
-//  file << "force.variable   = x" << std::endl;
-//  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
-//  file << "force.order      = 0" << std::endl;
-//  file << "force.name       = constant force" << std::endl;
-//  file << "dirichlet.variable   = x" << std::endl;
-//  file << "dirichlet.expression = [0.1*x[0]; 0.0; 0.0]"  << std::endl;
-//  file << "dirichlet.order      = 0"  << std::endl;
-//  file << "dirichlet.name       = dirichlet"  << std::endl;
-//  file << "neumann.variable   = x" << std::endl;
-//  file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
-//  file << "neumann.order      = 0"  << std::endl;
-//  file << "neumann.name       = constant neumann"  << std::endl;
+  file << "[model.stationary.linear.elliptic.parametric.separable.thermalblock]" << std::endl;
+  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
+  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
+  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
+  file << "diffusion.paramMin    = [0.1; 0.1; 0.1; 0.1]" << std::endl;
+  file << "diffusion.paramMax    = [10.0; 10.0; 10.0; 10.0]" << std::endl;
+  file << "diffusion.order       = 0" << std::endl;
+  file << "force.variable   = x" << std::endl;
+  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
+  file << "force.order      = 0" << std::endl;
+  file << "force.name       = constant force" << std::endl;
+  file << "dirichlet.variable   = x" << std::endl;
+  file << "dirichlet.expression = [0.1*x[0]; 0.0; 0.0]"  << std::endl;
+  file << "dirichlet.order      = 0"  << std::endl;
+  file << "dirichlet.name       = dirichlet"  << std::endl;
+  file << "neumann.variable   = x" << std::endl;
+  file << "neumann.expression = [0.1; 0.0; 0.0]"  << std::endl;
+  file << "neumann.order      = 0"  << std::endl;
+  file << "neumann.name       = constant neumann"  << std::endl;
   file << "[logging]" << std::endl;
   file << "info  = true" << std::endl;
   file << "debug = true" << std::endl;
   file << "file  = false" << std::endl;
+  file << "[parameter]" << std::endl;
+  file << "fixed = [1.0; 1.0; 1.0; 1.0]" << std::endl;
+  file << "train = [0.1; 0.1; 1.0; 1.0]" << std::endl;
+  file << "test  = [1.0; 1.0; 0.1; 0.1]" << std::endl;
   file.close();
 } // void ensureParamFile()
 
@@ -318,51 +322,66 @@ int main(int argc, char** argv)
                                                             RangeFieldType, dimRange > ModelType;
     const Dune::shared_ptr< const ModelType >
         model(Stationary::Linear::Elliptic::Model::create<  DomainFieldType, dimDomain,
-                                                              RangeFieldType, dimRange >(modelType, description));
+                                                            RangeFieldType, dimRange >(modelType, description));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    if (model->parametric())
-      DUNE_THROW(Dune::NotImplemented,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " only implemented for nonparametric models at the moment!");
+
+    // get the paramters
+    typedef typename ModelType::ParamType ParamType;
+    const DescriptionType parameterDescription = description.sub("parameter");
+    const ParamType fixedParam = parameterDescription.getDynVector< ParamFieldType >("fixed", model->paramSize());
+    assert(fixedParam.size() == model->paramSize());
+    const ParamType trainingParam = parameterDescription.getDynVector< ParamFieldType >("train", model->paramSize());
+    assert(trainingParam.size() == model->paramSize());
+    const ParamType testParam = parameterDescription.getDynVector< ParamFieldType >("test", model->paramSize());
+    assert(testParam.size() == model->paramSize());
+
+    // and create the nonparametric model for the training step
+    const Dune::shared_ptr< const ModelType > trainingModel = model->fix(trainingParam);
+
+
+//    if (model->parametric())
+//      DUNE_THROW(Dune::NotImplemented,
+//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+//                 << " only implemented for nonparametric models at the moment!");
     info << "visualizing model... " << std::flush;
     timer.reset();
     model->visualize(msGrid->globalGridPart()->gridView(), filename + ".model");
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    info << "setting up solver";
-    typedef Stationary::Linear::Elliptic::MS::SemiCG::DetailedDiscretizations<  ModelType,
-                                                                                MsGridType,
-                                                                                BoundaryInfoType,
-                                                                                polOrder > SolverType;
-    if (!debugLogging)
-      info << "... " << std::flush;
-    else
-      info << " '" << SolverType::id() << "':" << std::endl;
-    timer.reset();
-    const DescriptionType& discretizationDescription = description.sub(SolverType::id());
-    SolverType solver(model, msGrid, boundaryInfo, discretizationDescription.get< RangeFieldType >("penaltyFactor"));
-    solver.init("  ", debug);
-    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    info << "setting up solver";
+//    typedef Stationary::Linear::Elliptic::MS::SemiCG::DetailedDiscretizations<  ModelType,
+//                                                                                MsGridType,
+//                                                                                BoundaryInfoType,
+//                                                                                polOrder > SolverType;
+//    if (!debugLogging)
+//      info << "... " << std::flush;
+//    else
+//      info << " '" << SolverType::id() << "':" << std::endl;
+//    timer.reset();
+//    const DescriptionType& discretizationDescription = description.sub(SolverType::id());
+//    SolverType solver(model, msGrid, boundaryInfo, discretizationDescription.get< RangeFieldType >("penaltyFactor"));
+//    solver.init("  ", debug);
+//    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    info << "solving";
-    if (!debugLogging)
-      info << "... " << std::flush;
-    else
-      info << ":" << std::endl;
-    const std::string linearSolverType =  discretizationDescription.get< std::string >("linearsolver.type",      "bicgstab.ilut");
-    const size_t linearSolverMaxIter = discretizationDescription.get< size_t >(        "linearsolver.maxIter",   5000u);
-    const double linearSolverPrecision = discretizationDescription.get< double >(      "linearsolver.precision", 1e-12);
-    timer.reset();
-    typedef SolverType::VectorType VectorType;
-    std::vector< Dune::shared_ptr< VectorType > > solution = solver.createVector();
-    solver.solve(solution,
-                 linearSolverType,
-                 linearSolverMaxIter,
-                 linearSolverPrecision,
-                 "  ",
-                 debug);
-    if (!debugLogging)
-      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    info << "solving";
+//    if (!debugLogging)
+//      info << "... " << std::flush;
+//    else
+//      info << ":" << std::endl;
+//    const std::string linearSolverType =  discretizationDescription.get< std::string >("linearsolver.type",      "bicgstab.ilut");
+//    const size_t linearSolverMaxIter = discretizationDescription.get< size_t >(        "linearsolver.maxIter",   5000u);
+//    const double linearSolverPrecision = discretizationDescription.get< double >(      "linearsolver.precision", 1e-12);
+//    timer.reset();
+//    typedef SolverType::VectorType VectorType;
+//    std::vector< Dune::shared_ptr< VectorType > > solution = solver.createVector();
+//    solver.solve(solution,
+//                 linearSolverType,
+//                 linearSolverMaxIter,
+//                 linearSolverPrecision,
+//                 "  ",
+//                 debug);
+//    if (!debugLogging)
+//      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
 ////    info << "computing detailed reference solution... " << std::flush;
 ////    debug.suspend();
@@ -380,19 +399,19 @@ int main(int argc, char** argv)
 ////    info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 ////    debug.resume();
 
-    info << "writing solution to disc";
-    if (!debugLogging)
-      info << "... " << std::flush;
-    else
-      info << ":" << std::endl;
-    timer.reset();
-    solver.visualize(solution,
-                                 filename + ".solution",
-                                 id() + ".solution",
-                                 "  ",
-                                 debug);
-    if (!debugLogging)
-      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    info << "writing solution to disc";
+//    if (!debugLogging)
+//      info << "... " << std::flush;
+//    else
+//      info << ":" << std::endl;
+//    timer.reset();
+//    solver.visualize(solution,
+//                                 filename + ".solution",
+//                                 id() + ".solution",
+//                                 "  ",
+//                                 debug);
+//    if (!debugLogging)
+//      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
 ////    if (dimDomain == 1) {
 ////      info << "computing norms:" << std::endl;
