@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include <dune/common/exceptions.hh>
+#include <dune/common/shared_ptr.hh>
 #include <dune/common/timer.hh>
 
 #include <dune/grid/multiscale/default.hh>
@@ -18,6 +19,7 @@
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
+#include <dune/stuff/la/container/separable.hh>
 
 #include <dune/detailed/discretizations/mapper/multiscale.hh>
 #include <dune/detailed/discretizations/la/container/factory/eigen.hh>
@@ -66,11 +68,11 @@ private:
   typedef typename ModelType::RangeFieldType  RangeFieldType;
   static const int                            dimRange = ModelType::dimRange;
 
-  typedef Dune::Detailed::Discretizations::LA::Container::Factory::Eigen< RangeFieldType >  ContainerFactory;
-  typedef typename ContainerFactory::RowMajorSparseMatrixType                               MatrixType;
+//  typedef Dune::Detailed::Discretizations::LA::Container::Factory::Eigen< RangeFieldType >  ContainerFactory;
+//  typedef typename ContainerFactory::RowMajorSparseMatrixType                               MatrixType;
 
-public:
-  typedef typename ContainerFactory::DenseVectorType                                        VectorType;
+//public:
+//  typedef typename ContainerFactory::DenseVectorType                                        VectorType;
 
 private:
   typedef typename MsGridType::CouplingGridPartType CouplingGridPartType;
@@ -84,7 +86,15 @@ private:
 
   typedef typename LocalSolverType::AnsatzSpaceType   LocalAnsatzSpaceType;
   typedef typename LocalSolverType::TestSpaceType     LocalTestSpaceType;
-  typedef typename LocalAnsatzSpaceType::PatternType  PatternType;
+
+public:
+  typedef typename LocalSolverType::PatternType PatternType;
+  typedef typename LocalSolverType::MatrixType  MatrixType;
+  typedef typename LocalSolverType::VectorType  VectorType;
+
+private:
+  typedef Dune::Stuff::LA::Container::Separable< MatrixType > SeparableMatrixType;
+  typedef Dune::Stuff::LA::Container::Separable< VectorType > SeparableVectorType;
 
   typedef Dune::Detailed::Discretizations::Mapper::Multiscale<> AnsatzMapperType;
   typedef Dune::Detailed::Discretizations::Mapper::Multiscale<> TestMapperType;
@@ -95,7 +105,7 @@ public:
 
   static const std::string id()
   {
-    return "detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed_discretizations";
+    return "detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed-discretizations";
   }
 
   DetailedDiscretizations(const Dune::shared_ptr< const ModelType > _model,
@@ -110,13 +120,55 @@ public:
     , ansatzMapper_()
     , testMapper_()
     , localSolvers_(msGrid_->size())
-//    , pattern_(Dune::make_shared< PatternType >()) <-- this dos not work anymore, the size has to be known on creation
   {
-    // test penalty factor
-    assert(penaltyFactor_ > 0 && "Please provide a positive penalty factor!");
-    // test orders
-    assert(model_->diffusion()->order() >= 0 && "Please provide a nonnegative integration order for the diffusion!");
-    assert(model_->force()->order() >= 0 && "Please provide a nonnegative integration order for the force!");
+    // sanity checks
+    std::stringstream msg;
+    unsigned int throw_up = 0;
+    // * penalty factor
+    if (!(penaltyFactor_ > 0)) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " nonpositive penalty factor given!";
+      ++throw_up;
+    }
+    // * integration orders
+    if (model_->diffusion()->order() < 0) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " negative integration order given for the diffusion!";
+      ++throw_up;
+    }
+    if (model_->force()->order() < 0) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " negative integration order given for the force!";
+      ++throw_up;
+    }
+    if (model_->neumann()->order() < 0) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " negative integration order given for the neumann values!";
+      ++throw_up;
+    }
+    // * parametrization
+    if (model_->parametric() && !model_->separable()) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " only implemented for nonparametric or separable-parametric models!";
+      ++throw_up;
+    }
+    if (model_->force()->parametric()) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " parametric force given!";
+      ++throw_up;
+    }
+    if (model_->dirichlet()->parametric()) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " parametric dirichlet given!";
+      ++throw_up;
+    }
+    if (model_->neumann()->parametric()) {
+      msg << "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+          << " parametric neumann given!";
+      ++throw_up;
+    }
+    if (throw_up)
+      DUNE_THROW(Dune::InvalidStateException, msg.str());
   } // DetailedDiscretizations()
 
   const Dune::shared_ptr< const ModelType > model() const
@@ -183,7 +235,7 @@ public:
       timer.reset();
       for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
         // copy the local solvers pattern (which has to be done here, bc the multiscale mappers are not ready yet above)
-        addLocalToGlobalPattern(localSolvers_[subdomain]->pattern(),
+        addLocalToGlobalPattern(localSolvers_[subdomain]->systemPattern(),
                                 subdomain,
                                 subdomain,
                                 pattern_);
@@ -266,16 +318,33 @@ public:
         out << "..." << std::flush;
       timer.reset();
       // initialize the global matrix and vector container
-      matrix_ = Dune::make_shared< MatrixType >(ansatzMapper_.size(), testMapper_.size(), *pattern_);
+      if (!model_->diffusion()->parametric()) {
+        matrix_ = Dune::make_shared< SeparableMatrixType >(Dune::make_shared< MatrixType >(ansatzMapper_.size(),
+                                                                                           testMapper_.size(),
+                                                                                           *pattern_));
+      } else {
+        // create one matrix for each component
+        std::vector< Dune::shared_ptr< MatrixType > > diffusionMatrices;
+        for (size_t qq = 0; qq < model_->diffusion()->numComponents(); ++qq)
+          diffusionMatrices.push_back(Dune::make_shared< MatrixType >(ansatzMapper_.size(),
+                                                                      testMapper_.size(),
+                                                                      *pattern_));
+        matrix_ = Dune::make_shared< SeparableMatrixType >(model_->diffusion()->paramSize(),
+                                                           diffusionMatrices,
+                                                           model_->diffusion()->coefficients());
+      } // if (!model_->diffusion()->parametric())
       rhs_ = Dune::make_shared< VectorType >(testMapper_.size());
       for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
         // copy the local containers of the subdomain solver
-        copyLocalToGlobalMatrix(localSolvers_[subdomain]->systemMatrix(),
-                                localSolvers_[subdomain]->pattern(),
-                                subdomain,
-                                subdomain,
-                                matrix_);
-        copyLocalToGlobalVector(localSolvers_[subdomain]->rightHandSide(), subdomain, rhs_);
+        const Dune::shared_ptr< const SeparableMatrixType > localMatrix = localSolvers_[subdomain]->systemMatrix("diffusion");
+        assert(matrix_->numComponents() == localMatrix->numComponents());
+        for (size_t qq = 0; qq < matrix_->numComponents(); ++qq)
+          copyLocalToGlobalMatrix(localMatrix->components()[qq],
+                                  localSolvers_[subdomain]->systemPattern("diffusion"),
+                                  subdomain,
+                                  subdomain,
+                                  matrix_->components()[qq]);
+        copyLocalToGlobalVector(localSolvers_[subdomain]->systemVector("force")->fix(), subdomain, rhs_);
         // for the boundary contribution
         const typename LocalSolverType::AnsatzSpaceType& innerAnsatzSpace = *(localSolvers_[subdomain]->ansatzSpace());
         const typename LocalSolverType::TestSpaceType& innerTestSpace = *(localSolvers_[subdomain]->testSpace());
@@ -284,90 +353,103 @@ public:
           typename std::map< unsigned int, Dune::shared_ptr< const PatternType > >::const_iterator result = boundaryPatternMap.find(subdomain);
           assert(result != boundaryPatternMap.end());
           const Dune::shared_ptr< const PatternType > boundaryPattern = result->second;
-          Dune::shared_ptr< MatrixType > boundaryMatrix =
-              ContainerFactory::createRowMajorSparseMatrix(innerAnsatzSpace,
-                                                   innerTestSpace,
-                                                   *boundaryPattern);
-          Dune::shared_ptr< VectorType > boundaryRhs =
-              ContainerFactory::createDenseVector(innerTestSpace);
+          Dune::shared_ptr< SeparableMatrixType > boundaryMatrix;
+          if (!model_->diffusion()->parametric()) {
+            boundaryMatrix
+                = Dune::make_shared< SeparableMatrixType >(Dune::make_shared< MatrixType >(innerAnsatzSpace.map().size(),
+                                                                                           innerTestSpace.map().size(),
+                                                                                           *boundaryPattern));
+          } else {
+            // create one matrix for each component
+            std::vector< Dune::shared_ptr< MatrixType > > boundaryMatrices;
+            for (size_t qq = 0; qq < model_->diffusion()->numComponents(); ++qq)
+              boundaryMatrices.push_back(Dune::make_shared< MatrixType >(innerAnsatzSpace.map().size(),
+                                                                         innerTestSpace.map().size(),
+                                                                         *boundaryPattern));
+            boundaryMatrix = Dune::make_shared< SeparableMatrixType >(model_->diffusion()->paramSize(),
+                                                                      boundaryMatrices,
+                                                                      model_->diffusion()->coefficients());
+          } // if (!model_->diffusion()->parametric())
+//          Dune::shared_ptr< VectorType > boundaryRhs = Dune::make_shared< VectorType >(innerTestSpace.map().size());
           //   * assemble them
-          assembleBoundaryContribution(subdomain, boundaryMatrix, boundaryRhs);
+          assembleBoundaryContribution(subdomain, boundaryMatrix/*, boundaryRhs*/);
           //   * and copy them into the global matrix and vector
-          copyLocalToGlobalMatrix(boundaryMatrix,
-                                  boundaryPattern,
-                                  subdomain,
-                                  subdomain,
-                                  matrix_);
-          copyLocalToGlobalVector(boundaryRhs, subdomain, rhs_);
+          for (size_t qq = 0; qq < boundaryMatrix->numComponents(); ++qq)
+            copyLocalToGlobalMatrix(boundaryMatrix->components()[qq],
+                                    boundaryPattern,
+                                    subdomain,
+                                    subdomain,
+                                    matrix_->components()[qq]);
+//          copyLocalToGlobalVector(boundaryRhs, subdomain, rhs_);
         } // if (msGrid_->boundary(subdomain))
-        // walk the neighbors
-        std::map< unsigned int, std::map< std::string, Dune::shared_ptr< const PatternType > > >& couplingPatternMapMap
-            = couplingPatternMapMaps[subdomain];
-        const typename MsGridType::NeighborSetType& neighbors = msGrid_->neighborsOf(subdomain);
-        for (typename MsGridType::NeighborSetType::const_iterator neighborIt = neighbors.begin();
-             neighborIt != neighbors.end();
-             ++neighborIt) {
-          const unsigned int neighboringSubdomain = *neighborIt;
-          // visit each coupling only once (assemble primaly)
-          if (subdomain < neighboringSubdomain) {
-            // for the coupling contribution
-            const typename LocalSolverType::TestSpaceType& outerAnsatzSpace = *(localSolvers_[neighboringSubdomain]->ansatzSpace());
-            const typename LocalSolverType::TestSpaceType& outerTestSpace = *(localSolvers_[neighboringSubdomain]->testSpace());
-            std::map< std::string, Dune::shared_ptr< const PatternType > >& couplingPatternMap
-                = couplingPatternMapMap[neighboringSubdomain];
-            const Dune::shared_ptr< const PatternType >& insideInsidePattern = couplingPatternMap["inside/inside"];
-            const Dune::shared_ptr< const PatternType >& insideOutsidePattern = couplingPatternMap["inside/outside"];
-            const Dune::shared_ptr< const PatternType >& outsideInsidePattern = couplingPatternMap["outside/inside"];
-            const Dune::shared_ptr< const PatternType >& outsideOutsidePattern = couplingPatternMap["outside/outside"];
-            //   * initialize the coupling matrizes,
-            Dune::shared_ptr< MatrixType > insideInsideMatrix =
-                ContainerFactory::createRowMajorSparseMatrix(innerAnsatzSpace,
-                                                     innerTestSpace,
-                                                     *insideInsidePattern);
-            Dune::shared_ptr< MatrixType > insideOutsideMatrix =
-                ContainerFactory::createRowMajorSparseMatrix(innerAnsatzSpace,
-                                                     outerTestSpace,
-                                                     *insideOutsidePattern);
-            Dune::shared_ptr< MatrixType > outsideInsideMatrix =
-                ContainerFactory::createRowMajorSparseMatrix(outerAnsatzSpace,
-                                                     innerTestSpace,
-                                                     *outsideInsidePattern);
-            Dune::shared_ptr< MatrixType > outsideOutsideMatrix =
-                ContainerFactory::createRowMajorSparseMatrix(outerAnsatzSpace,
-                                                     outerTestSpace,
-                                                     *outsideOutsidePattern);
-            //   * assemble them
-            assembleCouplingContribution(subdomain,
-                                         neighboringSubdomain,
-                                         insideInsideMatrix,
-                                         insideOutsideMatrix,
-                                         outsideInsideMatrix,
-                                         outsideOutsideMatrix);
-            //   * and copy them into the global matrix
-            copyLocalToGlobalMatrix(insideInsideMatrix,
-                                    insideInsidePattern,
-                                    subdomain,
-                                    subdomain,
-                                    matrix_);
-            copyLocalToGlobalMatrix(insideOutsideMatrix,
-                                    insideOutsidePattern,
-                                    subdomain,
-                                    neighboringSubdomain,
-                                    matrix_);
-            copyLocalToGlobalMatrix(outsideInsideMatrix,
-                                    outsideInsidePattern,
-                                    neighboringSubdomain,
-                                    subdomain,
-                                    matrix_);
-            copyLocalToGlobalMatrix(outsideOutsideMatrix,
-                                    outsideOutsidePattern,
-                                    neighboringSubdomain,
-                                    neighboringSubdomain,
-                                    matrix_);
-          } // visit each coupling only once
-        } // walk the neighbors
-        if (verbose)
-          out << "." << std::flush;
+//        // walk the neighbors
+//        std::map< unsigned int, std::map< std::string, Dune::shared_ptr< const PatternType > > >& couplingPatternMapMap
+//            = couplingPatternMapMaps[subdomain];
+//        const typename MsGridType::NeighborSetType& neighbors = msGrid_->neighborsOf(subdomain);
+//        for (typename MsGridType::NeighborSetType::const_iterator neighborIt = neighbors.begin();
+//             neighborIt != neighbors.end();
+//             ++neighborIt) {
+//          const unsigned int neighboringSubdomain = *neighborIt;
+//          // visit each coupling only once (assemble primaly)
+//          if (subdomain < neighboringSubdomain) {
+//            // for the coupling contribution
+//            const typename LocalSolverType::TestSpaceType& outerAnsatzSpace = *(localSolvers_[neighboringSubdomain]->ansatzSpace());
+//            const typename LocalSolverType::TestSpaceType& outerTestSpace = *(localSolvers_[neighboringSubdomain]->testSpace());
+//            std::map< std::string, Dune::shared_ptr< const PatternType > >& couplingPatternMap
+//                = couplingPatternMapMap[neighboringSubdomain];
+//            const Dune::shared_ptr< const PatternType >& insideInsidePattern = couplingPatternMap["inside/inside"];
+//            const Dune::shared_ptr< const PatternType >& insideOutsidePattern = couplingPatternMap["inside/outside"];
+//            const Dune::shared_ptr< const PatternType >& outsideInsidePattern = couplingPatternMap["outside/inside"];
+//            const Dune::shared_ptr< const PatternType >& outsideOutsidePattern = couplingPatternMap["outside/outside"];
+//            //   * initialize the coupling matrizes,
+//            Dune::shared_ptr< MatrixType > insideInsideMatrix =
+//                ContainerFactory::createRowMajorSparseMatrix(innerAnsatzSpace,
+//                                                     innerTestSpace,
+//                                                     *insideInsidePattern);
+//            Dune::shared_ptr< MatrixType > insideOutsideMatrix =
+//                ContainerFactory::createRowMajorSparseMatrix(innerAnsatzSpace,
+//                                                     outerTestSpace,
+//                                                     *insideOutsidePattern);
+//            Dune::shared_ptr< MatrixType > outsideInsideMatrix =
+//                ContainerFactory::createRowMajorSparseMatrix(outerAnsatzSpace,
+//                                                     innerTestSpace,
+//                                                     *outsideInsidePattern);
+//            Dune::shared_ptr< MatrixType > outsideOutsideMatrix =
+//                ContainerFactory::createRowMajorSparseMatrix(outerAnsatzSpace,
+//                                                     outerTestSpace,
+//                                                     *outsideOutsidePattern);
+//            //   * assemble them
+//            assembleCouplingContribution(subdomain,
+//                                         neighboringSubdomain,
+//                                         insideInsideMatrix,
+//                                         insideOutsideMatrix,
+//                                         outsideInsideMatrix,
+//                                         outsideOutsideMatrix);
+//            //   * and copy them into the global matrix
+//            copyLocalToGlobalMatrix(insideInsideMatrix,
+//                                    insideInsidePattern,
+//                                    subdomain,
+//                                    subdomain,
+//                                    matrix_);
+//            copyLocalToGlobalMatrix(insideOutsideMatrix,
+//                                    insideOutsidePattern,
+//                                    subdomain,
+//                                    neighboringSubdomain,
+//                                    matrix_);
+//            copyLocalToGlobalMatrix(outsideInsideMatrix,
+//                                    outsideInsidePattern,
+//                                    neighboringSubdomain,
+//                                    subdomain,
+//                                    matrix_);
+//            copyLocalToGlobalMatrix(outsideOutsideMatrix,
+//                                    outsideOutsidePattern,
+//                                    neighboringSubdomain,
+//                                    neighboringSubdomain,
+//                                    matrix_);
+//          } // visit each coupling only once
+//        } // walk the neighbors
+//        if (verbose)
+//          out << "." << std::flush;
       } // walk the subdomains for the third time
       out<< " done (took " << timer.elapsed() << " sek)" << std::endl;
       // done
@@ -427,51 +509,52 @@ public:
              const std::string prefix = "",
              std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
   {
-    // preparations
-    assert(initialized_ && "The system can only be solved after init() has been called! ");
-    assert(solution.size() == msGrid_->size() && "Given vector has wrong size!");
-    assert(linearSolverPrecision > 0 && "Please provide a positive precision!");
-    Dune::Timer timer;
-    // create global solution vector
-    VectorType tmpSolution(testMapper_.size());
-    // solve
-    out << prefix << "solving linear system (of size " << matrix_->rows()
-        << "x" << matrix_->cols() << ")" << std::endl;
-    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
-    timer.reset();
-    typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
-    const Dune::shared_ptr< const SolverType > solver(Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType));
-    const unsigned int failure = solver->apply(*matrix_,
-                                               *rhs_,
-                                               tmpSolution,
-                                               linearSolverMaxIter,
-                                               linearSolverPrecision);
-    if (failure)
-      DUNE_THROW(Dune::MathError,
-                 "\n"
-                 << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " linear solver '" << linearSolverType << "' reported error code " << failure << "!\n"
-                 << "  1: did not converge\n"
-                 << "  2: had numerical issues\n"
-                 << "  3: dude, I have no idea");
-    if (tmpSolution.size() != ansatzMapper_.size())
-      DUNE_THROW(Dune::MathError,
-                 "\n"
-                 << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
-                 << tmpSolution.size() << ", should be " << ansatzMapper_.size() << ")!");
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    // copy global vector to local vectors
-    out << prefix << "copying global vector to local...  " << std::flush;
-    timer.reset();
-    for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
-      Dune::shared_ptr< VectorType >& localVector = solution[subdomain];
-      for (unsigned int localI = 0; localI < localVector->size(); ++localI) {
-        const unsigned int globalI = testMapper_.toGlobal(subdomain, localI);
-        localVector->set(localI, tmpSolution.get(globalI));
-      }
-    } // copy global vector to local vector
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    assert(false);
+//    // preparations
+//    assert(initialized_ && "The system can only be solved after init() has been called! ");
+//    assert(solution.size() == msGrid_->size() && "Given vector has wrong size!");
+//    assert(linearSolverPrecision > 0 && "Please provide a positive precision!");
+//    Dune::Timer timer;
+//    // create global solution vector
+//    VectorType tmpSolution(testMapper_.size());
+//    // solve
+//    out << prefix << "solving linear system (of size " << matrix_->rows()
+//        << "x" << matrix_->cols() << ")" << std::endl;
+//    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
+//    timer.reset();
+//    typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
+//    const Dune::shared_ptr< const SolverType > solver(Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType));
+//    const unsigned int failure = solver->apply(*matrix_,
+//                                               *rhs_,
+//                                               tmpSolution,
+//                                               linearSolverMaxIter,
+//                                               linearSolverPrecision);
+//    if (failure)
+//      DUNE_THROW(Dune::MathError,
+//                 "\n"
+//                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+//                 << " linear solver '" << linearSolverType << "' reported error code " << failure << "!\n"
+//                 << "  1: did not converge\n"
+//                 << "  2: had numerical issues\n"
+//                 << "  3: dude, I have no idea");
+//    if (tmpSolution.size() != ansatzMapper_.size())
+//      DUNE_THROW(Dune::MathError,
+//                 "\n"
+//                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+//                 << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
+//                 << tmpSolution.size() << ", should be " << ansatzMapper_.size() << ")!");
+//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+//    // copy global vector to local vectors
+//    out << prefix << "copying global vector to local...  " << std::flush;
+//    timer.reset();
+//    for (unsigned int subdomain = 0; subdomain < msGrid_->size(); ++subdomain) {
+//      Dune::shared_ptr< VectorType >& localVector = solution[subdomain];
+//      for (unsigned int localI = 0; localI < localVector->size(); ++localI) {
+//        const unsigned int globalI = testMapper_.toGlobal(subdomain, localI);
+//        localVector->set(localI, tmpSolution.get(globalI));
+//      }
+//    } // copy global vector to local vector
+//    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...) const
 
   void visualize(const std::vector< Dune::shared_ptr< VectorType > >& vector,
@@ -621,19 +704,38 @@ private:
   } // void copyLocalToGlobalVector(...)
 
   void assembleBoundaryContribution(const unsigned int subdomain,
-                                    Dune::shared_ptr< MatrixType >& boundaryMatrix,
-                                    Dune::shared_ptr< VectorType >& /*boundaryRhs*/) const
+                                    Dune::shared_ptr< SeparableMatrixType >& boundaryMatrix/*,
+                                    Dune::shared_ptr< VectorType >& boundaryRhs*/) const
   {
     typedef Dune::FunctionSpace< DomainFieldType, RangeFieldType, dimDomain, dimRange > FunctionSpaceType;
     // operator
     typedef typename ModelType::FunctionType DiffusionType;
-    typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::IPDGfluxes::Dirichlet< FunctionSpaceType, DiffusionType > IPDGfluxType;
-    const IPDGfluxType ipdgFlux(model_->diffusion(), model_->diffusion()->order(), penaltyFactor_);
-    typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::BoundaryIntegral< IPDGfluxType > DirichletOperatorType;
-    const DirichletOperatorType dirichletOperator(ipdgFlux);
+    typedef Dune::Detailed::Discretizations::Evaluation::Local::Binary::IPDGfluxes::Dirichlet<  FunctionSpaceType,
+                                                                                                DiffusionType >
+        IPDGfluxType;
+    std::vector< IPDGfluxType* > ipdgFluxes;
+    typedef Dune::Detailed::Discretizations::DiscreteOperator::Local::Codim1::BoundaryIntegral< IPDGfluxType >
+        DirichletOperatorType;
+    std::vector< DirichletOperatorType* > dirichletOperators;
+    if (!model_->diffusion()->parametric()) {
+      ipdgFluxes.push_back(new IPDGfluxType(model_->diffusion(), model_->diffusion()->order(), penaltyFactor_));
+      dirichletOperators.push_back(new DirichletOperatorType(*(ipdgFluxes[0])));
+    } else {
+      // we are separable (see constructor), loop over all components
+      for (size_t qq = 0; qq < model_->diffusion()->numComponents(); ++qq) {
+        ipdgFluxes.push_back(new IPDGfluxType(model_->diffusion()->components()[qq],
+                                              model_->diffusion()->order(),
+                                              penaltyFactor_));
+        dirichletOperators.push_back(new DirichletOperatorType(*(ipdgFluxes[qq])));
+      } // loop over all components
+    } // if (!model_->diffusion()->parametric())
     // local matrix assembler
-    typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Boundary< DirichletOperatorType > DirichletMatrixAssemblerType;
-    const DirichletMatrixAssemblerType dirichletMatrixAssembler(dirichletOperator);
+    typedef Dune::Detailed::Discretizations::Assembler::Local::Codim1::Boundary< DirichletOperatorType >
+        LocalDirichletMatrixAssemblerType;
+    std::vector< Dune::shared_ptr< const LocalDirichletMatrixAssemblerType > > localDirichletMatrixAssembler;
+    for (size_t qq = 0; qq < dirichletOperators.size(); ++qq)
+      localDirichletMatrixAssembler.push_back(
+            Dune::make_shared< LocalDirichletMatrixAssemblerType >(*(dirichletOperators[qq])));
     // functional
     // ...
     // local vector assmebler
@@ -645,14 +747,22 @@ private:
         typename LocalSolverType::AnsatzSpaceType,
         typename LocalSolverType::TestSpaceType >
       BoundaryAssemblerType;
-    const BoundaryAssemblerType boundaryAssembler(*(msGrid_->boundaryGridPart(subdomain)),
+    BoundaryAssemblerType boundaryAssembler(*(msGrid_->boundaryGridPart(subdomain)),
                                                   boundaryInfo_,
                                                   *(localSolvers_[subdomain]->ansatzSpace()),
                                                   *(localSolvers_[subdomain]->testSpace()));
-    boundaryAssembler.assemble(dirichletMatrixAssembler,
-                               *boundaryMatrix/*,
+    assert(boundaryMatrix->numComponents() == localDirichletMatrixAssembler.size());
+    for (size_t qq = 0; qq < localDirichletMatrixAssembler.size(); ++qq)
+      boundaryAssembler.addLocalMatrixAssembler(localDirichletMatrixAssembler[qq], boundaryMatrix->components()[qq]);
+    boundaryAssembler.assemble(/*dirichletMatrixAssembler,
+                               *boundaryMatrix*//*,
                                dirichletVectorAssembler,
                                boundaryRhs*/);
+    // clean up
+    for (size_t ii = 0; ii < dirichletOperators.size(); ++ii)
+      delete dirichletOperators[ii];
+    for (size_t ii = 0; ii < ipdgFluxes.size(); ++ii)
+      delete ipdgFluxes[ii];
   } // void assembleBoundaryContribution(...)
 
   void assembleCouplingContribution(const unsigned int subdomain,
@@ -701,7 +811,7 @@ private:
   TestMapperType testMapper_;
   std::vector< Dune::shared_ptr< LocalSolverType > > localSolvers_;
   Dune::shared_ptr< PatternType > pattern_;
-  Dune::shared_ptr< MatrixType > matrix_;
+  Dune::shared_ptr< SeparableMatrixType > matrix_;
   Dune::shared_ptr< VectorType > rhs_;
 }; // class DetailedDiscretizations
 
