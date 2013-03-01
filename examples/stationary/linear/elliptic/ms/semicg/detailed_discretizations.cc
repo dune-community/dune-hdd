@@ -579,14 +579,121 @@ createReducedOperatorFunctional(const SolverType& solver,
 } // ... reducedOperator(...)
 
 
+void computeReducedSolution(const SolverType& solver,
+                            const DescriptionType& description,
+                            const ReducedOperatorType& reducedOperator,
+                            const ReducedFunctionalType& reducedFunctional,
+                            const ParamType& mu,
+                            VectorType& reducedSolution)
+{
+  // logger
+  Dune::Stuff::Common::LogStream& debug   = Dune::Stuff::Common::Logger().debug();
+  const bool visualize = description.get< bool >(id() + ".visualize", false);
+  Dune::Timer timer;
+  if (visualize)
+    debug << "  computing reduced solution... " << std::flush;
+  timer.reset();
+  const auto reducedSystemMatrix = reducedOperator.fix(solver.model()->mapParam(mu, "diffusion"));
+  reducedSolution.backend() = reducedSystemMatrix->backend().colPivHouseholderQr().solve(reducedFunctional.backend());
+  if (visualize) {
+    debug << " done( took " << timer.elapsed() << " sec)" << std::endl;
+  }
+} // ... computeReducedSolution(...)
+
+
+void reconstructReducedSolution(const SolverType& solver,
+                                const std::vector< Dune::shared_ptr< ReducedBasisType > >& localReducedBases,
+                                const MapperType& mapper,
+                                const VectorType& reducedSolution,
+                                std::vector< Dune::shared_ptr< VectorType > >& localVectors)
+{
+  // loop over all subdomains
+  for (size_t ss = 0; ss < solver.msGrid()->size(); ++ss) {
+    // get the local reduced basis
+    const ReducedBasisType& localReducedBasis = *(localReducedBases[ss]);
+    // get the local vector
+    VectorType& localVector = *(localVectors[ss]);
+    // clear it
+    localVector.backend().setZero();
+    // loop over all local basis functions
+    for (int ii = 0; ii < localReducedBasis.cols(); ++ii) {
+      // and reconstruct
+      localVector.backend() += localReducedBasis.backend().col(ii) * reducedSolution.get(mapper.toGlobal(ss, ii));
+    } // loop over all local basis functions
+  } // loop over all subdomains
+} // ... reconstructReducedSolution(...)
+
+
+void estimateError(const SolverType& solver,
+                   const DescriptionType& description,
+                   const VectorType& reducedSolution,
+                   const ParamType& mu,
+                   std::vector< Dune::shared_ptr< VectorType > >& tmpLocalVectors)
+{
+  // logger
+  Dune::Stuff::Common::LogStream& debug   = Dune::Stuff::Common::Logger().debug();
+  Dune::Stuff::Common::LogStream& devnull = Dune::Stuff::Common::Logger().devnull();
+  Dune::Timer timer;
+  // linear solver
+  const DescriptionType& discretizationDescription = description.sub(SolverType::id());
+  const std::string    linearSolverType      = discretizationDescription.get< std::string >(   "linearsolver.type",
+                                                                                               "bicgstab.ilut");
+  const size_t         linearSolverMaxIter   = discretizationDescription.get< size_t >(        "linearsolver.maxIter",
+                                                                                               5000u);
+  const RangeFieldType linearSolverPrecision = discretizationDescription.get< RangeFieldType >("linearsolver.precision",
+                                                                                               1e-12);
+
+  debug << "  computing detailed solution... " << std::flush;
+  timer.reset();
+  solver.solve(tmpLocalVectors,
+               mu,
+               linearSolverType,
+               linearSolverMaxIter,
+               linearSolverPrecision,
+               "", devnull);
+  debug << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+  dune_static_assert(false, "Compute detailed error and visualize, if visualize is true!");
+
+  debug << "  computing local errors... " << std::flush;
+  // loop over all subdomains
+  for (size_t ss = 0; ss < solver.msGrid()->size(); ++ss) {
+
+  } // loop over all subdomains
+
+  //      info << "estimating error for " << Dune::Stuff::Common::Parameter::report(trainingParam);
+  //      if (!debugLogging)
+  //        info << "... " << std::flush;
+  //      else
+  //        info << ":" << std::endl;
+  //      timer.reset();
+  //      Dune::Timer debugTimer;
+  //      debug << "  computing local estimates:  ";
+  //      Dune::DynamicVector< RangeFieldType > localEstimates(msGrid->size());
+  //      for (size_t ss = 0; ss < msGrid->size(); ++ss) {
+  //        localEstimates[ss] = std::sqrt((detailedSolution[ss]->backend().transpose() - reconstructedSolution[ss]->backend().transpose())
+  //                             * localScalarProducts[ss]->backend()
+  //                             * (detailedSolution[ss]->backend() - reconstructedSolution[ss]->backend()));
+  //        debug << std::scientific << localEstimates[ss] << std::fixed << " " << std::flush;
+  //      }
+  //      debug << std::endl;
+  //      if (!debugLogging)
+  //        info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+}
+
+
 int main(int argc, char** argv)
 {
   try {
     // description
     const DescriptionType description = initDescription(argc, argv);
     // logger
-    Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().info();
+    Dune::Stuff::Common::LogStream& info    = Dune::Stuff::Common::Logger().info();
+    Dune::Stuff::Common::LogStream& debug   = Dune::Stuff::Common::Logger().debug();
+    Dune::Stuff::Common::LogStream& devnull = Dune::Stuff::Common::Logger().devnull();
     const bool debugLogging = description.get< bool >("logging.debug", false);
+    const bool visualize = description.get< bool >(id() + ".visualize", false);
     // report
     std::string msg = "  starting offline phase  ";
     info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
@@ -604,6 +711,7 @@ int main(int argc, char** argv)
       Dune::shared_ptr< VectorType > localVector = detailedSolver->localSolver(0)->createAnsatzVector();
       std::vector< Dune::shared_ptr< VectorType > > localVectors = detailedSolver->createVector();
       std::vector< Dune::shared_ptr< ReducedBasisType > > localReducedBases(detailedSolver->msGrid()->size());
+      VectorType reducedSolution(detailedSolver->msGrid()->size());
       for (size_t ss = 0; ss < detailedSolver->msGrid()->size(); ++ss)
         localReducedBases[ss] = Dune::make_shared< ReducedBasisType >(detailedSolver->localSolver(ss)->ansatzSpace()->map().size(), 1);
       Dune::shared_ptr< VectorType > globalVectorOne = Dune::make_shared< VectorType >(detailedSolver->ansatzMapper().size());
@@ -623,10 +731,15 @@ int main(int argc, char** argv)
       if (!debugLogging)
         info << " done (took " << timer.elapsed() << "sec)" << std::endl;
 
-      // compute the global training snapshot
+      // get the paramters
       const DescriptionType& parameterDescription = description.sub("parameter");
       const ParamType trainingParam
           = parameterDescription.getDynVector< ParamFieldType >("train", detailedSolver->model()->paramSize());
+      const ParamType testParam
+          = parameterDescription.getDynVector< ParamFieldType >("test",  detailedSolver->model()->paramSize());
+      const std::vector< ParamType > parameters = {trainingParam, testParam};
+
+      // compute the global training snapshot
       info << "computing training snapshot";
       if (!debugLogging)
         info << "... " << std::flush;
@@ -661,99 +774,55 @@ int main(int argc, char** argv)
       if (!debugLogging)
         info << " done (took " << timer.elapsed() << "sec)" << std::endl;
 
-
-
-
       // report
       msg = "  offline phase finished, took " + Dune::Stuff::Common::toString(offlineTimer.elapsed()) + "sec  ";
       info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
       info << msg << std::endl;
+      info << "  starting online phase" << std::endl;
       info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
 
-      for (auto& component : reducedOperator->components()) {
-        info << "=====================================" << std::endl;
-        info << component->backend() << std::endl;
-      }
-      info << "=====================================" << std::endl;
+      // now we start with the online phase
+      // loop over all parameters
+      for (size_t pp = 0; pp < parameters.size(); ++pp) {
+        const ParamType& mu = parameters[pp];
+        // compute a reduced solution
+        info << "solving for parameter " << Dune::Stuff::Common::Parameter::report(mu);
+        if (!visualize)
+          info << "... " << std::flush;
+        else
+          info << ":" << std::endl;
+        timer.reset();
+        computeReducedSolution(*detailedSolver, description, *reducedOperator, *reducedFunctional, mu, reducedSolution);
+        if (!visualize)
+          info << " done (took " << std::scientific << timer.elapsed() << std::fixed << "sec)" << std::endl;
+        // reconstruct and visualize if wished
+        if (visualize) {
+          info << "reconstructing solution... " << std::flush;
+          timer.reset();
+          reconstructReducedSolution(*detailedSolver, localReducedBases, mapper, reducedSolution, localVectors);
+          info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+          if (debugLogging) {
+            detailedSolver->visualize(localVectors,
+                                     "reconstructedSolution.param_" + Dune::Stuff::Common::Parameter::reportWOwhitespace(mu),
+                                     "reconstructedSolution to param " + Dune::Stuff::Common::Parameter::report(mu),
+                                     "",
+                                     debug);
+          } else {
+            info << "visualizing reconstructed solution..." << std::flush;
+            timer.reset();
+            detailedSolver->visualize(localVectors,
+                                     "reconstructedSolution.param_" + Dune::Stuff::Common::Parameter::reportWOwhitespace(mu),
+                                     "reconstructedSolution to param " + Dune::Stuff::Common::Parameter::report(mu),
+                                     "",
+                                     devnull);
+            info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+          } // if (debuglogging)
+        } // if (visualize)
+        // estimate error
 
-//      info << "reducing operator and functional... " << std::flush;
-//      // therefore get the detailed operator and functional
-//      Dune::shared_ptr< const DetailedOperatorType > detailedOperator = solver.systemMatrix("diffusion");
-//      Dune::shared_ptr< const VectorType > detailedFunctional = solver.systemVector("force");
-//      std::vector< Dune::shared_ptr< BasisMatrixType > > reducedOperatorComponents(detailedOperator->numComponents());
-//      for (auto& component : reducedOperatorComponents)
-//        component = Dune::make_shared< BasisMatrixType >(msGrid->size(), msGrid->size());
-//      ReducedOperatorType reducedOperator(detailedOperator->paramSize(),
-//                                          reducedOperatorComponents,
-//                                          detailedOperator->coefficients());
-//      VectorType reducedFunctional(msGrid->size());
-//      for (size_t ii = 0; ii < msGrid->size(); ++ii) {
-//        for (size_t jj = 0; jj < msGrid->size(); ++jj) {
-//        // project all components of the detailed operator onto the reduced space
-//          for (size_t qq = 0; qq < detailedOperator->numComponents(); ++qq) {
-//            BasisMatrixType& reducedOperatorComponent = *(reducedOperator.components()[qq]);
-//            reducedOperatorComponent.set(ii, jj, reducedBasis.backend().col(ii).transpose()
-//                                                 * detailedOperator->components()[qq]->backend()
-//                                                 * reducedBasis.backend().col(jj));
-//          } // project all components of the detailed operator onto the reduced space
-//        }
-//        // project the detailed functional onto the reduced space
-//        reducedFunctional.set(ii, detailedFunctional->backend().transpose() * reducedBasis.backend().col(ii));
-//      }
-//      info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-//      info << "=============================================" << std::endl;
-//      info << "offline-phase finished, starting online-phase" << std::endl;
-//      info << "=============================================" << std::endl;
+      } // loop over all parameters
 
-//      // this is for the training parameter and should show now error
-//      info << "solving for " << Dune::Stuff::Common::Parameter::report(trainingParam) << "... " << std::flush;
-//      timer.reset();
-//      Dune::shared_ptr< const BasisMatrixType > reducedSystemMatrix
-//          = reducedOperator.fix(model->mapParam(trainingParam, "diffusion"));
-//      VectorType reducedSolution;
-//      reducedSolution.backend() = reducedSystemMatrix->backend().colPivHouseholderQr().solve(reducedFunctional.backend());
-//      info << "done (took " << std::scientific << timer.elapsed() << std::fixed << " sec)" << std::endl;
-//      info << "estimating error for " << Dune::Stuff::Common::Parameter::report(trainingParam);
-//      if (!debugLogging)
-//        info << "... " << std::flush;
-//      else
-//        info << ":" << std::endl;
-//      timer.reset();
-//      Dune::Timer debugTimer;
-//      debug << "  reconstructing solution... " << std::flush;
-//      std::vector< Dune::shared_ptr< VectorType > > reconstructedSolution = solver.createVector();
-//      tmpGlobalVector->backend().setZero();
-//      for (size_t ss = 0; ss < msGrid->size(); ++ss) {
-//        tmpGlobalVector->backend() += reducedBasis.backend().col(ss) * reducedSolution.get(ss);
-//      }
-//      solver.localizeVector(tmpGlobalVector, reconstructedSolution);
-//      solver.visualize(reconstructedSolution,
-//                       filename + ".reconstructed.training.solution",
-//                       id() + ".reconstructed.training.solution",
-//                       "  ",
-//                       devnull);
-//      debug << "done (took " << debugTimer.elapsed() << " sec)" << std::endl;
-//      debug << "  computing detailed solution for "
-//            << Dune::Stuff::Common::Parameter::report(trainingParam) << "... " << std::flush;
-//      std::vector< Dune::shared_ptr< VectorType > > detailedSolution = solver.createVector();
-//      solver.solve(detailedSolution, trainingParam,
-//                   linearSolverType,
-//                   linearSolverMaxIter,
-//                   linearSolverPrecision,
-//                   "", devnull);
-//      debug << "done (took " << debugTimer.elapsed() << " sec)" << std::endl;
-//      debug << "  computing local estimates:  ";
-//      Dune::DynamicVector< RangeFieldType > localEstimates(msGrid->size());
-//      for (size_t ss = 0; ss < msGrid->size(); ++ss) {
-//        localEstimates[ss] = std::sqrt((detailedSolution[ss]->backend().transpose() - reconstructedSolution[ss]->backend().transpose())
-//                             * localScalarProducts[ss]->backend()
-//                             * (detailedSolution[ss]->backend() - reconstructedSolution[ss]->backend()));
-//        debug << std::scientific << localEstimates[ss] << std::fixed << " " << std::flush;
-//      }
-//      debug << std::endl;
-//      if (!debugLogging)
-//        info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
 //      // this is for the test parameter and should invoke the postprocessing
 //      info << "solving for " << Dune::Stuff::Common::Parameter::report(testParam) << "... " << std::flush;
