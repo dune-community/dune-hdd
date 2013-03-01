@@ -468,6 +468,16 @@ public:
     return matrices_.find(type)->second;
   } // Dune::shared_ptr< const PatternType > pattern() const
 
+  Dune::shared_ptr< SeparableMatrixType > matrix(const std::string type)
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling systemMatrix()!");
+    assert(matrices_.find(type) != matrices_.end());
+    return matrices_.find(type)->second;
+  } // Dune::shared_ptr< const PatternType > pattern() const
+
   Dune::shared_ptr< MatrixType > systemMatrix(const ParamType mu = ParamType()) const
   {
     if (!initialized_)
@@ -494,6 +504,16 @@ public:
     assert(vectors_.find(type) != vectors_.end());
     return vectors_.find(type)->second;
   } // Dune::shared_ptr< const PatternType > pattern() const
+
+  Dune::shared_ptr< SeparableVectorType > vector(const std::string type)
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling systemVector()!");
+    assert(vectors_.find(type) != vectors_.end());
+    return vectors_.find(type)->second;
+  }
 
   Dune::shared_ptr< VectorType > rightHandSide(const ParamType mu = ParamType()) const
   {
