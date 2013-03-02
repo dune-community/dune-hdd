@@ -171,8 +171,13 @@ void writeDescriptionFile(std::string filename)
   file << "file  = false" << std::endl;
   file << "[parameter]" << std::endl;
   file << "fixed = [1.0; 1.0; 1.0; 1.0]" << std::endl;
-  file << "train = [0.1; 0.1; 1.0; 1.0]" << std::endl;
-  file << "test  = [1.0; 1.0; 0.1; 0.1]" << std::endl;
+  file << "train.0 = [0.1; 0.1; 1.0; 1.0]" << std::endl;
+  file << "train.1 = [1.0; 1.0; 0.1; 0.1]" << std::endl;
+  file << "test.0  = [0.1; 0.1; 1.0; 1.0]" << std::endl;
+  file << "test.1  = [1.0; 1.0; 0.1; 0.1]" << std::endl;
+  file << "[reducedBasis]" << std::endl;
+  file << "gramSchmidt = true" << std::endl;
+  file << "gramSchmidtTolerance = 1e-10" << std::endl;
   file << "[enrichment]" << std::endl;
   file << "maxLocalError = 1e-5" << std::endl;
   file << "maxIterations = 5" << std::endl;
@@ -402,33 +407,94 @@ void computeGlobalSnapshot(const SolverType& solver, const DescriptionType& desc
 } // ... computeGlobalSnapshot(...)
 
 
-void initReducedBasis(const std::vector< Dune::shared_ptr< ScalarProductType > >& localScalarProducts,
-                      std::vector< Dune::shared_ptr< VectorType > >& localSnapshots,
-                      std::vector< Dune::shared_ptr< ReducedBasisType > >& localReducedBases,
-                      MapperType& mapper)
+Dune::shared_ptr< MapperType > initReducedBasis(const SolverType& detailedSolver,
+                                                const std::vector< Dune::shared_ptr< ScalarProductType > >& localScalarProducts,
+                                                const std::vector< ParamType >& trainingParameters,
+                                                const DescriptionType& description,
+                                                std::vector< Dune::shared_ptr< VectorType > >& localVectors,
+                                                std::vector< Dune::shared_ptr< ReducedBasisType > >& localReducedBases)
 {
-  // sanity checks
-  assert(localSnapshots.size() == localScalarProducts.size());
-  assert(localSnapshots.size() == localReducedBases.size());
+  // logger
+  Dune::Stuff::Common::LogStream& info = Dune::Stuff::Common::Logger().debug();
+  Dune::Timer timer;
   // prepare
-  mapper.prepare();
+  const bool debugLogging = description.get< bool >("logging.debug", false);
+  const bool applyGramSchmidt = description.get< bool >("reducedBasis.gramSchmidt", true);
+  const double gramSchmidtTolerance = description.get< double >("reducedBasis.gramSchmidtTolerance", 1e-10);
+  // sanity checks
+  assert(trainingParameters.size() > 0);
+  assert(localVectors.size() == localScalarProducts.size());
+  assert(localVectors.size() == localReducedBases.size());
+  // compute the first snapshot
+  info << "initializing basis";
+  if (!debugLogging)
+    info << "... " << std::flush;
+  else
+    info << " with parameter " << Dune::Stuff::Common::Parameter::report(trainingParameters[0]) << ":" << std::endl;
+  timer.reset();
+  computeGlobalSnapshot(detailedSolver, description, trainingParameters[0], localVectors);
   // loop over all subdomains
   for (size_t ss = 0; ss < localReducedBases.size(); ++ss) {
     // get local scalar product
     const ScalarProductType& localScalarProduct = *(localScalarProducts[ss]);
     // get local snapshot
-    VectorType& localSnapshot = *(localSnapshots[ss]);
+    VectorType& localSnapshot = *(localVectors[ss]);
     assert(localScalarProduct.rows() == localSnapshot.size());
     assert(localScalarProduct.cols() == localSnapshot.size());
-    // normalize local snapshot (inplace)
-    Dune::Stuff::LA::Algorithm::normalize(localScalarProduct, localSnapshot);
+    // normalize local snapshot (inplace), if whished
+    if (applyGramSchmidt)
+      Dune::Stuff::LA::Algorithm::normalize(localScalarProduct, localSnapshot);
     // set local reduced basis
     ReducedBasisType& localReducedBasis = *(localReducedBases[ss]);
     localReducedBasis.backend().col(0) = localSnapshot.backend();
-    mapper.add(ss, 1);
   } // loop over all subdomains
-  // finalize
-  mapper.finalize();
+  if (!debugLogging)
+    info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+  // now extend the basis for all other parameters
+  for (size_t pp = 1; pp < trainingParameters.size(); ++pp) {
+    // compute the next snapshot
+    info << "extending basis";
+    if (!debugLogging)
+      info << "... " << std::flush;
+    else
+      info << " with parameter " << Dune::Stuff::Common::Parameter::report(trainingParameters[pp]) << ":" << std::endl;
+    timer.reset();
+    computeGlobalSnapshot(detailedSolver, description, trainingParameters[pp], localVectors);
+    // loop over all subdomains
+    for (size_t ss = 0; ss < localReducedBases.size(); ++ss) {
+      // get local scalar product
+      const ScalarProductType& localScalarProduct = *(localScalarProducts[ss]);
+      // get local snapshot
+      VectorType& localSnapshot = *(localVectors[ss]);
+      assert(localScalarProduct.rows() == localSnapshot.size());
+      assert(localScalarProduct.cols() == localSnapshot.size());
+      // get local reduced basis
+      ReducedBasisType& localReducedBasis = *(localReducedBases[ss]);
+      // normalize local snapshot (inplace), if whished
+      bool addSnapshot = true;
+      if (applyGramSchmidt)
+        addSnapshot = Dune::Stuff::LA::Algorithm::gramSchmidt(localScalarProduct,
+                                                              localReducedBasis,
+                                                              localSnapshot,
+                                                              gramSchmidtTolerance);
+      if (addSnapshot) {
+        const size_t oldSize = localReducedBasis.cols();
+        // resize the local reduced basis matrix by keeping the old columns
+        localReducedBasis.backend().conservativeResize(::Eigen::NoChange, oldSize + 1);
+        // and set the new column to the orthogonalized local snapshot
+        localReducedBasis.backend().col(oldSize) = localSnapshot.backend();
+      }
+    } // loop over all subdomains
+    if (!debugLogging)
+      info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+  } // now extend the basis for all other parameters
+  // mapper
+  Dune::shared_ptr< MapperType > mapper = Dune::make_shared< MapperType >();
+  mapper->prepare();
+  for (size_t ss = 0; ss < localReducedBases.size(); ++ss)
+    mapper->add(ss, localReducedBases[ss]->cols());
+  mapper->finalize();
+  return mapper;
 } // ... initReducedBasis(...)
 
 
@@ -658,7 +724,8 @@ Dune::shared_ptr< VectorType > computeLocalErrors(const SolverType& solver,
                                  * localScalarProduct.backend()
                                  * localReference.backend()));
   } // loop over all subdomains
-  debug << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  debug << "done (took " << timer.elapsed() << " sec, max local error is "
+        << std::scientific << localErrors->backend().maxCoeff() << std::fixed << ")" << std::endl;
 
   return localErrors;
 } // ... computeLocalErrors(...)
@@ -687,73 +754,112 @@ void computeLocalCorrections(const SolverType& globalSolver,
   Dune::Stuff::Common::LogStream& devnull = Dune::Stuff::Common::Logger().devnull();
   const bool visualize = description.get< bool >(id() + ".visualize", true);
   Dune::Timer timer;
-  debug << "  reconstructing reduced solution... " << std::flush;
-  reconstructReducedSolution(globalSolver, localReducedBases, mapper, reducedSolution, localVectorsTwo);
-  const Dune::shared_ptr< const GlobalDiscreteFunctionType >
-      reconstructedSolutionFunction = globalSolver.createDiscreteFunction(localVectorsTwo);
-  debug << "done (took " << timer.elapsed() << "sec)" << std::endl;
+//  debug << "  reconstructing reduced solution... " << std::flush;
+//  reconstructReducedSolution(globalSolver, localReducedBases, mapper, reducedSolution, localVectorsTwo);
+//  const Dune::shared_ptr< const GlobalDiscreteFunctionType >
+//      reconstructedSolutionFunction = globalSolver.createDiscreteFunction(localVectorsTwo);
+//  debug << "done (took " << timer.elapsed() << "sec)" << std::endl;
   debug << "  solving for local corrections... " << std::flush;
   timer.reset();
-  // get the multiscale grid
-  const MsGridType& msGrid = *(globalSolver.msGrid());
+//  // get the multiscale grid
+//  const MsGridType& msGrid = *(globalSolver.msGrid());
   // create a fixed model for the current parameter
   const Dune::shared_ptr< const ModelType > fixedModel = globalSolver.model()->fix(mu);
-  // loop over all marked subdomains
-  for (int ii = 0; ii < markedSubdomains.size(); ++ii) {
-    const size_t subdomain = markedSubdomains.get(ii);
-    // get the local grid part
-    const Dune::shared_ptr< const LocalGridPartType > localOversampledGridPart = msGrid.localGridPart(subdomain, true);
-    // initialize a local solver on the local oversampled gripart
-    const Dune::shared_ptr< const LocalBoundaryInfoType > localBoundaryInfo(
-          Dune::Stuff::Grid::BoundaryInfo::create< typename MsGridType::LocalGridViewType >("stuff.grid.boundaryinfo.alldirichlet"));
-    LocalSolverType localOversampledSolver(localOversampledGridPart, localBoundaryInfo, fixedModel);
-    localOversampledSolver.init("", devnull);
-    // get the local solver on the non oversampled gridpart
-    const LocalSolverType& localSolver = *(globalSolver.localSolver(subdomain));
-    // create a local function to hold the reconstructed solution
-    Dune::shared_ptr< LocalDiscreteFunctionType >
-        localReconstructedSolutionFunction = localOversampledSolver.createAnsatzFunction();
-    // and project the current reconstructed solution onto the local oversampled gripart
-    Dune::Stuff::DiscreteFunction::Projection::Lagrange::project(*reconstructedSolutionFunction,
-                                                                 *localReconstructedSolutionFunction);
-    // compute the local right hand side f := f - lrs' * A
-    // * therefore get the local system matrix and right hand side
-    const auto localSystemMatrixPtr = localOversampledSolver.matrix("diffusion");
-    assert(localSystemMatrixPtr->numComponents() == 1);
-    const auto& localSystemMatrix = *(localSystemMatrixPtr->components()[0]);
-    auto forceVectorPtr = localOversampledSolver.vector("force");
-    assert(forceVectorPtr->numComponents() == 1);
-    auto& localRightHandSide = *(forceVectorPtr->components()[0]);
-    // * get the local reconstructed solution
-    auto& localReconstructedSolution = *(localReconstructedSolutionFunction->vector());
-    // * and correct the right hand side
-    localRightHandSide.backend() -=localReconstructedSolution.backend().transpose() * localSystemMatrix.backend();
-    // then solve locally on the oversampled domain
-    Dune::shared_ptr< VectorType > localOversampledSolutionVector = localOversampledSolver.createAnsatzVector();
-    localOversampledSolver.solve(localOversampledSolutionVector,
-                      linearSolverType,
-                      linearSolverMaxIter,
-                      linearSolverPrecision,
-                      "",
-                      devnull);
-    // and restrict the oversampled solution to the local (not oversampled) subdomain
-    Dune::shared_ptr< LocalDiscreteFunctionType >
-        localOversampledSolutionFunction = localOversampledSolver.createAnsatzFunction(localOversampledSolutionVector);
-    Dune::shared_ptr< LocalDiscreteFunctionType > localSolutionFunction
-        = localSolver.createAnsatzFunction();
-    Dune::Stuff::DiscreteFunction::Projection::Lagrange::project(*localOversampledSolutionFunction,
-                                                                 *localSolutionFunction);
-    // visualize if wished
-    if (visualize) {
-      localSolver.visualizeAnsatzVector(localSolutionFunction->vector(),
-                                        "local_correction.param_" + Dune::Stuff::Common::Parameter::reportWOwhitespace(mu),
-                                        "local correction for parameter " + Dune::Stuff::Common::Parameter::report(mu),
-                                        "",
-                                        devnull);
-    } // visualize if wished
-    // now just copy the local solution into the return argument
-    localVectorsOne[subdomain]->backend() = localSolutionFunction->vector()->backend();
-  } // loop over all marked subdomains
+
+//  // correct rhs
+//  auto tmpGlobalVector = fixedSolver.globalizeVectors(localVectorsTwo);
+//  fixedSolver.vector("force")->backend() -= tmpGlobalVector->backend().transpose()
+//                                            * fixedSolver.systemMatrix("diffusion")->components()[0]->backend();
+  // solve
+  globalSolver.solve(localVectorsOne,
+                     mu,
+                     linearSolverType,
+                     linearSolverMaxIter,
+                     linearSolverPrecision,
+                     "",
+                     devnull);
+  // check fixed model
+  SolverType fixedSolver(fixedModel, globalSolver.msGrid(), globalSolver.boundaryInfo(), 100.0);
+  fixedSolver.init("", devnull);
+  fixedSolver.solve(localVectorsTwo,
+                    linearSolverType,
+                    linearSolverMaxIter,
+                    linearSolverPrecision,
+                    "",
+                    devnull);
+  globalSolver.visualize(localVectorsOne, "parametric");
+  globalSolver.visualize(localVectorsTwo, "fixed");
+  for (size_t ss = 0; ss < globalSolver.msGrid()->size(); ++ss) {
+    localVectorsOne[ss]->backend() -= localVectorsTwo[ss]->backend();
+    for (size_t ii = 0; ii < localVectorsOne[ss]->size(); ++ii)
+      localVectorsOne[ss]->set(ii, std::abs(localVectorsOne[ss]->get(ii)));
+    std::cout << localVectorsOne[ss]->backend().maxCoeff() << ", " << localVectorsOne[ss]->backend().minCoeff() << std::endl;
+  }
+  globalSolver.visualize(localVectorsOne, "difference");
+  globalSolver.model()->visualize(globalSolver.msGrid()->globalGridPart()->gridView(), "model.parametric");
+  fixedSolver.model()->visualize(fixedSolver.msGrid()->globalGridPart()->gridView(), "model.fixed");
+  assert(false);
+
+//  // loop over all marked subdomains
+//  for (int ii = 0; ii < markedSubdomains.size(); ++ii) {
+//    const size_t subdomain = markedSubdomains.get(ii);
+//    // get the local grid part
+//    const Dune::shared_ptr< const LocalGridPartType > localOversampledGridPart = msGrid.localGridPart(subdomain, true);
+//    // initialize a local solver on the local oversampled gripart
+//    DescriptionType localBoundaryInfoDescription;
+//    localBoundaryInfoDescription["dirichlet"] = "[1; 2; 3; 4; 5; 6]";
+//    localBoundaryInfoDescription["neumann"] = "[7]";
+//    const Dune::shared_ptr< const LocalBoundaryInfoType > localBoundaryInfo(
+//          Dune::Stuff::Grid::BoundaryInfo::create< typename MsGridType::LocalGridViewType >("stuff.grid.boundaryinfo.idbased",
+//                                                                                            localBoundaryInfoDescription));
+//    LocalSolverType localOversampledSolver(localOversampledGridPart, localBoundaryInfo, fixedModel);
+//    localOversampledSolver.init("", devnull);
+//    // get the local solver on the non oversampled gridpart
+//    const LocalSolverType& localSolver = *(globalSolver.localSolver(subdomain));
+//    // create a local function to hold the reconstructed solution
+//    Dune::shared_ptr< LocalDiscreteFunctionType >
+//        localReconstructedSolutionFunction = localOversampledSolver.createAnsatzFunction();
+//    // and project the current reconstructed solution onto the local oversampled gripart
+//    Dune::Stuff::DiscreteFunction::Projection::Lagrange::project(*reconstructedSolutionFunction,
+//                                                                 *localReconstructedSolutionFunction);
+//    // compute the local right hand side f := f - lrs' * A
+//    // * therefore get the local system matrix and right hand side
+//    const auto localSystemMatrixPtr = localOversampledSolver.matrix("diffusion");
+//    assert(localSystemMatrixPtr->numComponents() == 1);
+//    const auto& localSystemMatrix = *(localSystemMatrixPtr->components()[0]);
+//    auto forceVectorPtr = localOversampledSolver.vector("force");
+//    assert(forceVectorPtr->numComponents() == 1);
+//    auto& localRightHandSide = *(forceVectorPtr->components()[0]);
+//    // * get the local reconstructed solution
+//    auto& localReconstructedSolution = *(localReconstructedSolutionFunction->vector());
+//    // * and correct the right hand side
+//    localRightHandSide.backend() -=localReconstructedSolution.backend().transpose() * localSystemMatrix.backend();
+//    // then solve locally on the oversampled domain
+//    Dune::shared_ptr< VectorType > localOversampledSolutionVector = localOversampledSolver.createAnsatzVector();
+//    localOversampledSolver.solve(localOversampledSolutionVector,
+//                                 linearSolverType,
+//                                 linearSolverMaxIter,
+//                                 linearSolverPrecision,
+//                                 "",
+//                                 devnull);
+//    // and restrict the oversampled solution to the local (not oversampled) subdomain
+//    Dune::shared_ptr< LocalDiscreteFunctionType >
+//        localOversampledSolutionFunction = localOversampledSolver.createAnsatzFunction(localOversampledSolutionVector);
+//    Dune::shared_ptr< LocalDiscreteFunctionType > localSolutionFunction
+//        = localSolver.createAnsatzFunction();
+//    Dune::Stuff::DiscreteFunction::Projection::Lagrange::project(*localOversampledSolutionFunction,
+//                                                                 *localSolutionFunction);
+//    // visualize if wished
+//    if (visualize) {
+//      localSolver.visualizeAnsatzVector(localSolutionFunction->vector(),
+//                                        "local_correction_subdomain_" + Dune::Stuff::Common::toString(subdomain) + ".param_" + Dune::Stuff::Common::Parameter::reportWOwhitespace(mu),
+//                                        "local correction on subdomain " + Dune::Stuff::Common::toString(subdomain) + " for parameter " + Dune::Stuff::Common::Parameter::report(mu),
+//                                        "",
+//                                        devnull);
+//    } // visualize if wished
+//    // now just copy the local solution into the return argument
+//    localVectorsOne[subdomain]->backend() = localSolutionFunction->vector()->backend();
+//  } // loop over all marked subdomains
   debug << "done (took " << timer.elapsed() << "sec)" << std::endl;
 } // ... computeLocalCorrections(...)
 
@@ -857,29 +963,61 @@ int main(int argc, char** argv)
 
       // get the paramters
       const DescriptionType& parameterDescription = description.sub("parameter");
-      const ParamType trainingParam
-          = parameterDescription.getDynVector< ParamFieldType >("train", detailedSolver->model()->paramSize());
-      const ParamType testParam
-          = parameterDescription.getDynVector< ParamFieldType >("test",  detailedSolver->model()->paramSize());
-      const std::vector< ParamType > parameters = {trainingParam, testParam};
-
-      // compute the global training snapshot
-      info << "computing training snapshot";
-      if (!debugLogging)
-        info << "... " << std::flush;
-      else
-        info << " for parameter " << Dune::Stuff::Common::Parameter::report(trainingParam) << ":" << std::endl;
-      timer.reset();
-      computeGlobalSnapshot(*detailedSolver, description, trainingParam, localVectors);
-      if (!debugLogging)
-        info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+      std::vector< ParamType > trainingParameters;
+      std::vector< ParamType > testParameters;
+      if (parameterDescription.hasSub("train")) {
+        size_t index = 0;
+        bool search = true;
+        while (search) {
+          if (parameterDescription.hasKey("train." + Dune::Stuff::Common::toString(index))) {
+            trainingParameters.push_back(
+                  parameterDescription.getDynVector< ParamFieldType >("train." + Dune::Stuff::Common::toString(index),
+                                                                      detailedSolver->model()->paramSize()));
+            ++index;
+          } else
+            search = false;
+        }
+      } else if (parameterDescription.hasKey("train")) {
+        trainingParameters.push_back(
+              parameterDescription.getDynVector< ParamFieldType >("train",
+                                                                  detailedSolver->model()->paramSize()));
+      } else
+        DUNE_THROW(Dune::IOError,
+                   "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                   << "to 'train' parameter given!");
+      for (auto p : trainingParameters)
+        assert(p.size() == detailedSolver->model()->paramSize());
+      if (parameterDescription.hasSub("test")) {
+        size_t index = 0;
+        bool search = true;
+        while (search) {
+          if (parameterDescription.hasKey("test." + Dune::Stuff::Common::toString(index))) {
+            testParameters.push_back(
+                  parameterDescription.getDynVector< ParamFieldType >("test." + Dune::Stuff::Common::toString(index),
+                                                                      detailedSolver->model()->paramSize()));
+            ++index;
+          } else
+            search = false;
+        }
+      } else if (parameterDescription.hasKey("test")) {
+        testParameters.push_back(
+              parameterDescription.getDynVector< ParamFieldType >("test",
+                                                                  detailedSolver->model()->paramSize()));
+      } else
+        DUNE_THROW(Dune::IOError,
+                   "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                   << "to 'test' parameter given!");
+      for (auto p : testParameters)
+        assert(p.size() == detailedSolver->model()->paramSize());
 
       // initiaize the reduced basis
-      info << "initializing local reduced bases... " << std::flush;
+      if (!debugLogging)
+        info << "initializing local reduced bases... " << std::flush;
       timer.reset();
-      Dune::shared_ptr< MapperType > mapper = Dune::make_shared< MapperType >();
-      initReducedBasis(localScalarProducts, localVectors, localReducedBases, *mapper);
-      info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+      Dune::shared_ptr< MapperType >
+          mapper = initReducedBasis(*detailedSolver, localScalarProducts, trainingParameters, description, localVectors, localReducedBases);
+      if (!debugLogging)
+        info << " done (took " << timer.elapsed() << "sec)" << std::endl;
 
       // project the detailed operator and functional onto the reduced space
       info << "reducing operator";
@@ -910,9 +1048,9 @@ int main(int argc, char** argv)
       const DescriptionType& enrichmentDescription = description.sub("enrichment");
       const double enrichmentMaxLocalError = enrichmentDescription.get< double >("maxLocalError");
       const size_t enrichmentMaxIterations = enrichmentDescription.get< size_t >("maxIterations");
-      // * then loop over all parameters
-      for (size_t pp = 0; pp < parameters.size(); ++pp) {
-        const ParamType& mu = parameters[pp];
+      // * then loop over all test parameters
+      for (size_t pp = 0; pp < testParameters.size(); ++pp) {
+        const ParamType& mu = testParameters[pp];
         // compute a reduced solution
         info << "solving for parameter " << Dune::Stuff::Common::Parameter::report(mu);
         if (!visualize)
@@ -947,7 +1085,7 @@ int main(int argc, char** argv)
           } // if (debuglogging)
         } // if (visualize)
         // estimate error
-        info << "estimating error";
+        info << "computing local errors";
         if (!debugLogging)
           info << "... " << std::flush;
         else
@@ -963,7 +1101,8 @@ int main(int argc, char** argv)
                                                                         localVectors,
                                                                         localVectorsTwo);
         if (!debugLogging)
-          info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+          info << " done (took " << timer.elapsed() << "sec, max local error is "
+               << std::scientific << localErrors->backend().maxCoeff() << std::fixed << ")" << std::endl;
         // enrich, if max local error is too large
         if (localErrors->backend().maxCoeff() > enrichmentMaxLocalError) {
           msg = "  starting local offline phase  ";
@@ -971,16 +1110,18 @@ int main(int argc, char** argv)
           info << msg << std::endl;
           info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
 
-          // iteate until error is sufficient or we reach max iterations
+          // iterate until error is sufficient or we reach max iterations
           size_t enrichmentIteration = 0;
+          size_t oldBasisSize = 0;
           while (enrichmentIteration < enrichmentMaxIterations
-                 && localErrors->backend().maxCoeff() > enrichmentMaxLocalError) {
+                 && localErrors->backend().maxCoeff() > enrichmentMaxLocalError
+                 && mapper->size() > oldBasisSize) {
             if (debugLogging) {
               msg = "enrichment iteration " + Dune::Stuff::Common::toString(enrichmentIteration);
               info << msg << std::endl;
               info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
             }
-            info << "local errors are: "
+            debug << "local errors are: "
                  << std::scientific << localErrors->backend().transpose() << std::fixed << std::endl;
             // enrich on all subdomains
             MarkerType markedSubdomains(detailedSolver->msGrid()->size());
@@ -1003,42 +1144,60 @@ int main(int argc, char** argv)
                                     localVectors, // <- the local corrections will be in here
                                     localVectorsTwo);
             // extend the local reduced bases (and obtain a new mapper)
+            oldBasisSize = mapper->size();
             mapper = extendReducedBases(description,
                                         markedSubdomains,
                                         localScalarProducts,
-                                        localVectors, // <- this will change the local vector bc of gram schmidt
+                                        localVectors, // <- those will be changed bc of gram schmidt
                                         localReducedBases);
-            // and project the operator and functional
-            if (debugLogging)
-              info << "  reducing operator:" << std::endl;
-            reducedPair = createReducedOperatorFunctional(*detailedSolver,
-                                                          localReducedBases,
-                                                          *mapper,
-                                                          localVector,
-                                                          globalVectorOne,
-                                                          globalVectorTwo);
-            reducedOperator = reducedPair.first;
-            reducedFunctional = reducedPair.second;
-            if (!debugLogging)
-              info << " done (took " << timer.elapsed() << "sec)" << std::endl;
-            // compute the new local errors
-            info << "computing local errors... " << std::flush;
-            timer.reset();
-            computeReducedSolution(*detailedSolver, description, *reducedOperator, *reducedFunctional, mu, reducedSolution);
-            reconstructReducedSolution(*detailedSolver, localReducedBases, *mapper, reducedSolution, localVectors);
-            localErrors = computeLocalErrors(*detailedSolver,
-                                             description,
-                                             localScalarProducts,
-                                             localReducedBases,
-                                             *mapper,
-                                             reducedSolution,
-                                             mu,
-                                             localVectors,
-                                             localVectorsTwo);
-            info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+            if (mapper->size() > oldBasisSize) {
+              // and project the operator and functional
+              if (debugLogging)
+                info << "  reducing operator:" << std::endl;
+              reducedPair = createReducedOperatorFunctional(*detailedSolver,
+                                                            localReducedBases,
+                                                            *mapper,
+                                                            localVector,
+                                                            globalVectorOne,
+                                                            globalVectorTwo);
+              reducedOperator = reducedPair.first;
+              reducedFunctional = reducedPair.second;
+              if (!debugLogging)
+                info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+              // compute the new local errors
+              info << "computing local errors";
+              if (!debugLogging)
+                info << "... " << std::flush;
+              else
+                info << ":" << std::endl;
+              timer.reset();
+              computeReducedSolution(*detailedSolver, description, *reducedOperator, *reducedFunctional, mu, reducedSolution);
+              localErrors = computeLocalErrors(*detailedSolver,
+                                               description,
+                                               localScalarProducts,
+                                               localReducedBases,
+                                               *mapper,
+                                               reducedSolution,
+                                               mu,
+                                               localVectors,
+                                               localVectorsTwo);
+              if (!debugLogging)
+                info << " done (took " << timer.elapsed() << "sec, max local error is "
+                     << std::scientific << localErrors->backend().maxCoeff() << std::fixed << ")" << std::endl;
+            } else {
+              if (!debugLogging)
+                info << " failed" << std::endl;
+            }
             // increase iteration count
             ++enrichmentIteration;
           } // iteate until error is sufficient or we reach max iterations
+          info << "final local errors are: "
+               << std::scientific << localErrors->backend().transpose() << std::fixed << std::endl;
+
+          msg = "  local offline phase finished  ";
+          info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
+          info << msg << std::endl;
+          info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
 
         } // enrich, if max local error is too large
       } // loop over all parameters
