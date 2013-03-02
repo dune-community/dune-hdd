@@ -733,6 +733,79 @@ public:
                   prefix, out);
   }
 
+  void solveFullNeumann(Dune::shared_ptr< VectorType >& solutionVector,
+                        const std::string& linearSolverType,
+                        const size_t& linearSolverMaxIter,
+                        const double linearSolverPrecision,
+                        const std::string prefix,
+                        std::ostream& out) const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " call init() before calling solveFullNeumann()!");
+    // check, that we are really in the nonparametric setting!
+    if (parametric())
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " nonparametric solveFullNeumann() called for a parametric model!");
+    // first of all, get the corect parameters (the model returns empty ones for nonparametric functions)
+    const ParamType mu;
+    const ParamType muDiffusion = model_->mapParam(mu, "diffusion");
+    const ParamType muForce = model_->mapParam(mu, "force");
+    const ParamType muNeumann = model_->mapParam(mu, "neumann");
+    assert(matrices_.find("diffusion") != matrices_.end());
+    assert(vectors_.find("force") != vectors_.end());
+    assert(vectors_.find("neumann") != vectors_.end());
+    assert(vectors_.find("dirichlet") != vectors_.end());
+    const SeparableMatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
+    const SeparableVectorType& forceVector = *(vectors_.find("force")->second);
+    const SeparableVectorType& neumannVector = *(vectors_.find("neumann")->second);
+    Dune::Timer timer;
+    out << prefix << "computing system matrix...   " << std::flush;
+    Dune::shared_ptr< MatrixType > systemMatrix = diffusionMatrix.fix(muDiffusion);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    out << prefix << "computing right hand side... " << std::flush;
+    timer.reset();
+    VectorType rightHandSide;
+    rightHandSide.backend() = forceVector.fix(muForce)->backend()
+        + neumannVector.fix(muNeumann)->backend();
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    out << prefix << "fixing first dof...      " << std::flush;
+    timer.reset();
+    assert(patterns_.find("diffusion") != patterns_.end());
+    for (size_t jj : patterns_.find("diffusion")->second->set(0))
+      systemMatrix->set(0, jj, 0.0);
+    systemMatrix->set(0, 0, 1.0);
+    rightHandSide.set(0, 0.0);
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    out << prefix << "solving linear system (of size " << systemMatrix->rows()
+        << "x" << systemMatrix->cols() << ")" << std::endl;
+    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
+    timer.reset();
+    typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
+    const Dune::shared_ptr< const SolverType > solver(Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType));
+    const unsigned int failure = solver->apply(*systemMatrix,
+                                               rightHandSide,
+                                               *solutionVector,
+                                               linearSolverMaxIter,
+                                               linearSolverPrecision);
+    if (failure)
+      DUNE_THROW(Dune::MathError,
+                 "\n"
+                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " linear solver '" << linearSolverType << "' reported error code " << failure << "!\n"
+                 << "  1: did not converge\n"
+                 << "  2: had numerical issues\n"
+                 << "  3: dude, I have no idea");
+    if (solutionVector->size() != ansatzSpace_->map().size())
+      DUNE_THROW(Dune::MathError,
+                 "\n"
+                 << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
+                 << solutionVector->size() << ", should be " << ansatzSpace_->map().size() << ")!");
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+  } // void solve(...)
+
   void visualizeAnsatzVector(const Dune::shared_ptr< const VectorType > vector,
                              const std::string filename = id() + ".ansatzVector",
                              const std::string name = id() + ".ansatzVector",
