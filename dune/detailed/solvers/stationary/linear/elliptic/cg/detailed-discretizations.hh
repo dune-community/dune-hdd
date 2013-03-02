@@ -148,14 +148,14 @@ public:
       DUNE_THROW(Dune::InvalidStateException, msg.str());
   } // DetailedDiscretizations
 
-  static DescriptionType createSampleDescription(const std::string subName = "")
+  static DescriptionType createSampleDescription(const std::string /*subName*/ = "")
   {
     return DescriptionType();
   } // ... createSampleDescription(...)
 
-  static ThisType* createFromDescription(const Dune::shared_ptr< const GridPartType > _gridPart,
-                                         const Dune::shared_ptr< const ModelType > _model,
-                                         const Dune::shared_ptr< const BoundaryInfoType > _boundaryInfo,
+  static ThisType* createFromDescription(const Dune::shared_ptr< const GridPartType > /*_gridPart*/,
+                                         const Dune::shared_ptr< const ModelType > /*_model*/,
+                                         const Dune::shared_ptr< const BoundaryInfoType > /*_boundaryInfo*/,
                                          const DescriptionType& _description,
                                          const std::string _subName = id())
   {
