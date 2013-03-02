@@ -633,6 +633,16 @@ public:
     return rhs_;
   }
 
+  Dune::shared_ptr< VectorType > vector(const std::string type) const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " call init() before calling vector()!");
+    assert(type == "force");
+    return rhs_;
+  }
+
   void solve(std::vector< Dune::shared_ptr< VectorType > >& solutionVector,
              const std::string linearSolverType = "bicgstab.diagonal",
              const size_t linearSolverMaxIter = 5000,
