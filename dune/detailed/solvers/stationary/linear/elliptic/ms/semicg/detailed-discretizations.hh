@@ -184,6 +184,11 @@ public:
     return boundaryInfo_;
   }
 
+  const RangeFieldType penaltyFactor() const
+  {
+    return penaltyFactor_;
+  }
+
   bool parametric() const
   {
     return model_->parametric();
@@ -641,6 +646,16 @@ public:
                  << " call init() before calling vector()!");
     assert(type == "force");
     return rhs_;
+  }
+
+  Dune::shared_ptr< SeparableMatrixType > matrix(const std::string type) const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " call init() before calling matrix()!");
+    assert(type == "diffusion");
+    return matrix_;
   }
 
   void solve(std::vector< Dune::shared_ptr< VectorType > >& solutionVector,
