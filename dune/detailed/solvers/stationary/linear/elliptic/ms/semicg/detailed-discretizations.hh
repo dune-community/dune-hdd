@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <sstream>
+#include <ostream>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/shared_ptr.hh>
@@ -348,12 +349,24 @@ public:
         // copy the local containers of the subdomain solver
         const Dune::shared_ptr< const SeparableMatrixType > localMatrix = localSolvers_[subdomain]->systemMatrix("diffusion");
         assert(matrix_->numComponents() == localMatrix->numComponents());
-        for (size_t qq = 0; qq < matrix_->numComponents(); ++qq)
+        for (size_t qq = 0; qq < matrix_->numComponents(); ++qq) {
+//          writeMatrixToDisc(*(localMatrix->components()[qq]),
+//                            *(localSolvers_[subdomain]->systemPattern("diffusion")),
+//                            "localMatrix_subdomain_"
+//                            + Dune::Stuff::Common::toString(subdomain)
+//                            + "_component_"
+//                            + Dune::Stuff::Common::toString(qq));
+//          std::cout << "== localMatrix_subdomain_"
+//                       + Dune::Stuff::Common::toString(subdomain)
+//                       + "_component_"
+//                       + Dune::Stuff::Common::toString(qq) << " =======================" << std::endl;
+//          std::cout << localMatrix->components()[qq]->backend();
           copyLocalToGlobalMatrix(localMatrix->components()[qq],
                                   localSolvers_[subdomain]->systemPattern("diffusion"),
                                   subdomain,
                                   subdomain,
                                   matrix_->components()[qq]);
+        }
         copyLocalToGlobalVector(localSolvers_[subdomain]->systemVector("force")->fix(), subdomain, rhs_);
         // for the boundary contribution
         const typename LocalSolverType::AnsatzSpaceType& innerAnsatzSpace = *(localSolvers_[subdomain]->ansatzSpace());
@@ -385,12 +398,24 @@ public:
           //   * assemble them
           assembleBoundaryContribution(subdomain, boundaryMatrix/*, boundaryRhs*/);
           //   * and copy them into the global matrix and vector
-          for (size_t qq = 0; qq < boundaryMatrix->numComponents(); ++qq)
+          for (size_t qq = 0; qq < boundaryMatrix->numComponents(); ++qq) {
+//            writeMatrixToDisc(*(boundaryMatrix->components()[qq]),
+//                              *boundaryPattern,
+//                              "boundaryMatrix_subdomain_"
+//                              + Dune::Stuff::Common::toString(subdomain)
+//                              + "_component_"
+//                              + Dune::Stuff::Common::toString(qq));
+//            std::cout << "== boundaryMatrix_subdomain_"
+//                         + Dune::Stuff::Common::toString(subdomain)
+//                         + "_component_"
+//                         + Dune::Stuff::Common::toString(qq) << " =======================" << std::endl;
+//            std::cout << localMatrix->components()[qq]->backend();
             copyLocalToGlobalMatrix(boundaryMatrix->components()[qq],
                                     boundaryPattern,
                                     subdomain,
                                     subdomain,
                                     matrix_->components()[qq]);
+          }
 //          copyLocalToGlobalVector(boundaryRhs, subdomain, rhs_);
         } // if (msGrid_->boundary(subdomain))
         // walk the neighbors
@@ -727,6 +752,16 @@ private:
     VectorType tmpSolutionVector(testMapper_.size());
     typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
     const Dune::shared_ptr< const SolverType > solver(Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType));
+//    writeMatrixToDisc(*systemMatrix,
+//                      *pattern_,
+//                      "matrix.out");
+//    writeVectorToDisc(*rhs_,
+//                      "vector.out");
+//    std::cout << "== system matrix ==============================" << std::endl;
+//    std::cout << systemMatrix->backend() << std::endl;
+//    std::cout << "== right hand side ==============================" << std::endl;
+//    std::cout << rhs_->backend().transpose() << std::endl;
+//    std::cout << "================================" << std::endl;
     const unsigned int failure = solver->apply(*systemMatrix,
                                                *rhs_,
                                                tmpSolutionVector,
@@ -1088,6 +1123,24 @@ private:
     for (auto ipdgFlux : ipdgFluxes)
       delete ipdgFlux;
   } // void assembleCouplingContribution(...)
+
+  void writeMatrixToDisc(const MatrixType& matrix,
+                         const PatternType& pattern,
+                         const std::string filename) const
+  {
+    std::ofstream file(filename);
+    for (size_t ii = 0; ii < pattern.size(); ++ii)
+      for (size_t jj : pattern.set(ii))
+        file << ii << " " << jj << " " << matrix.get(ii,jj) << std::endl;
+  }
+
+  void writeVectorToDisc(const VectorType& vector,
+                         const std::string filename) const
+  {
+    std::ofstream file(filename);
+    for (int ii = 0; ii < vector.size(); ++ii)
+      file << ii << " " << vector.get(ii) << std::endl;
+  }
 
   const Dune::shared_ptr< const ModelType > model_;
   const Dune::shared_ptr< const MsGridType > msGrid_;
