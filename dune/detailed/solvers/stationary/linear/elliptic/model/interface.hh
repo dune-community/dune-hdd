@@ -253,9 +253,13 @@ private:
     if (function.parametric()) {
       if (function.separable()) {
         const std::vector< std::string >& paramExplanations = function.paramExplanation();
-        for (size_t qq = 0; qq < function.numComponents(); ++qq)
+        for (size_t qq = 0; qq < function.numCoefficients(); ++qq)
           ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
                           name + "_component_" + Dune::Stuff::Common::toString(qq) + ": " + paramExplanations[qq],
+                          new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
+        if (function.numComponents() > function.numCoefficients())
+          ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
+                          name + "_component_" + Dune::Stuff::Common::toString(function.numCoefficients()),
                           new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
       } else
         DUNE_THROW(Dune::InvalidStateException,
