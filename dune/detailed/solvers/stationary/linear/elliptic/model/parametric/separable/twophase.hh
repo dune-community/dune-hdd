@@ -42,12 +42,13 @@ public:
   typedef typename FunctionType::RangeType  RangeType;
 
 private:
-  typedef Dune::Stuff::Function::Product< FunctionType, FunctionType > ProductFunctionType;
+  typedef Dune::Stuff::Function::Product< DomainFieldType, dimDomain, RangeFieldType, dimRange,
+                                          DomainFieldType, dimDomain, RangeFieldType, dimRange > ProductFunctionType;
 
 public:
   static std::string id()
   {
-    return BaseType::BaseType::id() + ".parametric.separable.spe10.model1";
+    return BaseType::BaseType::id() + ".parametric.separable.twophase";
   }
 
   SeparableTwoPhase(const Dune::shared_ptr< const FunctionType > _totalMobility,
@@ -55,7 +56,8 @@ public:
                     const Dune::shared_ptr< const FunctionType > _force,
                     const Dune::shared_ptr< const FunctionType > _dirichlet,
                     const Dune::shared_ptr< const FunctionType > _neumann)
-    : BaseType(createDiffusion(_totalMobility, _permeability),
+    : BaseType(Dune::make_shared< ProductFunctionType >(_totalMobility,
+                                                        _permeability),
                _force,
                _dirichlet,
                _neumann)
@@ -64,7 +66,7 @@ public:
   static Dune::ParameterTree createSampleDescription(const std::string subName = "")
   {
     Dune::ParameterTree description;
-    description["totalMobility.type"] = "function.parametric.separable.default";
+    description["totalMobility.type"] = "function.separable.default";
     description["totalMobility.name"] = "total mobility (two drops)";
     description["totalMobility.order"] = "2";
     description["totalMobility.component.0"] = "-1.0*exp(-1.0*(((x[0]-0.75)*(x[0]-0.75))/(2*0.1*0.1)))";
@@ -120,17 +122,6 @@ public:
                     BaseType::createFunction("dirichlet", description),
                     BaseType::createFunction("neumann", description));
   } // ... createFromDescription(...)
-
-private:
-  static const Dune::shared_ptr< const FunctionType > createDiffusion(const Dune::shared_ptr< const FunctionType > _totalMobility,
-                                                                      const Dune::shared_ptr< const FunctionType > _permeability)
-  {
-    const Dune::shared_ptr< const ProductFunctionType >
-        diffusion = Dune::make_shared< const ProductFunctionType >(_totalMobility,
-                                                                   _permeability);
-    return diffusion;
-  }
-
 }; // class SeparableTwoPhase< DomainFieldImp, 2, RangeFieldImp, 1 >
 
 
