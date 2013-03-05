@@ -31,6 +31,11 @@ namespace Elliptic {
 namespace Model {
 
 
+// forward, to allow for some friendlyness
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+class SeparableTwoPhase;
+
+
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
 class SeparableDefault
   : public Interface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
@@ -298,6 +303,8 @@ private:
                                                                                   dimRange >(type,
                                                                                              functionDescription));
   } // ... createFunction(...)
+
+  friend class SeparableTwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange >;
 
   shared_ptr< const FunctionType > diffusion_;
   shared_ptr< const FunctionType > force_;
