@@ -175,8 +175,8 @@ void writeDescriptionFile(const std::string filename, const std::string _id = id
   file << "test.0    = [0.1; 0.1; 1.0; 1.0; 0.1; 0.1; 1.0; 1.0]" << std::endl;
   file << "test.1    = [1.0; 1.0; 0.1; 0.1; 1.0; 1.0; 0.1; 0.1]" << std::endl;
   file << "[solver.linear]" << std::endl;
-  file << "type      = bicgstab.diagonal" << std::endl;
-  file << "            bicgstab.ilut" << std::endl;
+  file << "type      = bicgstab.ilut" << std::endl;
+  file << "            bicgstab.diagonal" << std::endl;
   file << "            bicgstab" << std::endl;
   file << "            cg.diagonal" << std::endl;
   file << "            cg" << std::endl;
@@ -271,7 +271,7 @@ int run(int argc, char** argv)
                                                             RangeFieldType, dimRange > ModelType;
     const Dune::shared_ptr< const ModelType >
         model(Stationary::Linear::Elliptic::Model::create<  DomainFieldType, dimDomain,
-                                                              RangeFieldType, dimRange >(modelType, description));
+                                                            RangeFieldType, dimRange >(modelType, description));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
     if (model->parametric() && !model->separable())
       DUNE_THROW(Dune::NotImplemented,
