@@ -35,7 +35,11 @@ class Default;
 
 // forward to allow for specialization
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class Interface;
+class Interface
+{
+public:
+  Interface() = delete;
+};
 
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp >
