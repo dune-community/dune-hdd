@@ -16,6 +16,7 @@
 #include "model/default.hh"
 #include "model/thermalblock.hh"
 #include "model/parametric/separable/default.hh"
+#include "model/parametric/separable/twophase.hh"
 #include "model/parametric/separable/thermalblock.hh"
 
 namespace Dune {
@@ -33,6 +34,7 @@ std::vector< std::string > types()
   ret.push_back("model.stationary.linear.elliptic.default");
   ret.push_back("model.stationary.linear.elliptic.thermalblock");
   ret.push_back("model.stationary.linear.elliptic.parametric.separable.default");
+  ret.push_back("model.stationary.linear.elliptic.parametric.separable.twophase");
   ret.push_back("model.stationary.linear.elliptic.parametric.separable.thermalblock");
   return ret;
 }
@@ -53,6 +55,11 @@ Dune::ParameterTree createSampleDescription(const std::string type)
   } else if (type == "model.stationary.linear.elliptic.parametric.separable.default") {
     typedef Stationary::Linear::Elliptic::Model::SeparableDefault<  DomainFieldType, dimDomain,
                                                                     RangeFieldType, dimRange >
+      ModelType;
+    return ModelType::createSampleDescription();
+  } else if (type == "model.stationary.linear.elliptic.parametric.separable.twophase") {
+    typedef Stationary::Linear::Elliptic::Model::SeparableTwoPhase<  DomainFieldType, dimDomain,
+                                                                        RangeFieldType, dimRange >
       ModelType;
     return ModelType::createSampleDescription();
   } else if (type == "model.stationary.linear.elliptic.parametric.separable.thermalblock") {
@@ -82,6 +89,11 @@ Interface< DomainFieldType, dimDomain, RangeFieldType, dimRange >*
   } else if (type == "model.stationary.linear.elliptic.parametric.separable.default") {
     typedef Stationary::Linear::Elliptic::Model::SeparableDefault<  DomainFieldType, dimDomain,
                                                                     RangeFieldType, dimRange >
+      ModelType;
+    return new ModelType(ModelType::createFromDescription(description));
+  } else if (type == "model.stationary.linear.elliptic.parametric.separable.twophase") {
+    typedef Stationary::Linear::Elliptic::Model::SeparableTwoPhase<  DomainFieldType, dimDomain,
+                                                                        RangeFieldType, dimRange >
       ModelType;
     return new ModelType(ModelType::createFromDescription(description));
   } else if (type == "model.stationary.linear.elliptic.parametric.separable.thermalblock") {
