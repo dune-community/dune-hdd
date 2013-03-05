@@ -174,7 +174,7 @@ public:
     description["force.paramMin"] = "[0.0; 0.0]";
     description["force.paramMax"] = "[1.0; 1.0]";
     description["dirichlet.type"] = "function.parametric.separable.default";
-    description["dirichlet.name"] = "neumann";
+    description["dirichlet.name"] = "dirichlet";
     description["dirichlet.order"] = "0";
     description["dirichlet.component.0"] = "x[0]";
     description["dirichlet.component.1"] = "2*x[0]";
@@ -259,52 +259,7 @@ public:
                  << _id << "')!");
     // the parameters' order is diffusion, force, dirichlet, neumann
     return localMu;
-  }
-
-#if 0
-  virtual ParamType getDiffusionParam(const ParamType& mu) const
-  {
-    assert(mu.size() == paramSize_);
-    assert(diffusion_->parametric() && "Only call getDiffusionParam() if diffusion()->parametric()!");
-    return mu.segment(0, diffusion_->paramSize());
-  } // virtual ParamType getDiffusionParam(const ParamType& mu) const
-
-  virtual ParamType getForceParam(const ParamType& mu) const
-  {
-    assert(mu.size() == paramSize_);
-    assert(force_->parametric() && "Only call getForceParam() if force()->parametric()!");
-    size_t offset = 0;
-    if (diffusion_->parametric())
-      offset += diffusion_->paramSize();
-    return mu.segment(offset, force_->paramSize());
-  } // virtual ParamType getForceParam(const ParamType& mu) const
-
-  virtual ParamType getDirichletParam(const ParamType& mu) const
-  {
-    assert(mu.size() == paramSize_);
-    assert(dirichlet_->parametric() && "Only call getDirichletParam() if dirichlet()->parametric()!");
-    size_t offset = 0;
-    if (diffusion_->parametric())
-      offset += diffusion_->paramSize();
-    if (force_->parametric())
-      offset += force_->paramSize();
-    return mu.segment(offset, dirichlet_->paramSize());
-  } // virtual ParamType getDirichletParam(const ParamType& mu) const
-
-  virtual ParamType getNeumannParam(const ParamType& mu) const
-  {
-    assert(mu.size() == paramSize_);
-    assert(dirichlet_->parametric() && "Only call getNeumannParam() if neumann()->parametric()!");
-    size_t offset = 0;
-    if (diffusion_->parametric())
-      offset += diffusion_->paramSize();
-    if (force_->parametric())
-      offset += force_->paramSize();
-    if (dirichlet_->parametric())
-      offset += dirichlet_->paramSize();
-    return mu.segment(offset, neumann_->paramSize());
-  } // virtual ParamType getNeumannParam(const ParamType& mu) const
-#endif
+  } // ... mapParam(...)
 
   virtual Dune::shared_ptr< const FunctionType > diffusion() const
   {
@@ -326,79 +281,6 @@ public:
     return neumann_;
   }
 
-//  virtual const Dune::shared_ptr< const NonparametricType > fix(const ParamType& mu) const
-//  {
-//    assert(mu.size() == paramSize_);
-//    // create fixed versions of all data functions
-//    typedef Dune::RB::Function::Fixed<  DomainFieldType, dimDomain,
-//                                        RangeFieldType, dimRange,
-//                                        ParamFieldType, maxParams >
-//        FixedFunctionType;
-//    shared_ptr< const DiffusionType > fixedDiffusion;
-//    shared_ptr< const ForceType > fixedForce;
-//    shared_ptr< const DirichletType > fixedDirichlet;
-//    shared_ptr< const DirichletType > fixedNeumann;
-//    size_t offset = 0u;
-//    //   * diffusion
-//    if (diffusion_->parametric()) {
-//      //   * get corresponding parameter entries
-//      const size_t diffusionParamSize = diffusion_->paramSize();
-//      const ParamType diffusionParam = mu.segment(offset, diffusionParamSize);
-//      offset += diffusionParamSize;
-//      //   * and create the nonparametric function
-//      fixedDiffusion = shared_ptr< const FixedFunctionType >(new FixedFunctionType(diffusion_, diffusionParam));
-
-//    } else
-//      fixedDiffusion = diffusion_;
-//    //   * force
-//    if (force_->parametric()) {
-//      //   * get corresponding parameter entries
-//      const size_t forceParamSize = force_->paramSize();
-//      const ParamType forceParam = mu.segment(offset, forceParamSize);
-//      offset += forceParamSize;
-//      //   * and create the nonparametric function
-//      fixedForce = shared_ptr< const FixedFunctionType >(new FixedFunctionType(force_, forceParam));
-
-//    } else
-//      fixedForce = force_;
-//    //   * dirichlet
-//    if (dirichlet_->parametric()) {
-//      //   * get corresponding parameter entries
-//      const size_t dirichletParamSize = dirichlet_->paramSize();
-//      const ParamType dirichletParam = mu.segment(offset, dirichletParamSize);
-//      offset += dirichletParamSize;
-//      //   * and create the nonparametric function
-//      fixedDirichlet = shared_ptr< const FixedFunctionType >(new FixedFunctionType(dirichlet_, dirichletParam));
-
-//    } else
-//      fixedDirichlet = dirichlet_;
-//    //   * neumann
-//    if (neumann_->parametric()) {
-//      //   * get corresponding parameter entries
-//      const size_t neumannParamSize = neumann_->paramSize();
-//      const ParamType neumannParam = mu.segment(offset, neumannParamSize);
-//      offset += neumannParamSize;
-//      //   * and create the nonparametric function
-//      fixedNeumann = shared_ptr< const FixedFunctionType >(new FixedFunctionType(neumann_, neumannParam));
-
-//    } else
-//      fixedNeumann = neumann_;
-//    // create and return the fixed model
-//    typedef typename Dune::Detailed::Solvers::Stationary::Linear::Elliptic::Model::Default< DomainFieldType, dimDomain,
-//                                                                                            RangeFieldType, dimRange >
-//        NonSeparableDefaultModeltype;
-//    const NonSeparableDefaultModeltype* fixedModel(new NonSeparableDefaultModeltype(fixedDiffusion,
-//                                                                                      fixedForce,
-//                                                                                      fixedDirichlet,
-//                                                                                      fixedNeumann,
-//                                                                                      diffusionOrder_,
-//                                                                                      forceOrder_,
-//                                                                                      dirichletOrder_,
-//                                                                                      neumannOrder_));
-//    const shared_ptr< const NonparametricType > ret(fixedModel);
-//    return ret;
-//  } // virtual const Dune::shared_ptr< const NonparametricType > fix(const ParamType& mu) const
-
 private:
   static Dune::shared_ptr< const FunctionType > createFunction(const std::string& _id,
                                                                const Dune::Stuff::Common::ExtendedParameterTree& _description)
@@ -411,9 +293,12 @@ private:
       type = functionDescription.get< std::string >("type");
     else
       type = "function.expression";
-    return Dune::shared_ptr< const FunctionType >(Dune::Stuff::Function::create< DomainFieldType, dimDomain, RangeFieldType, dimRange >(type,
-                                                                                                 functionDescription));
-  }
+    return Dune::shared_ptr< const FunctionType >(Dune::Stuff::Function::create<  DomainFieldType,
+                                                                                  dimDomain,
+                                                                                  RangeFieldType,
+                                                                                  dimRange >(type,
+                                                                                             functionDescription));
+  } // ... createFunction(...)
 
   shared_ptr< const FunctionType > diffusion_;
   shared_ptr< const FunctionType > force_;
