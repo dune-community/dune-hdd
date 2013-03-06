@@ -148,6 +148,10 @@ public:
 
   virtual Dune::shared_ptr< const ThisType > fix(const ParamType& mu) const
   {
+    if (!parametric() && mu.size() != 0)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " do not call fix(mu) with a nonempty mu for a nonparametric model (check parametric() == true beforehand)!");
     typedef Dune::Stuff::Function::Fixed< DomainFieldType, dimDomain, RangeFieldType, dimRange > FixedFunctionType;
     typedef Default< DomainFieldType, dimDomain, RangeFieldType, dimRange > DefaultModelType;
     Dune::shared_ptr< DefaultModelType >
