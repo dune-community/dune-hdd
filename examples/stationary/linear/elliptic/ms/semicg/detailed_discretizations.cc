@@ -89,67 +89,25 @@ void writeDescriptionFile(std::string filename)
   file.open(filename);
   file << "[" << id() << "]" << std::endl;
   file << "model = model.stationary.linear.elliptic.parametric.separable.thermalblock" << std::endl;
-  file << "        model.stationary.linear.elliptic.default" << std::endl;
-  file << "        model.stationary.linear.elliptic.thermalblock" << std::endl;
   file << "visualize = true" << std::endl;
   file << "[grid.multiscale.provider.cube]" << std::endl;
-  file << "lowerLeft = [0.0; 0.0; 0.0]" << std::endl;
-  file << "upperRight = [1.0; 1.0; 1.0]" << std::endl;
-  file << "numElements = [32; 32; 32]" << std::endl;
+  file << "lowerLeft = [0.0; 0.0]" << std::endl;
+  file << "upperRight = [1.0; 1.0]" << std::endl;
+  file << "numElements = [64; 64]" << std::endl;
   file << "boundaryId = 7 # a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 in 3d (hopefully)" << std::endl;
-  file << "partitions = [2; 2; 2]" << std::endl;
-  file << "oversamplingLayers = 4" << std::endl;
+  file << "partitions = [2; 2]" << std::endl;
+  file << "oversamplingLayers = 8" << std::endl;
   file << "[detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed-discretizations]" << std::endl;
   file << "penaltyFactor = 100.0" << std::endl;
   file << "linearsolver.type = bicgstab.ilut" << std::endl;
-  file << "                    bicgstab.diagonal" << std::endl;
-  file << "                    bicgstab" << std::endl;
-  file << "                    cg.diagonal" << std::endl;
-  file << "                    cg" << std::endl;
   file << "linearsolver.maxIter   = 5000"  << std::endl;
   file << "linearsolver.precision = 1e-12"  << std::endl;
-  file << "[model.stationary.linear.elliptic.default]" << std::endl;
-  file << "diffusion.order      = 0"  << std::endl;
-  file << "diffusion.variable   = x" << std::endl;
-  file << "diffusion.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "diffusion.name       = constant diffusion"  << std::endl;
-  file << "force.order      = 0"  << std::endl;
-  file << "force.variable   = x" << std::endl;
-  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "force.name       = constant force"  << std::endl;
-  file << "dirichlet.order      = 1"  << std::endl;
-  file << "dirichlet.variable   = x" << std::endl;
-  file << "dirichlet.expression = [0.0; 0.0; 0.0]"  << std::endl;
-  file << "dirichlet.name       = trivial dirichlet"  << std::endl;
-  file << "neumann.order      = 0"  << std::endl;
-  file << "neumann.variable   = x" << std::endl;
-  file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
-  file << "neumann.name       = trivial neumann"  << std::endl;
-  file << "[model.stationary.linear.elliptic.thermalblock]" << std::endl;
-  file << "diffusion.order = 0"  << std::endl;
-  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
-  file << "diffusion.values      = [1.0; 10.0; 3.0; 2.1]"  << std::endl;
-  file << "diffusion.name        = checkerboard diffusion"  << std::endl;
-  file << "force.name       = constant force"  << std::endl;
-  file << "force.order      = 0"  << std::endl;
-  file << "force.variable   = x" << std::endl;
-  file << "force.expression = [1.0; 1.0; 1.0]"  << std::endl;
-  file << "dirichlet.name       = trivial dirichlet"  << std::endl;
-  file << "dirichlet.order      = 0"  << std::endl;
-  file << "dirichlet.variable   = x" << std::endl;
-  file << "dirichlet.expression = [0.0; 0.0; 0.0]"  << std::endl;
-  file << "neumann.name       = trivial neumann"  << std::endl;
-  file << "neumann.order      = 0"  << std::endl;
-  file << "neumann.variable   = x" << std::endl;
-  file << "neumann.expression = [0.0; 0.0; 0.0]"  << std::endl;
   file << "[model.stationary.linear.elliptic.parametric.separable.thermalblock]" << std::endl;
-  file << "diffusion.lowerLeft   = [0.0; 0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.upperRight  = [1.0; 1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.numElements = [2; 2; 2]"  << std::endl;
-  file << "diffusion.paramMin    = [0.1; 0.1; 0.1; 0.1]" << std::endl;
-  file << "diffusion.paramMax    = [10.0; 10.0; 10.0; 10.0]" << std::endl;
+  file << "diffusion.lowerLeft   = [0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
+  file << "diffusion.upperRight  = [1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
+  file << "diffusion.numElements = [1; 2]"  << std::endl;
+  file << "diffusion.paramMin    = [0.1; 0.1]" << std::endl;
+  file << "diffusion.paramMax    = [1.0; 1.0]" << std::endl;
   file << "diffusion.order       = 0" << std::endl;
   file << "diffusion.name        = checkerboard diffusion" << std::endl;
   file << "force.variable   = x" << std::endl;
@@ -169,19 +127,20 @@ void writeDescriptionFile(std::string filename)
   file << "debug = false" << std::endl;
   file << "file  = false" << std::endl;
   file << "[parameter]" << std::endl;
-  file << "fixed = [1.0; 1.0; 1.0; 1.0]" << std::endl;
-  file << "train.0 = [0.1; 0.1; 1.0; 1.0]" << std::endl;
-  file << "train.1 = [1.0; 1.0; 0.1; 0.1]" << std::endl;
-  file << "test.0  = [0.1; 0.1; 1.0; 1.0]" << std::endl;
-  file << "test.1  = [1.0; 1.0; 0.1; 0.1]" << std::endl;
+  file << "fixed = [1.0; 1.0]" << std::endl;
+  file << "train.0 = [0.1; 1.0]" << std::endl;
+  file << "test.0  = [0.1; 1.0]" << std::endl;
+  file << "test.1  = [1.0; 0.1]" << std::endl;
   file << "[reducedBasis]" << std::endl;
   file << "gramSchmidt = true" << std::endl;
   file << "[enrichment]" << std::endl;
   file << "boundaryInfo = stuff.grid.boundaryinfo.alldirichlet" << std::endl;
-  file << "maxLocalError = 1e-4" << std::endl;
+  file << "maxLocalError = 1e-3" << std::endl;
   file << "maxIterations = 10" << std::endl;
   file << "gramSchmidt = true" << std::endl;
   file << "gramSchmidtTolerance = 1e-10" << std::endl;
+  file << "[markSubdomains]" << std::endl;
+  file << "strategy = all" << std::endl;
   file.close();
 } // void ensureParamFile()
 
@@ -552,9 +511,6 @@ Dune::shared_ptr< MapperType > extendReducedBases(const DescriptionType& descrip
   // gram schmidt
   const bool applyGramSchmidt = description.get< bool >("enrichment.gramSchmidt", true);
   const double gramSchmidtTolerance = description.get< double >("enrichment.gramSchmidtTolerance", 1e-10);
-  // also creeate a new mapper
-  Dune::shared_ptr< MapperType > mapper = Dune::make_shared< MapperType >();
-  mapper->prepare();
   // loop over all marked subdomains
   for (int ii = 0; ii < markedSubdomains.size(); ++ii) {
     const size_t subdomain = markedSubdomains.get(ii);
@@ -582,9 +538,12 @@ Dune::shared_ptr< MapperType > extendReducedBases(const DescriptionType& descrip
       debug << "done (from " << oldSize << " to " << localReducedBasis.cols() << ", took " << timer.elapsed() << "sec)" << std::endl;
     } else
       debug << "failed" << std::endl;
-    // mapper
-    mapper->add(subdomain, localReducedBasis.cols());
   } // loop over all marked subdomains
+  // also creeate a new mapper
+  Dune::shared_ptr< MapperType > mapper = Dune::make_shared< MapperType >();
+  mapper->prepare();
+  for (size_t ii = 0; ii < localReducedBases.size(); ++ii)
+    mapper->add(ii, localReducedBases[ii]->cols());
   mapper->finalize();
   return mapper;
 } // ... extendReducedBases(...)
@@ -879,6 +838,36 @@ VectorType computeLocalErrors(const SolverType& fixedGlobalSolver,
 
   return localErrors;
 } // ... computeLocalErrors(...)
+
+
+MarkerType markSubdomains(const DescriptionType& description,
+                          const VectorType& localErrors)
+{
+  const std::string strategy = description.get< std::string >("markSubdomains.strategy", "factorTimesMean");
+  MarkerType markedSubdomains;
+  if (strategy == "factorTimesMean") {
+    const RangeFieldType factor = description.get< RangeFieldType >("markSubdomains.markingFactor", 1.0);
+    const RangeFieldType mean = localErrors.backend().mean();
+    const auto which = (localErrors.backend().array() > factor*mean);
+    markedSubdomains = MarkerType(0);
+    for (int ss = 0; ss < localErrors.size(); ++ss) {
+      if (which[ss]) {
+        const int oldSize = markedSubdomains.size();
+        markedSubdomains.backend().conservativeResize(oldSize + 1);
+        markedSubdomains.set(oldSize, ss);
+      }
+    }
+  } else if (strategy == "all") {
+    markedSubdomains = MarkerType(localErrors.size());
+    for (int ss = 0; ss < localErrors.size(); ++ss)
+      markedSubdomains.set(ss, ss);
+  } else
+    DUNE_THROW(Dune::InvalidStateException,
+               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+               << " wrong 'markSubdomains.strategy' given (has to be one of 'factorTimesMean', 'all', is'"
+               << strategy << "')!");
+  return markedSubdomains;
+} // ... markSubdomains(...)
 
 
 void computeLocalCorrections(const SolverType& globalSolver,
@@ -1223,10 +1212,12 @@ int main(int argc, char** argv)
           // iterate until error is sufficient or we reach max iterations
           size_t enrichmentIteration = 0;
           size_t oldBasisSize = 0;
-          double oldMinLocalError = localErrors.backend().minCoeff();
+//          double oldMinLocalError = localErrors.backend().minCoeff();
+          std::vector< VectorType > localErrorsVectors;
+          localErrorsVectors.push_back(localErrors);
           while (enrichmentIteration < enrichmentMaxIterations
                  && localErrors.backend().maxCoeff() > enrichmentMaxLocalError
-                 && !(oldMinLocalError < localErrors.backend().minCoeff())
+//                 && !(oldMinLocalError < localErrors.backend().minCoeff())
                  && mapper->size() > oldBasisSize) {
             if (debugLogging) {
               msg = "enrichment iteration " + Dune::Stuff::Common::toString(enrichmentIteration);
@@ -1235,10 +1226,11 @@ int main(int argc, char** argv)
             }
             debug << "local errors are: "
                  << std::scientific << localErrors.backend().transpose() << std::fixed << std::endl;
-            // enrich on all subdomains
-            MarkerType markedSubdomains(fixedGlobalSolver->msGrid()->size());
-            for (size_t ii = 0; ii < fixedGlobalSolver->msGrid()->size(); ++ii)
-              markedSubdomains.set(ii, ii);
+//            // enrich on all subdomains
+//            MarkerType markedSubdomains(fixedGlobalSolver->msGrid()->size());
+//            for (size_t ii = 0; ii < fixedGlobalSolver->msGrid()->size(); ++ii)
+//              markedSubdomains.set(ii, ii);
+            MarkerType markedSubdomains = markSubdomains(description, localErrors);
             info << "enriching";
             if (!debugLogging)
               info << "... " << std::flush;
@@ -1296,7 +1288,7 @@ int main(int argc, char** argv)
                                              "",
                                              devnull);
               } // if (visualize)
-              oldMinLocalError = localErrors.backend().minCoeff();
+//              oldMinLocalError = localErrors.backend().minCoeff();
               localErrors = computeLocalErrors(*fixedGlobalSolver,
                                                description,
                                                detailedOperator,
@@ -1309,8 +1301,9 @@ int main(int argc, char** argv)
                                                tmpLocalVectorsA,
                                                tmpLocalVectorsB,
                                                tmpGlobalVectorA);
-                info << " done (took " << timer.elapsed() << "sec, max local error is "
-                     << std::scientific << localErrors.backend().maxCoeff() << std::fixed << ")" << std::endl;
+              localErrorsVectors.push_back(localErrors);
+              info << " done (took " << timer.elapsed() << "sec, max local error is "
+                   << std::scientific << localErrors.backend().maxCoeff() << std::fixed << ")" << std::endl;
             } else {
               if (!debugLogging)
                 info << " failed" << std::endl;
@@ -1320,6 +1313,19 @@ int main(int argc, char** argv)
           } // iteate until error is sufficient or we reach max iterations
           info << "final local errors are: "
                << std::scientific << localErrors.backend().transpose() << std::fixed << std::endl;
+
+          std::ofstream localErrorFile("localErrors_param_" + Dune::Stuff::Common::Parameter::reportWOwhitespace(mu));
+          if (localErrorFile.is_open()) {
+            for (size_t ii = 0; ii < localErrorsVectors.size(); ++ii) {
+              localErrorFile << "min: " << std::scientific << localErrorsVectors[ii].backend().minCoeff() << " | "
+                             << "max: " << std::scientific << localErrorsVectors[ii].backend().maxCoeff() << " | "
+                             << "mean: " << std::scientific << localErrorsVectors[ii].backend().mean() << " | ";
+              for (int jj = 0; jj < localErrorsVectors[ii].size(); ++jj) {
+                localErrorFile << std::scientific << localErrorsVectors[ii].get(jj) << " | ";
+              }
+              localErrorFile << std::endl;
+            }
+          }
 
           msg = "  local offline phase finished  ";
           info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
