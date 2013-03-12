@@ -89,14 +89,14 @@ void writeDescriptionFile(std::string filename)
   file.open(filename);
   file << "[" << id() << "]" << std::endl;
   file << "model = model.stationary.linear.elliptic.parametric.separable.thermalblock" << std::endl;
-  file << "visualize = true" << std::endl;
+  file << "visualize = false" << std::endl;
   file << "[grid.multiscale.provider.cube]" << std::endl;
   file << "lowerLeft = [0.0; 0.0]" << std::endl;
   file << "upperRight = [1.0; 1.0]" << std::endl;
-  file << "numElements = [64; 64]" << std::endl;
+  file << "numElements = [50; 50]" << std::endl;
   file << "boundaryId = 7 # a cube from the factory gets the boundary ids 1 to 4 ind 2d and 1 to 6 in 3d (hopefully)" << std::endl;
   file << "partitions = [2; 2]" << std::endl;
-  file << "oversamplingLayers = 8" << std::endl;
+  file << "oversamplingLayers = 10" << std::endl;
   file << "[detailed.solvers.stationary.linear.elliptic.ms.semicg.detailed-discretizations]" << std::endl;
   file << "penaltyFactor = 100.0" << std::endl;
   file << "linearsolver.type = bicgstab.ilut" << std::endl;
@@ -105,9 +105,9 @@ void writeDescriptionFile(std::string filename)
   file << "[model.stationary.linear.elliptic.parametric.separable.thermalblock]" << std::endl;
   file << "diffusion.lowerLeft   = [0.0; 0.0] # this should be a bounding box of the above selected grid!" << std::endl;
   file << "diffusion.upperRight  = [1.0; 1.0] # this should be a bounding box of the above selected grid!" << std::endl;
-  file << "diffusion.numElements = [1; 2]"  << std::endl;
-  file << "diffusion.paramMin    = [0.1; 0.1]" << std::endl;
-  file << "diffusion.paramMax    = [1.0; 1.0]" << std::endl;
+  file << "diffusion.numElements = [6; 6]"  << std::endl;
+  file << "diffusion.paramMin    = [0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1; 0.1]" << std::endl;
+  file << "diffusion.paramMax    = [1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0]" << std::endl;
   file << "diffusion.order       = 0" << std::endl;
   file << "diffusion.name        = checkerboard diffusion" << std::endl;
   file << "force.variable   = x" << std::endl;
@@ -127,20 +127,22 @@ void writeDescriptionFile(std::string filename)
   file << "debug = false" << std::endl;
   file << "file  = false" << std::endl;
   file << "[parameter]" << std::endl;
-  file << "fixed = [1.0; 1.0]" << std::endl;
-  file << "train.0 = [0.1; 1.0]" << std::endl;
-  file << "test.0  = [0.1; 1.0]" << std::endl;
-  file << "test.1  = [1.0; 0.1]" << std::endl;
+  file << "fixed = [1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0; 1.0]" << std::endl;
+  file << "train.0 = [1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1]" << std::endl;
+  file << "test.0  = [1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1]" << std::endl;
+  file << "test.1  = [1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 0.01; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1; 1.0; 0.01; 1.0; 0.1; 0.1; 0.1; 1.0; 1.0; 1.0; 0.1; 0.1; 0.1]" << std::endl;
   file << "[reducedBasis]" << std::endl;
   file << "gramSchmidt = true" << std::endl;
   file << "[enrichment]" << std::endl;
   file << "boundaryInfo = stuff.grid.boundaryinfo.alldirichlet" << std::endl;
-  file << "maxLocalError = 1e-3" << std::endl;
-  file << "maxIterations = 10" << std::endl;
+  file << "maxLocalError = 5e-4" << std::endl;
+  file << "maxIterations = 50" << std::endl;
   file << "gramSchmidt = true" << std::endl;
   file << "gramSchmidtTolerance = 1e-10" << std::endl;
   file << "[markSubdomains]" << std::endl;
-  file << "strategy = all" << std::endl;
+  file << "strategy = factorTimesMean" << std::endl;
+  file << "markingFactor = 1.0" << std::endl;
+  file << "age = 2" << std::endl;
   file.close();
 } // void ensureParamFile()
 
@@ -286,8 +288,7 @@ initDetailedOperatorAndFunctional(const DescriptionType& description,
   // timer
   Dune::Timer timer;
 
-  info << "assembling detailed operator ("
-       << model->diffusion()->numComponents() << " components) and functional... "
+  info << "assembling detailed operator and functional... "
        << std::flush;
   timer.reset();
   const DescriptionType& discretizationDescription = description.sub(SolverType::id());
@@ -841,12 +842,14 @@ VectorType computeLocalErrors(const SolverType& fixedGlobalSolver,
 
 
 MarkerType markSubdomains(const DescriptionType& description,
-                          const VectorType& localErrors)
+                          const VectorType& localErrors,
+                          MarkerType& ageOfSubdomains)
 {
   const std::string strategy = description.get< std::string >("markSubdomains.strategy", "factorTimesMean");
   MarkerType markedSubdomains;
   if (strategy == "factorTimesMean") {
     const RangeFieldType factor = description.get< RangeFieldType >("markSubdomains.markingFactor", 1.0);
+    const size_t maxAge = description.get< RangeFieldType >("markSubdomains.age", 2);
     const RangeFieldType mean = localErrors.backend().mean();
     const auto which = (localErrors.backend().array() > factor*mean);
     markedSubdomains = MarkerType(0);
@@ -855,6 +858,22 @@ MarkerType markSubdomains(const DescriptionType& description,
         const int oldSize = markedSubdomains.size();
         markedSubdomains.backend().conservativeResize(oldSize + 1);
         markedSubdomains.set(oldSize, ss);
+        // since it has been marked, reset the age
+        ageOfSubdomains.set(ss, 0);
+      } else {
+        // if we do not mark it because of the error, lets look at the age
+        const size_t oldAge = ageOfSubdomains.get(ss);
+        // mark it, if it is too old
+        if (oldAge >= maxAge) {
+          const int oldSize = markedSubdomains.size();
+          markedSubdomains.backend().conservativeResize(oldSize + 1);
+          markedSubdomains.set(oldSize, ss);
+          // since it has been marked, reset the age
+          ageOfSubdomains.set(ss, 0);
+        } else {
+          // inrease age
+          ageOfSubdomains.set(ss, oldAge + 1);
+        }
       }
     }
   } else if (strategy == "all") {
@@ -1098,6 +1117,10 @@ int main(int argc, char** argv)
       for (size_t ss = 0; ss < fixedGlobalSolver->msGrid()->size(); ++ss)
         localReducedBases[ss]
             = Dune::make_shared< ReducedBasisType >(fixedGlobalSolver->localSolver(ss)->ansatzSpace()->map().size(), 1);
+      std::vector< Dune::shared_ptr< ReducedBasisType > > localReducedBasesOld(fixedGlobalSolver->msGrid()->size());
+      for (size_t ss = 0; ss < fixedGlobalSolver->msGrid()->size(); ++ss)
+        localReducedBasesOld[ss]
+            = Dune::make_shared< ReducedBasisType >(fixedGlobalSolver->localSolver(ss)->ansatzSpace()->map().size(), 1);
       Dune::shared_ptr< VectorType > tmpGlobalVectorA
           = Dune::make_shared< VectorType >(fixedGlobalSolver->ansatzMapper().size());
       Dune::shared_ptr< VectorType > tmpGlobalVectorB
@@ -1200,6 +1223,7 @@ int main(int argc, char** argv)
                                                     tmpLocalVectorsA,
                                                     tmpLocalVectorsB,
                                                     tmpGlobalVectorA);
+        VectorType localErrorsOld = localErrors;
         info << " done (took " << timer.elapsed() << "sec, max local error is "
              << std::scientific << localErrors.backend().maxCoeff() << std::fixed << ")" << std::endl;
         // enrich, if max local error is too large
@@ -1214,7 +1238,10 @@ int main(int argc, char** argv)
           size_t oldBasisSize = 0;
 //          double oldMinLocalError = localErrors.backend().minCoeff();
           std::vector< VectorType > localErrorsVectors;
+          std::vector< size_t > totalBasisSizes;
           localErrorsVectors.push_back(localErrors);
+          totalBasisSizes.push_back(mapper->size());
+          MarkerType ageOfSubdomains(msGrid->size());
           while (enrichmentIteration < enrichmentMaxIterations
                  && localErrors.backend().maxCoeff() > enrichmentMaxLocalError
 //                 && !(oldMinLocalError < localErrors.backend().minCoeff())
@@ -1230,7 +1257,7 @@ int main(int argc, char** argv)
 //            MarkerType markedSubdomains(fixedGlobalSolver->msGrid()->size());
 //            for (size_t ii = 0; ii < fixedGlobalSolver->msGrid()->size(); ++ii)
 //              markedSubdomains.set(ii, ii);
-            MarkerType markedSubdomains = markSubdomains(description, localErrors);
+            MarkerType markedSubdomains = markSubdomains(description, localErrors, ageOfSubdomains);
             info << "enriching";
             if (!debugLogging)
               info << "... " << std::flush;
@@ -1250,8 +1277,11 @@ int main(int argc, char** argv)
                                     markedSubdomains,
                                     tmpLocalVectorsA,
                                     tmpLocalVectorsB); // <- the local corrections will be in here
-            // extend the local reduced bases (and obtain a new mapper)
+            // keep a copy of the old basis
+            for (size_t ss = 0; ss < localReducedBases.size(); ++ss)
+              localReducedBasesOld[ss]->backend() = localReducedBases[ss]->backend();
             oldBasisSize = mapper->size();
+            // extend the local reduced bases (and obtain a new mapper)
             mapper = extendReducedBases(description,
                                         markedSubdomains,
                                         localScalarProducts,
@@ -1273,6 +1303,8 @@ int main(int argc, char** argv)
               reducedFunctional = reducedPair.second;
               if (!debugLogging)
                 info << " done (took " << timer.elapsed() << "sec)" << std::endl;
+              // keep the old local errors
+              localErrorsOld = localErrors;
               // compute the new local errors
               info << "  computing local errors... " << std::flush;
               timer.reset();
@@ -1288,7 +1320,6 @@ int main(int argc, char** argv)
                                              "",
                                              devnull);
               } // if (visualize)
-//              oldMinLocalError = localErrors.backend().minCoeff();
               localErrors = computeLocalErrors(*fixedGlobalSolver,
                                                description,
                                                detailedOperator,
@@ -1301,7 +1332,57 @@ int main(int argc, char** argv)
                                                tmpLocalVectorsA,
                                                tmpLocalVectorsB,
                                                tmpGlobalVectorA);
+//              // now that we have the new local errors, lets throw away those local bases extensions that are crap!
+//              debug << "old local erros were " << std::scientific << localErrorsOld.backend().transpose() << std::endl;
+//              debug << "new local erros are  " << std::scientific << localErrors.backend().transpose() << std::endl;
+//              size_t thrown_away = 0;
+//              debug << "  rejecting local bassis extension on subdomains: " << std::flush;
+//              for (size_t subdomain = 0; subdomain < msGrid->size(); ++subdomain) {
+//                // compare local erros
+//                if (localErrorsOld.get(subdomain) < localErrors.get(subdomain)) {
+//                  debug << subdomain << " " << std::flush;
+//                  // throw away new local basis
+//                  localReducedBases[subdomain]->backend() = localReducedBasesOld[subdomain]->backend();
+//                  ++thrown_away;
+//                }
+//              }
+//              if (thrown_away) {
+//                debug << "  updating reduced quantities:" << std::endl;
+//                mapper = Dune::shared_ptr< MapperType >();
+//                mapper->prepare();
+//                for (size_t subdomain = 0; subdomain < msGrid->size(); ++subdomain)
+//                  mapper->add(subdomain, localReducedBases[subdomain]->cols());
+//                mapper->finalize();
+//                reducedPair = createReducedOperatorFunctional(*fixedGlobalSolver,
+//                                                              detailedOperator,
+//                                                              detailedFunctional,
+//                                                              localReducedBases,
+//                                                              *mapper,
+//                                                              tmpLocalVectorA,
+//                                                              tmpGlobalVectorA,
+//                                                              tmpGlobalVectorB);
+//                reducedOperator = reducedPair.first;
+//                reducedFunctional = reducedPair.second;
+//                debug << "  updated local errors are: " << std::flush;
+//                reducedSolution = computeReducedSolution(*reducedOperator, *reducedFunctional, mu);
+//                localErrors = computeLocalErrors(*fixedGlobalSolver,
+//                                                 description,
+//                                                 detailedOperator,
+//                                                 detailedFunctional,
+//                                                 localScalarProducts,
+//                                                 localReducedBases,
+//                                                 *mapper,
+//                                                 reducedSolution,
+//                                                 mu,
+//                                                 tmpLocalVectorsA,
+//                                                 tmpLocalVectorsB,
+//                                                 tmpGlobalVectorA);
+//                debug << localErrors.backend().transpose() << std::endl;
+//              } else
+//                debug << "nowhere" << std::endl;
+
               localErrorsVectors.push_back(localErrors);
+              totalBasisSizes.push_back(mapper->size());
               info << " done (took " << timer.elapsed() << "sec, max local error is "
                    << std::scientific << localErrors.backend().maxCoeff() << std::fixed << ")" << std::endl;
             } else {
@@ -1314,18 +1395,41 @@ int main(int argc, char** argv)
           info << "final local errors are: "
                << std::scientific << localErrors.backend().transpose() << std::fixed << std::endl;
 
-          std::ofstream localErrorFile("localErrors_param_" + Dune::Stuff::Common::Parameter::reportWOwhitespace(mu));
+          const size_t oversamplingLayers = description.get< size_t >("grid.multiscale.provider.cube.oversamplingLayers");
+          const size_t numSubdomainElements = msGrid->localGridPart(0)->indexSet().size(0);
+          const size_t oversamplingRate = std::floor(100 * (oversamplingLayers / std::floor(std::sqrt(numSubdomainElements))));
+          std::ofstream localErrorFile("localErrors_oversampling_"
+                                       + Dune::Stuff::Common::toString(oversamplingLayers)
+                                       + "_param_" + Dune::Stuff::Common::Parameter::reportWOwhitespace(mu));
           if (localErrorFile.is_open()) {
             for (size_t ii = 0; ii < localErrorsVectors.size(); ++ii) {
+              localErrorFile << "% basisSize: " << totalBasisSizes[ii] << "\t || ";
               localErrorFile << "min: " << std::scientific << localErrorsVectors[ii].backend().minCoeff() << " | "
                              << "max: " << std::scientific << localErrorsVectors[ii].backend().maxCoeff() << " | "
-                             << "mean: " << std::scientific << localErrorsVectors[ii].backend().mean() << " | ";
+                             << "mean: " << std::scientific << localErrorsVectors[ii].backend().mean() << " || ";
               for (int jj = 0; jj < localErrorsVectors[ii].size(); ++jj) {
                 localErrorFile << std::scientific << localErrorsVectors[ii].get(jj) << " | ";
               }
               localErrorFile << std::endl;
             }
-          }
+            localErrorFile << std::endl;
+            localErrorFile << "% final local basis sizes: ";
+            for (size_t ss = 0; ss < localReducedBases.size(); ++ss)
+              localErrorFile << localReducedBases[ss]->cols() << " ";
+            localErrorFile << std::endl;
+            localErrorFile << "\\addplot[color=black,mark=square] coordinates {" << std::endl;
+            for (size_t ii = 0; ii < localErrorsVectors.size(); ++ii)
+              localErrorFile << "(" << totalBasisSizes[ii] << ", " << std::scientific << localErrorsVectors[ii].backend().maxCoeff() << ")" << std::endl;
+            localErrorFile << "};\n\\addlegendentry{oversampling: " << std::fixed << oversamplingLayers << /*"\\%" <<*/ "}" << std::endl;
+//            localErrorFile << "\\addplot[color=gray] coordinates {" << std::endl;
+//            for (size_t ii = 0; ii < localErrorsVectors.size(); ++ii)
+//              localErrorFile << "(" << totalBasisSizes[ii] << ", " << std::scientific << localErrorsVectors[ii].backend().minCoeff() << ")" << std::endl;
+//            localErrorFile << "};" << std::endl;
+//            localErrorFile << "\\addplot[color=gray] coordinates {" << std::endl;
+//            for (size_t ii = 0; ii < localErrorsVectors.size(); ++ii)
+//              localErrorFile << "(" << totalBasisSizes[ii] << ", " << std::scientific << localErrorsVectors[ii].backend().maxCoeff() << ")" << std::endl;
+//            localErrorFile << "};" << std::endl;
+          } // if (localErrorFile.is_open())
 
           msg = "  local offline phase finished  ";
           info << Dune::Stuff::Common::whitespaceify(msg, '=') << std::endl;
