@@ -17,6 +17,7 @@
 #include <dune/stuff/common/color.hh>
 #include <dune/stuff/common/parameter.hh>
 #include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/function.hh>
 #include <dune/stuff/function/expression.hh>
 #include <dune/stuff/function/parametric/separable/coefficient.hh>
 
