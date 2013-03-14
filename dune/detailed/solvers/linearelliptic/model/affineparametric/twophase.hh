@@ -1,5 +1,7 @@
-#ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_TWOPHASE_HH
-#define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_TWOPHASE_HH
+#ifndef DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_TWOPHASE_HH
+#define DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_TWOPHASE_HH
+
+#include <memory>
 
 #include <dune/stuff/function/product.hh>
 
@@ -8,24 +10,21 @@
 namespace Dune {
 namespace Detailed {
 namespace Solvers {
-namespace Stationary {
-namespace Linear {
-namespace Elliptic {
-namespace Model {
+namespace LinearElliptic {
 
 
 // forward, to allow for specialization
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class SeparableTwoPhase;
+class ModelAffineParametricTwoPhase;
 
 
 template< class DomainFieldImp, class RangeFieldImp >
-class SeparableTwoPhase< DomainFieldImp, 2, RangeFieldImp, 1 >
-  : public SeparableDefault< DomainFieldImp, 2, RangeFieldImp, 1 >
+class ModelAffineParametricTwoPhase< DomainFieldImp, 2, RangeFieldImp, 1 >
+  : public ModelAffineParametricDefault< DomainFieldImp, 2, RangeFieldImp, 1 >
 {
 public:
-  typedef SeparableTwoPhase< DomainFieldImp, 2, RangeFieldImp, 1 >  ThisType;
-  typedef SeparableDefault < DomainFieldImp, 2, RangeFieldImp, 1 >  BaseType;
+  typedef ModelAffineParametricTwoPhase< DomainFieldImp, 2, RangeFieldImp, 1 >  ThisType;
+  typedef ModelAffineParametricDefault < DomainFieldImp, 2, RangeFieldImp, 1 >  BaseType;
 
   typedef typename BaseType::DomainFieldType  DomainFieldType;
   static const int                            dimDomain = BaseType::dimDomain;
@@ -42,22 +41,22 @@ public:
   typedef typename FunctionType::RangeType  RangeType;
 
 private:
-  typedef Dune::Stuff::Function::Product< DomainFieldType, dimDomain, RangeFieldType, dimRange,
-                                          DomainFieldType, dimDomain, RangeFieldType, dimRange > ProductFunctionType;
+  typedef Dune::Stuff::FunctionProduct< DomainFieldType, dimDomain, RangeFieldType, dimRange,
+                                        DomainFieldType, dimDomain, RangeFieldType, dimRange > ProductFunctionType;
 
 public:
   static std::string id()
   {
-    return BaseType::BaseType::id() + ".parametric.separable.twophase";
+    return BaseType::BaseType::id() + ".affineparametric.twophase";
   }
 
-  SeparableTwoPhase(const Dune::shared_ptr< const FunctionType > _totalMobility,
-                    const Dune::shared_ptr< const FunctionType > _permeability,
-                    const Dune::shared_ptr< const FunctionType > _force,
-                    const Dune::shared_ptr< const FunctionType > _dirichlet,
-                    const Dune::shared_ptr< const FunctionType > _neumann)
-    : BaseType(Dune::make_shared< ProductFunctionType >(_totalMobility,
-                                                        _permeability),
+  ModelAffineParametricTwoPhase(const std::shared_ptr< const FunctionType > _totalMobility,
+                                const std::shared_ptr< const FunctionType > _permeability,
+                                const std::shared_ptr< const FunctionType > _force,
+                                const std::shared_ptr< const FunctionType > _dirichlet,
+                                const std::shared_ptr< const FunctionType > _neumann)
+    : BaseType(std::make_shared< ProductFunctionType >(_totalMobility,
+                                                       _permeability),
                _force,
                _dirichlet,
                _neumann)
@@ -66,7 +65,7 @@ public:
   static Dune::ParameterTree createSampleDescription(const std::string subName = "")
   {
     Dune::ParameterTree description;
-    description["totalMobility.type"] = "function.separable.default";
+    description["totalMobility.type"] = "function.affineparametric.default";
     description["totalMobility.name"] = "total mobility (two drops)";
     description["totalMobility.order"] = "2";
     description["totalMobility.component.0"] = "-1.0*exp(-1.0*(((x[0]-0.75)*(x[0]-0.75))/(2*0.1*0.1)))";
@@ -108,7 +107,7 @@ public:
     }
   } // ... createSampleDescription(...)
 
-  static ThisType createFromDescription(const Dune::ParameterTree& _description, const std::string _subName = id())
+  static ThisType* create(const Dune::ParameterTree& _description, const std::string _subName = id())
   {
     // get correct paramTree
     Dune::Stuff::Common::ExtendedParameterTree description;
@@ -116,21 +115,18 @@ public:
       description = _description.sub(_subName);
     else
       description = _description;
-    return ThisType(BaseType::createFunction("totalMobility", description),
-                    BaseType::createFunction("permeability", description),
-                    BaseType::createFunction("force", description),
-                    BaseType::createFunction("dirichlet", description),
-                    BaseType::createFunction("neumann", description));
+    return new ThisType(BaseType::createFunction("totalMobility", description),
+                        BaseType::createFunction("permeability", description),
+                        BaseType::createFunction("force", description),
+                        BaseType::createFunction("dirichlet", description),
+                        BaseType::createFunction("neumann", description));
   } // ... createFromDescription(...)
-}; // class SeparableTwoPhase< DomainFieldImp, 2, RangeFieldImp, 1 >
+}; // class ModelAffineParametricTwoPhase< DomainFieldImp, 2, RangeFieldImp, 1 >
 
 
-} // namespace Model
-} // namespace Elliptic
-} // namespace Linear
-} // namespace Stationary
+} // namespace LinearElliptic
 } // namespace Solvers
 } // namespace Detailed
 } // namespace Dune
 
-#endif // DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_TWOPHASE_HH
+#endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_TWOPHASE_HH

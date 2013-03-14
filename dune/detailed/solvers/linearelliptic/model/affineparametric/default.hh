@@ -1,16 +1,10 @@
-#ifndef DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_PARAMETRIC_DEFAULT_HH
-#define DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_PARAMETRIC_DEFAULT_HH
-
-#ifdef HAVE_CMAKE_CONFIG
-  #include "cmake_config.h"
-#elif defined (HAVE_CONFIG_H)
-  #include <config.h>
-#endif // ifdef HAVE_CMAKE_CONFIG
+#ifndef DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_DEFAULT_HH
+#define DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_DEFAULT_HH
 
 #include <vector>
 #include <sstream>
+#include <memory>
 
-#include <dune/common/shared_ptr.hh>
 #include <dune/common/exceptions.hh>
 
 #include <dune/stuff/common/string.hh>
@@ -19,31 +13,28 @@
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/function.hh>
 #include <dune/stuff/function/expression.hh>
-#include <dune/stuff/function/parametric/separable/coefficient.hh>
+#include <dune/stuff/function/affineparametric/coefficient.hh>
 
-#include "../../interface.hh"
+#include "../interface.hh"
 
 namespace Dune {
 namespace Detailed {
 namespace Solvers {
-namespace Stationary {
-namespace Linear {
-namespace Elliptic {
-namespace Model {
+namespace LinearElliptic {
 
 
 // forward, to allow for some friendlyness
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class SeparableTwoPhase;
+class ModelAffineParametricTwoPhase;
 
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class SeparableDefault
-  : public Interface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
+class ModelAffineParametricDefault
+  : public ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
 {
 public:
-  typedef SeparableDefault< DomainFieldImp, domainDim, RangeFieldImp, rangeDim >  ThisType;
-  typedef Interface < DomainFieldImp, domainDim, RangeFieldImp, rangeDim >        BaseType;
+  typedef ModelAffineParametricDefault< DomainFieldImp, domainDim, RangeFieldImp, rangeDim >  ThisType;
+  typedef ModelInterface < DomainFieldImp, domainDim, RangeFieldImp, rangeDim >               BaseType;
 
   typedef typename BaseType::DomainFieldType  DomainFieldType;
   static const int                            dimDomain = BaseType::dimDomain;
@@ -61,13 +52,13 @@ public:
 
   static std::string id()
   {
-    return BaseType::id() + ".parametric.separable.default";
+    return BaseType::id() + ".affineparametric.default";
   }
 
-  SeparableDefault(const Dune::shared_ptr< const FunctionType > _diffusion,
-                   const Dune::shared_ptr< const FunctionType > _force,
-                   const Dune::shared_ptr< const FunctionType > _dirichlet,
-                   const Dune::shared_ptr< const FunctionType > _neumann)
+  ModelAffineParametricDefault(const std::shared_ptr< const FunctionType > _diffusion,
+                               const std::shared_ptr< const FunctionType > _force,
+                               const std::shared_ptr< const FunctionType > _dirichlet,
+                               const std::shared_ptr< const FunctionType > _neumann)
     : diffusion_(_diffusion)
     , force_(_force)
     , dirichlet_(_dirichlet)
@@ -133,7 +124,7 @@ public:
     paramRange_.push_back(paramMax);
   } // Default(...)
 
-  SeparableDefault(const ThisType& other)
+  ModelAffineParametricDefault(const ThisType& other)
     : diffusion_(other.diffusion_)
     , force_(other.force_)
     , dirichlet_(other.dirichlet_)
@@ -158,7 +149,7 @@ public:
   static Dune::ParameterTree createSampleDescription(const std::string subName = "")
   {
     Dune::ParameterTree description;
-    description["diffusion.type"] = "function.parametric.separable.default";
+    description["diffusion.type"] = "function.affineparametric.default";
     description["diffusion.name"] = "diffusion";
     description["diffusion.order"] = "0";
     description["diffusion.component.0"] = "x[0]";
@@ -168,7 +159,7 @@ public:
     description["diffusion.paramSize"] = "2";
     description["diffusion.paramMin"] = "[0.0; 0.0]";
     description["diffusion.paramMax"] = "[1.0; 1.0]";
-    description["force.type"] = "function.parametric.separable.default";
+    description["force.type"] = "function.affineparametric.default";
     description["force.name"] = "force";
     description["force.order"] = "0";
     description["force.component.0"] = "x[0]";
@@ -178,7 +169,7 @@ public:
     description["force.paramSize"] = "2";
     description["force.paramMin"] = "[0.0; 0.0]";
     description["force.paramMax"] = "[1.0; 1.0]";
-    description["dirichlet.type"] = "function.parametric.separable.default";
+    description["dirichlet.type"] = "function.affineparametric.default";
     description["dirichlet.name"] = "dirichlet";
     description["dirichlet.order"] = "0";
     description["dirichlet.component.0"] = "x[0]";
@@ -188,7 +179,7 @@ public:
     description["dirichlet.paramSize"] = "2";
     description["dirichlet.paramMin"] = "[0.0; 0.0]";
     description["dirichlet.paramMax"] = "[1.0; 1.0]";
-    description["neumann.type"] = "function.parametric.separable.default";
+    description["neumann.type"] = "function.affineparametric.default";
     description["neumann.name"] = "neumann";
     description["neumann.order"] = "0";
     description["neumann.component.0"] = "x[0]";
@@ -207,7 +198,7 @@ public:
     }
   }
 
-  static ThisType createFromDescription(const Dune::ParameterTree& _description, const std::string _subName = id())
+  static ThisType* create(const Dune::ParameterTree& _description, const std::string _subName = id())
   {
     // get correct paramTree
     Dune::Stuff::Common::ExtendedParameterTree description;
@@ -215,11 +206,11 @@ public:
       description = _description.sub(_subName);
     else
       description = _description;
-    return ThisType(createFunction("diffusion", description),
-                    createFunction("force", description),
-                    createFunction("dirichlet", description),
-                    createFunction("neumann", description));
-  } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree)
+    return new ThisType(createFunction("diffusion", description),
+                        createFunction("force", description),
+                        createFunction("dirichlet", description),
+                        createFunction("neumann", description));
+  } // ... create(...)
 
   virtual size_t paramSize() const
   {
@@ -266,28 +257,28 @@ public:
     return localMu;
   } // ... mapParam(...)
 
-  virtual Dune::shared_ptr< const FunctionType > diffusion() const
+  virtual std::shared_ptr< const FunctionType > diffusion() const
   {
     return diffusion_;
   }
 
-  virtual Dune::shared_ptr< const FunctionType > force() const
+  virtual std::shared_ptr< const FunctionType > force() const
   {
     return force_;
   }
 
-  virtual Dune::shared_ptr< const FunctionType > dirichlet() const
+  virtual std::shared_ptr< const FunctionType > dirichlet() const
   {
     return dirichlet_;
   }
 
-  virtual Dune::shared_ptr< const FunctionType > neumann() const
+  virtual std::shared_ptr< const FunctionType > neumann() const
   {
     return neumann_;
   }
 
 private:
-  static Dune::shared_ptr< const FunctionType > createFunction(const std::string& _id,
+  static std::shared_ptr< const FunctionType > createFunction(const std::string& _id,
                                                                const Dune::Stuff::Common::ExtendedParameterTree& _description)
   {
     const Dune::Stuff::Common::ExtendedParameterTree functionDescription = _description.sub(_id);
@@ -298,31 +289,26 @@ private:
       type = functionDescription.get< std::string >("type");
     else
       type = "function.expression";
-    return Dune::shared_ptr< const FunctionType >(Dune::Stuff::Function::create<  DomainFieldType,
-                                                                                  dimDomain,
-                                                                                  RangeFieldType,
-                                                                                  dimRange >(type,
-                                                                                             functionDescription));
+    return std::shared_ptr< const FunctionType >(Dune::Stuff::Functions<  DomainFieldType, dimDomain,
+                                                                          RangeFieldType, dimRange >::create(type,
+                                                                                                             functionDescription));
   } // ... createFunction(...)
 
-  friend class SeparableTwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange >;
+  friend class ModelAffineParametricTwoPhase< DomainFieldType, dimDomain, RangeFieldType, dimRange >;
 
-  shared_ptr< const FunctionType > diffusion_;
-  shared_ptr< const FunctionType > force_;
-  shared_ptr< const FunctionType > dirichlet_;
-  shared_ptr< const FunctionType > neumann_;
+  std::shared_ptr< const FunctionType > diffusion_;
+  std::shared_ptr< const FunctionType > force_;
+  std::shared_ptr< const FunctionType > dirichlet_;
+  std::shared_ptr< const FunctionType > neumann_;
   size_t paramSize_;
   std::vector< ParamType > paramRange_;
   std::vector< std::string > paramExplanation_;
-}; // class SeparableDefault
+}; // class AffineParametricDefault
 
 
-} // namespace Model
-} // namespace Elliptic
-} // namespace Linear
-} // namespace Stationary
+} // namespace LinearElliptic
 } // namespace Solvers
 } // namespace Detailed
 } // namespace Dune
 
-#endif // DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_MODEL_PARAMETRIC_DEFAULT_HH
+#endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_DEFAULT_HH
