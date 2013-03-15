@@ -1,3 +1,0 @@
-ADD_EXECUTABLE( examples_stationary_linear_elliptic_cg_detailed_discretizations "detailed_discretizations.cc" ${COMMON_HEADER} )
-TARGET_LINK_LIBRARIES( examples_stationary_linear_elliptic_cg_detailed_discretizations ${COMMON_LIBS} )
-

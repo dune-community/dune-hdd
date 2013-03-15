@@ -1,1 +1,1 @@
-add_subdirectory(stationary)
+add_subdirectory(linearelliptic)
