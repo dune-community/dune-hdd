@@ -33,21 +33,21 @@ public:
     };
   } // ... available()
 
-  static Dune::ParameterTree createSampleDescription(const std::string type)
+  static Dune::ParameterTree createSampleDescription(const std::string type, const std::string subname = "")
   {
     if (type == "model.linearelliptic.default")
-      return ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange >::createSampleDescription();
+      return ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange >::createSampleDescription(subname);
     else if (type == "model.linearelliptic.thermalblock")
-      return ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >::createSampleDescription();
+      return ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >::createSampleDescription(subname);
     else if (type == "model.linearelliptic.affineparametric.default")
       return ModelAffineParametricDefault<  DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createSampleDescription();
+                                            RangeFieldType, dimRange >::createSampleDescription(subname);
     else if (type == "model.linearelliptic.affineparametric.twophase")
       return ModelAffineParametricTwoPhase< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createSampleDescription();
+                                            RangeFieldType, dimRange >::createSampleDescription(subname);
     else if (type == "model.linearelliptic.affineparametric.thermalblock")
       return ModelAffineParametricThermalblock< DomainFieldType, dimDomain,
-                                                RangeFieldType, dimRange >::createSampleDescription();
+                                                RangeFieldType, dimRange >::createSampleDescription(subname);
     else
       DUNE_THROW(Dune::RangeError,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " unknown model '" << type << "' requested!");
