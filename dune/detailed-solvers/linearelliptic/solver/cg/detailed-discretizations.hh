@@ -67,12 +67,14 @@ public:
  */
 template< class GridPartImp, class RangeFieldImp, int polynomialOrder >
 class SolverContinuousGalerkinDD< GridPartImp, RangeFieldImp, 1, polynomialOrder >
-  : public SolverInterface< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder > >
+    : public SolverInterface< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder > >
+    , public SolverParametricInterface< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder > >
 {
 public:
   typedef SolverContinuousGalerkinDD< GridPartImp, RangeFieldImp, 1, polynomialOrder >        ThisType;
   typedef SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder >  Traits;
   typedef SolverInterface< Traits >                                                           BaseType;
+  typedef SolverParametricInterface< Traits >                                                 ParametricBaseType;
 
   typedef Dune::grid::Part::Interface< typename Traits::GridPartTraits > GridPartType;
 
@@ -507,6 +509,7 @@ private:
         + neumannVector.fix(muNeumann)->backend()
         - systemMatrix->backend() * dirichletVector.fix(muDirichlet)->backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
     out << prefix << "applying constraints...      " << std::flush;
     timer.reset();
     typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
@@ -562,7 +565,29 @@ public:
                   ParamType(),
                   linearSolverType, linearSolverMaxIter, linearSolverPrecision,
                   prefix, out);
-  }
+  } // ... solve(...)
+
+  void solve(std::shared_ptr< VectorType > solutionVector,
+             const ParamType& mu,
+             const std::string linearSolverType = "bicgstab.ilut",
+             const double linearSolverPrecision = 1e-12,
+             const size_t linearSolverMaxIter = 5000,
+             std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
+             const std::string prefix = "") const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " call init() before calling solve()!");
+    // check, that we are really in the parametric setting!
+    if (!model_->parametric())
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " parametric solve() called for a nonparametric model!");
+    generic_solve(solutionVector,
+                  mu,
+                  linearSolverType, linearSolverMaxIter, linearSolverPrecision,
+                  prefix, out);
+  } // ... solve(..., mu, ...)
 
 #if 0
   std::shared_ptr< const AnsatzSpaceType > ansatzSpace() const
@@ -739,28 +764,6 @@ public:
     return testFunction;
   } // std::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
 
-  void solve(std::shared_ptr< VectorType > solutionVector,
-             const ParamType& mu,
-             const std::string linearSolverType = "bicgstab.diagonal",
-             const size_t linearSolverMaxIter = 5000,
-             const double linearSolverPrecision = 1e-12,
-             const std::string prefix = "",
-             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-  {
-    if (!initialized_)
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " call init() before calling solve()!");
-    // check, that we are really in the nonparametric setting!
-    if (!parametric())
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " parametric solve() called for a nonparametric model!");
-    generic_solve(solutionVector,
-                  mu,
-                  linearSolverType, linearSolverMaxIter, linearSolverPrecision,
-                  prefix, out);
-  }
-
   void solveFullNeumann(std::shared_ptr< VectorType >& solutionVector,
                         const std::string& linearSolverType,
                         const size_t& linearSolverMaxIter,
@@ -902,16 +905,6 @@ public:
   } // void visualizeFunction(...)
 #endif
 
-  BaseType& asBase()
-  {
-    return static_cast< BaseType& >(*this);
-  }
-
-  const BaseType& asBase() const
-  {
-    return static_cast< const BaseType& >(*this);
-  }
-
 private:
   std::shared_ptr< DiscreteAnsatzFunctionConstType > createConstAnsatzFunction(const std::shared_ptr< const VectorType > vector,
                                                                                const std::string name = "ansatzFunction") const
@@ -943,7 +936,6 @@ private:
   const std::shared_ptr< const BoundaryInfoType > boundaryInfo_;
   const std::shared_ptr< const ModelType > model_;
   bool initialized_;
-//  mutable bool systemComputed_;
   std::shared_ptr< const LagrangeSpaceType > lagrangeSpace_;
   std::shared_ptr< const TestSpaceType > testSpace_;
   std::map< const std::string, std::shared_ptr< const PatternType > > patterns_;
