@@ -1,86 +1,92 @@
-#ifndef DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_DEFAULT_HH
-#define DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_DEFAULT_HH
+#ifndef DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_THERMALBLOCK_HH
+#define DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_THERMALBLOCK_HH
 
+#include <vector>
+#include <string>
 #include <memory>
 
+#include <dune/stuff/function/checkerboard.hh>
 #include <dune/stuff/common/parameter/tree.hh>
-#include <dune/stuff/function.hh>
 
-#include "interface.hh"
+#include "default.hh"
 
 namespace Dune {
-namespace Detailed {
-namespace Solvers {
+namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class ModelDefault;
+class ModelThermalblock;
 
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp >
-class ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1 >
-  : public ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1 >
+class ModelThermalblock< DomainFieldImp, domainDim, RangeFieldImp, 1 >
+  : public ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1 >
 {
 public:
-  typedef ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1 >    ThisType;
-  typedef ModelInterface<  DomainFieldImp, domainDim, RangeFieldImp, 1 > BaseType;
+  typedef ModelThermalblock< DomainFieldImp, domainDim, RangeFieldImp, 1 > ThisType;
+  typedef ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1 >      BaseType;
 
   typedef typename BaseType::DomainFieldType  DomainFieldType;
   static const int                            dimDomain = BaseType::dimDomain;
-
   typedef typename BaseType::RangeFieldType   RangeFieldType;
   static const int                            dimRange = BaseType::dimRange;
 
-  typedef typename BaseType::FunctionType FunctionType;
+  typedef typename BaseType::FunctionType   FunctionType;
+  typedef typename Stuff::FunctionCheckerboard< DomainFieldType, dimDomain, RangeFieldType, dimRange >
+                                            CheckerboardFunctionType;
+  typedef typename FunctionType::DomainType DomainType;
 
   static const std::string id()
   {
-    return BaseType::id() + ".default";
+    return BaseType::BaseType::id() + ".thermalblock";
   }
 
-  ModelDefault(const std::shared_ptr< const FunctionType > _diffusion,
-               const std::shared_ptr< const FunctionType > _force,
-               const std::shared_ptr< const FunctionType > _dirichlet,
-               const std::shared_ptr< const FunctionType > _neumann)
-    : diffusion_(_diffusion)
-    , force_(_force)
-    , dirichlet_(_dirichlet)
-    , neumann_(_neumann)
-  {
-    if (BaseType::parametric())
-      DUNE_THROW(Dune::RangeError,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " not implemented for parametric functions!");
-  }
+  ModelThermalblock(const DomainType& _lowerLeft,
+                    const DomainType& _upperRight,
+                    const std::vector< size_t >& _numElements,
+                    const std::vector< RangeFieldType >& _components,
+                    const std::shared_ptr< const FunctionType > _force,
+                    const std::shared_ptr< const FunctionType > _dirichlet,
+                    const std::shared_ptr< const FunctionType > _neumann)
+    : BaseType(std::make_shared< CheckerboardFunctionType >(_lowerLeft,
+                                                            _upperRight,
+                                                            _numElements,
+                                                            _components),
+               _force,
+               _dirichlet,
+               _neumann)
+  {}
 
-  ModelDefault(const ThisType& _other)
-    : diffusion_(_other.diffusion_)
-    , force_(_other.force_)
-    , dirichlet_(_other.dirichlet_)
-    , neumann_(_other.neumann_)
+  ModelThermalblock(const std::shared_ptr< const CheckerboardFunctionType > _diffusion,
+                    const std::shared_ptr< const FunctionType > _force,
+                    const std::shared_ptr< const FunctionType > _dirichlet,
+                    const std::shared_ptr< const FunctionType > _neumann)
+    : BaseType(_diffusion, _force, _dirichlet, _neumann)
+  {}
+
+  ModelThermalblock(const ThisType& _other)
+    :BaseType(_other.diffusion(),
+              _other.force(),
+              _other.dirichlet(),
+              _other.neumann())
   {}
 
   ThisType& operator=(const ThisType& _other)
   {
     if (this != &_other) {
-      diffusion_ = _other.diffusion();
-      force_ = _other.force();
-      dirichlet_ = _other.dirichlet();
-      neumann_ = _other.neumann();
+      BaseType::operator=(_other);
     }
     return this;
-  }
+  } // ThisType& operator=(const ThisType& other)
 
   static Dune::ParameterTree createSampleDescription(const std::string subName = "")
   {
     Dune::Stuff::Common::ExtendedParameterTree description;
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createSampleDescription("function.expression"),
+                                            RangeFieldType, dimRange >::createSampleDescription("function.checkerboard"),
                     "diffusion");
     description["diffusion.name"] = "diffusion";
-    description["diffusion.expression"] = "1.0";
-    description["diffusion.order"] = "0";
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
                                             RangeFieldType, dimRange >::createSampleDescription("function.expression"),
                     "force");
@@ -110,37 +116,21 @@ public:
 
   static ThisType* create(const Dune::ParameterTree& _description, const std::string _subName = id())
   {
-    // get correct description
+    // get correct paramTree
     Dune::Stuff::Common::ExtendedParameterTree description;
     if (_description.hasSub(_subName))
       description = _description.sub(_subName);
     else
       description = _description;
-    return new ThisType(createFunction("diffusion", description),
+    // create the correct diffusion
+    const Dune::Stuff::Common::ExtendedParameterTree& diffusionDescription = description.sub("diffusion");
+    const std::shared_ptr< const CheckerboardFunctionType >
+        diffusion(CheckerboardFunctionType::create(diffusionDescription));
+    return new ThisType(diffusion,
                         createFunction("force", description),
                         createFunction("dirichlet", description),
                         createFunction("neumann", description));
-  } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree)
-
-  virtual std::shared_ptr< const FunctionType > diffusion() const
-  {
-    return diffusion_;
-  }
-
-  virtual std::shared_ptr< const FunctionType > force() const
-  {
-    return force_;
-  }
-
-  virtual std::shared_ptr< const FunctionType > dirichlet() const
-  {
-    return dirichlet_;
-  }
-
-  virtual std::shared_ptr< const FunctionType > neumann() const
-  {
-    return neumann_;
-  }
+  } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree, const std::string subName = id())
 
 private:
   static std::shared_ptr< const FunctionType > createFunction(const std::string& _id,
@@ -158,16 +148,11 @@ private:
                                                                           RangeFieldType, dimRange >::create(type,
                                                                                                              functionDescription));
   }
+}; // class ModelThermalblock
 
-  std::shared_ptr< const FunctionType > diffusion_;
-  std::shared_ptr< const FunctionType > force_;
-  std::shared_ptr< const FunctionType > dirichlet_;
-  std::shared_ptr< const FunctionType > neumann_;
-}; // class LinearDefault
 
 } // namespace LinearElliptic
-} // namespace Solvers
-} // namespace Detailed
+} // namespace DetailedSolvers
 } // namespace Dune
 
-#endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_DEFAULT_HH
+#endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_THERMALBLOCK_HH

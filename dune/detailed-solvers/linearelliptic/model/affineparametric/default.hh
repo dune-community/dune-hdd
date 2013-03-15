@@ -18,8 +18,7 @@
 #include "../interface.hh"
 
 namespace Dune {
-namespace Detailed {
-namespace Solvers {
+namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
@@ -307,8 +306,7 @@ private:
 
 
 } // namespace LinearElliptic
-} // namespace Solvers
-} // namespace Detailed
+} // namespace DetailedSolvers
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_DEFAULT_HH

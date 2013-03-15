@@ -12,8 +12,7 @@
 #include <dune/stuff/function/fixed.hh>
 
 namespace Dune {
-namespace Detailed {
-namespace Solvers {
+namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
@@ -261,8 +260,7 @@ private:
 
 
 } // namespace LinearElliptic
-} // namespace Solvers
-} // namespace Detailed
+} // namespace DetailedSolvers
 } // namespace Dune
 
 #include "default.hh"

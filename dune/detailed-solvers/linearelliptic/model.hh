@@ -14,8 +14,7 @@
 #include "model/affineparametric/thermalblock.hh"
 
 namespace Dune {
-namespace Detailed {
-namespace Solvers {
+namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
@@ -55,7 +54,7 @@ public:
   } // ... createSampleDescription(...)
 
   static ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >*
-    create(const std::string type,
+  create(const std::string type = available()[0],
            const Dune::ParameterTree description = Dune::ParameterTree())
   {
     if (type == "model.linearelliptic.default")
@@ -79,8 +78,7 @@ public:
 
 
 } // namespace LinearElliptic
-} // namespace Solvers
-} // namespace Detailed
+} // namespace DetailedSolvers
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_HH

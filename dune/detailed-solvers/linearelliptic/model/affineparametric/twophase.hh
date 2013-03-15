@@ -8,8 +8,7 @@
 #include "default.hh"
 
 namespace Dune {
-namespace Detailed {
-namespace Solvers {
+namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
@@ -125,8 +124,7 @@ public:
 
 
 } // namespace LinearElliptic
-} // namespace Solvers
-} // namespace Detailed
+} // namespace DetailedSolvers
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_AFFINEPARAMETRIC_TWOPHASE_HH
