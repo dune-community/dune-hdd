@@ -1,6 +1,13 @@
 ﻿#ifndef DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_INTERFACE_HH
 #define DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_MODEL_INTERFACE_HH
 
+// we still need this for the vtk writer
+#ifdef HAVE_CMAKE_CONFIG
+  #include "cmake_config.h"
+#elif defined (HAVE_CONFIG_H)
+  #include "config.h"
+#endif
+
 #include <vector>
 
 #include <dune/grid/io/file/vtk/vtkwriter.hh>
