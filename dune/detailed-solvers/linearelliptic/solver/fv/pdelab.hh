@@ -38,24 +38,43 @@
 #include <dune/stuff/la/container/eigen.hh>
 #include <dune/stuff/common/logging.hh>
 
-#include "../model/interface.hh"
+#include "../../model/interface.hh"
+#include "../interface.hh"
 
 namespace Dune {
-namespace Detailed {
-namespace Solvers {
-namespace Stationary {
-namespace Linear {
-namespace Elliptic {
-namespace FV {
+namespace DetailedSolvers {
+namespace LinearElliptic {
 
-template< class GridPartImp, int polynomialOrder, class RangeFieldImp, int dimensionRange >
-class Pdelab;
 
-template< class GridPartImp, int polynomialOrder, class RangeFieldImp >
-class Pdelab< GridPartImp, polynomialOrder, RangeFieldImp, 1 >
+// forward of the solver, to be used in the traits and allow for specialization
+template< class GridPartImp, class RangeFieldImp, int rangeDim >
+class SolverFiniteVolumePdelab
 {
 public:
-  typedef Pdelab< GridPartImp, polynomialOrder, RangeFieldImp, 1 > ThisType;
+  SolverFiniteVolumePdelab() = delete;
+};
+
+
+template< class GridPartImp, class RangeFieldImp, int rangeDim >
+class SolverFiniteVolumePdelabTraits
+{
+public:
+  typedef SolverFiniteVolumePdelab< GridPartImp, RangeFieldImp, rangeDim > derived_type;
+  typedef typename GridPartImp::Traits  GridPartTraits;
+  static const int                      polOrder = 0;
+  typedef RangeFieldImp                 RangeFieldType;
+  static const int                      dimRange = rangeDim;
+  typedef Dune::Stuff::LA::Container::EigenDenseVector< RangeFieldType > VectorType;
+}; // class SolverFiniteVolumePdelabTraits
+
+
+template< class GridPartImp, class RangeFieldImp >
+class SolverFiniteVolumePdelab< GridPartImp, RangeFieldImp, 1 >
+  : public SolverInterface< SolverFiniteVolumePdelabTraits< GridPartImp, RangeFieldImp, 1 > >
+{
+public:
+  typedef SolverFiniteVolumePdelab< GridPartImp, RangeFieldImp, 1 > ThisType;
+  typedef SolverInterface< SolverFiniteVolumePdelabTraits< GridPartImp, RangeFieldImp, 1 > > BaseType;
 
   typedef Dune::grid::Part::Interface< typename GridPartImp::Traits > GridPartType;
 
@@ -63,8 +82,6 @@ private:
   typedef typename GridPartType::GridViewType GridViewType;
 
 public:
-  static const int polOrder = polynomialOrder;
-
   typedef typename GridPartType::ctype DomainFieldType;
 
   static const int dimDomain = GridPartType::dimension;
@@ -258,7 +275,7 @@ public:
 
   typedef Dune::PDELab::VTKGridFunctionAdapter< PdelabDiscreteTestFunctionType > DiscreteTestFunctionType;
 
-  Pdelab(const Dune::shared_ptr< const GridPartType > _gridPart,
+  SolverFiniteVolumePdelab(const Dune::shared_ptr< const GridPartType > _gridPart,
          const Dune::shared_ptr< const BoundaryInfoType > _boundaryInfo,
          const Dune::shared_ptr< const ModelType > _model)
     : gridPart_(_gridPart)
@@ -521,14 +538,11 @@ private:
   Dune::shared_ptr< GridOperatorType> gridOperator_;
   Dune::shared_ptr< PdelabMatrixType > matrix_;
   Dune::shared_ptr< PdelabVectorType > rhs_;
-}; // class Pdelab
+}; // class SolverFiniteVolumePdelab
 
-} // namespace FV
-} // namespace Elliptic
-} // namespace Linear
-} // namespace Stationary
-} // namespace Solvers
-} // namespace Detailed
+
+} // namespace LinearElliptic
+} // namespace DetailedSolvers
 } // namespace Dune
 
 #endif // DUNE_DETAILED_SOLVERS_STATIONARY_LINEAR_ELLIPTIC_FINITEVOLUME_DUNE_PDELAB_HH
