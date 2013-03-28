@@ -1,3 +1,3 @@
 add_subdirectory(cg)
 add_subdirectory(fv)
-add_subdirectory(ms)
+add_subdirectory(multiscale)
