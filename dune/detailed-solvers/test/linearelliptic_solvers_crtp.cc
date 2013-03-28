@@ -14,7 +14,7 @@
 #include <dune/detailed-solvers/linearelliptic/model.hh>
 #include <dune/detailed-solvers/linearelliptic/solver/interface.hh>
 #include <dune/detailed-solvers/linearelliptic/solver/cg/detailed-discretizations.hh>
-//#include <dune/detailed-solvers/linearelliptic/solver/fv/pdelab.hh>
+#include <dune/detailed-solvers/linearelliptic/solver/fv/pdelab.hh>
 
 namespace Stuff = Dune::Stuff;
 namespace Elliptic = Dune::DetailedSolvers::LinearElliptic;
@@ -160,7 +160,7 @@ struct ParametricSolverCRTPtest
     solverAsInterface.solve(vector, mu, "bicgstab.ilut", 1e-6, 1000, Dune::Stuff::Common::Logger().devnull(), "");
     solverAsInterface.visualize(vector, "test_solution", "solution", Dune::Stuff::Common::Logger().devnull(), "");
   }
-}; // struct SolverCRTPtest
+}; // struct ParametricSolverCRTPtest
 
 TYPED_TEST_CASE(ParametricSolverCRTPtest, ParametricSolverTypes);
 TYPED_TEST(ParametricSolverCRTPtest, SolverCRTP)
