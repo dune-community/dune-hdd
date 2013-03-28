@@ -1,3 +1,3 @@
-SUBDIRS = model multiscalesolver solver
+SUBDIRS = model solver
 
 include $(top_srcdir)/am/global-rules

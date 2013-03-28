@@ -23,26 +23,22 @@ AC_CONFIG_FILES([
   doc/doxygen/Makefile
   doc/doxygen/Doxyfile
   dune/Makefile
-  dune/detailed/Makefile
-  dune/detailed/solvers/Makefile
-  dune/detailed/solvers/stationary/Makefile
-  dune/detailed/solvers/stationary/linear/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/cg/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/fv/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/model/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/ms/Makefile
-  dune/detailed/solvers/stationary/linear/elliptic/ms/semicg/Makefile
+  dune/detailed-solvers/Makefile
+  dune/detailed-solvers/linearelliptic/Makefile
+  dune/detailed-solvers/linearelliptic/model/Makefile
+  dune/detailed-solvers/linearelliptic/model/affineparametric/Makefile
+  dune/detailed-solvers/linearelliptic/solver/cg/Makefile
+  dune/detailed-solvers/linearelliptic/solver/fv/Makefile
+  dune/detailed-solvers/linearelliptic/solver/multiscale/Makefile
+  dune/detailed-solvers/linearelliptic/solver/multiscale/semicg/Makefile
   m4/Makefile
   dune-detailed-solvers.pc
   examples/Makefile
-  examples/stationary/Makefile
-  examples/stationary/linear/Makefile
-  examples/stationary/linear/elliptic/Makefile
-  examples/stationary/linear/elliptic/cg/Makefile
-  examples/stationary/linear/elliptic/fv/Makefile
-  examples/stationary/linear/elliptic/ms/Makefile
-  examples/stationary/linear/elliptic/ms/semicg/Makefile
+  examples/linearelliptic/Makefile
+  examples/linearelliptic/cg/Makefile
+  examples/linearelliptic/fv/Makefile
+  examples/linearelliptic/multiscale/Makefile
+  examples/linearelliptic/multiscale/semicg/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information
