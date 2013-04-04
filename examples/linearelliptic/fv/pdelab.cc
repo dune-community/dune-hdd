@@ -4,9 +4,9 @@
 
 int main(int argc, char** argv)
 {
-  const std::string paramFilename = id + ".param";
-  if (!boost::filesystem::exists(paramFilename))
-    writeParamFile(paramFilename);
+  const std::string descriptionFilename = id() + ".description";
+  if (!boost::filesystem::exists(descriptionFilename))
+    Problem::writeDescriptionFile(descriptionFilename);
 
   return run(argc, argv);
 } // main
