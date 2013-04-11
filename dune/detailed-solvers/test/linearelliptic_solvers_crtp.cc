@@ -31,9 +31,9 @@ typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
 typedef testing::Types< std::pair<  Elliptic::SolverContinuousGalerkinDD< GridPartType, RangeFieldType, dimRange, 1 >,
                                     Elliptic::SolverContinuousGalerkinDDTraits< GridPartType, RangeFieldType, dimRange, 1 >
                                   >
-//                      , std::pair<  Elliptic::SolverFiniteVolumePdelab< GridPartType, RangeFieldType, dimRange >,
-//                                    Elliptic::SolverFiniteVolumePdelabTraits< GridPartType, RangeFieldType, dimRange >
-//                                  >
+                      , std::pair<  Elliptic::SolverFiniteVolumePdelab< GridPartType, RangeFieldType, dimRange >,
+                                    Elliptic::SolverFiniteVolumePdelabTraits< GridPartType, RangeFieldType, dimRange >
+                                  >
                       > SolverTypes;
 
 template< class T >
@@ -80,11 +80,11 @@ struct SolverCRTPtest
     const std::shared_ptr< const TestGridPartType > DUNE_UNUSED(testGridPart) = solverAsInterface.gridPart();
     const std::shared_ptr< const TestBoundaryInfoType > DUNE_UNUSED(testBoundaryInfo) = solverAsInterface.boundaryInfo();
     const std::shared_ptr< const TestModelType > DUNE_UNUSED(testModel) = solverAsInterface.model();
-    std::shared_ptr< VectorType > vector = solverAsInterface.createVector();
-    solverAsInterface.visualize(vector, "test_empty_vector", "empty vector", Dune::Stuff::Common::Logger().devnull(), "");
     solverAsInterface.init(Dune::Stuff::Common::Logger().devnull(), "");
     if (!solverAsInterface.initialized())
       DUNE_THROW(Dune::InvalidStateException, "This should not happen!");
+    std::shared_ptr< VectorType > vector = solverAsInterface.createVector();
+    solverAsInterface.visualize(vector, "test_empty_vector", "empty vector", Dune::Stuff::Common::Logger().devnull(), "");    
     solverAsInterface.solve(vector, "bicgstab.ilut", 1e-6, 1000, Dune::Stuff::Common::Logger().devnull(), "");
     solverAsInterface.visualize(vector, "test_solution", "solution", Dune::Stuff::Common::Logger().devnull(), "");
   }
@@ -100,9 +100,9 @@ TYPED_TEST(SolverCRTPtest, SolverCRTP)
 typedef testing::Types< std::pair<  Elliptic::SolverContinuousGalerkinDD< GridPartType, RangeFieldType, dimRange, 1 >,
                                     Elliptic::SolverContinuousGalerkinDDTraits< GridPartType, RangeFieldType, dimRange, 1 >
                                   >
-//                      , std::pair<  Elliptic::SolverFiniteVolumePdelab< GridPartType, RangeFieldType, dimRange >,
-//                                    Elliptic::SolverFiniteVolumePdelabTraits< GridPartType, RangeFieldType, dimRange >
-//                                  >
+                      , std::pair<  Elliptic::SolverFiniteVolumePdelab< GridPartType, RangeFieldType, dimRange >,
+                                    Elliptic::SolverFiniteVolumePdelabTraits< GridPartType, RangeFieldType, dimRange >
+                                  >
                       > ParametricSolverTypes;
 
 template< class T >
@@ -151,11 +151,11 @@ struct ParametricSolverCRTPtest
     const std::shared_ptr< const TestGridPartType > DUNE_UNUSED(testGridPart) = solverAsInterface.gridPart();
     const std::shared_ptr< const TestBoundaryInfoType > DUNE_UNUSED(testBoundaryInfo) = solverAsInterface.boundaryInfo();
     const std::shared_ptr< const TestModelType > DUNE_UNUSED(testModel) = solverAsInterface.model();
-    std::shared_ptr< VectorType > vector = solverAsInterface.createVector();
-    solverAsInterface.visualize(vector, "test_empty_vector", "empty vector", Dune::Stuff::Common::Logger().devnull(), "");
     solverAsInterface.init(Dune::Stuff::Common::Logger().devnull(), "");
     if (!solverAsInterface.initialized())
       DUNE_THROW(Dune::InvalidStateException, "This should not happen!");
+    std::shared_ptr< VectorType > vector = solverAsInterface.createVector();
+    solverAsInterface.visualize(vector, "test_empty_vector", "empty vector", Dune::Stuff::Common::Logger().devnull(), "");
     const ParamType mu = model->paramRange()[0];
     solverAsInterface.solve(vector, mu, "bicgstab.ilut", 1e-6, 1000, Dune::Stuff::Common::Logger().devnull(), "");
     solverAsInterface.visualize(vector, "test_solution", "solution", Dune::Stuff::Common::Logger().devnull(), "");
