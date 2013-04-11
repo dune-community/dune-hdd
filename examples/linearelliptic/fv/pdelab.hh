@@ -36,7 +36,7 @@ int run(int argc, char** argv)
     timer.reset();
     typedef Dune::DetailedSolvers::LinearElliptic::SolverFiniteVolumePdelab< GridPartType, RangeFieldType, 1> SolverType;
     SolverType solver(gridPart, problem.boundaryInfo(), problem.model());
-    solver.init("  ", debug);
+    solver.init(debug, "  ");
     if (!debugLogging)
       info << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
@@ -75,7 +75,53 @@ int run(int argc, char** argv)
                        "  ");
       if (!debugLogging)
         info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    }
+    } else { // if (!model->parametric())
+      typedef typename ModelType::ParamFieldType  ParamFieldType;
+      typedef typename ModelType::ParamType       ParamType;
+      const size_t paramSize = problem.model()->paramSize();
+      const DescriptionType& parameterDescription = description.sub("parameter");
+      const size_t numTestParams = parameterDescription.get< size_t >("test.size");
+      // loop over all test parameters
+      for (size_t ii = 0; ii < numTestParams; ++ii) {
+        const std::string iiString = Dune::Stuff::Common::toString(ii);
+        const ParamType testParameter
+            = parameterDescription.getDynVector< ParamFieldType >("test." + iiString, paramSize);
+        // after this, testParameter is at least as long as paramSize, but it might be too long
+        const ParamType mu = Dune::Stuff::Common::resize(testParameter, paramSize);
+        info << "solving for parameter [" << mu << "]";
+        if (!debugLogging)
+          info << "... " << std::flush;
+        else
+          info << ":" << std::endl;
+        timer.reset();
+        std::shared_ptr< VectorType > solutionVector = solver.createVector();
+        solver.solve(solutionVector,
+                     mu,
+                     linearSolverType,
+                     linearSolverPrecision,
+                     linearSolverMaxIter,
+                     debug,
+                     "  ");
+        if (!debugLogging)
+          info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+        info << "writing solution for parameter [" << mu << "] to disc";
+        if (!debugLogging)
+          info << "... " << std::flush;
+        else
+          info << ":" << std::endl;
+        timer.reset();
+        std::stringstream name;
+        name << id() << ".solution." << iiString << " (parameter [" << mu << "])";
+        solver.visualize(solutionVector,
+                         filename + ".solution." + iiString,
+                         name.str(),
+                         debug,
+                         "  ");
+        if (!debugLogging)
+          info << "done (took " << timer.elapsed() << " sec)" << std::endl;
+        } // loop over all test parameters
+    } // if (!model->parametric())
   } catch (Dune::Exception& e) {
     std::cerr << "Dune reported error: " << e.what() << std::endl;
   } catch (std::exception& e) {
