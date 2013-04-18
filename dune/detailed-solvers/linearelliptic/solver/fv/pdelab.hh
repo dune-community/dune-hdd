@@ -337,10 +337,10 @@ public:
     if (!initialized_) {
       Dune::Timer timer;
       // check
-      if(model_->dirichlet()->parametric() || model_->force()->parametric() || model_->neumann()->parametric())
+      if(model_->dirichlet()->parametric())
         DUNE_THROW(Dune::NotImplemented,
                    "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                   << " only implemented for nonparametric force, dirichlet and neumann functions!");
+                   << " only implemented for nonparametric dirichlet functions!");
       typedef Dune::DetailedSolvers::LinearElliptic::
                 ModelDefault<DomainFieldType, dimDomain, RangeFieldType, dimRange> DefaultModelType;
       typedef Dune::Stuff::FunctionExpression<DomainFieldType, dimDomain, RangeFieldType, dimRange> zeroFunctionType;
@@ -389,8 +389,8 @@ public:
         std::vector< std::shared_ptr< VectorType > > dirichletVectors;
         for (size_t qq = 0; qq < model_->diffusion()->numComponents(); ++qq) {
           // one model for each component (force and neumann are always zero)
-          DefaultModelType model_q(model_->diffusion()->components()[qq], zero, model_->dirichlet(), zero);
-          auto localOperator = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_q, *boundaryInfo_));
+          DefaultModelType model_qq(model_->diffusion()->components()[qq], zero, model_->dirichlet(), zero);
+          auto localOperator = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_qq, *boundaryInfo_));
           auto gridOperator  = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*ansatzSpace_,
                                                                                     *ansatzSpace_,
                                                                                     *localOperator));
@@ -409,55 +409,109 @@ public:
           diffusionMatrices[qq]->backend() = matrix->base();
           dirichletVectors.push_back(std::make_shared<VectorType>());
           dirichletVectors[qq]->backend() = rhs->base();
-          } // loop over all components
-          diffusionMatrix = std::make_shared< AffineParametricMatrixType >(model_->diffusion()->paramSize(),
-                                                                           diffusionMatrices,
-                                                                           model_->diffusion()->coefficients());
-          dirichletVector = std::make_shared< AffineParametricVectorType >(model_->diffusion()->paramSize(),
-                                                                           dirichletVectors,
-                                                                           model_->diffusion()->coefficients());
-          out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+        } // loop over all components
+        diffusionMatrix = std::make_shared< AffineParametricMatrixType >(model_->diffusion()->paramSize(),
+                                                                         diffusionMatrices,
+                                                                         model_->diffusion()->coefficients());
+        dirichletVector = std::make_shared< AffineParametricVectorType >(model_->diffusion()->paramSize(),
+                                                                         dirichletVectors,
+                                                                         model_->diffusion()->coefficients());
+        out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       } // if (!model_->diffusion()->parametric())
 
       // * force vector
-      out << prefix << "  1 force vector...    " << std::flush;
-      timer.reset();
       std::shared_ptr< AffineParametricVectorType > forceVector;
-      std::shared_ptr< VectorType > forceVectors(std::make_shared<VectorType>());
-      // diffusion, dirichlet and neumann are always zero
-      DefaultModelType model_f(zero, model_->force(), zero, zero);
-      auto localOperator_f = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_f, *boundaryInfo_));
-      auto gridOperator_f  = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*ansatzSpace_,
+      // if the force is not parametric
+      if (!model_->force()->parametric()) {
+        out << prefix << "  1 force vector...    " << std::flush;
+        timer.reset();
+        std::shared_ptr< VectorType > forceVectors(std::make_shared<VectorType>());
+        // diffusion, dirichlet and neumann are always zero
+        DefaultModelType model_f(zero, model_->force(), zero, zero);
+        auto localOperator = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_f, *boundaryInfo_));
+        auto gridOperator  = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*ansatzSpace_,
                                                                                        *ansatzSpace_,
-                                                                                       *localOperator_f));
-      PdelabVectorType residual(*ansatzSpace_, 0.0);
-      auto rhs = Dune::shared_ptr< PdelabVectorType >(new PdelabVectorType(*ansatzSpace_, 0.0));
-      // compute residual R(initialGuess)
-      gridOperator_f->residual(initialGuess, residual);
-      *rhs -= residual;
-      forceVectors->backend() = rhs->base();
-      forceVector = std::make_shared< AffineParametricVectorType >(forceVectors);
-      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+                                                                                       *localOperator));
+        PdelabVectorType residual(*ansatzSpace_, 0.0);
+        auto rhs = Dune::shared_ptr< PdelabVectorType >(new PdelabVectorType(*ansatzSpace_, 0.0));
+        // compute residual R(initialGuess)
+        gridOperator->residual(initialGuess, residual);
+        *rhs -= residual;
+        forceVectors->backend() = rhs->base();
+        forceVector = std::make_shared< AffineParametricVectorType >(forceVectors);
+        out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      } else {
+        // we are separable (see constructor), loop over all components
+        out << prefix << "  " << model_->force()->numComponents() << " force vectors...   " << std::flush;
+        timer.reset();
+        std::vector< std::shared_ptr< VectorType > > forceVectors;
+        for (size_t qq = 0; qq < model_->force()->numComponents(); ++qq) {
+          // one model for each component (diffusion, dirichlet and neumann are always zero)
+          DefaultModelType model_qq(zero, model_->force()->components()[qq], zero, zero);
+          auto localOperator = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_qq, *boundaryInfo_));
+          auto gridOperator  = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*ansatzSpace_,
+                                                                                         *ansatzSpace_,
+                                                                                         *localOperator));
+          PdelabVectorType residual(*ansatzSpace_, 0.0);
+          auto rhs = Dune::shared_ptr< PdelabVectorType >(new PdelabVectorType(*ansatzSpace_, 0.0));
+          // compute residual R(initialGuess)
+          gridOperator->residual(initialGuess, residual);
+          *rhs -= residual;
+          forceVectors.push_back(std::make_shared<VectorType>());
+          forceVectors[qq]->backend() = rhs->base();
+          } // loop over all components
+        forceVector = std::make_shared< AffineParametricVectorType >(model_->force()->paramSize(),
+                                                                     forceVectors,
+                                                                     model_->force()->coefficients());
+        out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      } // if (!model_->force()->parametric())
 
       // * neumann vector
-      out << prefix << "  1 neumann vector...    " << std::flush;
-      timer.reset();
       std::shared_ptr< AffineParametricVectorType > neumannVector;
-      std::shared_ptr< VectorType > neumannVectors(std::make_shared<VectorType>());
-      // diffusion, force and dirichlet are always zero
-      DefaultModelType model_gN(zero, zero, zero, model_->neumann());
-      auto localOperator_gN = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_gN, *boundaryInfo_));
-      auto gridOperator_gN  = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*ansatzSpace_,
-                                                                                        *ansatzSpace_,
-                                                                                        *localOperator_gN));
-      residual=0.0;
-      *rhs = 0.0;
-      // compute residual R(initialGuess)
-      gridOperator_gN->residual(initialGuess, residual);
-      *rhs -= residual;
-      neumannVectors->backend() = rhs->base();
-      neumannVector = std::make_shared< AffineParametricVectorType >(neumannVectors);
-      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      // if the neumann function is not parametric
+      if (!model_->neumann()->parametric()) {
+        out << prefix << "  1 neumann vector...    " << std::flush;
+        timer.reset();
+        std::shared_ptr< VectorType > neumannVectors(std::make_shared<VectorType>());
+        // diffusion, force and dirichlet are always zero
+        DefaultModelType model_gN(zero, zero, zero, model_->neumann());
+        auto localOperator = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_gN, *boundaryInfo_));
+        auto gridOperator  = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*ansatzSpace_,
+                                                                                       *ansatzSpace_,
+                                                                                       *localOperator));
+        PdelabVectorType residual(*ansatzSpace_, 0.0);
+        auto rhs = Dune::shared_ptr< PdelabVectorType >(new PdelabVectorType(*ansatzSpace_, 0.0));
+        // compute residual R(initialGuess)
+        gridOperator->residual(initialGuess, residual);
+        *rhs -= residual;
+        neumannVectors->backend() = rhs->base();
+        neumannVector = std::make_shared< AffineParametricVectorType >(neumannVectors);
+        out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      } else {
+        // we are separable (see constructor), loop over all components
+        out << prefix << "  " << model_->neumann()->numComponents() << " neumann vectors...   " << std::flush;
+        timer.reset();
+        std::vector< std::shared_ptr< VectorType > > neumannVectors;
+        for (size_t qq = 0; qq < model_->neumann()->numComponents(); ++qq) {
+          // one model for each component (diffusion, force and dirichlet are always zero)
+          DefaultModelType model_qq(zero, zero, zero, model_->neumann()->components()[qq]);
+          auto localOperator = Dune::shared_ptr< LocalOperatorType >(new LocalOperatorType(model_qq, *boundaryInfo_));
+          auto gridOperator  = Dune::shared_ptr< GridOperatorType >(new GridOperatorType(*ansatzSpace_,
+                                                                                         *ansatzSpace_,
+                                                                                         *localOperator));
+          PdelabVectorType residual(*ansatzSpace_, 0.0);
+          auto rhs = Dune::shared_ptr< PdelabVectorType >(new PdelabVectorType(*ansatzSpace_, 0.0));
+          // compute residual R(initialGuess)
+          gridOperator->residual(initialGuess, residual);
+          *rhs -= residual;
+          neumannVectors.push_back(std::make_shared<VectorType>());
+          neumannVectors[qq]->backend() = rhs->base();
+          } // loop over all components
+        neumannVector = std::make_shared< AffineParametricVectorType >(model_->neumann()->paramSize(),
+                                                                       neumannVectors,
+                                                                       model_->neumann()->coefficients());
+        out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+      } // if (!model_->neumann()->parametric())
 
       vectors_.insert(std::make_pair("dirichlet", dirichletVector));
       matrices_.insert(std::make_pair("diffusion", diffusionMatrix));
