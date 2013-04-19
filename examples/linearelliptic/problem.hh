@@ -1,10 +1,4 @@
-﻿#ifdef HAVE_CMAKE_CONFIG
-  #include "cmake_config.h"
-#elif defined (HAVE_CONFIG_H)
-  #include "config.h"
-#endif
-
-#include <memory>
+﻿#include <memory>
 
 #include <dune/common/exceptions.hh>
 #include <dune/common/mpihelper.hh>
@@ -24,30 +18,28 @@
 #include <dune/detailed-solvers/linearelliptic/model.hh>
 
 
-namespace Stuff = Dune::Stuff;
-namespace Elliptic = Dune::DetailedSolvers::LinearElliptic;
-
-
-static const int polOrder = 1;
-static const int maxParamDim = 50;
-typedef Stuff::GridProviderInterface<>            GridProviderType;
-typedef Stuff::GridProviders<>                    GridProviders;
-typedef GridProviderType::GridType                GridType;
-typedef Dune::grid::Part::Leaf::Const< GridType > GridPartType;
-typedef Stuff::GridboundaryInterface< typename GridPartType::GridViewType > GridboundariesType;
-typedef Stuff::Gridboundaries< typename GridPartType::GridViewType >        Gridboundaries;
-typedef GridPartType::ctype                                                               DomainFieldType;
-static const int DUNE_UNUSED(                                                             dimDomain) = GridProviderType::dim;
-typedef double                                                                            RangeFieldType;
-static const int DUNE_UNUSED(                                                             dimRange) = 1;
-typedef Elliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
-typedef Elliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
-typedef Stuff::Common::ExtendedParameterTree DescriptionType;
-
-
+#if defined HAVE_CONFIG_H || defined HAVE_CMAKE_CONFIG
+template< class GridImp = Dune::GridSelector::GridType >
+#else
+template< class GridImp = Dune::SGrid< 2, 2 > >
+#endif
 class Problem
 {
 public:
+  typedef GridImp                                         GridType;
+  typedef Dune::Stuff::GridProviderInterface< GridType >  GridProviderType;
+  typedef Dune::Stuff::GridProviders< GridType >          GridProviders;
+  typedef Dune::grid::Part::Leaf::Const< GridType >       GridPartType;
+  typedef Dune::Stuff::GridboundaryInterface< typename GridPartType::GridViewType > GridboundariesType;
+  typedef Dune::Stuff::Gridboundaries< typename GridPartType::GridViewType >        Gridboundaries;
+  typedef typename GridPartType::ctype   DomainFieldType;
+  static const int DUNE_UNUSED( dimDomain) = GridProviderType::dim;
+  typedef double                RangeFieldType;
+  static const int DUNE_UNUSED( dimRange) = 1;
+  typedef Dune::DetailedSolvers::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
+  typedef Dune::DetailedSolvers::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
+  typedef Dune::Stuff::Common::ExtendedParameterTree DescriptionType;
+
   static void writeDescriptionFile(const std::string filename, const std::string _id = id())
   {
     std::ofstream file;
@@ -73,7 +65,7 @@ public:
     writeDescriptionsToFile< Gridboundaries >(file);
     writeDescriptionsToFile< Models >(file);
     file.close();
-  } // void writeParamFile(const std::string filename)
+  } // ... writeDescriptionFile(...)
 
   Problem(int argc, char** argv)
   {
@@ -88,16 +80,16 @@ public:
 
     // logger
     const DescriptionType& logDescription = description_.sub("logging");
-    int logFlags = Stuff::Common::LOG_CONSOLE;
+    int logFlags = Dune::Stuff::Common::LOG_CONSOLE;
     debugLogging_ = logDescription.get< bool >("debug", false);
     if (logDescription.get< bool >("info"))
-      logFlags = logFlags | Stuff::Common::LOG_INFO;
+      logFlags = logFlags | Dune::Stuff::Common::LOG_INFO;
     if (debugLogging_)
-      logFlags = logFlags | Stuff::Common::LOG_DEBUG;
+      logFlags = logFlags | Dune::Stuff::Common::LOG_DEBUG;
     if (logDescription.get< bool >("file", false))
-      logFlags = logFlags | Stuff::Common::LOG_FILE;
-    Stuff::Common::Logger().create(logFlags, id(), "", "");
-    Stuff::Common::LogStream& info  = Stuff::Common::Logger().info();
+      logFlags = logFlags | Dune::Stuff::Common::LOG_FILE;
+    Dune::Stuff::Common::Logger().create(logFlags, id(), "", "");
+    Dune::Stuff::Common::LogStream& info  = Dune::Stuff::Common::Logger().info();
 
     Dune::Timer timer;
 
@@ -178,7 +170,7 @@ private:
              const std::vector< std::string > keys,
              std::ofstream& file)
   {
-    std::string whitespace = Stuff::Common::whitespaceify(name + " = ");
+    std::string whitespace = Dune::Stuff::Common::whitespaceify(name + " = ");
     file << name << " = " << keys[0] << std::endl;
     for (size_t ii = 1; ii < keys.size(); ++ii)
       file << whitespace << keys[ii] << std::endl;
@@ -188,7 +180,7 @@ private:
   static void writeDescriptionsToFile(std::ofstream& file)
   {
     for (auto type : DescriptionProvider::available()) {
-      const Stuff::Common::ExtendedParameterTree& description = DescriptionProvider::createSampleDescription(type, type);
+      const Dune::Stuff::Common::ExtendedParameterTree& description = DescriptionProvider::createSampleDescription(type, type);
       description.reportNicely(file);
     }
   }
