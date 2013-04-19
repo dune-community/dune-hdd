@@ -44,6 +44,7 @@ add_definitions( ${CUSTOM_FLAGS} )
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
 
 add_dune_modules(
+  stuff
   common
   fem
   istl
@@ -51,7 +52,6 @@ add_dune_modules(
   grid
   grid-multiscale
   localfunctions
-  stuff
   detailed-discretizations
   pdelab
 )
