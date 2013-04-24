@@ -9,11 +9,22 @@ std::string id(){
 #include <dune/detailed-solvers/linearelliptic/solver/cg/detailed-discretizations.hh>
 
 
+namespace Stuff = Dune::Stuff;
+namespace Elliptic = Dune::DetailedSolvers::LinearElliptic;
+
+
 int run(int argc, char** argv)
 {
   try {
     // init problem
-    Problem problem(argc, argv);
+    typedef Problem<> ProblemType;
+    typedef ProblemType::DescriptionType DescriptionType;
+    typedef ProblemType::GridPartType GridPartType;
+    typedef ProblemType::RangeFieldType RangeFieldType;
+    static const int DUNE_UNUSED(dimDomain) = ProblemType::dimDomain;
+    static const int DUNE_UNUSED(dimRange) = ProblemType::dimRange;
+    typedef ProblemType::ModelType ModelType;
+    ProblemType problem(argc, argv);
     const bool debugLogging = problem.debugLogging();
     Stuff::Common::LogStream& info  = Stuff::Common::Logger().info();
     Stuff::Common::LogStream& debug = Stuff::Common::Logger().debug();
