@@ -13,17 +13,20 @@ namespace Stuff = Dune::Stuff;
 namespace Elliptic = Dune::DetailedSolvers::LinearElliptic;
 
 
+// define the 'analytical' types
+typedef Problem<>                     ProblemType;
+typedef ProblemType::DescriptionType  DescriptionType;
+typedef ProblemType::GridPartType     GridPartType;
+typedef ProblemType::RangeFieldType   RangeFieldType;
+static const int DUNE_UNUSED(         dimDomain) = ProblemType::dimDomain;
+static const int DUNE_UNUSED(         dimRange) = ProblemType::dimRange;
+typedef ProblemType::ModelType        ModelType;
+
+
 int run(int argc, char** argv)
 {
   try {
     // init problem
-    typedef Problem<> ProblemType;
-    typedef ProblemType::DescriptionType DescriptionType;
-    typedef ProblemType::GridPartType GridPartType;
-    typedef ProblemType::RangeFieldType RangeFieldType;
-    static const int DUNE_UNUSED(dimDomain) = ProblemType::dimDomain;
-    static const int DUNE_UNUSED(dimRange) = ProblemType::dimRange;
-    typedef ProblemType::ModelType ModelType;
     ProblemType problem(argc, argv);
     const bool debugLogging = problem.debugLogging();
     Stuff::Common::LogStream& info  = Stuff::Common::Logger().info();
