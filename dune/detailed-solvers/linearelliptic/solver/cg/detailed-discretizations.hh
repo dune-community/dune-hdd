@@ -29,6 +29,7 @@
 #include <dune/detailed/discretizations/assembler/local/codim1/vector.hh>
 #include <dune/detailed/discretizations/assembler/system.hh>
 
+#include "../../model/interface.hh"
 #include "../interface.hh"
 
 namespace Dune {
