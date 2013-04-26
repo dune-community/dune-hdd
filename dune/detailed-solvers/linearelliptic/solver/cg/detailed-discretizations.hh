@@ -111,10 +111,6 @@ public:
   typedef typename TestSpaceType::PatternType                 PatternType;
 
 private:
-//  typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< TestSpaceType, VectorType >
-//                                                                                        DiscreteTestFunctionType;
-//  typedef Dune::Detailed::Discretizations::DiscreteFunction::DefaultConst< TestSpaceType, VectorType >
-//                                                                                        DiscreteTestFunctionConstType;
   typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorType >
                                                                                         DiscreteAnsatzFunctionType;
   typedef Dune::Detailed::Discretizations::DiscreteFunction::DefaultConst< AnsatzSpaceType, VectorType >
@@ -291,7 +287,7 @@ public:
       } // if (!model_->diffusion()->parametric())
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       // * right hand side
-      //   * L2 force functional
+      //   * force functional
       typedef Dune::Detailed::Discretizations::Evaluation::Local::Unary::Scale< FunctionSpaceType,
                                                                                 typename ModelType::FunctionType >
         ProductEvaluationType;
@@ -315,7 +311,7 @@ public:
       } // if (!model_->force()->parametric())
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
       timer.reset();
-      //   * L2 neumann functional
+      //   * neumann functional
       std::vector< ProductEvaluationType* > neumannEvaluations;
       std::vector< L2VolumeFunctionalType* > neumannFunctionals;
       if (!model_->neumann()->parametric())
@@ -355,6 +351,11 @@ public:
             << testSpace_->map().size() << "x" << testSpace_->map().size() << ")... " << std::flush;
         std::vector< std::shared_ptr< MatrixType > > diffusionMatrices;
         for (size_t qq = 0; qq < model_->diffusion()->numComponents(); ++qq)
+          diffusionMatrices.push_back(ContainerFactory::createRowMajorSparseMatrix(*testSpace_,
+                                                                                   *testSpace_,
+                                                                                   *diffusionPattern));
+        // if there is no affine part, we add one to hold the diagonal entries for the dirichlet boundaries
+        if (model_->diffusion()->numCoefficients() == model_->diffusion()->numComponents())
           diffusionMatrices.push_back(ContainerFactory::createRowMajorSparseMatrix(*testSpace_,
                                                                                    *testSpace_,
                                                                                    *diffusionPattern));
@@ -451,6 +452,21 @@ public:
         systemAssembler.addLocalVectorAssembler(localNeumannVectorAssembler[qq],
                                                 neumannVector->components()[qq]);
       systemAssembler.assemble();
+      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+
+      out << prefix << "applying constraints... " << std::flush;
+      // we delete the rows of all component matrices
+      systemAssembler.clearMatrixRows(diffusionMatrix->components(),
+                                      *diffusionPattern,
+                                      false);
+      // and put the diagonal entries into the one matrix, that does not have a coeffient
+      systemAssembler.clearMatrixRows(*(diffusionMatrix->components()[diffusionMatrix->numComponents() - 1]),
+                                      *diffusionPattern);
+      // we also delete the dirichlet entries of the vectors
+      systemAssembler.clearVectorEntries(forceVector->components(),
+                                         false);
+      systemAssembler.clearVectorEntries(neumannVector->components(),
+                                         false);
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // clean up
@@ -577,7 +593,7 @@ private:
                  << Dune::Stuff::Common::colorStringRed("ERROR:")
                  << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
                  << solutionVector->size() << ", should be " << testSpace_->map().size() << ")!");
-    solutionVector->backend() += dirichletVector.components()[0]->backend();
+    solutionVector->backend() += dirichletVector.fix(muDirichlet)->backend();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void solve(...)
 
