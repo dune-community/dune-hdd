@@ -1,9 +1,4 @@
-################################
-# Dune module information file #
-################################
-
-#Name of the module
 Module: dune-detailed-solvers
-Version: 2.2.1
+Version: 0.1
 Maintainer: felix.albrecht@uni-muenster.de
 Depends: dune-stuff (>= 2.2.1) dune-detailed-discretizations (>= 2.2.1) dune-grid-multiscale (>= 2.2) dune-pdelab (>= 1.0.1)
