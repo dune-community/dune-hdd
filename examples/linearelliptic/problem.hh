@@ -214,8 +214,8 @@ public:
   static const int DUNE_UNUSED( dimDomain) = MsGridProviderType::dim;
   typedef double                RangeFieldType;
   static const int DUNE_UNUSED( dimRange) = 1;
-  typedef Dune::DetailedSolvers::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
-  typedef Dune::DetailedSolvers::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
+  typedef Dune::DetailedSolvers::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+  typedef Dune::DetailedSolvers::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >         Models;
   typedef Dune::Stuff::Common::ExtendedParameterTree DescriptionType;
 
   static void writeDescriptionFile(const std::string filename, const std::string _id = id())
