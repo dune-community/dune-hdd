@@ -37,6 +37,11 @@ namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
+// forward of the multiscale solver, to allow for some friendlyness
+template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder >
+class MultiscaleSolverSemiContinuousGalerkinDD;
+
+
 // forward of the solver, to be used in the traits and allow for specialization
 template< class GridPartImp, class RangeFieldImp, int rangeDim, int polynomialOrder >
 class SolverContinuousGalerkinDD
@@ -103,12 +108,11 @@ private:
   typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Continuous::Lagrange< FunctionSpaceType,
                                                                                         GridPartType,
                                                                                         polOrder >  LagrangeSpaceType;
-  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< LagrangeSpaceType >
-                                                                                                    TestSpaceType;
-  typedef TestSpaceType                                                                             AnsatzSpaceType;
-
 public:
-  typedef typename TestSpaceType::PatternType                 PatternType;
+  typedef Dune::Detailed::Discretizations::DiscreteFunctionSpace::Sub::Linear::Dirichlet< LagrangeSpaceType >
+                                                TestSpaceType;
+  typedef TestSpaceType                         AnsatzSpaceType;
+  typedef typename TestSpaceType::PatternType   PatternType;
 
 private:
   typedef Dune::Detailed::Discretizations::DiscreteFunction::Default< AnsatzSpaceType, VectorType >
@@ -164,26 +168,6 @@ public:
     testSpace_ = std::make_shared< const TestSpaceType >(*lagrangeSpace_, boundaryInfo_);
   } // SolverContinuousGalerkinDD
 
-//  static DescriptionType createSampleDescription(const std::string /*subName*/ = "")
-//  {
-//    return DescriptionType();
-//  } // ... createSampleDescription(...)
-
-//  static ThisType* createFromDescription(const std::shared_ptr< const GridPartType > /*_gridPart*/,
-//                                         const std::shared_ptr< const ModelType > /*_model*/,
-//                                         const std::shared_ptr< const BoundaryInfoType > /*_boundaryInfo*/,
-//                                         const DescriptionType& _description,
-//                                         const std::string _subName = id())
-//  {
-//    // get correct description
-//    DescriptionType description;
-//    if (_description.hasSub(_subName))
-//      description = _description.sub(_subName);
-//    else
-//      description = _description;
-//    assert(false);
-//  } // ... createFromParamTree(...)
-
   std::shared_ptr< const GridPartType > gridPart() const
   {
     return gridPart_;
@@ -225,6 +209,21 @@ public:
     visualizeFunction(discreteFunction, filename, Dune::Stuff::Common::Logger().devnull());
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // ... visualize(...)
+
+  /**
+   *  \defgroup multiscale ´´These methods are needed by the multiscale solver.``
+   *  @{
+   */
+  std::shared_ptr< const AnsatzSpaceType > ansatzSpace() const
+  {
+    return testSpace_;
+  }
+
+  std::shared_ptr< const TestSpaceType > testSpace() const
+  {
+    return testSpace_;
+  }
+  /** @} */
 
   void init(std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
             const std::string prefix = "")
@@ -606,321 +605,47 @@ public:
                   prefix, out);
   } // ... solve(..., mu, ...)
 
-#if 0
-  std::shared_ptr< const AnsatzSpaceType > ansatzSpace() const
-  {
-    assert(initialized_);
-    return testSpace_;
-  }
-
-  std::shared_ptr< const TestSpaceType > testSpace() const
-  {
-    assert(initialized_);
-    return testSpace_;
-  }
-
-  std::shared_ptr< const PatternType > systemPattern(const std::string type = "diffusion") const
+  std::shared_ptr< const PatternType > pattern(const std::string type = "diffusion") const
   {
     if (!initialized_)
       DUNE_THROW(Dune::InvalidStateException,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
                  << " please call init() before calling pattern()!");
-    assert(patterns_.find(type) != patterns_.end());
-    return patterns_.find(type)->second;
-  } // std::shared_ptr< const PatternType > pattern() const
+    const auto result = patterns_.find(type);
+    if (result == patterns_.end())
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " wrong type given (is '" << type << "', has to be 'diffusion')!");
+    return result->second;
+  } // ... pattern(...) const
 
-  std::shared_ptr< const AffineParametricMatrixType > systemMatrix(const std::string type) const
+  std::shared_ptr< const AffineParametricMatrixType > matrix(const std::string type = "diffusion") const
   {
     if (!initialized_)
       DUNE_THROW(Dune::InvalidStateException,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " please call init() before calling systemMatrix()!");
-    assert(matrices_.find(type) != matrices_.end());
-    return matrices_.find(type)->second;
-  } // std::shared_ptr< const PatternType > pattern() const
+                 << " please call init() before calling matrix()!");
+    const auto result = matrices_.find(type);
+    if (result == matrices_.end())
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " wrong type given (is '" << type << "', has to be 'diffusion')!");
+    return result->second;
+  } // ... matrix(...) const
 
-  std::shared_ptr< AffineParametricMatrixType > matrix(const std::string type)
+  std::shared_ptr< const AffineParametricVectorType > vector(const std::string type) const
   {
     if (!initialized_)
       DUNE_THROW(Dune::InvalidStateException,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " please call init() before calling systemMatrix()!");
-    assert(matrices_.find(type) != matrices_.end());
-    return matrices_.find(type)->second;
-  } // std::shared_ptr< const PatternType > pattern() const
-
-  std::shared_ptr< MatrixType > systemMatrix(const ParamType mu = ParamType()) const
-  {
-    if (!initialized_)
+                 << " please call init() before calling matrix()!");
+    const auto result = vectors_.find(type);
+    if (result == vectors_.end())
       DUNE_THROW(Dune::InvalidStateException,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " please call init() before calling systemMatrix()!");
-    // first of all, get the corect parameters (the model returns empty ones for nonparametric functions)
-    const ParamType muDiffusion = model_->mapParam(mu, "diffusion");
-    assert(matrices_.find("diffusion") != matrices_.end());
-    const AffineParametricMatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
-    std::shared_ptr< MatrixType > systemMatrix = diffusionMatrix.fix(muDiffusion);
-    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-    const SystemAssemblerType systemAssembler(*testSpace_, *testSpace_);
-    systemAssembler.applyMatrixConstraints(*systemMatrix);
-    return systemMatrix;
-  }
-
-  std::shared_ptr< const AffineParametricVectorType > systemVector(const std::string type) const
-  {
-    if (!initialized_)
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " please call init() before calling systemVector()!");
-    assert(vectors_.find(type) != vectors_.end());
-    return vectors_.find(type)->second;
-  } // std::shared_ptr< const PatternType > pattern() const
-
-  std::shared_ptr< AffineParametricVectorType > vector(const std::string type)
-  {
-    if (!initialized_)
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " please call init() before calling systemVector()!");
-    assert(vectors_.find(type) != vectors_.end());
-    return vectors_.find(type)->second;
-  }
-
-  std::shared_ptr< VectorType > rightHandSide(const ParamType mu = ParamType()) const
-  {
-    if (!initialized_)
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " please call init() before calling rightHandSide()!");
-    // first of all, get the corect parameters (the model returns empty ones for nonparametric functions)
-    const ParamType muDiffusion = model_->mapParam(mu, "diffusion");
-    const ParamType muForce = model_->mapParam(mu, "force");
-    const ParamType muDirichlet = model_->mapParam(mu, "dirichlet");
-    const ParamType muNeumann = model_->mapParam(mu, "neumann");
-    assert(matrices_.find("diffusion") != matrices_.end());
-    assert(vectors_.find("force") != vectors_.end());
-    assert(vectors_.find("neumann") != vectors_.end());
-    assert(vectors_.find("dirichlet") != vectors_.end());
-    const AffineParametricMatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
-    const AffineParametricVectorType& forceVector = *(vectors_.find("force")->second);
-    const AffineParametricVectorType& neumannVector = *(vectors_.find("neumann")->second);
-    const AffineParametricVectorType& dirichletVector = *(vectors_.find("dirichlet")->second);
-    std::shared_ptr< MatrixType > systemMatrix = diffusionMatrix.fix(muDiffusion);
-    std::shared_ptr< VectorType > rightHandSide(new VectorType());
-    rightHandSide->backend() = forceVector.fix(muForce)->backend()
-        + neumannVector.fix(muNeumann)->backend()
-        - systemMatrix->backend() * dirichletVector.fix(muDirichlet)->backend();
-    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-    const SystemAssemblerType systemAssembler(*testSpace_, *testSpace_);
-    systemAssembler.applyVectorConstraints(*rightHandSide);
-    return rightHandSide;
-  }
-
-  std::shared_ptr< VectorType > createAnsatzVector() const
-  {
-    assert(initialized_ && "Please call init() before calling createAnsatzVector()!");
-    std::shared_ptr< VectorType > vector(ContainerFactory::createDenseVector(*testSpace_));
-    return vector;
-  } // std::shared_ptr< VectorType > createAnsatzVector() const
-
-  std::shared_ptr< VectorType > createTestVector() const
-  {
-    assert(initialized_ && "Please call init() before calling createAnsatzVector()!");
-    std::shared_ptr< VectorType > vector(ContainerFactory::createDenseVector(*testSpace_));
-    return vector;
-  } // std::shared_ptr< VectorType > createAnsatzVector() const
-
-  std::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(const std::string name = "ansatzFunction") const
-  {
-    assert(initialized_ && "Please call init() before calling createAnsatzFunction()!");
-    std::shared_ptr< DiscreteAnsatzFunctionType > ansatzFunction(new DiscreteAnsatzFunctionType(
-                                                                    *testSpace_,
-                                                                    name));
-    return ansatzFunction;
-  } // std::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(...) const
-
-  std::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(std::shared_ptr< VectorType > vector,
-                                                                      const std::string name = "ansatzFunction") const
-  {
-    assert(initialized_ && "Please call init() before calling createAnsatzFunction()!");
-    std::shared_ptr< DiscreteAnsatzFunctionType > ansatzFunction(new DiscreteAnsatzFunctionType(
-                                                                    *testSpace_,
-                                                                    vector,
-                                                                    name));
-    return ansatzFunction;
-  } // std::shared_ptr< DiscreteAnsatzFunctionType > createAnsatzFunction(...) const
-
-  std::shared_ptr< DiscreteTestFunctionType > createTestFunction(const std::string name = "testFunction") const
-  {
-    assert(initialized_ && "Please call init() before calling createTestFunction()!");
-    std::shared_ptr< DiscreteTestFunctionType > testFunction(new DiscreteTestFunctionType(
-                                                                *testSpace_,
-                                                                name));
-    return testFunction;
-  } // std::shared_ptr< DiscreteAnsatzFunctionType > createTestFunction(...) const
-
-  std::shared_ptr< DiscreteTestFunctionType > createTestFunction(std::shared_ptr< VectorType > vector,
-                                                                  const std::string name = "testFunction") const
-  {
-    assert(initialized_ && "Please call init() before calling createTestFunction()!");
-    std::shared_ptr< DiscreteTestFunctionType > testFunction(new DiscreteTestFunctionType(
-                                                                *testSpace_,
-                                                                vector,
-                                                                name));
-    return testFunction;
-  } // std::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
-
-  std::shared_ptr< DiscreteTestFunctionConstType > createConstTestFunction(const std::shared_ptr< const VectorType > vector,
-                                                                            const std::string name = "testFunction") const
-  {
-    assert(initialized_ && "Please call init() before calling createTestFunction()!");
-    std::shared_ptr< DiscreteTestFunctionConstType > testFunction(new DiscreteTestFunctionConstType(
-                                                                     *testSpace_,
-                                                                     vector,
-                                                                     name));
-    return testFunction;
-  } // std::shared_ptr< DiscreteTestFunctionType > createTestFunction(...) const
-
-  void solveFullNeumann(std::shared_ptr< VectorType >& solutionVector,
-                        const std::string& linearSolverType,
-                        const size_t& linearSolverMaxIter,
-                        const double linearSolverPrecision,
-                        const std::string prefix,
-                        std::ostream& out) const
-  {
-    if (!initialized_)
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " call init() before calling solveFullNeumann()!");
-    // check, that we are really in the nonparametric setting!
-    if (parametric())
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " nonparametric solveFullNeumann() called for a parametric model!");
-    // first of all, get the corect parameters (the model returns empty ones for nonparametric functions)
-    const ParamType mu;
-    const ParamType muDiffusion = model_->mapParam(mu, "diffusion");
-    const ParamType muForce = model_->mapParam(mu, "force");
-    const ParamType muNeumann = model_->mapParam(mu, "neumann");
-    assert(matrices_.find("diffusion") != matrices_.end());
-    assert(vectors_.find("force") != vectors_.end());
-    assert(vectors_.find("neumann") != vectors_.end());
-    assert(vectors_.find("dirichlet") != vectors_.end());
-    const AffineParametricMatrixType& diffusionMatrix = *(matrices_.find("diffusion")->second);
-    const AffineParametricVectorType& forceVector = *(vectors_.find("force")->second);
-    const AffineParametricVectorType& neumannVector = *(vectors_.find("neumann")->second);
-    Dune::Timer timer;
-    out << prefix << "computing system matrix...   " << std::flush;
-    std::shared_ptr< MatrixType > systemMatrix = diffusionMatrix.fix(muDiffusion);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    out << prefix << "computing right hand side... " << std::flush;
-    timer.reset();
-    VectorType rightHandSide;
-    rightHandSide.backend() = forceVector.fix(muForce)->backend()
-        + neumannVector.fix(muNeumann)->backend();
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    out << prefix << "fixing first dof...      " << std::flush;
-    timer.reset();
-    assert(patterns_.find("diffusion") != patterns_.end());
-    for (size_t jj : patterns_.find("diffusion")->second->set(0))
-      systemMatrix->set(0, jj, 0.0);
-    systemMatrix->set(0, 0, 1.0);
-    rightHandSide.set(0, 0.0);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    out << prefix << "solving linear system (of size " << systemMatrix->rows()
-        << "x" << systemMatrix->cols() << ")" << std::endl;
-    out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
-    timer.reset();
-    typedef typename Dune::Stuff::LA::Solver::Interface< MatrixType, VectorType > SolverType;
-    const std::shared_ptr< const SolverType > solver(Dune::Stuff::LA::Solver::create< MatrixType, VectorType >(linearSolverType));
-    const unsigned int failure = solver->apply(*systemMatrix,
-                                               rightHandSide,
-                                               *solutionVector,
-                                               linearSolverMaxIter,
-                                               linearSolverPrecision);
-    if (failure)
-      DUNE_THROW(Dune::MathError,
-                 "\n"
-                 << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " linear solver '" << linearSolverType << "' reported error code " << failure << "!\n"
-                 << "  1: did not converge\n"
-                 << "  2: had numerical issues\n"
-                 << "  3: dude, I have no idea");
-    if (solutionVector->size() != testSpace_->map().size())
-      DUNE_THROW(Dune::MathError,
-                 "\n"
-                 << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " linear solver '" << linearSolverType << "' produced a solution of wrong size (is "
-                 << solutionVector->size() << ", should be " << testSpace_->map().size() << ")!");
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-  } // void solve(...)
-
-  void visualizeAnsatzVector(const std::shared_ptr< const VectorType > vector,
-                             const std::string filename = id() + ".ansatzVector",
-                             const std::string name = id() + ".ansatzVector",
-                             const std::string prefix = "",
-                             std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-  {
-    // preparations
-    assert(initialized_ && "Please call init() before calling visualize()");
-    assert(vector->size() == testSpace_->map().size() && "Given vector has wrong size!");
-    Dune::Timer timer;
-    out << prefix << "writing '" << name << "'" << std::endl;
-    out << prefix << "     to '" << filename;
-    if (dimDomain == 1)
-      out << ".vtp";
-    else
-      out << ".vtu";
-    out << "'... " << std::flush;
-    const std::shared_ptr< const DiscreteAnsatzFunctionConstType > discreteFunction
-        = createConstAnsatzFunction(vector, name);
-    visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-  } // void visualizeAnsatzVector(...)
-
-  void visualizeTestVector(const std::shared_ptr< const VectorType > vector,
-                           const std::string filename = id() + ".testVector",
-                           const std::string name = id() + ".testVector",
-                           const std::string prefix = "",
-                           std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-  {
-    // preparations
-    assert(initialized_ && "Please call init() before calling visualize()");
-    assert(vector->size() == testSpace_->map().size() && "Given vector has wrong size!");
-    Dune::Timer timer;
-    out << prefix << "writing '" << name << "'" << std::endl;
-    out << prefix << "     to '" << filename;
-    if (dimDomain == 1)
-      out << ".vtp";
-    else
-      out << ".vtu";
-    out << "'... " << std::flush;
-    const std::shared_ptr< const DiscreteTestFunctionConstType > discreteFunction
-        = createConstTestFunction(vector, name);
-    visualizeFunction(discreteFunction, filename, "", Dune::Stuff::Common::Logger().devnull());
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-  } // void visualizeAnsatzVector(...)
-
-  void visualizeFunction(const std::shared_ptr< const DiscreteAnsatzFunctionType > discreteFunction,
-                         const std::string filename = id() + ".discreteAnsatzFunction",
-                         const std::string prefix = "",
-                         std::ostream& out = Dune::Stuff::Common::Logger().debug()) const
-  {
-    // preparations
-    assert(initialized_ && "Please call init() before calling visualize()");
-    Dune::Timer timer;
-    out << prefix << "writing '" << discreteFunction->name() << "' to '" << filename;
-    if (dimDomain == 1)
-      out << ".vtp";
-    else
-      out << ".vtu";
-    out << "'... " << std::flush;
-    typedef Dune::VTKWriter< typename DiscreteAnsatzFunctionType::DiscreteFunctionSpaceType::GridViewType > VTKWriterType;
-    VTKWriterType vtkWriter(discreteFunction->space().gridView());
-    vtkWriter.addVertexData(discreteFunction);
-    vtkWriter.write(filename);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
-  } // void visualizeFunction(...)
-#endif
+                 << " wrong type given (is '" << type << "', has to be one of 'force', 'dirichlet', 'neumann')!");
+    return result->second;
+  } // ... vector(...) const
 
 private:
   std::shared_ptr< DiscreteAnsatzFunctionConstType > createConstAnsatzFunction(const std::shared_ptr< const VectorType > vector,
@@ -948,6 +673,9 @@ private:
     vtkWriter.write(filename);
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // void visualizeFunction(...)
+
+  template< class G, class R, int r, int p >
+  friend class MultiscaleSolverSemiContinuousGalerkinDD;
 
   const std::shared_ptr< const GridPartType > gridPart_;
   const std::shared_ptr< const BoundaryInfoType > boundaryInfo_;
