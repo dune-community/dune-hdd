@@ -58,6 +58,7 @@ public:
   typedef RangeFieldImp                 RangeFieldType;
   static const int                      dimRange = rangeDim;
   typedef typename Dune::Detailed::Discretizations::LA::Container::Factory::Eigen< RangeFieldImp >  ContainerFactory;
+  typedef typename ContainerFactory::RowMajorSparseMatrixType                                       MatrixType;
   typedef typename ContainerFactory::DenseVectorType                                                VectorType;
 }; // class ContinuousGalerkinDDTraits
 
@@ -90,9 +91,9 @@ public:
 
   typedef typename ModelType::ParamType ParamType;
 
-  typedef typename Traits::ContainerFactory                   ContainerFactory;
-  typedef typename ContainerFactory::RowMajorSparseMatrixType MatrixType;
-  typedef typename Traits::VectorType                         VectorType;
+  typedef typename Traits::ContainerFactory ContainerFactory;
+  typedef typename Traits::MatrixType       MatrixType;
+  typedef typename Traits::VectorType       VectorType;
 
 private:
   typedef Dune::Stuff::LA::Container::AffineParametric< MatrixType > AffineParametricMatrixType;
@@ -474,6 +475,27 @@ public:
   bool initialized() const
   {
     return initialized_;
+  }
+
+  std::shared_ptr< const MatrixType > operatorMatrix(const std::string type = "diffusion") const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling operatorMatrix()!");
+    if (model_->parametric())
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " nonparametric operatorMatrix() called for a parametric model!");
+    const auto res = matrices_.find(type);
+    if (res == matrices_.end())
+      DUNE_THROW(Dune::RangeError,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " wrong type requested (is '" << type << "', should be 'diffusion')!");
+    const auto& affineMatrix = res->second;
+    assert(affineMatrix->numComponents() == 1);
+    assert(affineMatrix->numCoefficients() == 0);
+    return affineMatrix->components()[0];
   }
 
 private:

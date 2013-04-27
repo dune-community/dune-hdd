@@ -11,6 +11,7 @@
 #include <dune/grid/sgrid.hh>
 
 #include <dune/stuff/common/string.hh>
+#include <dune/stuff/common/color.hh>
 #include <dune/stuff/la/container/eigen.hh>
 
 #include <dune/detailed-solvers/linearelliptic/solver/cg/detailed-discretizations.hh>
@@ -25,24 +26,48 @@ void writeDescriptionFile(const std::string filename, const std::string _id = id
 
 
 class ColMajorDenseMatrix
+  : public Dune::Stuff::LA::Container::EigenDenseMatrix< double >
 {
 public:
-  typedef Dune::Stuff::LA::Container::EigenDenseMatrix< double > EigenDenseMatrixType;
+  typedef Dune::Stuff::LA::Container::EigenDenseMatrix< double > BaseType;
   typedef Dune::Stuff::LA::Container::EigenDenseVector< double > EigenDenseVectorType;
+
+  ColMajorDenseMatrix();
+
+  ColMajorDenseMatrix(const int rows, const int cols);
 
   ColMajorDenseMatrix(const EigenDenseVectorType& vector);
 
-  std::string data() const;
+  ColMajorDenseMatrix(const ColMajorDenseMatrix& other);
+
+//  ColMajorDenseMatrix(const ColMajorDenseMatrix& other, const std::vector< int >& range);
+
+  double* data();
 
   std::vector< int > shape() const;
 
   int len() const;
 
-  ColMajorDenseMatrix* copy(int first, int last) const;
+//  ColMajorDenseMatrix* copy(int first, int last) const;
 
-  ColMajorDenseMatrix* operator+(const ColMajorDenseMatrix& other) const;
+  ColMajorDenseMatrix operator+(const ColMajorDenseMatrix& other) const;
 };
 
+
+class Operator
+{
+public:
+  typedef Dune::Stuff::LA::Container::EigenRowMajorSparseMatrix< double > MatrixType;
+
+  Operator(const std::shared_ptr< const MatrixType >& matrix);
+
+  ColMajorDenseMatrix apply(const ColMajorDenseMatrix& vectors) const;
+
+  ColMajorDenseMatrix apply2(const ColMajorDenseMatrix& vectorsOne, const ColMajorDenseMatrix& vectorsTwo, const bool pairwise = true) const;
+
+private:
+  const std::shared_ptr< const MatrixType > matrix_;
+};
 
 
 class LinearEllipticExampleCG
@@ -60,16 +85,18 @@ public:
   static const int DUNE_UNUSED(dimRange) = ProblemType::dimRange;
 //  typedef Dune::DetailedSolvers::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
 //  typedef Dune::DetailedSolvers::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
-//  typedef Dune::Stuff::Common::ExtendedParameterTree DescriptionType;
+  typedef ProblemType::DescriptionType DescriptionType;
   typedef Dune::DetailedSolvers::LinearElliptic::SolverContinuousGalerkinDD<  GridPartType, RangeFieldType,
                                                                               dimRange, 1 >                 SolverType;
-  typedef typename SolverType::VectorType Vectortype;
+  typedef typename SolverType::VectorType VectorType;
 
   LinearEllipticExampleCG(/*int argc, char** argv*/std::vector< std::string > arguments);
 
   bool parametric() const;
 
   ColMajorDenseMatrix* solve() const;
+
+  Operator* getOperator() const;
 
 private:
   ProblemType problem_;

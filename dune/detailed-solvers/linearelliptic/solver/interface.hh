@@ -38,6 +38,7 @@ public:
   typedef Dune::Stuff::GridboundaryInterface< typename GridPartType::GridViewType > BoundaryInfoType;
   typedef ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >            ModelType;
 
+  typedef typename Traits::MatrixType MatrixType;
   typedef typename Traits::VectorType VectorType;
 
   static const std::string id()
@@ -90,6 +91,12 @@ public:
   {
     CHECK_INTERFACE_IMPLEMENTATION(asImp().initialized());
     return asImp().initialized();
+  }
+
+  std::shared_ptr< const MatrixType > operatorMatrix(const std::string type) const
+  {
+    CHECK_INTERFACE_IMPLEMENTATION(asImp().operatorMatrix(type));
+    return asImp().operatorMatrix(type);
   }
 
   void solve(std::shared_ptr< VectorType > solution,
