@@ -39,42 +39,46 @@ public:
   typedef Dune::DetailedSolvers::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
   typedef Dune::DetailedSolvers::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
   typedef Dune::Stuff::Common::ExtendedParameterTree DescriptionType;
+  typedef Dune::Stuff::Common::Parameter ParamType;
 
   static void writeDescriptionFile(const std::string filename, const std::string _id = id())
   {
     std::ofstream file;
     file.open(filename);
     file << "[" << _id << "]" << std::endl;
-    writeKeysToFile("gridprovider", GridProviders::available(), file);
-    writeKeysToFile("boundaryinfo", Gridboundaries::available(), file);
-    writeKeysToFile("model", Models::available(), file);
+    file << "filename = " << _id << std::endl;
+//    writeKeysToFile("gridprovider", GridProviders::available(), file);
+//    writeKeysToFile("boundaryinfo", Gridboundaries::available(), file);
+//    writeKeysToFile("model", Models::available(), file);
     file << "[logging]" << std::endl;
     file << "info  = true" << std::endl;
     file << "debug = true" << std::endl;
     file << "file  = false" << std::endl;
-    file << "[parameter]" << std::endl;
-    file << "test.size = 2" << std::endl;
-    file << "test.0    = [0.1; 0.1]" << std::endl;
-    file << "test.1    = [1.0; 1.0]" << std::endl;
+//    file << "[parameter]" << std::endl;
+//    file << "test.size = 2" << std::endl;
+//    file << "test.0    = [0.1; 0.1]" << std::endl;
+//    file << "test.1    = [1.0; 1.0]" << std::endl;
     file << "[linearsolver]" << std::endl;
     file << "type      = bicgstab.ilut" << std::endl;
     file << "            bicgstab.diagonal" << std::endl;
     file << "precision = 1e-12"  << std::endl;
     file << "maxIter   = 5000"  << std::endl;
     writeDescriptionsToFile< GridProviders >(file);
-    writeDescriptionsToFile< Gridboundaries >(file);
-    writeDescriptionsToFile< Models >(file);
+//    writeDescriptionsToFile< Gridboundaries >(file);
+//    writeDescriptionsToFile< Models >(file);
     file.close();
   } // ... writeDescriptionFile(...)
 
   Problem(int argc, char** argv)
   {
-    // mpi
-    Dune::MPIManager::initialize(argc, argv);
+    try {
+      // mpi
+      Dune::MPIManager::initialize(argc, argv);
+    } catch (...) {}
 
     // parameter
     const std::string descriptionFilename = id() + ".description";
-    description_ = DescriptionType(argc, argv, descriptionFilename);
+    description_ = DescriptionType(/*argc, argv,*/ descriptionFilename);
     description_.assertSub(id());
     filename_ = description_.get(id() + ".filename", id());
 
@@ -93,7 +97,7 @@ public:
 
     Dune::Timer timer;
 
-    const std::string griproviderType = description_.get< std::string >(id() + ".gridprovider");
+    const std::string griproviderType = GridProviders::available()[0];/*description_.get< std::string >(id() + ".gridprovider");*/
     info << "setting up grid with '" << griproviderType << "': " << std::endl;
     const std::shared_ptr< const GridProviderType > gridProvider(GridProviders::create(griproviderType, description_));
     grid_ = gridProvider->grid();
@@ -105,7 +109,7 @@ public:
     info << " and a width of "
          << Dune::GridWidth::calcGridWidth(*gridPart) << ")" << std::endl;
 
-    const std::string gridbboundaryType = description_.get< std::string >(id() + ".boundaryinfo");
+    const std::string gridbboundaryType = Gridboundaries::available()[0];/*description_.get< std::string >(id() + ".boundaryinfo");*/
     info << "setting up gridbboundary '" << gridbboundaryType << "'... " << std::flush;
     timer.reset();
     boundaryInfo_ = std::shared_ptr< const GridboundariesType >(Gridboundaries::create(gridbboundaryType,
@@ -118,7 +122,7 @@ public:
     info << " done (took " << timer.elapsed() << " sek)" << std::endl;
 
     info << "setting up model";
-    const std::string modelType = description_.get< std::string >(id() + ".model");
+    const std::string modelType = "model.linearelliptic.affineparametric.thermalblock";/*description_.get< std::string >(id() + ".model");*/
     if (!debugLogging_)
       info << "... ";
     else {
@@ -127,7 +131,8 @@ public:
     }
     info << std::flush;
     timer.reset();
-    model_ = std::shared_ptr< const ModelType >(Models::create(modelType, description_));
+    model_ = std::shared_ptr< const ModelType >(Models::create(modelType,
+                                                               Models::createSampleDescription(modelType)));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
     info << "visualizing model... " << std::flush;
     timer.reset();
@@ -170,10 +175,10 @@ private:
              const std::vector< std::string > keys,
              std::ofstream& file)
   {
-    std::string whitespace = Dune::Stuff::Common::whitespaceify(name + " = ");
+//    std::string whitespace = Dune::Stuff::Common::whitespaceify(name + " = ");
     file << name << " = " << keys[0] << std::endl;
-    for (size_t ii = 1; ii < keys.size(); ++ii)
-      file << whitespace << keys[ii] << std::endl;
+//    for (size_t ii = 1; ii < keys.size(); ++ii)
+//      file << whitespace << keys[ii] << std::endl;
   }
 
   template< class DescriptionProvider >
@@ -182,6 +187,7 @@ private:
     for (auto type : DescriptionProvider::available()) {
       const Dune::Stuff::Common::ExtendedParameterTree& description = DescriptionProvider::createSampleDescription(type, type);
       description.reportNicely(file);
+      break;
     }
   }
 
