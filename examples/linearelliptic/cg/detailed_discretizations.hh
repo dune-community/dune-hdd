@@ -13,6 +13,7 @@
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/common/color.hh>
 #include <dune/stuff/la/container/eigen.hh>
+#include <dune/stuff/common/parameter.hh>
 
 #include <dune/detailed-solvers/linearelliptic/solver/cg/detailed-discretizations.hh>
 
@@ -22,51 +23,51 @@ std::string id();
 #include "../problem.hh"
 
 
-void writeDescriptionFile(const std::string filename, const std::string _id = id());
+void writeDescriptionFile(const std::string filename = id(), const std::string _id = id());
 
 
-class ColMajorDenseMatrix
-  : public Dune::Stuff::LA::Container::EigenDenseMatrix< double >
+class DuneVector
 {
 public:
-  typedef Dune::Stuff::LA::Container::EigenDenseMatrix< double > BaseType;
-  typedef Dune::Stuff::LA::Container::EigenDenseVector< double > EigenDenseVectorType;
+  typedef Dune::Stuff::LA::Container::EigenDenseVector< double > BackendType;
 
-  ColMajorDenseMatrix();
+  DuneVector();
 
-  ColMajorDenseMatrix(const int rows, const int cols);
+  DuneVector(const int size);
 
-  ColMajorDenseMatrix(const EigenDenseVectorType& vector);
+  DuneVector(const DuneVector* other);
 
-  ColMajorDenseMatrix(const ColMajorDenseMatrix& other);
-
-//  ColMajorDenseMatrix(const ColMajorDenseMatrix& other, const std::vector< int >& range);
-
-  double* data();
-
-  std::vector< int > shape() const;
+  DuneVector(std::shared_ptr< BackendType > other);
 
   int len() const;
 
-//  ColMajorDenseMatrix* copy(int first, int last) const;
+  double dot(const DuneVector* other) const;
 
-  ColMajorDenseMatrix operator+(const ColMajorDenseMatrix& other) const;
-};
+  void scale(const double scalar);
+
+  DuneVector* add(const DuneVector* other) const;
+
+  BackendType& backend();
+
+  const BackendType& backend() const;
+private:
+  std::shared_ptr< BackendType > backend_;
+}; // class DuneVector
 
 
-class Operator
+class DuneOperator
 {
 public:
-  typedef Dune::Stuff::LA::Container::EigenRowMajorSparseMatrix< double > MatrixType;
+  typedef Dune::Stuff::LA::Container::EigenRowMajorSparseMatrix< double > BackendType;
 
-  Operator(const std::shared_ptr< const MatrixType >& matrix);
+  DuneOperator(const std::shared_ptr< const BackendType >& matrix);
 
-  ColMajorDenseMatrix apply(const ColMajorDenseMatrix& vectors) const;
+  DuneVector* apply(const DuneVector* vector) const;
 
-  ColMajorDenseMatrix apply2(const ColMajorDenseMatrix& vectorsOne, const ColMajorDenseMatrix& vectorsTwo, const bool pairwise = true) const;
+  double apply2(const DuneVector* vectorOne, const DuneVector* vectorTwo) const;
 
 private:
-  const std::shared_ptr< const MatrixType > matrix_;
+  const std::shared_ptr< const BackendType > matrix_;
 };
 
 
@@ -90,13 +91,17 @@ public:
                                                                               dimRange, 1 >                 SolverType;
   typedef typename SolverType::VectorType VectorType;
 
-  LinearEllipticExampleCG(/*int argc, char** argv*/std::vector< std::string > arguments);
+  LinearEllipticExampleCG(/*int argc, char** argv*/std::vector< std::string > arguments = std::vector< std::string >());
 
   bool parametric() const;
 
-  ColMajorDenseMatrix* solve() const;
+  int paramSize() const;
 
-  Operator* getOperator() const;
+  DuneVector* solve() const;
+
+  DuneVector* solve(std::vector< double > mu) const;
+
+  std::vector< DuneOperator* > operators() const;
 
 private:
   ProblemType problem_;
@@ -104,101 +109,4 @@ private:
 }; // class LinearEllipticExampleCG
 
 
-//int run(int argc, char** argv)
-//{
-//  try {
-
-//    const DescriptionType& linearSolverDescription = description.sub("linearsolver");
-//    typedef typename SolverType::VectorType VectorType;
-//    const std::string linearSolverType =  linearSolverDescription.get< std::string >("type",      "bicgstab.ilut");
-//    const double linearSolverPrecision = linearSolverDescription.get< double >(      "precision", 1e-12);
-//    const size_t linearSolverMaxIter = linearSolverDescription.get< size_t >(        "maxIter",   5000);
-//    if (!problem.model()->parametric()) {
-//      info << "solving";
-//      if (!debugLogging)
-//        info << "... " << std::flush;
-//      else
-//        info << ":" << std::endl;
-//      timer.reset();
-//      std::shared_ptr< VectorType > solutionVector = solver.createVector();
-//      solver.solve(solutionVector,
-//                   linearSolverType,
-//                   linearSolverPrecision,
-//                   linearSolverMaxIter,
-//                   debug,
-//                   "  ");
-//      if (!debugLogging)
-//        info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-
-//      info << "writing solution to disc";
-//      if (!debugLogging)
-//        info << "... " << std::flush;
-//      else
-//        info << ":" << std::endl;
-//      timer.reset();
-//      solver.visualize(solutionVector,
-//                       filename + ".solution",
-//                       id() + ".solution",
-//                       debug,
-//                       "  ");
-//      if (!debugLogging)
-//        info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//    } else { // if (!model->parametric())
-//      typedef typename ModelType::ParamFieldType  ParamFieldType;
-//      typedef typename ModelType::ParamType       ParamType;
-//      const size_t paramSize = problem.model()->paramSize();
-//      const DescriptionType& parameterDescription = description.sub("parameter");
-//      const size_t numTestParams = parameterDescription.get< size_t >("test.size");
-//      // loop over all test parameters
-//      for (size_t ii = 0; ii < numTestParams; ++ii) {
-//        const std::string iiString = Dune::Stuff::Common::toString(ii);
-//        const ParamType testParameter
-//            = parameterDescription.getDynVector< ParamFieldType >("test." + iiString, paramSize);
-//        // after this, testParameter is at least as long as paramSize, but it might be too long
-//        const ParamType mu = Dune::Stuff::Common::resize(testParameter, paramSize);
-//        info << "solving for parameter [" << mu << "]";
-//        if (!debugLogging)
-//          info << "... " << std::flush;
-//        else
-//          info << ":" << std::endl;
-//        timer.reset();
-//        std::shared_ptr< VectorType > solutionVector = solver.createVector();
-//        solver.solve(solutionVector,
-//                     mu,
-//                     linearSolverType,
-//                     linearSolverPrecision,
-//                     linearSolverMaxIter,
-//                     debug,
-//                     "  ");
-//        if (!debugLogging)
-//          info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-
-//        info << "writing solution for parameter [" << mu << "] to disc";
-//        if (!debugLogging)
-//          info << "... " << std::flush;
-//        else
-//          info << ":" << std::endl;
-//        timer.reset();
-//        std::stringstream name;
-//        name << id() << ".solution." << iiString << " (parameter [" << mu << "])";
-//        solver.visualize(solutionVector,
-//                         filename + ".solution." + iiString,
-//                         name.str(),
-//                         debug,
-//                         "  ");
-//        if (!debugLogging)
-//          info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-//      } // loop over all test parameters
-//    } // if (!model->parametric())
-
-//  } catch(Dune::Exception& e) {
-//    std::cerr << "Dune reported error: " << e.what() << std::endl;
-//  } catch(std::exception& e) {
-//    std::cerr << e.what() << std::endl;
-//  } catch( ... ) {
-//    std::cerr << "Unknown exception thrown!" << std::endl;
-//  } // try
-
-//  // if we came that far we can as well be happy about it
-//  return 0;
-//} // run
+//int run();
