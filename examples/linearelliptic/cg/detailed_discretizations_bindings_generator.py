@@ -15,40 +15,48 @@ def generate_my_module(inputdir, outputdir, includedirs):
     #module.add_function('run', None, [])
     #namespace = module.add_cpp_namespace('Dune').add_cpp_namespace('Stuff').add_cpp_namespace('LA').add_cpp_namespace('Container')
     module.add_container('std::vector< std::string >', 'std::string', 'list')
-    module.add_container('std::vector< int >', 'int', 'vector')
-    module.add_container('std::vector< double >', 'double', 'vector')
-    module.add_function('writeDescriptionFile', None, [pybindgen.param('std::string', 'filename'),
-                                                       pybindgen.param('std::string', '_id')])
-    # ColMajorDenseMatrix
-    ColMajorDenseMatrix = module.add_class('ColMajorDenseMatrix')
-    ColMajorDenseMatrix.add_constructor([])
-    ColMajorDenseMatrix.add_constructor([pybindgen.param('int', '_rows'), pybindgen.param('int', '_cols')])
-    ColMajorDenseMatrix.add_constructor([pybindgen.param('ColMajorDenseMatrix', 'other')])
-    ColMajorDenseMatrix.add_binary_numeric_operator('+')
-    ColMajorDenseMatrix.add_method('data', pybindgen.retval('double *', caller_owns_return=True), [], is_const=True)
-    ColMajorDenseMatrix.add_method('shape', pybindgen.retval('std::vector< int >'), [], is_const=True)
-    ColMajorDenseMatrix.add_method('len', pybindgen.retval('int'), [], is_const=True)
-    # Operator
-    Operator = module.add_class('Operator')
-    Operator.add_method('apply',
-                        pybindgen.retval('ColMajorDenseMatrix'),
-                        [pybindgen.param('ColMajorDenseMatrix', 'vectors')],
+    #module.add_container('std::vector< int >', 'int', 'vector')
+    module.add_container('std::vector< double >', 'double', 'list')
+    #module.add_function('id', pybindgen.retval('std::string'), [])
+    module.add_function('writeDescriptionFile', None, [])
+    #module.add_function('run', pybindgen.retval('int'), [])
+    # DuneVector
+    DuneVector = module.add_class('DuneVector')
+    DuneVector.add_constructor([])
+    DuneVector.add_constructor([pybindgen.param('int', 'ss')])
+    DuneVector.add_constructor([pybindgen.param('DuneVector *', 'other', transfer_ownership=False)])
+    #ColMajorDenseMatrix.add_binary_numeric_operator('+')
+    #ColMajorDenseMatrix.add_method('data', pybindgen.retval('double *', caller_owns_return=True), [], is_const=True)
+    #ColMajorDenseMatrix.add_method('shape', pybindgen.retval('std::vector< int >'), [], is_const=True)
+    DuneVector.add_method('len', pybindgen.retval('int'), [], is_const=True)
+    DuneVector.add_method('dot', pybindgen.retval('double'), [pybindgen.param('DuneVector *', 'other', transfer_ownership=False)], is_const=True)
+    DuneVector.add_method('scale', None, [pybindgen.param('double', 'scale')], is_const=True)
+    DuneVector.add_method('add', pybindgen.retval('DuneVector *', caller_owns_return=True), [pybindgen.param('DuneVector *', 'other', transfer_ownership=False)], is_const=True)
+    # DuneOperator
+    DuneOperator = module.add_class('DuneOperator')
+    DuneOperator.add_method('apply',
+                        pybindgen.retval('DuneVector *', caller_owns_return=True),
+                        [pybindgen.param('DuneVector *', 'vector', transfer_ownership=False)],
                         is_const=True)
-    Operator.add_method('apply2',
-                        pybindgen.retval('ColMajorDenseMatrix'),
-                        [pybindgen.param('ColMajorDenseMatrix', 'vectors'),
-                         pybindgen.param('ColMajorDenseMatrix', 'vectors')],
+    DuneOperator.add_method('apply2',
+                        pybindgen.retval('double'),
+                        [pybindgen.param('DuneVector *', 'vectorOne', transfer_ownership=False),
+                         pybindgen.param('DuneVector *', 'vectorTwo', transfer_ownership=False)],
                         is_const=True)
+    module.add_container('std::vector< DuneOperator * >', pybindgen.retval('DuneOperator *', caller_owns_return=True), 'list')
     # LinearEllipticExampleCG
     LinearEllipticExampleCG = module.add_class('LinearEllipticExampleCG')
-    LinearEllipticExampleCG.add_constructor([pybindgen.param('std::vector< std::string >', 'arg')])
-    LinearEllipticExampleCG.add_method('parametric', pybindgen.retval('bool'), [], is_const=True)
+    #LinearEllipticExampleCG.add_constructor([pybindgen.param('std::vector< std::string >', 'arg')])
+    LinearEllipticExampleCG.add_constructor([])
+    LinearEllipticExampleCG.add_method('paramSize', pybindgen.retval('int'), [], is_const=True)
     LinearEllipticExampleCG.add_method('solve',
-                                       pybindgen.retval('ColMajorDenseMatrix *', caller_owns_return=True),
-                                       [])
-    LinearEllipticExampleCG.add_method('getOperator',
-                                       pybindgen.retval('Operator *', caller_owns_return=True),
-                                       [])
+                                       pybindgen.retval('DuneVector *', caller_owns_return=True),
+                                       [pybindgen.param('std::vector< double >', 'mu')],
+                                       is_const=True)
+    LinearEllipticExampleCG.add_method('operators',
+                                       pybindgen.retval('std::vector< DuneOperator * >'),
+                                       [],
+                                       is_const=True)
 
     with open(generator_filename, 'wb') as output:
         module.generate(FileCodeSink(output))
