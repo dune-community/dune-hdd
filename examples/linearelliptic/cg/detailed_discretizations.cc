@@ -60,6 +60,11 @@ const DuneVector::BackendType& DuneVector::backend() const
   return *backend_;
 }
 
+const std::shared_ptr< const DuneVector::BackendType > DuneVector::backendPtr() const
+{
+  return backend_;
+}
+
 
 DuneOperator::DuneOperator(const std::shared_ptr< const BackendType >& matrix)
   : matrix_(matrix)
@@ -200,6 +205,18 @@ std::vector< DuneOperator* > LinearEllipticExampleCG::operators() const
   for (size_t qq = 0; qq < components.size(); ++qq)
     ret.push_back(new DuneOperator(components[qq]));
   return ret;
+}
+
+DuneVector* LinearEllipticExampleCG::functional() const
+{
+  DuneVector* ret = new DuneVector(solver_->nonparametricVector()->size());
+  ret->backend().backend() = solver_->nonparametricVector()->backend();
+  return ret;
+}
+
+void LinearEllipticExampleCG::visualize(const DuneVector* vector, const std::string filename, const std::string name) const
+{
+  solver_->visualize(vector->backendPtr(), filename, name);
 }
 
 //int run()

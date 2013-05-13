@@ -23,7 +23,7 @@ std::string id();
 #include "../problem.hh"
 
 
-void writeDescriptionFile(const std::string filename = id(), const std::string _id = id());
+void writeDescriptionFile(const std::string filename = id() + ".description", const std::string _id = id());
 
 
 class DuneVector
@@ -50,6 +50,8 @@ public:
   BackendType& backend();
 
   const BackendType& backend() const;
+
+  const std::shared_ptr< const BackendType > backendPtr() const;
 private:
   std::shared_ptr< BackendType > backend_;
 }; // class DuneVector
@@ -102,6 +104,10 @@ public:
   DuneVector* solve(std::vector< double > mu) const;
 
   std::vector< DuneOperator* > operators() const;
+
+  DuneVector* functional() const;
+
+  void visualize(const DuneVector* vector, const std::string filename, const std::string name) const;
 
 private:
   ProblemType problem_;
