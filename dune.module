@@ -6,4 +6,4 @@
 Module: dune-detailed-solvers
 Version: 2.2.1
 Maintainer: felix.albrecht@uni-muenster.de
-Depends: dune-stuff (>= 2.2.1) dune-detailed-discretizations (>= 2.2.1) dune-grid-multiscale (>= 2.2) dune-pdelab (>= 1.0.1)
+Depends: dune-stuff (>= 2.2.1) dune-detailed-discretizations dune-grid-multiscale dune-pdelab (>= 1.0.1)
