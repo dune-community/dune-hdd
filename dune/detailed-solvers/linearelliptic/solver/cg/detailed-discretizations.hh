@@ -507,6 +507,20 @@ public:
     return res->second;
   }
 
+  const std::shared_ptr< const VectorType > nonparametricVector() const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling operatorMatrix()!");
+    const auto res = vectors_.find("force");
+    if (res == vectors_.end())
+      DUNE_THROW(Dune::RangeError,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " wrong type requested (is 'force', should be 'force')!");
+    return res->second->components()[0];
+  }
+
   std::shared_ptr< const MatrixType > operatorMatrix(const std::string type = "diffusion") const
   {
     if (!initialized_)
