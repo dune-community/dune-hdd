@@ -57,6 +57,16 @@ def generate_my_module(inputdir, outputdir, includedirs):
                                        pybindgen.retval('std::vector< DuneOperator * >'),
                                        [],
                                        is_const=True)
+    LinearEllipticExampleCG.add_method('functional',
+                                       pybindgen.retval('DuneVector *', caller_owns_return=True),
+                                       [],
+                                       is_const=True)
+    LinearEllipticExampleCG.add_method('visualize',
+                                       None,
+                                       [pybindgen.param('DuneVector *', 'vector', transfer_ownership=False),
+                                        pybindgen.param('std::string', 'filename'),
+                                        pybindgen.param('std::string', 'name')],
+                                       is_const=True)
 
     with open(generator_filename, 'wb') as output:
         module.generate(FileCodeSink(output))
