@@ -477,6 +477,20 @@ public:
     return initialized_;
   }
 
+  const std::shared_ptr< const AffineParametricMatrixType > parametricMatrix() const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " please call init() before calling operatorMatrix()!");
+    const auto res = matrices_.find("diffusion");
+    if (res == matrices_.end())
+      DUNE_THROW(Dune::RangeError,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " wrong type requested (is 'diffusion', should be 'diffusion')!");
+    return res->second;
+  }
+
   std::shared_ptr< const MatrixType > operatorMatrix(const std::string type = "diffusion") const
   {
     if (!initialized_)
