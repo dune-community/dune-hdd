@@ -571,17 +571,20 @@ private:
     out << prefix << "computing right hand side... " << std::flush;
     timer.reset();
     VectorType rightHandSide;
-    rightHandSide.backend() = forceVector.fix(muForce)->backend()
-        + neumannVector.fix(muNeumann)->backend()
-        - systemMatrix->backend() * dirichletVector.fix(muDirichlet)->backend();
+    rightHandSide.backend() = forceVector.components()[0]->backend();
+        /* + neumannVector.fix(muNeumann)->backend() */
+        /* - systemMatrix->backend() * dirichletVector.fix(muDirichlet)->backend(); */
+    /* rightHandSide.backend() = forceVector.fix(muForce)->backend() */
+    /*     + neumannVector.fix(muNeumann)->backend() */
+    /*     - systemMatrix->backend() * dirichletVector.fix(muDirichlet)->backend(); */
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    out << prefix << "applying constraints...      " << std::flush;
-    timer.reset();
-    typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType;
-    const SystemAssemblerType systemAssembler(*testSpace_, *testSpace_);
-    systemAssembler.applyConstraints(*systemMatrix, rightHandSide);
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    /* out << prefix << "applying constraints...      " << std::flush; */
+    /* timer.reset(); */
+    /* typedef Dune::Detailed::Discretizations::Assembler::System< TestSpaceType, AnsatzSpaceType > SystemAssemblerType; */
+    /* const SystemAssemblerType systemAssembler(*testSpace_, *testSpace_); */
+    /* systemAssembler.applyConstraints(*systemMatrix, rightHandSide); */
+    /* out << "done (took " << timer.elapsed() << " sec)" << std::endl; */
     out << prefix << "solving linear system (of size " << systemMatrix->rows()
         << "x" << systemMatrix->cols() << ")" << std::endl;
     out << prefix << "  using '" << linearSolverType << "'... " << std::flush;
