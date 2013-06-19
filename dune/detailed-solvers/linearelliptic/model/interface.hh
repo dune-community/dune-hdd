@@ -24,12 +24,12 @@ namespace LinearElliptic {
 
 
 // forward of the nonparametric default
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion >
 class ModelDefault;
 
 
 // forward to allow for specialization
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
 class ModelInterface
 {
 public:
@@ -38,10 +38,10 @@ public:
 
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp >
-class ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1 >
+class ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1, true >
 {
 public:
-  typedef ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1 > ThisType;
+  typedef ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1, true > ThisType;
 
   typedef DomainFieldImp  DomainFieldType;
   static const int        dimDomain = domainDim;
@@ -53,7 +53,10 @@ public:
   static const int                                      maxParamDim = Stuff::Common::Parameter::maxDim;
   typedef typename Stuff::Common::Parameter::Type       ParamType;
 
-  typedef Dune::Stuff::FunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange > FunctionType;
+  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DiffusionType;
+  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > ForceType;
+  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DirichletType;
+  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > NeumannType;
 
   static const std::string id()
   {
@@ -89,13 +92,13 @@ public:
 
   /** \defgroup purevirtual ´´These methods have to be implemented.'' */
   /* @{ */
-  virtual std::shared_ptr< const FunctionType > diffusion() const = 0;
+  virtual std::shared_ptr< const DiffusionType > diffusion() const = 0;
 
-  virtual std::shared_ptr< const FunctionType > force() const = 0;
+  virtual std::shared_ptr< const ForceType > force() const = 0;
 
-  virtual std::shared_ptr< const FunctionType > dirichlet() const = 0;
+  virtual std::shared_ptr< const DirichletType > dirichlet() const = 0;
 
-  virtual std::shared_ptr< const FunctionType > neumann() const = 0;
+  virtual std::shared_ptr< const NeumannType > neumann() const = 0;
   /* @} */
 
   /** \defgroup parametric ´´These methods have to be implemented additionally, if parametric() == true.'' */
