@@ -10,9 +10,9 @@
 
 int main(int argc, char** argv)
 {
-  const std::string descriptionFilename = id() + ".description";
-  if (!boost::filesystem::exists(descriptionFilename))
-    ProblemType::writeDescriptionFile(descriptionFilename);
+  const std::string settingsFilename = id() + ".settings";
+  if (!boost::filesystem::exists(settingsFilename))
+    ProblemType::writeSettingsFile(settingsFilename);
 
   return run(argc, argv);
 } // main
