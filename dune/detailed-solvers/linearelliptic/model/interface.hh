@@ -144,19 +144,19 @@ public:
   }
   /* @} */
 
-  virtual std::shared_ptr< const ThisType > fix(const ParamType& mu) const
-  {
-    if (!parametric() && mu.size() != 0)
-      DUNE_THROW(Dune::InvalidStateException,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                 << " do not call fix(mu) with a nonempty mu for a nonparametric model (check parametric() == true beforehand)!");
-    typedef Dune::Stuff::FunctionFixed< DomainFieldType, dimDomain, RangeFieldType, dimRange > FixedFunctionType;
-    typedef ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange > DefaultModelType;
-    return std::make_shared< DefaultModelType >(diffusion()->parametric() ? std::make_shared< const FixedFunctionType >(diffusion(), mapParam(mu, "diffusion")) : diffusion(),
-                                                force()->parametric() ? std::make_shared< const FixedFunctionType >(force(), mapParam(mu, "force")) : force(),
-                                                dirichlet()->parametric() ? std::make_shared< const FixedFunctionType >(dirichlet(), mapParam(mu, "dirichlet")) : dirichlet(),
-                                                neumann()->parametric() ? std::make_shared< const FixedFunctionType >(neumann(), mapParam(mu, "neumann")) : neumann());
-  }
+//  virtual std::shared_ptr< const ThisType > fix(const ParamType& mu) const
+//  {
+//    if (!parametric() && mu.size() != 0)
+//      DUNE_THROW(Dune::InvalidStateException,
+//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+//                 << " do not call fix(mu) with a nonempty mu for a nonparametric model (check parametric() == true beforehand)!");
+//    typedef Dune::Stuff::FunctionFixed< DomainFieldType, dimDomain, RangeFieldType, dimRange > FixedFunctionType;
+//    typedef ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange > DefaultModelType;
+//    return std::make_shared< DefaultModelType >(diffusion()->parametric() ? std::make_shared< const FixedFunctionType >(diffusion(), mapParam(mu, "diffusion")) : diffusion(),
+//                                                force()->parametric() ? std::make_shared< const FixedFunctionType >(force(), mapParam(mu, "force")) : force(),
+//                                                dirichlet()->parametric() ? std::make_shared< const FixedFunctionType >(dirichlet(), mapParam(mu, "dirichlet")) : dirichlet(),
+//                                                neumann()->parametric() ? std::make_shared< const FixedFunctionType >(neumann(), mapParam(mu, "neumann")) : neumann());
+//  }
 
   template< class GridViewType >
   void visualize(const GridViewType& gridView, std::string filename) const
@@ -177,11 +177,11 @@ public:
          ++it) {
       const typename GridViewType::template Codim< 0 >::Entity& entity = *it;
       const typename GridViewType::IndexSet::IndexType index = gridView.indexSet().index(entity);
-      const typename FunctionType::DomainType center = entity.geometry().center();
+      const auto center = entity.geometry().center();
       // do a piecewise constant projection of the data functions
       //   * diffusion
       if (diffusion()->parametric() && diffusion()->affineparametric())
-        for (size_t qq = 0; qq < diffusion()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < diffusion()->components().size(); ++qq)
           diffusionPlots[qq].second->operator[](index) = diffusion()->components()[qq]->evaluate(center);
       else if (!diffusion()->parametric())
         diffusionPlots[0].second->operator[](index) = diffusion()->evaluate(center);
@@ -191,7 +191,7 @@ public:
                    << " visualize() not yet implemented for parametric but not affineparametric data functions!");
       //   * force
       if (force()->parametric() && force()->affineparametric())
-        for (size_t qq = 0; qq < force()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < force()->components().size(); ++qq)
           forcePlots[qq].second->operator[](index) = force()->components()[qq]->evaluate(center);
       else if (!force()->parametric())
         forcePlots[0].second->operator[](index) = force()->evaluate(center);
@@ -201,7 +201,7 @@ public:
                    << " visualize() not yet implemented for parametric but not affineparametric data functions!");
       //   * dirichlet
       if (dirichlet()->parametric() && dirichlet()->affineparametric())
-        for (size_t qq = 0; qq < dirichlet()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < dirichlet()->components().size(); ++qq)
           dirichletPlots[qq].second->operator[](index) = dirichlet()->components()[qq]->evaluate(center);
       else if (!dirichlet()->parametric())
         dirichletPlots[0].second->operator[](index) = dirichlet()->evaluate(center);
@@ -211,7 +211,7 @@ public:
                    << " visualize() not yet implemented for parametric but not affineparametric data functions!");
       //   * neumann
       if (neumann()->parametric() && neumann()->affineparametric())
-        for (size_t qq = 0; qq < neumann()->numComponents(); ++qq)
+        for (size_t qq = 0; qq < neumann()->components().size(); ++qq)
           neumannPlots[qq].second->operator[](index) = neumann()->components()[qq]->evaluate(center);
       else if (!neumann()->parametric())
         neumannPlots[0].second->operator[](index) = neumann()->evaluate(center);
@@ -246,13 +246,13 @@ private:
     if (function.parametric()) {
       if (function.affineparametric()) {
         const std::vector< std::string >& paramExplanations = function.paramExplanation();
-        for (size_t qq = 0; qq < function.numCoefficients(); ++qq)
+        for (size_t qq = 0; qq < function.coefficients().size(); ++qq)
           ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
                           name + "_component_" + Dune::Stuff::Common::toString(qq) + ": " + paramExplanations[qq],
                           new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
-        if (function.numComponents() > function.numCoefficients())
+        if (function.coefficients().size() > function.coefficients().size())
           ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
-                          name + "_component_" + Dune::Stuff::Common::toString(function.numCoefficients()),
+                          name + "_component_" + Dune::Stuff::Common::toString(function.coefficients().size()),
                           new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
       } else
         DUNE_THROW(Dune::InvalidStateException,
@@ -265,7 +265,6 @@ private:
     }
     return ret;
   } // std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > preparePlot(...) const
-
 }; // class ModelInterface
 
 
