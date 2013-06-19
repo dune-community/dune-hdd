@@ -13,17 +13,17 @@ namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
 class ModelDefault;
 
 
 template< class DomainFieldImp, int domainDim, class RangeFieldImp >
-class ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1 >
-  : public ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1 >
+class ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1, true >
+  : public ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1, true >
 {
+  typedef ModelInterface<  DomainFieldImp, domainDim, RangeFieldImp, 1, true >  BaseType;
 public:
-  typedef ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1 >    ThisType;
-  typedef ModelInterface<  DomainFieldImp, domainDim, RangeFieldImp, 1 > BaseType;
+  typedef ModelDefault< DomainFieldImp, domainDim, RangeFieldImp, 1, true >     ThisType;
 
   typedef typename BaseType::DomainFieldType  DomainFieldType;
   static const int                            dimDomain = BaseType::dimDomain;
@@ -31,17 +31,20 @@ public:
   typedef typename BaseType::RangeFieldType   RangeFieldType;
   static const int                            dimRange = BaseType::dimRange;
 
-  typedef typename BaseType::FunctionType FunctionType;
+  typedef typename BaseType::DiffusionType  DiffusionType;
+  typedef typename BaseType::ForceType      ForceType;
+  typedef typename BaseType::DirichletType  DirichletType;
+  typedef typename BaseType::NeumannType    NeumannType;
 
   static const std::string id()
   {
     return BaseType::id() + ".default";
   }
 
-  ModelDefault(const std::shared_ptr< const FunctionType > _diffusion,
-               const std::shared_ptr< const FunctionType > _force,
-               const std::shared_ptr< const FunctionType > _dirichlet,
-               const std::shared_ptr< const FunctionType > _neumann)
+  ModelDefault(const std::shared_ptr< const DiffusionType > _diffusion,
+               const std::shared_ptr< const ForceType > _force,
+               const std::shared_ptr< const DirichletType > _dirichlet,
+               const std::shared_ptr< const NeumannType > _neumann)
     : diffusion_(_diffusion)
     , force_(_force)
     , dirichlet_(_dirichlet)
@@ -53,47 +56,29 @@ public:
                  << " not implemented for parametric functions!");
   }
 
-  ModelDefault(const ThisType& _other)
-    : diffusion_(_other.diffusion_)
-    , force_(_other.force_)
-    , dirichlet_(_other.dirichlet_)
-    , neumann_(_other.neumann_)
-  {}
-
-  ThisType& operator=(const ThisType& _other)
-  {
-    if (this != &_other) {
-      diffusion_ = _other.diffusion();
-      force_ = _other.force();
-      dirichlet_ = _other.dirichlet();
-      neumann_ = _other.neumann();
-    }
-    return this;
-  }
-
-  static Dune::ParameterTree createSampleDescription(const std::string subName = "")
+  static Dune::ParameterTree createDefaultSettings(const std::string subName = "")
   {
     Dune::Stuff::Common::ExtendedParameterTree description;
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createSampleDescription("function.expression"),
+                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
                     "diffusion");
     description["diffusion.name"] = "diffusion";
     description["diffusion.expression"] = "1.0";
     description["diffusion.order"] = "0";
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createSampleDescription("function.expression"),
+                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
                     "force");
     description["force.name"] = "force";
     description["force.expression"] = "1.0";
     description["force.order"] = "0";
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createSampleDescription("function.expression"),
+                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
                     "neumann");
     description["neumann.name"] = "neumann";
     description["neumann.expression"] = "0.1";
     description["neumann.order"] = "0";
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createSampleDescription("function.expression"),
+                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
                     "dirichlet");
     description["dirichlet.name"] = "dirichlet";
     description["dirichlet.expression"] = "0.1*x[0]";
@@ -105,7 +90,7 @@ public:
       extendedDescription.add(description, subName);
       return extendedDescription;
     }
-  }
+  } // createDefaultSettings(...)
 
   static ThisType* create(const Dune::ParameterTree& _description, const std::string _subName = id())
   {
@@ -121,29 +106,32 @@ public:
                         createFunction("neumann", description));
   } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree)
 
-  virtual std::shared_ptr< const FunctionType > diffusion() const
+  virtual std::shared_ptr< const DiffusionType > diffusion() const
   {
     return diffusion_;
   }
 
-  virtual std::shared_ptr< const FunctionType > force() const
+  virtual std::shared_ptr< const ForceType > force() const
   {
     return force_;
   }
 
-  virtual std::shared_ptr< const FunctionType > dirichlet() const
+  virtual std::shared_ptr< const DirichletType > dirichlet() const
   {
     return dirichlet_;
   }
 
-  virtual std::shared_ptr< const FunctionType > neumann() const
+  virtual std::shared_ptr< const NeumannType > neumann() const
   {
     return neumann_;
   }
 
 private:
+  typedef Dune::Stuff::FunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
+    FunctionType;
+
   static std::shared_ptr< const FunctionType > createFunction(const std::string& _id,
-                                                               const Dune::Stuff::Common::ExtendedParameterTree& _description)
+                                                              const Dune::Stuff::Common::ExtendedParameterTree& _description)
   {
     const Dune::Stuff::Common::ExtendedParameterTree functionDescription = _description.sub(_id);
     std::string type;
@@ -153,15 +141,15 @@ private:
       type = functionDescription.get< std::string >("type");
     else
       type = "function.expression";
-    return std::shared_ptr< const FunctionType >(Dune::Stuff::Functions<  DomainFieldType, dimDomain,
-                                                                          RangeFieldType, dimRange >::create(type,
-                                                                                                             functionDescription));
+    return std::shared_ptr< const FunctionType >(
+          Dune::Stuff::Functions< DomainFieldType, dimDomain, RangeFieldType, dimRange >::create(type,
+                                                                                                 functionDescription));
   }
 
-  std::shared_ptr< const FunctionType > diffusion_;
-  std::shared_ptr< const FunctionType > force_;
-  std::shared_ptr< const FunctionType > dirichlet_;
-  std::shared_ptr< const FunctionType > neumann_;
+  std::shared_ptr< const DiffusionType > diffusion_;
+  std::shared_ptr< const ForceType > force_;
+  std::shared_ptr< const DirichletType > dirichlet_;
+  std::shared_ptr< const NeumannType > neumann_;
 }; // class LinearDefault
 
 } // namespace LinearElliptic
