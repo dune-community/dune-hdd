@@ -33,11 +33,11 @@ public:
     };
   } // ... available()
 
-  static Dune::ParameterTree createDefaultSettings(const std::string type, const std::string subname = "")
+  static Dune::ParameterTree defaultSettings(const std::string type, const std::string subname = "")
   {
     if (type == "model.linearelliptic.default")
       return ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange, scalarDiffusion >
-          ::createDefaultSettings(subname);
+          ::defaultSettings(subname);
 //    else if (type == "model.linearelliptic.thermalblock")
 //      return ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >::createDefaultSettings(subname);
 //    else if (type == "model.linearelliptic.affineparametric.default")

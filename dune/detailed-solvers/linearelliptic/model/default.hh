@@ -56,7 +56,7 @@ public:
                  << " not implemented for parametric functions!");
   }
 
-  static Dune::ParameterTree createDefaultSettings(const std::string subName = "")
+  static Dune::ParameterTree defaultSettings(const std::string subName = "")
   {
     Dune::Stuff::Common::ExtendedParameterTree description;
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,

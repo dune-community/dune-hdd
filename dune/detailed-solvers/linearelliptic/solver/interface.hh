@@ -11,6 +11,7 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/common/color.hh>
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/common/parameter/tree.hh>
 
 #include "../model/interface.hh"
 
@@ -39,6 +40,7 @@ public:
   typedef ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >            ModelType;
 
   typedef typename Traits::VectorType VectorType;
+  typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
 
   static const std::string id()
   {
