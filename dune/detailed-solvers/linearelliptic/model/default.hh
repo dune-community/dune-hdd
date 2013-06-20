@@ -66,25 +66,25 @@ public:
   {
     Dune::Stuff::Common::ExtendedParameterTree description;
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
+                                            RangeFieldType, dimRange >::defaultSettings("function.expression"),
                     "diffusion");
     description["diffusion.name"] = "diffusion";
     description["diffusion.expression"] = "1.0";
     description["diffusion.order"] = "0";
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
+                                            RangeFieldType, dimRange >::defaultSettings("function.expression"),
                     "force");
     description["force.name"] = "force";
     description["force.expression"] = "1.0";
     description["force.order"] = "0";
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
+                                            RangeFieldType, dimRange >::defaultSettings("function.expression"),
                     "neumann");
     description["neumann.name"] = "neumann";
     description["neumann.expression"] = "0.1";
     description["neumann.order"] = "0";
     description.add(Dune::Stuff::Functions< DomainFieldType, dimDomain,
-                                            RangeFieldType, dimRange >::createDefaultSettings("function.expression"),
+                                            RangeFieldType, dimRange >::defaultSettings("function.expression"),
                     "dirichlet");
     description["dirichlet.name"] = "dirichlet";
     description["dirichlet.expression"] = "0.1*x[0]";
