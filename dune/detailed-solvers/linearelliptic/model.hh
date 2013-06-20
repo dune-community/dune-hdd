@@ -8,7 +8,7 @@
 
 #include "model/interface.hh"
 #include "model/default.hh"
-//#include "model/thermalblock.hh"
+#include "model/thermalblock.hh"
 //#include "model/affineparametric/default.hh"
 //#include "model/affineparametric/twophase.hh"
 //#include "model/affineparametric/thermalblock.hh"
@@ -26,7 +26,7 @@ public:
   {
     return {
         "model.linearelliptic.default"
-//        , "model.linearelliptic.thermalblock"
+        , "model.linearelliptic.thermalblock"
 //        , "model.linearelliptic.affineparametric.default"
 //        , "model.linearelliptic.affineparametric.twophase"
 //        , "model.linearelliptic.affineparametric.thermalblock"
@@ -38,8 +38,9 @@ public:
     if (type == "model.linearelliptic.default")
       return ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange, scalarDiffusion >
           ::defaultSettings(subname);
-//    else if (type == "model.linearelliptic.thermalblock")
-//      return ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >::createDefaultSettings(subname);
+    else if (type == "model.linearelliptic.thermalblock")
+      return ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange, scalarDiffusion >
+          ::defaultSettings(subname);
 //    else if (type == "model.linearelliptic.affineparametric.default")
 //      return ModelAffineParametricDefault<  DomainFieldType, dimDomain,
 //                                            RangeFieldType, dimRange >::createDefaultSettings(subname);
@@ -60,8 +61,8 @@ public:
   {
     if (type == "model.linearelliptic.default")
       return ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange, scalarDiffusion >::create(description);
-//    else if (type == "model.linearelliptic.thermalblock")
-//      return ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >::create(description);
+    else if (type == "model.linearelliptic.thermalblock")
+      return ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange, scalarDiffusion >::create(description);
 //    else if (type == "model.linearelliptic.affineparametric.default")
 //      return ModelAffineParametricDefault<  DomainFieldType, dimDomain,
 //                                            RangeFieldType, dimRange >::create(description);
