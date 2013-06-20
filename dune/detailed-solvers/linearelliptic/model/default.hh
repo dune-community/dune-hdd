@@ -13,6 +13,12 @@ namespace DetailedSolvers {
 namespace LinearElliptic {
 
 
+// forward, to allow for some friendlyness
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
+class ModelThermalblock;
+
+
+// forward to allow for specialization
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
 class ModelDefault;
 
@@ -100,10 +106,10 @@ public:
       description = _description.sub(_subName);
     else
       description = _description;
-    return new ThisType(createFunction("diffusion", description),
-                        createFunction("force", description),
-                        createFunction("dirichlet", description),
-                        createFunction("neumann", description));
+    return new ThisType(createFunction< DiffusionType >("diffusion", description),
+                        createFunction< ForceType >("force", description),
+                        createFunction< DirichletType >("dirichlet", description),
+                        createFunction< NeumannType >("neumann", description));
   } // static ThisType createFromParamTree(const Dune::ParameterTree& paramTree)
 
   virtual std::shared_ptr< const DiffusionType > diffusion() const
@@ -127,9 +133,9 @@ public:
   }
 
 private:
-  typedef Dune::Stuff::FunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
-    FunctionType;
+  friend class ModelThermalblock< DomainFieldType, dimDomain, RangeFieldType, dimRange >;
 
+  template< class FunctionType >
   static std::shared_ptr< const FunctionType > createFunction(const std::string& _id,
                                                               const Dune::Stuff::Common::ExtendedParameterTree& _description)
   {
