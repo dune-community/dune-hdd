@@ -11,7 +11,7 @@
 #include "model/thermalblock.hh"
 #include "model/affineparametric/default.hh"
 //#include "model/affineparametric/twophase.hh"
-//#include "model/affineparametric/thermalblock.hh"
+#include "model/affineparametric/thermalblock.hh"
 
 namespace Dune {
 namespace DetailedSolvers {
@@ -29,7 +29,7 @@ public:
         , "model.linearelliptic.thermalblock"
         , "model.linearelliptic.affineparametric.default"
 //        , "model.linearelliptic.affineparametric.twophase"
-//        , "model.linearelliptic.affineparametric.thermalblock"
+        , "model.linearelliptic.affineparametric.thermalblock"
     };
   } // ... available()
 
@@ -46,10 +46,10 @@ public:
                                             RangeFieldType, dimRange, scalarDiffusion >::defaultSettings(subname);
 //    else if (type == "model.linearelliptic.affineparametric.twophase")
 //      return ModelAffineParametricTwoPhase< DomainFieldType, dimDomain,
-//                                            RangeFieldType, dimRange >::createDefaultSettings(subname);
-//    else if (type == "model.linearelliptic.affineparametric.thermalblock")
-//      return ModelAffineParametricThermalblock< DomainFieldType, dimDomain,
-//                                                RangeFieldType, dimRange >::createDefaultSettings(subname);
+//                                            RangeFieldType, dimRange >::defaultSettings(subname);
+    else if (type == "model.linearelliptic.affineparametric.thermalblock")
+      return ModelAffineParametricThermalblock< DomainFieldType, dimDomain,
+                                                RangeFieldType, dimRange >::defaultSettings(subname);
     else
       DUNE_THROW(Dune::RangeError,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " unknown model '" << type << "' requested!");
@@ -69,9 +69,9 @@ public:
 //    else if (type == "model.linearelliptic.affineparametric.twophase")
 //      return ModelAffineParametricTwoPhase< DomainFieldType, dimDomain,
 //                                            RangeFieldType, dimRange >::create(description);
-//    else if (type == "model.linearelliptic.affineparametric.thermalblock")
-//      return ModelAffineParametricThermalblock< DomainFieldType, dimDomain,
-//                                                RangeFieldType, dimRange >::create(description);
+    else if (type == "model.linearelliptic.affineparametric.thermalblock")
+      return ModelAffineParametricThermalblock< DomainFieldType, dimDomain,
+                                                RangeFieldType, dimRange >::create(description);
     else
       DUNE_THROW(Dune::RangeError,
                  "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " unknown model '" << type << "' requested!");
