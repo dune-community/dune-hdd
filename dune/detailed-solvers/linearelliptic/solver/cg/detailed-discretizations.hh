@@ -686,27 +686,25 @@ public:
                   prefix, out);
   } // ... solve(...)
 
-//  void solve(std::shared_ptr< VectorType > solutionVector,
-//             const ParamType& mu,
-//             const std::string linearSolverType = "bicgstab.ilut",
-//             const double linearSolverPrecision = 1e-12,
-//             const size_t linearSolverMaxIter = 5000,
-//             std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
-//             const std::string prefix = "") const
-//  {
-//    if (!initialized_)
-//      DUNE_THROW(Dune::InvalidStateException,
-//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " call init() before calling solve()!");
-//    // check, that we are really in the parametric setting!
-//    if (!model_->parametric())
-//      DUNE_THROW(Dune::InvalidStateException,
-//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-//                 << " parametric solve() called for a nonparametric model!");
-//    generic_solve(solutionVector,
-//                  mu,
-//                  linearSolverType, linearSolverMaxIter, linearSolverPrecision,
-//                  prefix, out);
-//  } // ... solve(..., mu, ...)
+  void solve(std::shared_ptr< VectorType > solutionVector,
+             const ParamType& mu,
+             const SettingsType& linearSolverSettings,
+             std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
+             const std::string prefix = "") const
+  {
+    if (!initialized_)
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " call init() before calling solve()!");
+    // check, that we are really in the parametric setting!
+    if (!model_->parametric())
+      DUNE_THROW(Dune::InvalidStateException,
+                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
+                 << " parametric solve() called for a nonparametric model!");
+    generic_solve(solutionVector,
+                  mu,
+                  linearSolverSettings,
+                  prefix, out);
+  } // ... solve(..., mu, ...)
 
 //  std::shared_ptr< const PatternType > pattern(const std::string type = "diffusion") const
 //  {
