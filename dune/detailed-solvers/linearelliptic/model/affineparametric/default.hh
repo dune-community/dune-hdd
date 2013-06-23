@@ -267,7 +267,7 @@ private:
   static std::shared_ptr< const FunctionType > createFunction(const std::string& _id,
                                                               const Dune::Stuff::Common::ExtendedParameterTree& _description)
   {
-    const Dune::Stuff::Common::ExtendedParameterTree functionDescription = _description.sub(_id);
+    const Dune::Stuff::Common::ExtendedParameterTree& functionDescription = _description.sub(_id);
     std::string type;
     // we do this instead of using get() with 'function.expression' as a default in order to prevent get() from
     // throwing a warning
