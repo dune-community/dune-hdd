@@ -430,19 +430,17 @@ public:
                                                                          systemMatrixComponents,
                                                                          diffusionMatrix->coefficients(),
                                                                          diffusionMatrix->affinePart());
-          for (size_t qq = 0; qq < systemMatrix_->components().size(); ++qq)
-            systemAssembler.addLocalConstraints(clearRows, *(systemMatrix_->components()[qq]));
-          systemAssembler.addLocalConstraints(clearAndSetRows, *(systemMatrix_->affinePart()));
         } else {
           auto systemMatrixAffinePart = std::shared_ptr< MatrixType >(
-                                          Dune::Stuff::LA::createIdentityEigenRowMajorSparseMatrix< RangeFieldType >(space_->mapper().size()));
+                                          ContainerFactory::createRowMajorSparseMatrix(*space_, *space_));
           systemMatrix_ = std::make_shared< AffineParametricMatrixType >(diffusionMatrix->paramSize(),
                                                                          systemMatrixComponents,
                                                                          diffusionMatrix->coefficients(),
                                                                          systemMatrixAffinePart);
-          for (size_t qq = 0; qq < systemMatrix_->components().size(); ++qq)
-            systemAssembler.addLocalConstraints(clearRows, *(systemMatrix_->components()[qq]));
         }
+        for (size_t qq = 0; qq < systemMatrix_->components().size(); ++qq)
+          systemAssembler.addLocalConstraints(clearRows, *(systemMatrix_->components()[qq]));
+        systemAssembler.addLocalConstraints(clearAndSetRows, *(systemMatrix_->affinePart()));
       }
 
       // build the right hand side vectors
@@ -600,15 +598,15 @@ private:
     // first of all, get the corect parameters (the model returns empty ones for nonparametric functions)
     const ParamType muDiffusion = model_->mapParam(mu, "diffusion");
     const ParamType muForce = model_->mapParam(mu, "force");
-    const ParamType muDirichlet = model_->mapParam(mu, "dirichlet");
+//    const ParamType muDirichlet = model_->mapParam(mu, "dirichlet");
     const ParamType muNeumann = model_->mapParam(mu, "neumann");
     Dune::Timer timer;
     out << prefix << "computing system matrix...   " << std::flush;
     std::shared_ptr< const MatrixType > systemMatrix;
     if (systemMatrix_->parametric())
-      systemMatrix = systemMatrix_->affinePart();
-    else
       systemMatrix = systemMatrix_->fix(muDiffusion);
+    else
+      systemMatrix = systemMatrix_->affinePart();
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
     out << prefix << "computing right hand side... " << std::flush;
     timer.reset();
@@ -641,9 +639,9 @@ private:
     typedef typename Dune::Stuff::LA::SolverInterface< MatrixType, VectorType > SolverType;
     const std::shared_ptr< const SolverType > solver(Dune::Stuff::LA::createSolver< MatrixType, VectorType >(linearSolverType));
     const size_t failure = solver->apply(*systemMatrix,
-                                               *rhsVector,
-                                               *solutionVector,
-                                               linearSolverSettings);
+                                         *rhsVector,
+                                         *solutionVector,
+                                         linearSolverSettings);
     if (failure)
       DUNE_THROW(Dune::MathError,
                  "\n"
