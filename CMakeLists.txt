@@ -47,12 +47,13 @@ add_dune_modules(
   stuff
   common
   fem
+  fem-localfunctions
   istl
   geometry
   grid
   grid-multiscale
   localfunctions
-  detailed-discretizations
+  gdt
   pdelab
 )
 

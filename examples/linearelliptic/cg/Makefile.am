@@ -1,16 +1,15 @@
-
 SUBDIRS =
 
-noinst_PROGRAMS = detailed_discretizations
+noinst_PROGRAMS = gdt
 
-detailed_discretizations_SOURCES = detailed_discretizations.cc
+examples_linearelliptic_cg_gdt_SOURCES = gdt.cc
 
 GRIDDIM=2
-GRIDTYPE=SGRID
+GRIDTYPE=ALUGRID_SIMPLEX
 
 CUSTOM_CPPFLAGS = -D$(GRIDTYPE) -DGRIDDIM=$(GRIDDIM) -Wall -O0 -DDEBUG -g -fdiagnostics-show-option -std=c++0x
 
-detailed_discretizations_CPPFLAGS = $(AM_CPPFLAGS) \
+examples_linearelliptic_cg_gdt_CPPFLAGS = $(AM_CPPFLAGS) \
 	$(DUNEMPICPPFLAGS) \
 	$(UG_CPPFLAGS) \
 	$(AMIRAMESH_CPPFLAGS) \
@@ -23,7 +22,7 @@ detailed_discretizations_CPPFLAGS = $(AM_CPPFLAGS) \
 # last).  Also, due to some misunderstanding, a lot of libraries include the
 # -L option in LDFLAGS instead of LIBS -- so we have to include the LDFLAGS
 # here as well.
-detailed_discretizations_LDADD = \
+examples_linearelliptic_cg_gdt_LDADD = \
 	$(DUNE_LDFLAGS) $(DUNE_LIBS) \
 	$(ALUGRID_LDFLAGS) $(ALUGRID_LIBS) \
 	$(ALBERTA_LDFLAGS) $(ALBERTA_LIBS) \
@@ -34,7 +33,7 @@ detailed_discretizations_LDADD = \
   $(BOOST_LDADD) \
   -lboost_system \
   -lboost_filesystem
-detailed_discretizations_LDFLAGS = $(AM_LDFLAGS) \
+examples_linearelliptic_cg_gdt_LDFLAGS = $(AM_LDFLAGS) \
 	$(DUNEMPILDFLAGS) \
 	$(UG_LDFLAGS) \
 	$(AMIRAMESH_LDFLAGS) \

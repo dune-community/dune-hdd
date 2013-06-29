@@ -4,7 +4,7 @@
   #include <config.h>
 #endif
 
-#include "detailed_discretizations.hh"
+#include "gdt.hh"
 
 #include <boost/filesystem.hpp>
 

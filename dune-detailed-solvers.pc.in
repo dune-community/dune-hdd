@@ -10,6 +10,6 @@ Name: @PACKAGE_NAME@
 Version: @VERSION@
 Description: dune-detailed-solvers module
 URL: http://dune-project.org/
-Requires: dune-common dune-grid dune-istl dune-fem dune-fem-tools dune-detailed-discretizations
+Requires: dune-common dune-grid-multiscale dune-pdelab dune-fem-localfunctions dune-stuff dune-gdt
 Libs: -L
 Cflags: -I

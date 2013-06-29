@@ -7,6 +7,12 @@
 
 #include "config.h"
 
+// for dune-istl
+#if defined(HAVE_BOOST)
+  #undef HAVE_BOOST
+  #define HAVE_BOOST 1
+#endif
+
 #if !HAVE_GRIDTYPE
   #include <dune/grid/sgrid.hh>
   namespace Dune

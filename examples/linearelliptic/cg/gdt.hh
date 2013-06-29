@@ -1,12 +1,12 @@
 ﻿#include <string>
 
 std::string id(){
-  return "examples.linearelliptic.cg.dd";
+  return "examples.linearelliptic.cg.gdt";
 }
 
 
 #include "../problem.hh"
-#include <dune/detailed-solvers/linearelliptic/solver/cg/detailed-discretizations.hh>
+#include <dune/detailed-solvers/linearelliptic/solver/cg/gdt.hh>
 
 
 namespace Stuff = Dune::Stuff;
@@ -48,7 +48,7 @@ int run(int argc, char** argv)
     else
       info << ":" << std::endl;
     timer.reset();
-    typedef Elliptic::SolverContinuousGalerkinDD< GridPartType, RangeFieldType, dimRange, 1 > SolverType;
+    typedef Elliptic::SolverContinuousGalerkinGDT< GridPartType, RangeFieldType, dimRange, 1 > SolverType;
     SolverType solver(gridPart,
                       problem.boundaryInfo(),
                       problem.model());

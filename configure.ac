@@ -8,8 +8,8 @@ AM_CONFIG_HEADER([config.h])
 
 
 # we need no more than the standard DE-stuff
-# this module depends on dune-common dune-grid dune-istl dune-fem dune-fem-tools dune-detailed-discretizations
-# this implies checking for [dune-common], [dune-grid], [dune-istl], [dune-fem], [dune-fem-tools], [dune-detailed-discretizations]
+# this module depends on dune-common dune-grid-multiscale dune-pdelab dune-fem-localfunctions dune-stuff dune-gdt
+# this implies checking for [dune-common], [dune-gridmultiscale], [dune-pdelab], [dune-fem-localfunctions], [dune-stuff], [dune-gdt]
 DUNE_CHECK_ALL
 
 # implicitly set the Dune-flags everywhere

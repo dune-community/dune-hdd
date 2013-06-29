@@ -1,5 +1,5 @@
-#ifndef DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_SOLVER_CG_DETAILED_DISCRETIZATIONS_HH
-#define DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_SOLVER_CG_DETAILED_DISCRETIZATIONS_HH
+#ifndef DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_SOLVER_CG_GDT_HH
+#define DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_SOLVER_CG_GDT_HH
 
 #include <memory>
 #include <sstream>
@@ -19,23 +19,21 @@
 #include <dune/stuff/common/color.hh>
 #include <dune/stuff/common/parameter/tree.hh>
 
-#include <dune/detailed/discretizations/space/continuouslagrange/fem.hh>
-#include <dune/detailed/discretizations/la/containerfactory/eigen.hh>
-#include <dune/detailed/discretizations/localevaluation/elliptic.hh>
-#include <dune/detailed/discretizations/localevaluation/product.hh>
-#include <dune/detailed/discretizations/localoperator/codim0.hh>
-#include <dune/detailed/discretizations/localfunctional/codim0.hh>
-#include <dune/detailed/discretizations/localfunctional/codim1.hh>
-#include <dune/detailed/discretizations/assembler/local/codim0.hh>
-#include <dune/detailed/discretizations/assembler/local/codim1.hh>
-#include <dune/detailed/discretizations/space/constraints.hh>
-#include <dune/detailed/discretizations/assembler/system.hh>
-#include <dune/detailed/discretizations/discretefunction/default.hh>
+#include <dune/gdt/space/continuouslagrange/fem.hh>
+#include <dune/gdt/la/containerfactory/eigen.hh>
+#include <dune/gdt/localevaluation/elliptic.hh>
+#include <dune/gdt/localevaluation/product.hh>
+#include <dune/gdt/localoperator/codim0.hh>
+#include <dune/gdt/localfunctional/codim0.hh>
+#include <dune/gdt/localfunctional/codim1.hh>
+#include <dune/gdt/assembler/local/codim0.hh>
+#include <dune/gdt/assembler/local/codim1.hh>
+#include <dune/gdt/space/constraints.hh>
+#include <dune/gdt/assembler/system.hh>
+#include <dune/gdt/discretefunction/default.hh>
 
 #include "../../model/interface.hh"
 #include "../interface.hh"
-
-namespace Sane = Dune::Detailed::Discretizations;
 
 namespace Dune {
 namespace DetailedSolvers {
@@ -44,17 +42,17 @@ namespace LinearElliptic {
 
 // forward of the solver, to be used in the traits and allow for specialization and for some friendlyness
 template< class GridPartImp, class RangeFieldImp, int rangeDim, int polynomialOrder, bool scalarDiffusion = true >
-class SolverContinuousGalerkinDD
+class SolverContinuousGalerkinGDT
 {
 public:
-  SolverContinuousGalerkinDD() = delete;
+  SolverContinuousGalerkinGDT() = delete;
 };
 
 template< class GridPartImp, class RangeFieldImp, int rangeDim, int polynomialOrder, bool scalarDiffusion = true >
-class SolverContinuousGalerkinDDTraits;
+class SolverContinuousGalerkinGDTTraits;
 
 template< class Traits >
-class SolverContinuousGalerkinDDBase
+class SolverContinuousGalerkinGDTBase
 {
 public:
 
@@ -82,25 +80,25 @@ private:
   typedef Dune::Stuff::LA::AffineParametricContainer< VectorType > AffineParametricVectorType;
 
 public:
-  typedef Sane::ContinuousLagrangeSpace::FemWrapper< GridPartType, polOrder, RangeFieldType, dimRange > TestSpaceType;
+  typedef Dune::GDT::ContinuousLagrangeSpace::FemWrapper< GridPartType, polOrder, RangeFieldType, dimRange > TestSpaceType;
   typedef TestSpaceType                         AnsatzSpaceType;
   typedef typename TestSpaceType::PatternType   PatternType;
 
 private:
-  typedef Sane::DiscreteFunctionDefault< AnsatzSpaceType, VectorType >      DiscreteFunctionType;
-  typedef Sane::DiscreteFunctionDefaultConst< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
+  typedef Dune::GDT::DiscreteFunctionDefault< AnsatzSpaceType, VectorType >      DiscreteFunctionType;
+  typedef Dune::GDT::DiscreteFunctionDefaultConst< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
 
 public:
   typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
 
   static const std::string id()
   {
-    return typename SolverInterface< SolverContinuousGalerkinDDTraits< GridPartType, RangeFieldType, dimRange, polOrder, true > >::id() + ".cg.dd";
+    return typename SolverInterface< SolverContinuousGalerkinGDTTraits< GridPartType, RangeFieldType, dimRange, polOrder, true > >::id() + ".cg.gdt";
   }
 
-  SolverContinuousGalerkinDDBase(const std::shared_ptr< const GridPartType > _gridPart,
-                                 const std::shared_ptr< const BoundaryInfoType > _boundaryInfo,
-                                 const std::shared_ptr< const ModelType > _model)
+  SolverContinuousGalerkinGDTBase(const std::shared_ptr< const GridPartType > _gridPart,
+                                  const std::shared_ptr< const BoundaryInfoType > _boundaryInfo,
+                                  const std::shared_ptr< const ModelType > _model)
     : gridPart_(_gridPart)
     , boundaryInfo_(_boundaryInfo)
     , model_(_model)
@@ -390,7 +388,7 @@ private:
 
   // friend
   template< class G, class R, int r, int p, bool s >
-  friend class SolverContinuousGalerkinDD;
+  friend class SolverContinuousGalerkinGDT;
 
   const std::shared_ptr< const GridPartType > gridPart_;
   const std::shared_ptr< const BoundaryInfoType > boundaryInfo_;
@@ -403,17 +401,17 @@ private:
   std::shared_ptr< AffineParametricVectorType > neumannVector_;
   std::shared_ptr< /*AffineParametric*/VectorType > dirichletVector_;
   std::shared_ptr< AffineParametricVectorType > diffusionDirichletVector_;
-}; // class SolverContinuousGalerkinBase
+}; // class SolverContinuousGalerkinGDTBase
 
 
 /**
  *  \brief  Traits for SolverContinuousGalerkinDD
  */
 template< class GridPartImp, class RangeFieldImp, int rangeDim, int polynomialOrder, bool scalarDiffusion >
-class SolverContinuousGalerkinDDTraits
+class SolverContinuousGalerkinGDTTraits
 {
 public:
-  typedef SolverContinuousGalerkinDD< GridPartImp, RangeFieldImp, rangeDim, polynomialOrder, scalarDiffusion > derived_type;
+  typedef SolverContinuousGalerkinGDT< GridPartImp, RangeFieldImp, rangeDim, polynomialOrder, scalarDiffusion > derived_type;
   typedef typename GridPartImp::Traits                  GridPartTraits;
   typedef Dune::grid::Part::Interface< GridPartTraits > GridPartType;
   typedef typename GridPartType::ctype  DomainFieldType;
@@ -424,26 +422,26 @@ public:
 public:
   typedef Dune::Stuff::GridboundaryInterface< typename GridPartType::GridViewType >                 BoundaryInfoType;
   typedef ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, scalarDiffusion >   ModelType;
-  typedef typename Sane::ContainerFactoryEigen< RangeFieldImp >                                     ContainerFactory;
+  typedef typename Dune::GDT::ContainerFactoryEigen< RangeFieldImp >                                     ContainerFactory;
   typedef typename ContainerFactory::RowMajorSparseMatrixType                                       MatrixType;
   typedef typename ContainerFactory::DenseVectorType                                                VectorType;
-}; // class ContinuousGalerkinDDTraits
+}; // class SolverContinuousGalerkinGDTTraits
 
 
 /**
  *  \brief  Solver of linear elliptic pdes using a continuous galerkin discretization provided by dune-detailed-discretizations
  */
 template< class GridPartImp, class RangeFieldImp, int polynomialOrder >
-class SolverContinuousGalerkinDD< GridPartImp, RangeFieldImp, 1, polynomialOrder, true >
-    : public SolverInterface< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true > >
+class SolverContinuousGalerkinGDT< GridPartImp, RangeFieldImp, 1, polynomialOrder, true >
+    : public SolverInterface< SolverContinuousGalerkinGDTTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true > >
 //    , public SolverParametricInterface< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder > >
-    , private SolverContinuousGalerkinDDBase< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true > >
+    , private SolverContinuousGalerkinGDTBase< SolverContinuousGalerkinGDTTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true > >
 {
 //  typedef SolverInterface< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true > > BaseType;
 //  typedef SolverParametricInterface< Traits >                                                 ParametricBaseType;
-  typedef SolverContinuousGalerkinDDBase< SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true > > BaseType;
+  typedef SolverContinuousGalerkinGDTBase< SolverContinuousGalerkinGDTTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true > > BaseType;
 public:
-  typedef SolverContinuousGalerkinDDTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true >  Traits;
+  typedef SolverContinuousGalerkinGDTTraits< GridPartImp, RangeFieldImp, 1, polynomialOrder, true >  Traits;
 
   typedef typename Traits::GridPartType GridPartType;
   static const int polOrder = Traits::polOrder;
@@ -469,20 +467,20 @@ private:
   typedef Dune::Stuff::LA::AffineParametricContainer< VectorType > AffineParametricVectorType;
 
 public:
-  typedef Sane::ContinuousLagrangeSpace::FemWrapper< GridPartType, polOrder, RangeFieldType, dimRange > TestSpaceType;
+  typedef Dune::GDT::ContinuousLagrangeSpace::FemWrapper< GridPartType, polOrder, RangeFieldType, dimRange > TestSpaceType;
   typedef TestSpaceType                         AnsatzSpaceType;
   typedef typename TestSpaceType::PatternType   PatternType;
 
 private:
-  typedef Sane::DiscreteFunctionDefault< AnsatzSpaceType, VectorType >      DiscreteFunctionType;
-  typedef Sane::DiscreteFunctionDefaultConst< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
+  typedef Dune::GDT::DiscreteFunctionDefault< AnsatzSpaceType, VectorType >      DiscreteFunctionType;
+  typedef Dune::GDT::DiscreteFunctionDefaultConst< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
 
 public:
   typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
 
-  SolverContinuousGalerkinDD(const std::shared_ptr< const GridPartType > _gridPart,
-                             const std::shared_ptr< const BoundaryInfoType > _boundaryInfo,
-                             const std::shared_ptr< const ModelType > _model)
+  SolverContinuousGalerkinGDT(const std::shared_ptr< const GridPartType > _gridPart,
+                              const std::shared_ptr< const BoundaryInfoType > _boundaryInfo,
+                              const std::shared_ptr< const ModelType > _model)
     : BaseType(_gridPart, _boundaryInfo, _model)
   {}
 
@@ -545,11 +543,11 @@ public:
       std::shared_ptr< AffineParametricMatrixType > diffusionMatrix;
       BaseType::pattern_ = std::shared_ptr< const PatternType >(BaseType::space_->computePattern());
       // we need the affine part in any case (for the dirichlet row identification)
-      typedef Sane::SystemAssembler< TestSpaceType > SystemAssemblerType;
+      typedef Dune::GDT::SystemAssembler< TestSpaceType > SystemAssemblerType;
       SystemAssemblerType systemAssembler(*BaseType::space_);
       // * elliptic diffusion operator
-      typedef Sane::LocalOperator::Codim0Integral< Sane::LocalEvaluation::Elliptic< DiffusionType > > EllipticOperatorType;
-      typedef Sane::LocalAssembler::Codim0Matrix< EllipticOperatorType > LocalMatrixAssemblerType;
+      typedef Dune::GDT::LocalOperator::Codim0Integral< Dune::GDT::LocalEvaluation::Elliptic< DiffusionType > > EllipticOperatorType;
+      typedef Dune::GDT::LocalAssembler::Codim0Matrix< EllipticOperatorType > LocalMatrixAssemblerType;
       std::vector< EllipticOperatorType* > diffusionOperators;
       std::vector< LocalMatrixAssemblerType* > diffusionMatrixAssemblers;
       if (!BaseType::model_->diffusion()->parametric()) {
@@ -590,8 +588,8 @@ public:
         }
       } // if (!BaseType::model_->diffusion()->parametric())
       //   * L2 force functional
-      typedef Sane::LocalFunctional::Codim0Integral< Sane::LocalEvaluation::Product< ForceType > > L2VolumeFunctionalType;
-      typedef Sane::LocalAssembler::Codim0Vector< L2VolumeFunctionalType > LocalVolumeVectorAssemblerType;
+      typedef Dune::GDT::LocalFunctional::Codim0Integral< Dune::GDT::LocalEvaluation::Product< ForceType > > L2VolumeFunctionalType;
+      typedef Dune::GDT::LocalAssembler::Codim0Vector< L2VolumeFunctionalType > LocalVolumeVectorAssemblerType;
       std::shared_ptr< AffineParametricVectorType > forceVector;
       std::vector< L2VolumeFunctionalType* > forceFunctionals;
       std::vector< LocalVolumeVectorAssemblerType* > forceVectorAssemblers;
@@ -628,8 +626,8 @@ public:
         }
       } // if (!BaseType::model_->force()->parametric())
       //   * L2 neumann functional
-      typedef Sane::LocalFunctional::Codim1Integral< Sane::LocalEvaluation::Product< NeumannType > > L2FaceFunctionalType;
-      typedef Sane::LocalAssembler::Codim1Vector< L2FaceFunctionalType > LocalFaceVectorAssemblerType;
+      typedef Dune::GDT::LocalFunctional::Codim1Integral< Dune::GDT::LocalEvaluation::Product< NeumannType > > L2FaceFunctionalType;
+      typedef Dune::GDT::LocalAssembler::Codim1Vector< L2FaceFunctionalType > LocalFaceVectorAssemblerType;
       std::shared_ptr< AffineParametricVectorType > neumannVector;
       std::vector< L2FaceFunctionalType* > neumannFunctionals;
       std::vector< LocalFaceVectorAssemblerType* > neumannVectorAssemblers;
@@ -674,11 +672,11 @@ public:
       systemAssembler.assemble();
 
       // build the system matrix and prepare constraints
-      Sane::Constraints::Dirichlet< typename GridPartType::GridViewType,
+      Dune::GDT::Constraints::Dirichlet< typename GridPartType::GridViewType,
                                     RangeFieldType, true > clearAndSetRows(*BaseType::boundaryInfo_,
                                                                            BaseType::space_->mapper().maxNumDofs(),
                                                                            BaseType::space_->mapper().maxNumDofs());
-      Sane::Constraints::Dirichlet< typename GridPartType::GridViewType,
+      Dune::GDT::Constraints::Dirichlet< typename GridPartType::GridViewType,
                                     RangeFieldType, false > clearRows(*BaseType::boundaryInfo_,
                                                                       BaseType::space_->mapper().maxNumDofs(),
                                                                       BaseType::space_->mapper().maxNumDofs());
@@ -844,11 +842,11 @@ public:
       BaseType::initialized_ = true;
     } // if !(BaseType::initialized_)
   } // void init(...)
-}; // class SolverContinuousGalerkinDD< ..., 1, true >
+}; // class SolverContinuousGalerkinGDT< ..., 1, true >
 
 
 } // namespace LinearElliptic
 } // namespace DetailedSolver
 } // namespace Dune
 
-#endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_SOLVER_CG_DETAILED_DISCRETIZATIONS_HH
+#endif // DUNE_DETAILED_SOLVERS_LINEARELLIPTIC_SOLVER_CG_GDT_HH

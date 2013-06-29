@@ -1,4 +1,4 @@
 includedir = $(includedir)/dune/detailed-solvers/linear-elliptic/solver/cg
-includeHEADERS = detailed-discretizations.hh
+includeHEADERS = gdt.hh
 
 include $(top_srcdir)/am/global-rules
