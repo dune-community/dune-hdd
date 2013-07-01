@@ -1,4 +1,4 @@
 *.vtu
-*.param
 *.m
-detailed_discretizations
+*.settings
+examples_linearelliptic_cg_gdt
