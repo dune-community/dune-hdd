@@ -1,3 +1,8 @@
+// This file is part of the dune-hdd project:
+//   http://users.dune-project.org/projects/dune-hdd
+// Copyright holders: Felix Albrecht
+// License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
 #ifdef HAVE_CMAKE_CONFIG
   #include "cmake_config.h"
 #elif defined (HAVE_CONFIG_H)

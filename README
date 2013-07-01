@@ -1,3 +1,8 @@
+# This file is part of the dune-hdd project:
+#   http://users.dune-project.org/projects/dune-hdd
+# Copyright holders: Felix Albrecht
+# License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
 dune-hdd is a DUNE (http://www.dune-project.org) module which provides high
 dimensional discretizations for grid-based discretizations of pdes. It makes
 use of the discretization modules dune-gdt

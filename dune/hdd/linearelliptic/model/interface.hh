@@ -1,4 +1,9 @@
-﻿#ifndef DUNE_HDD_LINEARELLIPTIC_MODEL_INTERFACE_HH
+// This file is part of the dune-hdd project:
+//   http://users.dune-project.org/projects/dune-hdd
+// Copyright holders: Felix Albrecht
+// License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
+
+#ifndef DUNE_HDD_LINEARELLIPTIC_MODEL_INTERFACE_HH
 #define DUNE_HDD_LINEARELLIPTIC_MODEL_INTERFACE_HH
 
 // we still need this for the vtk writer
