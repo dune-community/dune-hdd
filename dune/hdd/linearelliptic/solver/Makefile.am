@@ -6,6 +6,6 @@
 includedir = $(includedir)/dune/hdd/linearelliptic/solver
 includeHEADERS = interface.hh
 
-SUBDIRS = cg fv multiscale
+SUBDIRS = cg
 
 include $(top_srcdir)/am/global-rules
