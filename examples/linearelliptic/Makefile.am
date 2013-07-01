@@ -1,3 +1,3 @@
-SUBDIRS = cg fv multiscale
+SUBDIRS = cg
 
 include $(top_srcdir)/am/global-rules

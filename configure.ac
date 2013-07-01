@@ -29,17 +29,11 @@ AC_CONFIG_FILES([
   dune/hdd/linearelliptic/model/affineparametric/Makefile
   dune/hdd/linearelliptic/solver/Makefile
   dune/hdd/linearelliptic/solver/cg/Makefile
-  dune/hdd/linearelliptic/solver/fv/Makefile
-  dune/hdd/linearelliptic/solver/multiscale/Makefile
-  dune/hdd/linearelliptic/solver/multiscale/semicg/Makefile
   m4/Makefile
   dune-hdd.pc
   examples/Makefile
   examples/linearelliptic/Makefile
   examples/linearelliptic/cg/Makefile
-  examples/linearelliptic/fv/Makefile
-  examples/linearelliptic/multiscale/Makefile
-  examples/linearelliptic/multiscale/semicg/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information

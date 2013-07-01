@@ -1,6 +1,6 @@
 SUBDIRS =
 
-noinst_PROGRAMS = gdt
+noinst_PROGRAMS = examples_linearelliptic_cg_gdt
 
 examples_linearelliptic_cg_gdt_SOURCES = gdt.cc
 
