@@ -16,7 +16,7 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/common/vector.hh>
 
-#include <dune/detailed-solvers/linearelliptic/model.hh>
+#include <dune/hdd/linearelliptic/model.hh>
 
 
 #if defined HAVE_CONFIG_H || defined HAVE_CMAKE_CONFIG
@@ -37,8 +37,8 @@ public:
   static const int DUNE_UNUSED( dimDomain) = GridProviderType::dim;
   typedef double                RangeFieldType;
   static const int DUNE_UNUSED( dimRange) = 1;
-  typedef Dune::DetailedSolvers::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
-  typedef Dune::DetailedSolvers::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
+  typedef Dune::HDD::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
+  typedef Dune::HDD::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
   typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
 
   static void writeSettingsFile(const std::string filename, const std::string _id = id())
@@ -214,8 +214,8 @@ private:
 //  static const int DUNE_UNUSED( dimDomain) = MsGridProviderType::dim;
 //  typedef double                RangeFieldType;
 //  static const int DUNE_UNUSED( dimRange) = 1;
-//  typedef Dune::DetailedSolvers::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
-//  typedef Dune::DetailedSolvers::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >         Models;
+//  typedef Dune::HDD::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange > ModelType;
+//  typedef Dune::HDD::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >         Models;
 //  typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
 
 //  static void writeDescriptionFile(const std::string filename, const std::string _id = id())

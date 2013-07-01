@@ -1,4 +1,4 @@
-M4FILES = dune-detailed-solvers.m4
+M4FILES = dune-hdd.m4
 
 aclocaldir = $(datadir)/aclocal
 aclocal_DATA = $(M4FILES)

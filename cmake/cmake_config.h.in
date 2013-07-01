@@ -1,5 +1,5 @@
-#ifndef DUNE_DETAILED_SOLVERS_CONFIG_H
-#define DUNE_DETAILED_SOLVERS_CONFIG_H
+#ifndef DUNE_HDD_CONFIG_H
+#define DUNE_HDD_CONFIG_H
 
 #define @GRIDTYPE@
 #define GRIDDIM @GRIDDIM@
@@ -26,4 +26,4 @@
   }
 #endif
 
-#endif	/* DUNE_DETAILED_SOLVERS_CONFIG_H */
+#endif // DUNE_HDD_CONFIG_H

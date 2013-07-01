@@ -1,0 +1,8 @@
+enable_testing()
+
+HEADERCHECK( ${hdd} )
+#DEPENDENCYCHECK( ${hdd} )
+
+BEGIN_TESTCASES()
+
+END_TESTCASES()

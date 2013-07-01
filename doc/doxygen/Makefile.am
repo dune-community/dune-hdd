@@ -1,4 +1,3 @@
-
 BASEDIR=../..
 CURDIR=doc/doxygen
 

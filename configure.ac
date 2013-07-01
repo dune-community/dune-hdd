@@ -23,16 +23,17 @@ AC_CONFIG_FILES([
   doc/doxygen/Makefile
   doc/doxygen/Doxyfile
   dune/Makefile
-  dune/detailed-solvers/Makefile
-  dune/detailed-solvers/linearelliptic/Makefile
-  dune/detailed-solvers/linearelliptic/model/Makefile
-  dune/detailed-solvers/linearelliptic/model/affineparametric/Makefile
-  dune/detailed-solvers/linearelliptic/solver/cg/Makefile
-  dune/detailed-solvers/linearelliptic/solver/fv/Makefile
-  dune/detailed-solvers/linearelliptic/solver/multiscale/Makefile
-  dune/detailed-solvers/linearelliptic/solver/multiscale/semicg/Makefile
+  dune/hdd/Makefile
+  dune/hdd/linearelliptic/Makefile
+  dune/hdd/linearelliptic/model/Makefile
+  dune/hdd/linearelliptic/model/affineparametric/Makefile
+  dune/hdd/linearelliptic/solver/Makefile
+  dune/hdd/linearelliptic/solver/cg/Makefile
+  dune/hdd/linearelliptic/solver/fv/Makefile
+  dune/hdd/linearelliptic/solver/multiscale/Makefile
+  dune/hdd/linearelliptic/solver/multiscale/semicg/Makefile
   m4/Makefile
-  dune-detailed-solvers.pc
+  dune-hdd.pc
   examples/Makefile
   examples/linearelliptic/Makefile
   examples/linearelliptic/cg/Makefile

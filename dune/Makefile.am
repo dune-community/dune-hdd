@@ -1,3 +1,3 @@
-SUBDIRS = detailed-solvers
+SUBDIRS = hdd
 
 include $(top_srcdir)/am/global-rules

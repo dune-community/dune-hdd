@@ -6,11 +6,11 @@ std::string id(){
 
 
 #include "../problem.hh"
-#include <dune/detailed-solvers/linearelliptic/solver/cg/gdt.hh>
+#include <dune/hdd/linearelliptic/solver/cg/gdt.hh>
 
 
 namespace Stuff = Dune::Stuff;
-namespace Elliptic = Dune::DetailedSolvers::LinearElliptic;
+namespace Elliptic = Dune::HDD::LinearElliptic;
 
 
 // define the 'analytical' types

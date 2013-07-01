@@ -1,1 +1,1 @@
-add_subdirectory(detailed-solvers)
+add_subdirectory(hdd)

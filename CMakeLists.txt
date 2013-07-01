@@ -1,4 +1,4 @@
-project( dune-detailed-solvers )
+project( dune-hdd )
 
 # cmake specific
 cmake_minimum_required( VERSION 2.8 )
@@ -18,8 +18,8 @@ include(DuneUtils)
 include(GridUtils)
 
 # needs to come first to include correct config.h
-include_dir( ${dune-detailed-solvers_SOURCE_DIR} )
-include_dir( ${dune-detailed-solvers_BINARY_DIR} )
+include_dir( ${dune-hdd_SOURCE_DIR} )
+include_dir( ${dune-hdd_BINARY_DIR} )
 
 # user settings
 set( ENABLE_MPI
@@ -58,8 +58,8 @@ add_dune_modules(
 )
 
 # header
-file( GLOB_RECURSE detailed-solvers "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
-set( COMMON_HEADER ${detailed-solvers} ${DUNE_HEADERS} )
+file( GLOB_RECURSE hdd "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
+set( COMMON_HEADER ${hdd} ${DUNE_HEADERS} )
 set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
 # libs

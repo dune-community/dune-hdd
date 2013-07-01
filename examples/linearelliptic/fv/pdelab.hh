@@ -6,7 +6,7 @@ std::string id(){
 
 
 #include "../problem.hh"
-#include <dune/detailed-solvers/linearelliptic/solver/fv/pdelab.hh>
+#include <dune/hdd/linearelliptic/solver/fv/pdelab.hh>
 
 
 namespace Stuff = Dune::Stuff;
