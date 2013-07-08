@@ -3,6 +3,6 @@
 # Copyright holders: Felix Albrecht
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-SUBDIRS = model solver
+SUBDIRS = model discretization
 
 include $(top_srcdir)/am/global-rules

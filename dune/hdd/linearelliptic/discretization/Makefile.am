@@ -3,9 +3,7 @@
 # Copyright holders: Felix Albrecht
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-includedir = $(includedir)/dune/hdd/linearelliptic/solver
-includeHEADERS = interface.hh
-
-SUBDIRS = cg
+includedir = $(includedir)/dune/hdd/linearelliptic/discretization
+includeHEADERS = cg_gdt.hh interface.hh
 
 include $(top_srcdir)/am/global-rules

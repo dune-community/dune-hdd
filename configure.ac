@@ -32,8 +32,7 @@ AC_CONFIG_FILES([
   dune/hdd/linearelliptic/Makefile
   dune/hdd/linearelliptic/model/Makefile
   dune/hdd/linearelliptic/model/affineparametric/Makefile
-  dune/hdd/linearelliptic/solver/Makefile
-  dune/hdd/linearelliptic/solver/cg/Makefile
+  dune/hdd/linearelliptic/discretization/Makefile
   m4/Makefile
   dune-hdd.pc
   examples/Makefile

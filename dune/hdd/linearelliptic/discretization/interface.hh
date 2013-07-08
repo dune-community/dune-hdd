@@ -3,8 +3,8 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_SOLVER_INTERFACE_HH
-#define DUNE_HDD_LINEARELLIPTIC_SOLVER_INTERFACE_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_INTERFACE_HH
+#define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_INTERFACE_HH
 
 #include <memory>
 
@@ -26,10 +26,10 @@ namespace LinearElliptic {
 
 
 template< class Traits >
-class SolverInterface
+class DiscretizationInterface
 {
 public:
-  typedef SolverInterface< Traits >     ThisType;
+//  typedef DiscretizationInterface< Traits >     ThisType;
   typedef typename Traits::derived_type derived_type;
 
   typedef Dune::grid::Part::Interface< typename Traits::GridPartTraits > GridPartType;
@@ -50,7 +50,7 @@ public:
 
   static const std::string id()
   {
-    return "solver.linearelliptic";
+    return "discretization.linearelliptic";
   }
 
   std::shared_ptr< const GridPartType > gridPart() const
@@ -125,7 +125,7 @@ public:
   {
     return static_cast< const derived_type& >(*this);
   }
-}; // class SolverInterface< DomainFieldType, dimDomain, RangeFieldType, 1 >
+}; // class DiscretizationInterface
 
 
 //template< class Traits >
@@ -241,4 +241,4 @@ public:
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_SOLVER_INTERFACE_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_INTERFACE_HH
