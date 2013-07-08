@@ -28,72 +28,63 @@ namespace HDD {
 namespace LinearElliptic {
 
 
-// forward of the nonparametric default
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion >
-class ModelDefault;
+//// forward of the nonparametric default
+//template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion >
+//class ModelDefault;
 
 
-// forward to allow for specialization
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
 class ModelInterface
 {
 public:
-  ModelInterface() = delete;
-};
-
-
-template< class DomainFieldImp, int domainDim, class RangeFieldImp >
-class ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1, true >
-{
-public:
-  typedef ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, 1, true > ThisType;
+  typedef ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim, scalarDiffusion > ThisType;
 
   typedef DomainFieldImp  DomainFieldType;
   static const int        dimDomain = domainDim;
 
   typedef RangeFieldImp   RangeFieldType;
-  static const int        dimRange = 1;
+  static const int        dimRange = rangeDim;
 
-  typedef typename Stuff::Common::Parameter::FieldType  ParamFieldType;
-  static const int                                      maxParamDim = Stuff::Common::Parameter::maxDim;
-  typedef typename Stuff::Common::Parameter::Type       ParamType;
+//  typedef typename Stuff::Common::Parameter::FieldType  ParamFieldType;
+//  static const int                                      maxParamDim = Stuff::Common::Parameter::maxDim;
+//  typedef typename Stuff::Common::Parameter::Type       ParamType;
 
-  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DiffusionType;
-  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > ForceType;
-  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DirichletType;
-  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > NeumannType;
+//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DiffusionType;
+//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > ForceType;
+//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DirichletType;
+//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > NeumannType;
 
-  static const std::string id()
+  static const std::string static_id()
   {
     return "model.linearelliptic";
   }
 
-  /** \defgroup type ´´These methods determine the type of the model (and also, which of the below methods have to be implemented).'' */
-  /* @{ */
-  virtual bool parametric() const
-  {
-    if (diffusion()->parametric() || force()->parametric() || dirichlet()->parametric() || neumann()->parametric())
-      return true;
-    else
-      return false;
-  }
+//  /** \defgroup type ´´These methods determine the type of the model (and also, which of the below methods have to be implemented).'' */
+//  /* @{ */
+//  virtual bool parametric() const
+//  {
+//    if (diffusion()->parametric() || force()->parametric() || dirichlet()->parametric() || neumann()->parametric())
+//      return true;
+//    else
+//      return false;
+//  }
 
-  virtual bool affineparametric() const
-  {
-    if (parametric()) {
-      if (diffusion()->parametric() && !diffusion()->affineparametric())
-        return false;
-      if (force()->parametric() && !force()->affineparametric())
-        return false;
-      if (dirichlet()->parametric() && !dirichlet()->affineparametric())
-        return false;
-      if (neumann()->parametric() && !neumann()->affineparametric())
-        return false;
-      return true;
-    } else
-      return false;
-  } // ... affineparametric()
-  /* @} */
+//  virtual bool affineparametric() const
+//  {
+//    if (parametric()) {
+//      if (diffusion()->parametric() && !diffusion()->affineparametric())
+//        return false;
+//      if (force()->parametric() && !force()->affineparametric())
+//        return false;
+//      if (dirichlet()->parametric() && !dirichlet()->affineparametric())
+//        return false;
+//      if (neumann()->parametric() && !neumann()->affineparametric())
+//        return false;
+//      return true;
+//    } else
+//      return false;
+//  } // ... affineparametric()
+//  /* @} */
 
   /** \defgroup purevirtual ´´These methods have to be implemented.'' */
   /* @{ */
@@ -106,28 +97,28 @@ public:
   virtual std::shared_ptr< const NeumannType > neumann() const = 0;
   /* @} */
 
-  /** \defgroup parametric ´´These methods have to be implemented additionally, if parametric() == true.'' */
-  /* @{ */
-  virtual size_t paramSize() const
-  {
-    if (!parametric())
-      return 0;
-    else
-      DUNE_THROW(Dune::NotImplemented,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
-  }
+//  /** \defgroup parametric ´´These methods have to be implemented additionally, if parametric() == true.'' */
+//  /* @{ */
+//  virtual size_t paramSize() const
+//  {
+//    if (!parametric())
+//      return 0;
+//    else
+//      DUNE_THROW(Dune::NotImplemented,
+//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
+//  }
 
-  virtual const std::vector< ParamType >& paramRange() const
-  {
-    DUNE_THROW(Dune::NotImplemented,
-               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
-  }
+//  virtual const std::vector< ParamType >& paramRange() const
+//  {
+//    DUNE_THROW(Dune::NotImplemented,
+//               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
+//  }
 
-  virtual const std::vector< std::string >& paramExplanation() const
-  {
-    DUNE_THROW(Dune::NotImplemented,
-               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
-  }
+//  virtual const std::vector< std::string >& paramExplanation() const
+//  {
+//    DUNE_THROW(Dune::NotImplemented,
+//               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
+//  }
 
   /**
    * \brief     Maps a global to a local parameter.
