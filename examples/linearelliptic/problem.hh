@@ -46,7 +46,7 @@ public:
   typedef Dune::HDD::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
   typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
 
-  static void writeSettingsFile(const std::string filename, const std::string _id = id())
+  static void writeSettingsFile(const std::string filename, const std::string _id)
   {
     std::ofstream file;
     file.open(filename);
@@ -73,16 +73,15 @@ public:
     file.close();
   } // ... writewriteSettingsFileFile(...)
 
-  Problem(int argc, char** argv)
+  Problem(const std::string id, int argc, char** argv)
   {
     // mpi
     Dune::Fem::MPIManager::initialize(argc, argv);
 
     // parameter
-    const std::string settingsFilename = id() + ".settings";
-    settings_ = SettingsType(argc, argv, settingsFilename);
-    settings_.assertSub(id());
-    filename_ = settings_.get(id() + ".filename", id());
+    settings_ = SettingsType(argc, argv, id + ".settings");
+    settings_.assertSub(id);
+    filename_ = settings_.get(id + ".filename", id);
 
     // logger
     const SettingsType& logDescription = settings_.sub("logging");
@@ -94,12 +93,12 @@ public:
       logFlags = logFlags | Dune::Stuff::Common::LOG_DEBUG;
     if (logDescription.get< bool >("file", false))
       logFlags = logFlags | Dune::Stuff::Common::LOG_FILE;
-    Dune::Stuff::Common::Logger().create(logFlags, id(), "", "");
+    Dune::Stuff::Common::Logger().create(logFlags, id, "", "");
     Dune::Stuff::Common::LogStream& info  = Dune::Stuff::Common::Logger().info();
 
     Dune::Timer timer;
 
-    const std::string griproviderType = settings_.get< std::string >(id() + ".gridprovider");
+    const std::string griproviderType = settings_.get< std::string >(id + ".gridprovider");
     info << "setting up grid with '" << griproviderType << "': " << std::endl;
     const std::shared_ptr< const GridProviderType > gridProvider(GridProviders::create(griproviderType, settings_));
     grid_ = gridProvider->grid();
@@ -111,7 +110,7 @@ public:
     info << " and a width of "
          << Dune::Fem::GridWidth::calcGridWidth(*gridPart) << ")" << std::endl;
 
-    const std::string gridbboundaryType = settings_.get< std::string >(id() + ".boundaryinfo");
+    const std::string gridbboundaryType = settings_.get< std::string >(id + ".boundaryinfo");
     info << "setting up gridbboundary '" << gridbboundaryType << "'... " << std::flush;
     timer.reset();
     boundaryInfo_ = std::shared_ptr< const GridboundariesType >(Gridboundaries::create(gridbboundaryType,
@@ -124,7 +123,7 @@ public:
     info << "done (took " << timer.elapsed() << " sek)" << std::endl;
 
     info << "setting up model";
-    const std::string modelType = settings_.get< std::string >(id() + ".model");
+    const std::string modelType = settings_.get< std::string >(id + ".model");
     if (!debugLogging_)
       info << "... ";
     else {
