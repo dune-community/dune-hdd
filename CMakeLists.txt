@@ -52,10 +52,12 @@ add_definitions( ${CUSTOM_FLAGS} )
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
 
 add_dune_modules(
+  pymor
   stuff
   common
   fem
   fem-localfunctions
+  localfunctions
   istl
   geometry
   grid
@@ -75,7 +77,7 @@ set( COMMON_LIBS
      ${DUNE_LIBS}
      ${PARALIBS}
      ${CCGNU_LIBRARIES}
-     "boost_system" "boost_filesystem"
+     ${BOOST_LIBS}
      ${GRIDLIBS}
      ${FASPLIB}
 )
