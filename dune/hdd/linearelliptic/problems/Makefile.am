@@ -3,7 +3,7 @@
 # Copyright holders: Felix Albrecht
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-includedir = $(includedir)/dune/hdd/linear-elliptic/solver/cg
-includeHEADERS = gdt.hh
+model_includedir = $(includedir)/dune/hdd/linearelliptic/model
+model_includeHEADERS = default.hh interface.hh thermalblock.hh
 
 include $(top_srcdir)/am/global-rules
