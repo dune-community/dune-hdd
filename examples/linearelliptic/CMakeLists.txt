@@ -7,9 +7,3 @@ add_library( dunehdd-example-linearelliptic-cg-with-dune-gdt STATIC "cg-with-dun
 
 ADD_EXECUTABLE( example_linearelliptic_cg_with_dune_gdt "cg-with-dune-gdt_main.cc" ${COMMON_HEADER} )
 TARGET_LINK_LIBRARIES( example_linearelliptic_cg_with_dune_gdt dunehdd-example-linearelliptic-cg-with-dune-gdt ${COMMON_LIBS} )
-
-add_library( dunehdd-example-linearelliptic-swipdg-with-dune-gdt STATIC "swipdg-with-dune-gdt.cc" )
-
-ADD_EXECUTABLE( example_linearelliptic_swipdg_with_dune_gdt "swipdg-with-dune-gdt_main.cc" ${COMMON_HEADER} )
-TARGET_LINK_LIBRARIES( example_linearelliptic_swipdg_with_dune_gdt dunehdd-example-linearelliptic-swipdg-with-dune-gdt ${COMMON_LIBS} )
-

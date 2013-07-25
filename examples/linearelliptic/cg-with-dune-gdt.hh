@@ -19,17 +19,17 @@ namespace Elliptic = Dune::HDD::LinearElliptic;
 template< class GridImp, int polynomialOrder = 1 >
 class LinearellipticExampleCG
 {
+public:
   typedef DiscreteProblem< GridImp >                    DiscreteProblemType;
-//  typedef typename DiscreteProblemType::SettingsType    SettingsType;
+private:
   typedef typename DiscreteProblemType::GridPartType    GridPartType;
   typedef typename DiscreteProblemType::RangeFieldType  RangeFieldType;
-//  static const unsigned int DUNE_UNUSED(                         dimDomain) = DiscreteProblemType::dimDomain;
   static const unsigned int DUNE_UNUSED(                dimRange) = DiscreteProblemType::dimRange;
   static const unsigned int DUNE_UNUSED(                polOrder) = polynomialOrder;
+public:
   typedef Elliptic::Discretization::ContinuousGalerkinWithDuneGDT<  GridPartType, RangeFieldType, dimRange,
                                                                     polOrder > DiscretizationType;
 
-public:
   static std::string static_id();
 
   static void write_settings_file(const std::string filename);
