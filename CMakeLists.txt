@@ -47,8 +47,6 @@ if( NOT EIGEN_FOUND )
   message( FATAL_ERROR "eigen3 not found, set PKG_CONFIGK_PATH to include eigen3.pc!" )
 endif( NOT EIGEN_FOUND )
 
-add_definitions( ${CUSTOM_FLAGS} )
-
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
 
 add_dune_modules(
@@ -79,7 +77,6 @@ set( COMMON_LIBS
      ${CCGNU_LIBRARIES}
      ${BOOST_LIBS}
      ${GRIDLIBS}
-     ${FASPLIB}
 )
 
 add_subdirectory(doc)
