@@ -29,15 +29,8 @@ AC_CONFIG_FILES([
   doc/doxygen/Doxyfile
   dune/Makefile
   dune/hdd/Makefile
-  dune/hdd/linearelliptic/Makefile
-  dune/hdd/linearelliptic/model/Makefile
-  dune/hdd/linearelliptic/model/affineparametric/Makefile
-  dune/hdd/linearelliptic/discretization/Makefile
   m4/Makefile
   dune-hdd.pc
-  examples/Makefile
-  examples/linearelliptic/Makefile
-  examples/linearelliptic/cg/Makefile
 ])
 AC_OUTPUT
 # finally print the summary information

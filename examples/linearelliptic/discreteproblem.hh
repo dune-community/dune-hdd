@@ -17,11 +17,12 @@
 
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/common/string.hh>
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
-#include <dune/stuff/common/vector.hh>
 
-#include <dune/hdd/linearelliptic/model.hh>
+#include <dune/hdd/linearelliptic/problems.hh>
+#include <dune/hdd/linearelliptic/discretizations.hh>
 
 
 #if defined HAVE_CONFIG_H || defined HAVE_CMAKE_CONFIG
@@ -29,7 +30,7 @@ template< class GridImp = Dune::GridSelector::GridType >
 #else
 template< class GridImp = Dune::SGrid< 2, 2 > >
 #endif
-class Problem
+class DiscreteProblem
 {
 public:
   typedef GridImp                                         GridType;
@@ -42,8 +43,8 @@ public:
   static const int DUNE_UNUSED( dimDomain) = GridProviderType::dim;
   typedef double                RangeFieldType;
   static const int DUNE_UNUSED( dimRange) = 1;
-  typedef Dune::HDD::LinearElliptic::ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ModelType;
-  typedef Dune::HDD::LinearElliptic::Models< DomainFieldType, dimDomain, RangeFieldType, dimRange >          Models;
+  typedef Dune::HDD::LinearElliptic::ProblemInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >  ProblemType;
+  typedef Dune::HDD::LinearElliptic::Problems< DomainFieldType, dimDomain, RangeFieldType, dimRange > Problems;
   typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
 
   static void writeSettingsFile(const std::string filename, const std::string _id)
@@ -53,29 +54,30 @@ public:
     file << "[" << _id << "]" << std::endl;
     writeKeysToFile("gridprovider", GridProviders::available(), file);
     writeKeysToFile("boundaryinfo", Gridboundaries::available(), file);
-    writeKeysToFile("model", Models::available(), file);
+    writeKeysToFile("problem", Problems::available(), file);
     file << "[logging]" << std::endl;
     file << "info  = true" << std::endl;
     file << "debug = true" << std::endl;
     file << "file  = false" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "test.size = 2" << std::endl;
-    file << "test.0    = [0.1; 0.1]" << std::endl;
-    file << "test.1    = [1.0; 1.0]" << std::endl;
-    file << "[linearsolver]" << std::endl;
-    file << "type      = bicgstab.ilut" << std::endl;
-    file << "            bicgstab.diagonal" << std::endl;
-    file << "precision = 1e-12"  << std::endl;
-    file << "maxIter   = 5000"  << std::endl;
+    file << "0.diffusion = [0.1; 0.1; 1.0; 1.0]" << std::endl;
+    file << "1.diffusion = [1.0; 1.0; 0.1; 0.1]" << std::endl;
+//    file << "[linearsolver]" << std::endl;
+//    file << "type      = bicgstab.ilut" << std::endl;
+//    file << "            bicgstab.diagonal" << std::endl;
+//    file << "precision = 1e-12"  << std::endl;
+//    file << "maxIter   = 5000"  << std::endl;
     writeSettingsToFile< GridProviders >(file);
     writeSettingsToFile< Gridboundaries >(file);
-    writeSettingsToFile< Models >(file);
+    writeSettingsToFile< Problems >(file);
     file.close();
   } // ... writewriteSettingsFileFile(...)
 
-  Problem(const std::string id, int argc, char** argv)
+  DiscreteProblem(const std::string id, const std::vector< std::string >& arguments)
   {
     // mpi
+    int argc = arguments.size();
+    char** argv = Dune::Stuff::Common::String::vectorToMainArgs(arguments);
     Dune::Fem::MPIManager::initialize(argc, argv);
 
     // parameter
@@ -102,13 +104,13 @@ public:
     info << "setting up grid with '" << griproviderType << "': " << std::endl;
     const std::shared_ptr< const GridProviderType > gridProvider(GridProviders::create(griproviderType, settings_));
     grid_ = gridProvider->grid();
-    const std::shared_ptr< const GridPartType > gridPart(new GridPartType(*grid_));
+    gridPart_ = std::make_shared< const GridPartType >(*grid_);
     info << "  done (took " << timer.elapsed()
          << " sec, has " << grid_->size(0) << " element";
     if (grid_->size(0) > 1)
       info << "s";
     info << " and a width of "
-         << Dune::Fem::GridWidth::calcGridWidth(*gridPart) << ")" << std::endl;
+         << Dune::Fem::GridWidth::calcGridWidth(*gridPart_) << ")" << std::endl;
 
     const std::string gridbboundaryType = settings_.get< std::string >(id + ".boundaryinfo");
     info << "setting up gridbboundary '" << gridbboundaryType << "'... " << std::flush;
@@ -122,21 +124,21 @@ public:
     gridProvider->visualize(gridbboundaryType, settings_, filename_ + ".grid");
     info << "done (took " << timer.elapsed() << " sek)" << std::endl;
 
-    info << "setting up model";
-    const std::string modelType = settings_.get< std::string >(id + ".model");
+    info << "setting up problem";
+    const std::string problemType = settings_.get< std::string >(id + ".problem");
     if (!debugLogging_)
       info << "... ";
     else {
       info << ":" << std::endl;
-      info << "  '" << modelType << "'... ";
+      info << "  '" << problemType << "'... ";
     }
     info << std::flush;
     timer.reset();
-    model_ = std::shared_ptr< const ModelType >(Models::create(modelType, settings_));
+    problem_ = std::shared_ptr< const ProblemType >(Problems::create(problemType, settings_));
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
-    info << "visualizing model... " << std::flush;
+    info << "visualizing problem... " << std::flush;
     timer.reset();
-    model_->visualize(gridPart->gridView(), filename_ + ".model");
+    problem_->visualize(gridPart_->gridView(), filename_ + ".problem");
     info << "done (took " << timer.elapsed() << " sec)" << std::endl;
   } // Problem
 
@@ -160,14 +162,19 @@ public:
     return grid_;
   }
 
+  std::shared_ptr< const GridPartType > gridPart() const
+  {
+    return gridPart_;
+  }
+
   std::shared_ptr< const GridboundariesType > boundaryInfo() const
   {
     return boundaryInfo_;
   }
 
-  std::shared_ptr< const ModelType > model() const
+  std::shared_ptr< const ProblemType > problem() const
   {
-    return model_;
+    return problem_;
   }
 
 private:
@@ -194,9 +201,10 @@ private:
   SettingsType settings_;
   bool debugLogging_;
   std::shared_ptr< const GridType > grid_;
+  std::shared_ptr< const GridPartType > gridPart_;
   std::shared_ptr< const GridboundariesType > boundaryInfo_;
-  std::shared_ptr< const ModelType > model_;
-}; // class Problem
+  std::shared_ptr< const ProblemType > problem_;
+}; // class DiscreteProblem
 
 
 //#if defined HAVE_CONFIG_H || defined HAVE_CMAKE_CONFIG

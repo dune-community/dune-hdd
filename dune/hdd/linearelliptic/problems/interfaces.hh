@@ -3,8 +3,8 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_MODEL_INTERFACE_HH
-#define DUNE_HDD_LINEARELLIPTIC_MODEL_INTERFACE_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEM_INTERFACES_HH
+#define DUNE_HDD_LINEARELLIPTIC_PROBLEM_INTERFACES_HH
 
 // we still need this for the vtk writer
 #ifdef HAVE_CMAKE_CONFIG
@@ -19,25 +19,26 @@
 
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/common/color.hh>
-#include <dune/stuff/common/parameter.hh>
-#include <dune/stuff/function/interface.hh>
-#include <dune/stuff/function/fixed.hh>
+#include <dune/stuff/common/parameter/tree.hh>
+
+#include <dune/pymor/parameters/base.hh>
+#include <dune/pymor/functions/interfaces.hh>
 
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 
 
-//// forward of the nonparametric default
-//template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion >
-//class ModelDefault;
-
-
 template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
-class ModelInterface
+class ProblemInterface;
+
+
+template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+class ProblemInterface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim, true >
+  : public Pymor::Parametric
 {
+  typedef Pymor::Parametric BaseType;
 public:
-  typedef ModelInterface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim, scalarDiffusion > ThisType;
 
   typedef DomainFieldImp  DomainFieldType;
   static const int        dimDomain = domainDim;
@@ -45,49 +46,29 @@ public:
   typedef RangeFieldImp   RangeFieldType;
   static const int        dimRange = rangeDim;
 
-//  typedef typename Stuff::Common::Parameter::FieldType  ParamFieldType;
-//  static const int                                      maxParamDim = Stuff::Common::Parameter::maxDim;
-//  typedef typename Stuff::Common::Parameter::Type       ParamType;
+  ProblemInterface(const Pymor::ParameterType tt = Pymor::ParameterType())
+    : BaseType(tt)
+  {}
 
-//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DiffusionType;
-//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > ForceType;
-//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DirichletType;
-//  typedef Dune::Stuff::GenericStationaryFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > NeumannType;
+  ProblemInterface(const Pymor::Parametric& other)
+    : BaseType(other)
+  {}
+
+  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DiffusionType;
+  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > ForceType;
+  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DirichletType;
+  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > NeumannType;
 
   static const std::string static_id()
   {
-    return "model.linearelliptic";
+    return "dune.hdd.linearelliptic.problem";
   }
 
-//  /** \defgroup type ´´These methods determine the type of the model (and also, which of the below methods have to be implemented).'' */
-//  /* @{ */
-//  virtual bool parametric() const
-//  {
-//    if (diffusion()->parametric() || force()->parametric() || dirichlet()->parametric() || neumann()->parametric())
-//      return true;
-//    else
-//      return false;
-//  }
+  virtual const std::string id()
+  {
+    return "dune.hdd.linearelliptic.problem";
+  }
 
-//  virtual bool affineparametric() const
-//  {
-//    if (parametric()) {
-//      if (diffusion()->parametric() && !diffusion()->affineparametric())
-//        return false;
-//      if (force()->parametric() && !force()->affineparametric())
-//        return false;
-//      if (dirichlet()->parametric() && !dirichlet()->affineparametric())
-//        return false;
-//      if (neumann()->parametric() && !neumann()->affineparametric())
-//        return false;
-//      return true;
-//    } else
-//      return false;
-//  } // ... affineparametric()
-//  /* @} */
-
-  /** \defgroup purevirtual ´´These methods have to be implemented.'' */
-  /* @{ */
   virtual std::shared_ptr< const DiffusionType > diffusion() const = 0;
 
   virtual std::shared_ptr< const ForceType > force() const = 0;
@@ -95,126 +76,28 @@ public:
   virtual std::shared_ptr< const DirichletType > dirichlet() const = 0;
 
   virtual std::shared_ptr< const NeumannType > neumann() const = 0;
-  /* @} */
-
-//  /** \defgroup parametric ´´These methods have to be implemented additionally, if parametric() == true.'' */
-//  /* @{ */
-//  virtual size_t paramSize() const
-//  {
-//    if (!parametric())
-//      return 0;
-//    else
-//      DUNE_THROW(Dune::NotImplemented,
-//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
-//  }
-
-//  virtual const std::vector< ParamType >& paramRange() const
-//  {
-//    DUNE_THROW(Dune::NotImplemented,
-//               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
-//  }
-
-//  virtual const std::vector< std::string >& paramExplanation() const
-//  {
-//    DUNE_THROW(Dune::NotImplemented,
-//               "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
-//  }
-
-  /**
-   * \brief     Maps a global to a local parameter.
-   * \param[in] ParamType _globalMu
-   *            global parameter
-   * \param[in] std::string _id
-   *            To identify the function, wrt which the localization is carried out. Has to be one of diffusion,
-   *            force, dirichlet or neumann
-   * \return    ParamType
-   *            local parameter
-   */
-  virtual ParamType mapParam(const ParamType& /*_globalMu*/, const std::string /*_id*/) const
-  {
-    if (!parametric())
-      return ParamType();
-    else
-      DUNE_THROW(Dune::NotImplemented,
-                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:") << " implement me if parametric() == true!");
-  }
-  /* @} */
-
-//  virtual std::shared_ptr< const ThisType > fix(const ParamType& mu) const
-//  {
-//    if (!parametric() && mu.size() != 0)
-//      DUNE_THROW(Dune::InvalidStateException,
-//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-//                 << " do not call fix(mu) with a nonempty mu for a nonparametric model (check parametric() == true beforehand)!");
-//    typedef Dune::Stuff::FunctionFixed< DomainFieldType, dimDomain, RangeFieldType, dimRange > FixedFunctionType;
-//    typedef ModelDefault< DomainFieldType, dimDomain, RangeFieldType, dimRange > DefaultModelType;
-//    return std::make_shared< DefaultModelType >(diffusion()->parametric() ? std::make_shared< const FixedFunctionType >(diffusion(), mapParam(mu, "diffusion")) : diffusion(),
-//                                                force()->parametric() ? std::make_shared< const FixedFunctionType >(force(), mapParam(mu, "force")) : force(),
-//                                                dirichlet()->parametric() ? std::make_shared< const FixedFunctionType >(dirichlet(), mapParam(mu, "dirichlet")) : dirichlet(),
-//                                                neumann()->parametric() ? std::make_shared< const FixedFunctionType >(neumann(), mapParam(mu, "neumann")) : neumann());
-//  }
 
   template< class GridViewType >
   void visualize(const GridViewType& gridView, std::string filename) const
   {
     // prepare data
     Dune::VTKWriter< GridViewType > vtkWriter(gridView);
-    std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > diffusionPlots
-        = preparePlot(gridView, *(diffusion()), "diffusion");
-    std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > forcePlots
-        = preparePlot(gridView, *(force()), "force");
-    std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > dirichletPlots
-        = preparePlot(gridView, *(dirichlet()), "dirichlet");
-    std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > neumannPlots
-        = preparePlot(gridView, *(neumann()), "neumann");
+    auto diffusionPlots = preparePlot(gridView, *(diffusion()), "diffusion");
+    auto forcePlots = preparePlot(gridView, *(force()), "force");
+    auto dirichletPlots = preparePlot(gridView, *(dirichlet()), "dirichlet");
+    auto neumannPlots = preparePlot(gridView, *(neumann()), "neumann");
     // walk the grid view
     for (typename GridViewType::template Codim< 0 >::Iterator it = gridView.template begin< 0 >();
          it != gridView.template end< 0 >();
          ++it) {
-      const typename GridViewType::template Codim< 0 >::Entity& entity = *it;
-      const typename GridViewType::IndexSet::IndexType index = gridView.indexSet().index(entity);
+      const auto& entity = *it;
+      const auto index = gridView.indexSet().index(entity);
       const auto center = entity.geometry().center();
       // do a piecewise constant projection of the data functions
-      //   * diffusion
-      if (diffusion()->parametric() && diffusion()->affineparametric())
-        for (size_t qq = 0; qq < diffusion()->components().size(); ++qq)
-          diffusionPlots[qq].second->operator[](index) = diffusion()->components()[qq]->evaluate(center);
-      else if (!diffusion()->parametric())
-        diffusionPlots[0].second->operator[](index) = diffusion()->evaluate(center);
-      else
-        DUNE_THROW(Dune::InvalidStateException,
-                   "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                   << " visualize() not yet implemented for parametric but not affineparametric data functions!");
-      //   * force
-      if (force()->parametric() && force()->affineparametric())
-        for (size_t qq = 0; qq < force()->components().size(); ++qq)
-          forcePlots[qq].second->operator[](index) = force()->components()[qq]->evaluate(center);
-      else if (!force()->parametric())
-        forcePlots[0].second->operator[](index) = force()->evaluate(center);
-      else
-        DUNE_THROW(Dune::InvalidStateException,
-                   "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                   << " visualize() not yet implemented for parametric but not affineparametric data functions!");
-      //   * dirichlet
-      if (dirichlet()->parametric() && dirichlet()->affineparametric())
-        for (size_t qq = 0; qq < dirichlet()->components().size(); ++qq)
-          dirichletPlots[qq].second->operator[](index) = dirichlet()->components()[qq]->evaluate(center);
-      else if (!dirichlet()->parametric())
-        dirichletPlots[0].second->operator[](index) = dirichlet()->evaluate(center);
-      else
-        DUNE_THROW(Dune::InvalidStateException,
-                   "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                   << " visualize() not yet implemented for parametric but not affineparametric data functions!");
-      //   * neumann
-      if (neumann()->parametric() && neumann()->affineparametric())
-        for (size_t qq = 0; qq < neumann()->components().size(); ++qq)
-          neumannPlots[qq].second->operator[](index) = neumann()->components()[qq]->evaluate(center);
-      else if (!neumann()->parametric())
-        neumannPlots[0].second->operator[](index) = neumann()->evaluate(center);
-      else
-        DUNE_THROW(Dune::InvalidStateException,
-                   "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                   << " visualize() not yet implemented for parametric but not affineparametric data functions!");
+      plot_local(*(diffusion()), diffusionPlots, index, center);
+      plot_local(*(force()), forcePlots, index, center);
+      plot_local(*(dirichlet()), dirichletPlots, index, center);
+      plot_local(*(neumann()), neumannPlots, index, center);
     } // walk the grid view
     // write
     //   * diffusion
@@ -230,7 +113,16 @@ public:
     for (size_t qq = 0; qq < neumannPlots.size(); ++qq)
       vtkWriter.addCellData(*(neumannPlots[qq].second), neumannPlots[qq].first);
     vtkWriter.write(filename, Dune::VTK::ascii);
-  } // void visualize(const GridViewType& gridView, std::string filename) const
+    // clean up
+    for (auto element : diffusionPlots)
+      delete element.second;
+    for (auto element : forcePlots)
+      delete element.second;
+    for (auto element : dirichletPlots)
+      delete element.second;
+    for (auto element : neumannPlots)
+      delete element.second;
+  } // ... visualize(...) const
 
 private:
   template< class GridViewType, class FunctionType >
@@ -240,34 +132,50 @@ private:
   {
     std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > ret;
     if (function.parametric()) {
-      if (function.affineparametric()) {
-        const std::vector< std::string >& paramExplanations = function.paramExplanation();
-        for (size_t qq = 0; qq < function.coefficients().size(); ++qq)
+      if (function.affinely_decomposable()) {
+        for (size_t qq = 0; qq < function.num_components(); ++qq)
           ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
-                          name + "_component_" + Dune::Stuff::Common::toString(qq) + ": " + paramExplanations[qq],
+                          name + ", component " + Dune::Stuff::Common::toString(qq),
                           new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
-        if (function.coefficients().size() > function.coefficients().size())
+        if (function.has_affine_part())
           ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
-                          name + "_component_" + Dune::Stuff::Common::toString(function.coefficients().size()),
+                          name + ", affine part",
                           new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
       } else
-        DUNE_THROW(Dune::InvalidStateException,
-                   "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-                   << " visualize() not yet implemented for parametric but not affineparametric data functions!");
+        DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
+                         "not implemented for parametric functions which are not affinely decomposable!");
     } else {
       ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
                       name,
                       new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
     }
     return ret;
-  } // std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > preparePlot(...) const
-}; // class ModelInterface
+  }
+
+  template< class FunctionType, class IndexType, class DomainType >
+  void plot_local(const FunctionType& function,
+                  std::vector< std::pair< std::string, std::vector< RangeFieldType >* > >& plots,
+                  const IndexType& index,
+                  const DomainType& center) const
+  {
+    if (function.parametric() && function.affinely_decomposable()) {
+      for (size_t qq = 0; qq < function.num_components(); ++qq)
+        plots[qq].second->operator[](index) = function.component(qq)->evaluate(center);
+      if (function.has_affine_part())
+        plots[plots.size() - 1].second->operator[](index) = function.affine_part()->evaluate(center);
+    } else if (!function.parametric())
+      plots[0].second->operator[](index) = function.evaluate(center);
+    else
+      DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
+                       "not implemented for parametric functions which are not affinely decomposable!");
+  }
+}; // ProblemInterface
 
 
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
-#include "default.hh"
+//#include "default.hh"
 
-#endif // DUNE_HDD_LINEARELLIPTIC_MODEL_INTERFACE_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_PROBLEM_INTERFACES_HH
