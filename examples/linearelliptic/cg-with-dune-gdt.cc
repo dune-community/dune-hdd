@@ -35,7 +35,7 @@ LinearellipticExampleCG< G, p >::LinearellipticExampleCG()
 {}
 
 template< class G, int p >
-void LinearellipticExampleCG< G, p >::initialize(const std::vector< std::string >& arguments)
+void LinearellipticExampleCG< G, p >::initialize(const std::vector< std::string > arguments)
 {
   discreteProblem_ = std::make_shared< const DiscreteProblemType >(static_id(), arguments);
   const bool debugLogging = discreteProblem_->debugLogging();
@@ -78,6 +78,12 @@ typename LinearellipticExampleCG< G, p >::DiscretizationType LinearellipticExamp
     DUNE_PYMOR_THROW(Dune::Pymor::Exception::requirements_not_met,
                      "do not call discretization() if initialized() == false!");
   return *discretization_;
+}
+
+template< class G, int p >
+typename LinearellipticExampleCG< G, p >::DiscretizationType* LinearellipticExampleCG< G, p >::discretization_and_return_ptr() const
+{
+  return new DiscretizationType(discretization());
 }
 
 template class LinearellipticExampleCG< Dune::SGrid< 2, 2 >, 1 >;
