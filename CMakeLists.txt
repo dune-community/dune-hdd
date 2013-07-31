@@ -24,10 +24,11 @@ set( ENV{PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/bin:$ENV{PATH}" )
 set( ENV{LD_LIBRARY_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib:$ENV{LD_LIBRARY_PATH}" )
 set( ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}" )
 
-# dune-stuff cmake includes
-set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../dune-stuff/cmake )
+# dune-stuff and dune-pymor cmake includes
+set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../dune-stuff/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../dune-pymor/cmake )
 include(DuneUtils)
 include(GridUtils)
+include(PymorUtils)
 
 # needs to come first to include correct config.h
 include_dir( ${dune-hdd_SOURCE_DIR} )
@@ -52,17 +53,16 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURR
 add_dune_modules(
   pymor
   stuff
-  common
+  pdelab
+  gdt
   fem
   fem-localfunctions
   localfunctions
+  grid-multiscale
+  grid
   istl
   geometry
-  grid
-  grid-multiscale
-  localfunctions
-  gdt
-  pdelab
+  common
 )
 
 # header
