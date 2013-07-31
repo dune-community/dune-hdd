@@ -4,6 +4,6 @@
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 Module: dune-hdd
-Version: 0.2
+Version: 0.2.1
 Maintainer: felix.albrecht@uni-muenster.de
 Depends: dune-stuff (>= 2.2.1) dune-gdt (>= 0.1) dune-grid-multiscale (>= 0.1) dune-pdelab (>= 1.0.1) dune-pymor
