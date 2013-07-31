@@ -7,3 +7,8 @@ add_library( dunehdd-example-linearelliptic-cg-with-dune-gdt STATIC "cg-with-dun
 
 ADD_EXECUTABLE( example_linearelliptic_cg_with_dune_gdt "cg-with-dune-gdt_main.cc" ${COMMON_HEADER} )
 TARGET_LINK_LIBRARIES( example_linearelliptic_cg_with_dune_gdt dunehdd-example-linearelliptic-cg-with-dune-gdt ${COMMON_LIBS} )
+
+add_python_bindings(linearellipticexamplecg
+                    cg-with-dune-gdt_bindings_generator.py
+                    cg-with-dune-gdt.hh
+                    dunehdd-example-linearelliptic-cg-with-dune-gdt)
