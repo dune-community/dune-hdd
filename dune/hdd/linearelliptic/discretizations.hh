@@ -3,8 +3,8 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_SOLVER_HH
-#define DUNE_HDD_LINEARELLIPTIC_SOLVER_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_HH
+#define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_HH
 
 #include <vector>
 #include <string>
@@ -21,4 +21,4 @@ namespace LinearElliptic {
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_SOLVER_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_HH

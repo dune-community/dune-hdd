@@ -3,8 +3,8 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_MODEL_DEFAULT_HH
-#define DUNE_HDD_LINEARELLIPTIC_MODEL_DEFAULT_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_DEFAULT_HH
+#define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_DEFAULT_HH
 
 #include <memory>
 
@@ -168,4 +168,4 @@ protected:
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_MODEL_DEFAULT_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_PROBLEMS_DEFAULT_HH

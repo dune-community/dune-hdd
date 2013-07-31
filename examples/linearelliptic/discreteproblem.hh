@@ -3,6 +3,9 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
+#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_DISCRETEPROBLEM_HH
+#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_DISCRETEPROBLEM_HH
+
 #include <memory>
 
 #include <dune/common/exceptions.hh>
@@ -199,3 +202,5 @@ private:
   std::shared_ptr< const GridboundariesType > boundaryInfo_;
   std::shared_ptr< const ProblemType > problem_;
 }; // class DiscreteProblem
+
+#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_DISCRETEPROBLEM_HH

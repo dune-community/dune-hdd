@@ -3,8 +3,8 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEM_INTERFACES_HH
-#define DUNE_HDD_LINEARELLIPTIC_PROBLEM_INTERFACES_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_INTERFACES_HH
+#define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_INTERFACES_HH
 
 // we still need this for the vtk writer
 #ifdef HAVE_CMAKE_CONFIG
@@ -178,4 +178,4 @@ private:
 
 //#include "default.hh"
 
-#endif // DUNE_HDD_LINEARELLIPTIC_PROBLEM_INTERFACES_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_PROBLEMS_INTERFACES_HH
