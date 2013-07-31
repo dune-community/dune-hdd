@@ -8,11 +8,11 @@
 
 #include <memory>
 
-#include <dune/pymor/common/exceptions.hh>
-
 #include <dune/hdd/linearelliptic/discretizations/cg-with-dune-gdt.hh>
 
 #include "discreteproblem.hh"
+
+#include <dune/pymor/python-bindings.hh>
 
 namespace Elliptic = Dune::HDD::LinearElliptic;
 
@@ -32,17 +32,19 @@ public:
 
   static std::string static_id();
 
-  static void write_settings_file(const std::string filename);
+  static void write_settings_file(const std::string filename = static_id() + ".settings");
 
   LinearellipticExampleCG();
 
-  void initialize(const std::vector< std::string >& arguments);
+  void initialize(const std::vector< std::string > arguments);
 
   bool initialized() const;
 
   DiscreteProblemType discrete_problem() const;
 
   DiscretizationType discretization() const;
+
+  DiscretizationType* discretization_and_return_ptr() const;
 
 private:
   bool initialized_;
