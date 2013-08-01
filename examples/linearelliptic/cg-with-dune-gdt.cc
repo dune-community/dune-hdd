@@ -9,9 +9,6 @@
   #include "config.h"
 #endif
 
-#include <dune/stuff/common/disable_warnings.hh>
-  #include <dune/grid/sgrid.hh>
-#include <dune/stuff/common/reenable_warnings.hh>
 #include <dune/stuff/common/string.hh>
 
 
@@ -86,4 +83,53 @@ typename LinearellipticExampleCG< G, p >::DiscretizationType* LinearellipticExam
   return new DiscretizationType(discretization());
 }
 
+
+// =================
+// ===== sgrid =====
+// =================
+#include <dune/stuff/common/disable_warnings.hh>
+  #include <dune/grid/sgrid.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
+
 template class LinearellipticExampleCG< Dune::SGrid< 2, 2 >, 1 >;
+template class LinearellipticExampleCG< Dune::SGrid< 2, 2 >, 2 >;
+template class LinearellipticExampleCG< Dune::SGrid< 2, 2 >, 3 >;
+template class LinearellipticExampleCG< Dune::SGrid< 3, 3 >, 1 >;
+template class LinearellipticExampleCG< Dune::SGrid< 3, 3 >, 2 >;
+template class LinearellipticExampleCG< Dune::SGrid< 3, 3 >, 3 >;
+
+// ====================
+// ===== yaspgrid =====
+// ====================
+#include <dune/grid/yaspgrid.hh>
+
+template class LinearellipticExampleCG< Dune::YaspGrid< 2 >, 1 >;
+template class LinearellipticExampleCG< Dune::YaspGrid< 3 >, 1 >;
+
+
+// ===================
+// ===== alugrid =====
+// ===================
+#ifdef HAVE_ALUGRID
+  #include <dune/grid/alugrid.hh>
+
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::cube, Dune::nonconforming >, 1 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::cube, Dune::nonconforming >, 2 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::cube, Dune::nonconforming >, 3 >;
+
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::nonconforming >, 1 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::nonconforming >, 2 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::nonconforming >, 3 >;
+
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, 1 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, 2 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, 3 >;
+
+  template class LinearellipticExampleCG< Dune::ALUGrid< 3, 3, Dune::cube, Dune::nonconforming >, 1 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 3, 3, Dune::cube, Dune::nonconforming >, 2 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 3, 3, Dune::cube, Dune::nonconforming >, 3 >;
+
+  template class LinearellipticExampleCG< Dune::ALUGrid< 3, 3, Dune::simplex, Dune::nonconforming >, 1 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 3, 3, Dune::simplex, Dune::nonconforming >, 2 >;
+  template class LinearellipticExampleCG< Dune::ALUGrid< 3, 3, Dune::simplex, Dune::nonconforming >, 3 >;
+#endif // HAVE_ALUGRID

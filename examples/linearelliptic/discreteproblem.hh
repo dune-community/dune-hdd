@@ -16,7 +16,6 @@
 #include <dune/fem/misc/gridwidth.hh>
 
 #include <dune/grid/part/leaf.hh>
-#include <dune/grid/multiscale/provider.hh>
 
 #include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/logging.hh>
