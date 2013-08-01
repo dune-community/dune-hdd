@@ -33,7 +33,7 @@ try:
                                                                    functional.parameter_type().report()))
     available_solver_contexts = list(discretization.solver_options())
     for solver_context in available_solver_contexts:
-        solver_options = discretization.solver_options(context)
+        solver_options = discretization.solver_options(solver_context)
         print('  solver context \'{}\': \'{}\''.format(solver_context, solver_options))
     # solve
     mu = example_module.Dune.Pymor.Parameter('diffusion', [0.1, 1.0, 0.1, 1.0])
