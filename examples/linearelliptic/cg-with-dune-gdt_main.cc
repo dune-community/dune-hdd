@@ -41,11 +41,6 @@ int main(int argc, char** argv)
     // inspect
     const auto discretization = example.discretization();
     info << std::endl;
-    info << "available operator:   '" << discretization.available_operators()[0] << "'" << std::endl;
-    info << "available functional: '" << discretization.available_functionals()[0] << "'" << std::endl;
-    const std::string context = discretization.solver_options()[0];
-    info << "options for solving in context '" << context << "' are: '" << discretization.solver_options(context)
-         << "'" << std::endl;
 
     // solve
     if (discretization.parametric()) {
