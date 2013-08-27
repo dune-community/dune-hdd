@@ -81,6 +81,7 @@ private:
 public:
   typedef Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< VectorType >             FunctionalType;
   typedef Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< OperatorComponentType > OperatorType;
+  typedef OperatorComponentType ProductType;
 }; // class ContinuousGalerkinWithDuneGDTTraits
 
 
@@ -115,6 +116,7 @@ public:
 
   typedef typename Traits::OperatorType   OperatorType;
   typedef typename Traits::FunctionalType FunctionalType;
+  typedef typename Traits::ProductType    ProductType;
 
 private:
   typedef typename Traits::MatrixType       MatrixType;
@@ -410,39 +412,37 @@ public:
     return initialized_;
   }
 
-  std::vector< std::string > available_operators() const
+  OperatorType get_operator() const
   {
-    return { "lhs" };
-  }
-
-  OperatorType get_operator(const std::string id) const
-  {
-    if (id != "lhs") DUNE_PYMOR_THROW(Pymor::Exception::key_is_not_valid, "id has to be 'lhs' (is '" << id << "')!");
     return OperatorType(*systemMatrix_);
   }
 
-  std::vector< std::string > available_functionals() const
+  FunctionalType get_rhs() const
   {
-    return { "rhs" };
-  }
-
-  FunctionalType get_functional(const std::string id) const
-  {
-    if (id != "rhs") DUNE_PYMOR_THROW(Pymor::Exception::key_is_not_valid, "id has to be 'rhs' (is '" << id << "')!");
     return FunctionalType(*rhsVector_);
   }
 
-  std::vector< std::string > solver_options() const
+  std::vector< std::string > available_products() const
   {
-    return { "problem" };
+    return std::vector< std::string >();
   }
 
-  std::string solver_options(const std::string context) const
+  ProductType get_product(const std::string /*id*/) const
   {
-    if (context != "problem")
-      DUNE_PYMOR_THROW(Pymor::Exception::key_is_not_valid, "context has to be 'problem' (is '" << context << "')!");
-    return OperatorType::invert_options()[0];
+    DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense, "This discretization does not have any products!");
   }
+
+//  std::vector< std::string > solver_options() const
+//  {
+//    return { "problem" };
+//  }
+
+//  std::string solver_options(const std::string context) const
+//  {
+//    if (context != "problem")
+//      DUNE_PYMOR_THROW(Pymor::Exception::key_is_not_valid, "context has to be 'problem' (is '" << context << "')!");
+//    return OperatorType::invert_options()[0];
+//  }
 
   void solve(VectorType& vector,
              const Pymor::Parameter mu = Pymor::Parameter(),
