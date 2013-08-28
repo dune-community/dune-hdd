@@ -28,7 +28,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         DiscretizationName,
         Traits={'VectorType': 'Dune::Pymor::LA::EigenDenseVector< double >',
                 'OperatorType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< Dune::Pymor::Operators::EigenRowMajorSparse< double > >',
-                'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< Dune::Pymor::LA::EigenDenseVector< double > >'},
+                'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< Dune::Pymor::LA::EigenDenseVector< double > >',
+                'ProductType' : 'Dune::Pymor::Operators::EigenRowMajorSparse< double >'},
         template_parameters=[GridPartType, RangeFieldType, dimRange, polOrder])
     # then add the example
     LinearellipticExampleCG = module.add_class('LinearellipticExampleCG',
