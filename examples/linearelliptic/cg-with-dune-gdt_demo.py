@@ -90,7 +90,7 @@ def dune_thermalblock_demo(args):
     print('RB generation ...')
 
     error_product = None # discretization.h1_product if args['--estimator-norm'] == 'h1' else None
-    reductor = reduce_generic_rb #partial(reduce_stationary_affine_linear, error_product=error_product)
+    reductor = partial(reduce_stationary_affine_linear, error_product=None) #error_product)
     extension_algorithms = {'trivial': trivial_basis_extension,
                             'gram_schmidt': partial(gram_schmidt_basis_extension, product=None)} # discretization.h1_product)}
     extension_algorithm = extension_algorithms[args['--extension-alg']]
