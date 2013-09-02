@@ -57,7 +57,7 @@ from pymor.reductors import reduce_generic_rb
 from pymor.reductors.linear import reduce_stationary_affine_linear
 from pymor.algorithms import greedy, trivial_basis_extension, gram_schmidt_basis_extension
 core.getLogger('pymor.algorithms').setLevel('INFO')
-#core.getLogger('dune.pymor.discretizations').setLevel('INFO')
+core.getLogger('dune.pymor.discretizations').setLevel('INFO')
 
 
 def dune_thermalblock_demo(args):
@@ -89,14 +89,14 @@ def dune_thermalblock_demo(args):
 
     print('RB generation ...')
 
-    error_product = None # discretization.h1_product if args['--estimator-norm'] == 'h1' else None
-    reductor = partial(reduce_stationary_affine_linear, error_product=None) #error_product)
+    error_product = discretization.h1_product if args['--estimator-norm'] == 'h1' else None
+    reductor = partial(reduce_stationary_affine_linear, error_product=error_product)
     extension_algorithms = {'trivial': trivial_basis_extension,
-                            'gram_schmidt': partial(gram_schmidt_basis_extension, product=None)} # discretization.h1_product)}
+                            'gram_schmidt': partial(gram_schmidt_basis_extension, product=discretization.h1_product)}
     extension_algorithm = extension_algorithms[args['--extension-alg']]
     greedy_data = greedy(discretization, reductor, discretization.parameter_space.sample_uniformly(args['SNAPSHOTS']),
                          initial_data = discretization.operators['rhs'].type_source.empty(dim=discretization.operators['rhs'].dim_source),
-                         use_estimator=args['--with-estimator'], error_norm=None, # error_norm=discretization.h1_norm
+                         use_estimator=args['--with-estimator'], error_norm=discretization.h1_norm,
                          extension_algorithm=extension_algorithm, max_extensions=args['RBSIZE'])
     rb_discretization, reconstructor = greedy_data['reduced_discretization'], greedy_data['reconstructor']
 
