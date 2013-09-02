@@ -72,7 +72,9 @@ public:
     // mpi
     int argc = arguments.size();
     char** argv = Dune::Stuff::Common::String::vectorToMainArgs(arguments);
-    Dune::Fem::MPIManager::initialize(argc, argv);
+    try {
+      Dune::Fem::MPIManager::initialize(argc, argv);
+    } catch(...) {}
 
     // parameter
     settings_ = SettingsType(argc, argv, id + ".settings");
