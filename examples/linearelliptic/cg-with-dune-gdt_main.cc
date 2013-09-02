@@ -40,7 +40,8 @@ int main(int argc, char** argv)
 
     // inspect
     const auto discretization = example.discretization();
-    info << std::endl;
+    const auto product_ids = discretization.available_products();
+    info << "discretization has " << product_ids.size() << " available products." << std::endl;
 
     // solve
     if (discretization.parametric()) {

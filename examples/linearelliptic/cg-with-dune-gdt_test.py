@@ -20,21 +20,10 @@ try:
     example.initialize([os.getcwd()])
     discretization = example.discretization()
     # inspect the discretization
-    available_operators = list(discretization.available_operators())
-    print('discretization provides:')
-    for operator_id in available_operators:
-        operator = discretization.get_operator(operator_id)
-        print('  operator \'{}\' with parameter type: {}'.format(operator_id,
-                                                                 operator.parameter_type().report()))
-    available_functionals = list(discretization.available_functionals())
-    for functional_id in available_functionals:
-        functional = discretization.get_functional(functional_id)
-        print('  functional \'{}\' with parameter type: {}'.format(functional_id,
-                                                                   functional.parameter_type().report()))
-    available_solver_contexts = list(discretization.solver_options())
-    for solver_context in available_solver_contexts:
-        solver_options = discretization.solver_options(solver_context)
-        print('  solver context \'{}\': \'{}\''.format(solver_context, solver_options))
+    available_products = list(discretization.available_products())
+    print('discretization provides the following products:')
+    for product_id in available_products:
+        print('  product \'{}\''.format(product_id))
     # solve
     mu = example_module.Dune.Pymor.Parameter('diffusion', [0.1, 1.0, 0.1, 1.0])
     print('')
