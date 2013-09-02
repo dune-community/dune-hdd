@@ -448,18 +448,18 @@ public:
 
   std::vector< std::string > available_products() const
   {
-    return {"L2", "H1"};
+    return {"l2", "h1"};
   }
 
   ProductType get_product(const std::string id) const
   {
-    if (id == "L2")
+    if (id == "l2")
       return *l2_product_;
-    else if (id == "H1")
+    else if (id == "h1")
       return *h1_product_;
     else
       DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense,
-                       "Product id has to be one of 'L2' or 'H1' (is " << id << ")!");
+                       "Product id has to be one of 'l2' or 'h1' (is " << id << ")!");
   }
 
 //  std::vector< std::string > solver_options() const
