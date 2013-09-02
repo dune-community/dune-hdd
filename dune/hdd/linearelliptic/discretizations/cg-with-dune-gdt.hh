@@ -20,6 +20,7 @@
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/discretefunction/projection/dirichlet.hh>
 #include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/functions/constant.hh>
 
 #include <dune/gdt/space/continuouslagrange/fem.hh>
 #include <dune/gdt/localevaluation/elliptic.hh>
@@ -312,8 +313,31 @@ public:
                                           typename SystemAssemblerType::AssembleOnNeumann(*boundaryInfo_),
                                           rhsVector_->affine_part()->backend());
       }
+      // products
+      // * L2
+      MatrixBackendType* l2_eigen_matrix = new MatrixBackendType(space_->mapper().size(),
+                                                                 space_->mapper().size(),
+                                                                 *pattern_);
+      MatrixBackendType* h1_eigen_matrix = new MatrixBackendType(space_->mapper().size(),
+                                                                 space_->mapper().size(),
+                                                                 *pattern_);
+      typedef Stuff::FunctionConstant< DomainFieldType, dimDomain, RangeFieldType, dimRange > ConstantFunctionType;
+      const ConstantFunctionType one(RangeFieldType(1));
+      typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< ConstantFunctionType > > L2OperatorType;
+      const L2OperatorType l2_operator(one);
+      const GDT::LocalAssembler::Codim0Matrix< L2OperatorType > local_l2_assembler(l2_operator);
+      systemAssembler.addLocalAssembler(local_l2_assembler, *l2_eigen_matrix);
+      // * H1
+      typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Elliptic< ConstantFunctionType > > H1OperatorType;
+      const H1OperatorType h1_operator(one);
+      const GDT::LocalAssembler::Codim0Matrix< H1OperatorType > local_h1_assembler(h1_operator);
+      systemAssembler.addLocalAssembler(local_h1_assembler, *h1_eigen_matrix);
+
+
       // do the actual work
       systemAssembler.assemble();
+      l2_product_ = std::make_shared< ProductType >(new MatrixType(l2_eigen_matrix));
+      h1_product_ = std::make_shared< ProductType >(new MatrixType(h1_eigen_matrix));
 
       // compute the dirichlet shift
       if (systemMatrix_->has_affine_part() && dirichletVector_->has_affine_part()) {
@@ -424,12 +448,18 @@ public:
 
   std::vector< std::string > available_products() const
   {
-    return std::vector< std::string >();
+    return {"L2", "H1"};
   }
 
-  ProductType get_product(const std::string /*id*/) const
+  ProductType get_product(const std::string id) const
   {
-    DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense, "This discretization does not have any products!");
+    if (id == "L2")
+      return *l2_product_;
+    else if (id == "H1")
+      return *h1_product_;
+    else
+      DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense,
+                       "Product id has to be one of 'L2' or 'H1' (is " << id << ")!");
   }
 
 //  std::vector< std::string > solver_options() const
@@ -535,6 +565,8 @@ private:
   std::shared_ptr< AffinelyDecomposedVectorType > dirichletVector_;
   std::shared_ptr< AffinelyDecomposedMatrixType > systemMatrix_;
   std::shared_ptr< AffinelyDecomposedVectorType > rhsVector_;
+  std::shared_ptr< ProductType > l2_product_;
+  std::shared_ptr< ProductType > h1_product_;
 }; // class ContinuousGalerkinWithDuneGDT
 
 
