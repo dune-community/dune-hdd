@@ -30,6 +30,13 @@ include(DuneUtils)
 include(GridUtils)
 include(PymorUtils)
 
+# override CXX_FLAGS from dune-stuff
+SET( CMAKE_CXX_FLAGS_RELEASE
+  "-DDNDEBUG -DNDEBUG -O3 -fPIC " )
+
+SET( CMAKE_CXX_FLAGS_DEBUG
+  "-O0 -DDEBUG -g3 -ggdb -Wall -Wextra" )
+
 # needs to come first to include correct config.h
 include_dir( ${dune-hdd_SOURCE_DIR} )
 include_dir( ${dune-hdd_BINARY_DIR} )
@@ -38,10 +45,6 @@ include_dir( ${dune-hdd_BINARY_DIR} )
 set( ENABLE_MPI
      "0" CACHE STRING
      "set to 1 to enable mpi")
-
-SET( POLORDER
-  "1" CACHE STRING
-  "POLORDER" )
 
 # we need eigen
 if( NOT EIGEN_FOUND )
