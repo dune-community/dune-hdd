@@ -88,12 +88,12 @@ public:
     settings.add(Stuff::FunctionExpression< DomainFieldType, dimDomain, RangeFieldType, dimRange >::defaultSettings(),
                  "dirichlet");
     settings["dirichlet.name"] = "dirichlet";
-    settings["dirichlet.expression"] = "0.1*x[0]";
+    settings["dirichlet.expression"] = "0.0";
     settings["dirichlet.order"] = "1";
     settings.add(Stuff::FunctionExpression< DomainFieldType, dimDomain, RangeFieldType, dimRange >::defaultSettings(),
                  "neumann");
     settings["neumann.name"] = "neumann";
-    settings["neumann.expression"] = "0.1";
+    settings["neumann.expression"] = "0.0";
     settings["neumann.order"] = "0";
     if (subName.empty())
       return settings;
