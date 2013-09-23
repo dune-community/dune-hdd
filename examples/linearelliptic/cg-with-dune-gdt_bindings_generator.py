@@ -14,7 +14,10 @@ from dune.pymor.discretizations import inject_StationaryDiscretizationImplementa
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
     '''injects the user code into the module'''
     # first the discretization
-    GridPartType = 'Dune::grid::Part::Leaf::Const< Dune::SGrid< 2, 2 > >'
+    GridType = 'Dune::SGrid< 2, 2 >'
+    if CONFIG_H['HAVE_ALUGRID']:
+        GridType = 'Dune::ALUSimplexGrid< 2, 2 >'
+    GridPartType = 'Dune::grid::Part::Leaf::Const< ' + GridType + ' >'
     RangeFieldType = 'double'
     dimRange = '1'
     polOrder = '1'
@@ -33,7 +36,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         template_parameters=[GridPartType, RangeFieldType, dimRange, polOrder])
     # then add the example
     LinearellipticExampleCG = module.add_class('LinearellipticExampleCG',
-                                               template_parameters=['Dune::SGrid< 2, 2 >', '1'])
+                                               template_parameters=[GridType, '1'])
     LinearellipticExampleCG.add_method('static_id',
                                        retval('std::string'),
                                        [], is_const=True, throw=[exceptions['PymorException'],

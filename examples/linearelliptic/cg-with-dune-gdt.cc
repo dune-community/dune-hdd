@@ -9,11 +9,15 @@
   #include "config.h"
 #endif
 
-#include <dune/stuff/common/disable_warnings.hh>
+#if HAVE_ALUGRID
+  #include <dune/grid/alugrid.hh>
+#else
+  #warning "AluGrid not found, defaulting to SGrid!"
+  #include <dune/stuff/common/disable_warnings.hh>
   #include <dune/grid/sgrid.hh>
-#include <dune/stuff/common/reenable_warnings.hh>
-#include <dune/stuff/common/string.hh>
-
+  #include <dune/stuff/common/reenable_warnings.hh>
+  #include <dune/stuff/common/string.hh>
+#endif
 
 #include "cg-with-dune-gdt.hh"
 
@@ -86,4 +90,9 @@ typename LinearellipticExampleCG< G, p >::DiscretizationType* LinearellipticExam
   return new DiscretizationType(discretization());
 }
 
-template class LinearellipticExampleCG< Dune::SGrid< 2, 2 >, 1 >;
+#if HAVE_ALUGRID
+  template class LinearellipticExampleCG< Dune::ALUSimplexGrid< 2, 2 >, 1 >;
+  template class LinearellipticExampleCG< Dune::ALUConformGrid< 2, 2 >, 1 >;
+#else
+  template class LinearellipticExampleCG< Dune::SGrid< 2, 2 >, 1 >;
+#endif

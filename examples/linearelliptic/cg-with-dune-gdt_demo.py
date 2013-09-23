@@ -71,7 +71,12 @@ def dune_thermalblock_demo(args):
 
     print('Discretize ...')
     wrapped_dune_module, wrapper = wrap_module(dune_module)
-    example = dune_module.LinearellipticExampleCG__DuneSGrid__lt___2__2___gt___1()
+    if 'LinearellipticExampleCG__DuneALUSimplexGrid__lt___2__2___gt___1' in dir(dune_module):
+        example = dune_module.LinearellipticExampleCG__DuneALUSimplexGrid__lt___2__2___gt___1()
+    elif 'LinearellipticExampleCG__DuneSGrid__lt___2__2___gt___1' in dir(dune_module):
+        example = dune_module.LinearellipticExampleCG__DuneSGrid__lt___2__2___gt___1()
+    else:
+        raise Exception('No suitable example found!')
     example.initialize(['linearelliptic.cg-with-dune-gdt.settings'])
     discretization = wrapper[example.discretization()]
     discretization = discretization.with_(parameter_space=CubicParameterSpace(discretization.parameter_type, 0.1, 1))

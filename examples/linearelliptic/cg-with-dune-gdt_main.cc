@@ -22,7 +22,11 @@ int main(int argc, char** argv)
 {
   try {
     // create empty example
-    typedef LinearellipticExampleCG< Dune::SGrid< 2, 2 > > LinearellipticExample;
+#if HAVE_ALUGRID
+    typedef LinearellipticExampleCG< Dune::ALUSimplexGrid< 2, 2 >, 1 > LinearellipticExample;
+#else
+    typedef LinearellipticExampleCG< Dune::SGrid< 2, 2 >, 1 > LinearellipticExample;
+#endif
     LinearellipticExample example;
 
     // write settings file
