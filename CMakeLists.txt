@@ -25,35 +25,30 @@ set( ENV{LD_LIBRARY_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib:$ENV{LD_LIBR
 set( ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}" )
 
 # dune-stuff and dune-pymor cmake includes
-set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../dune-stuff/cmake ${CMAKE_CURRENT_SOURCE_DIR}/../dune-pymor/cmake )
+set(CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dune-stuff/cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dune-stuff/cmake/modules
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dune-pymor/cmake
+   )
 include(DuneUtils)
 include(GridUtils)
 include(PymorUtils)
 
 # needs to come first to include correct config.h
-include_dir( ${dune-hdd_SOURCE_DIR} )
-include_dir( ${dune-hdd_BINARY_DIR} )
-
-# user settings
-set( ENABLE_MPI
-     "0" CACHE STRING
-     "set to 1 to enable mpi")
-
-SET( POLORDER
-  "1" CACHE STRING
-  "POLORDER" )
+include(${dune-hdd_SOURCE_DIR})
+include(${dune-hdd_BINARY_DIR})
 
 # we need eigen
 if( NOT EIGEN_FOUND )
   message( FATAL_ERROR "eigen3 not found, set PKG_CONFIGK_PATH to include eigen3.pc!" )
 endif( NOT EIGEN_FOUND )
 
-CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_config.h )
-
 add_dune_modules(
   pymor
   stuff
   pdelab
+  typetree
   gdt
   fem
   fem-localfunctions

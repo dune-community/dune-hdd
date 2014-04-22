@@ -3,12 +3,18 @@
 # Copyright Holders: Felix Albrecht, Stephan Rave
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-add_library( dunehdd-example-linearelliptic-cg-with-dune-gdt STATIC "cg-with-dune-gdt.cc" )
+add_library(dunehdd-linearelliptic-cg
+            STATIC
+            "cg.cc")
 
-ADD_EXECUTABLE( example_linearelliptic_cg_with_dune_gdt "cg-with-dune-gdt_main.cc" ${COMMON_HEADER} )
-TARGET_LINK_LIBRARIES( example_linearelliptic_cg_with_dune_gdt dunehdd-example-linearelliptic-cg-with-dune-gdt ${COMMON_LIBS} )
+ADD_EXECUTABLE(example_linearelliptic_cg
+               "cg_main.cc"
+               ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_cg
+                      dunehdd-linearelliptic-cg-with-dune-gdt
+                      ${COMMON_LIBS})
 
 add_python_bindings(linearellipticexamplecg
-                    cg-with-dune-gdt_bindings_generator.py
-                    cg-with-dune-gdt.hh
-                    dunehdd-example-linearelliptic-cg-with-dune-gdt)
+                    cg_bindings_generator.py
+                    cg.hh
+                    dunehdd-linearelliptic-cg)
