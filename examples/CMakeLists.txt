@@ -1,6 +1,14 @@
-# This file is part of the dune-hdd project:
-#   http://users.dune-project.org/projects/dune-hdd
-# Copyright holders: Felix Albrecht
+# This file is part of the dune-pymor project:
+#   https://github.com/pyMor/dune-pymor
+# Copyright Holders: Felix Albrecht, Stephan Rave
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-add_subdirectory(linearelliptic)
+add_library( dunehdd-example-linearelliptic-cg-with-dune-gdt STATIC "cg-with-dune-gdt.cc" )
+
+ADD_EXECUTABLE( example_linearelliptic_cg_with_dune_gdt "cg-with-dune-gdt_main.cc" ${COMMON_HEADER} )
+TARGET_LINK_LIBRARIES( example_linearelliptic_cg_with_dune_gdt dunehdd-example-linearelliptic-cg-with-dune-gdt ${COMMON_LIBS} )
+
+add_python_bindings(linearellipticexamplecg
+                    cg-with-dune-gdt_bindings_generator.py
+                    cg-with-dune-gdt.hh
+                    dunehdd-example-linearelliptic-cg-with-dune-gdt)
