@@ -73,4 +73,27 @@ private:
 }; // class LinearellipticExampleCG
 
 
+namespace Dune {
+
+
+// forward grid declaratios
+template< int dim, int dimworld, typename _ctype >
+class SGrid;
+
+template< int dim >
+class YaspGrid;
+
+
+} // namespace Dune
+
+
+extern template class LinearellipticExampleCG< Dune::SGrid< 1, 2 > >;
+extern template class LinearellipticExampleCG< Dune::SGrid< 2, 2 > >;
+extern template class LinearellipticExampleCG< Dune::SGrid< 3, 3 > >;
+
+extern template class LinearellipticExampleCG< Dune::YaspGrid< 1 > >;
+extern template class LinearellipticExampleCG< Dune::YaspGrid< 2 > >;
+extern template class LinearellipticExampleCG< Dune::YaspGrid< 3 > >;
+
+
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_HH
