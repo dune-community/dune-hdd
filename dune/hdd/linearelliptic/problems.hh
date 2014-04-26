@@ -8,10 +8,10 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
-#include <dune/stuff/common/parameter/tree.hh>
-
-#include <dune/pymor/common/exceptions.hh>
+#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/exceptions.hh>
 
 #include "problems/interfaces.hh"
 #include "problems/default.hh"
@@ -21,37 +21,39 @@ namespace HDD {
 namespace LinearElliptic {
 
 
-template< class D, int d, class R, int r, bool s = true >
-class Problems
+template< class E, class D, int d, class R, int r >
+class ProblemProvider
 {
 public:
+  typedef ProblemInterface< E, D, d, R, r > InterfaceType;
+
   static std::vector< std::string > available()
   {
     return {
-        Problem::Default< D, d, R, r, s >::static_id()
+        Problems::Default< E, D, d, R, r >::static_id()
     };
   }
 
-  static Dune::ParameterTree defaultSettings(const std::string type = available()[0],
-                                             const std::string subname = "")
+  static Stuff::Common::ConfigTree default_config(const std::string type = available()[0],
+                                                  const std::string sub_name = "")
   {
-  if (type == Problem::Default< D, d, R, r, s >::static_id())
-    return Problem::Default< D, d, R, r, s >::defaultSettings(subname);
+  if (type == Problems::Default< E, D, d, R, r >::static_id())
+    return Problems::Default< E, D, d, R, r >::default_config(sub_name);
   else
-    DUNE_PYMOR_THROW(Pymor::Exception::wrong_input,
-                     "unknown Problem '" << type << "' requested!");
+    DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
+                          "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
   }
 
-  static ProblemInterface< D, d, R, r, s >* create(const std::string type = available()[0],
-                                                   const Dune::ParameterTree settings = defaultSettings())
+  static std::unique_ptr< InterfaceType > create(const std::string type = available()[0],
+                                                 const Stuff::Common::ConfigTree settings = default_config(available()[0]))
   {
-    if (type == Problem::Default< D, d, R, r, s >::static_id())
-      return Problem::Default< D, d, R, r, s >::create(settings);
+    if (type == Problems::Default< E, D, d, R, r >::static_id())
+      return Problems::Default< E, D, d, R, r >::create(settings);
     else
-      DUNE_PYMOR_THROW(Pymor::Exception::wrong_input,
-                       "unknown Problem '" << type << "' requested!");
+      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
+                            "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
   }
-};
+}; // clas ProblemProvider
 
 
 } // namespace LinearElliptic

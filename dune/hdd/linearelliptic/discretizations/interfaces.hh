@@ -7,16 +7,14 @@
 #define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_INTERFACES_HH
 
 #include <memory>
+#include <type_traits>
 
-#include <dune/common/exceptions.hh>
-
-#include <dune/grid/part/interface.hh>
+#include <dune/grid/common/gridview.hh>
 
 #include <dune/stuff/grid/boundaryinfo.hh>
-//#include <dune/stuff/common/logging.hh>
-#include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/common/crtp.hh>
+#include <dune/stuff/common/logging.hh>
 
-#include <dune/pymor/common/crtp.hh>
 #include <dune/pymor/parameters/base.hh>
 #include <dune/pymor/discretizations/interfaces.hh>
 
@@ -29,28 +27,30 @@ namespace LinearElliptic {
 
 template< class Traits >
 class DiscretizationInterface
-  : public Pymor::CRTPInterface< DiscretizationInterface< Traits >, Traits >
-  , public Pymor::StationaryDiscretizationInterface< Traits >
+  : public Pymor::StationaryDiscretizationInterface< Traits >
 {
-  typedef Pymor::CRTPInterface< DiscretizationInterface< Traits >, Traits > CRTP;
-  typedef Pymor::StationaryDiscretizationInterface< Traits >                BaseType;
+  typedef Pymor::StationaryDiscretizationInterface< Traits > BaseType;
 public:
-  typedef typename Traits::derived_type derived_type;
+  typedef typename Traits::derived_type     derived_type;
+  typedef typename Traits::GridViewType     GridViewType;
+  typedef typename Traits::TestSpaceType    TestSpaceType;
+  typedef typename Traits::AnsatzSpaceType  AnsatzSpaceType;
 
-  typedef Dune::grid::Part::Interface< typename Traits::GridPartTraits > GridPartType;
+  typedef typename GridViewType::Grid::template Codim< 0 >::Entity EntityType;
 
-  static const int polOrder = Traits::polOrder;
-
-  typedef typename GridPartType::ctype    DomainFieldType;
-  static const unsigned int               dimDomain = GridPartType::dimension;
+  typedef typename GridViewType::ctype    DomainFieldType;
+  static const unsigned int               dimDomain = GridViewType::dimension;
   typedef typename Traits::RangeFieldType RangeFieldType;
   static const unsigned int               dimRange = Traits::dimRange;
 
-  typedef typename Traits::BoundaryInfoType BoundaryInfoType;
-  typedef typename Traits::ProblemType      ProblemType;
+  typedef Stuff::Grid::BoundaryInfoInterface< typename GridViewType::Intersection >             BoundaryInfoType;
+  typedef ProblemInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >  ProblemType;
 
-  typedef Dune::Stuff::Common::ExtendedParameterTree SettingsType;
+private:
+  static_assert(std::is_base_of< GridView< typename GridViewType::Traits >, GridViewType >::value,
+                "GridViewType has to be derived from GridView!");
 
+public:
   DiscretizationInterface(const Pymor::ParameterType tt = Pymor::ParameterType())
     : BaseType(tt)
   {}
@@ -61,149 +61,50 @@ public:
 
   static const std::string static_id()
   {
-    return "dune.hdd.linearelliptic.discretization";
+    return "hdd.linearelliptic.discretization";
   }
 
-  std::shared_ptr< const GridPartType > gridPart() const
+  const std::shared_ptr< const GridViewType >& grid_view() const
   {
-    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).gridPart());
-    return CRTP::as_imp(*this).gridPart();
+    CHECK_CRTP(this->as_imp(*this).grid_view());
+    return this->as_imp(*this).grid_view();
   }
 
-  std::shared_ptr< const BoundaryInfoType > boundaryInfo() const
+  const std::shared_ptr< const TestSpaceType >& test_space() const
   {
-    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).boundaryInfo());
-    return CRTP::as_imp(*this).boundaryInfo();
+    CHECK_CRTP(this->as_imp(*this).test_space());
+    return this->as_imp(*this).test_space();
+  }
+
+  const std::shared_ptr< const TestSpaceType >& ansatz_space() const
+  {
+    CHECK_CRTP(this->as_imp(*this).ansatz_space());
+    return this->as_imp(*this).ansatz_space();
+  }
+
+  const Stuff::Common::ConfigTree& boundary_info_cfg() const
+  {
+    CHECK_CRTP(this->as_imp(*this).boundary_info_cfg());
+    return this->as_imp(*this).boundary_info_cfg();
+  }
+
+  const BoundaryInfoType& boundary_info() const
+  {
+    CHECK_CRTP(this->as_imp(*this).boundary_info());
+    return this->as_imp(*this).boundary_info();
   }
 
   const ProblemType& problem() const
   {
-    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).model());
-    return CRTP::as_imp(*this).model();
+    CHECK_CRTP(this->as_imp(*this).model());
+    return this->as_imp(*this).model();
   }
 
-  void init(std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
-            const std::string prefix = "")
+  void init(std::ostream& out = Dune::Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
-    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).init(out, prefix));
-    CRTP::as_imp(*this).init(out, prefix);
-  }
-
-  bool initialized() const
-  {
-    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).initialized());
-    return CRTP::as_imp(*this).initialized();
+    CHECK_AND_CALL_CRTP(this->as_imp(*this).init(out, prefix));
   }
 }; // class DiscretizationInterface
-
-
-//template< class Traits >
-//class SolverParametricInterface
-//{
-//public:
-//  typedef SolverParametricInterface< Traits > ThisType;
-//  typedef typename Traits::derived_type       derived_type;
-
-//  typedef Dune::grid::Part::Interface< typename Traits::GridPartTraits > GridPartType;
-
-//  static const int polOrder = Traits::polOrder;
-
-//  typedef typename GridPartType::ctype    DomainFieldType;
-//  static const int                        dimDomain = GridPartType::dimension;
-//  typedef typename Traits::RangeFieldType RangeFieldType;
-//  static const int                        dimRange = Traits::dimRange;
-
-//  typedef Dune::Stuff::GridboundaryInterface< typename GridPartType::GridViewType > BoundaryInfoType;
-//  typedef ModelInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange >            ModelType;
-
-//  typedef typename ModelType::ParamType ParamType;
-
-//  typedef typename Traits::VectorType VectorType;
-
-//  static const std::string id()
-//  {
-//    return "solver.linearelliptic";
-//  }
-
-//  std::shared_ptr< const GridPartType > gridPart() const
-//  {
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).gridPart());
-//    return CRTP::as_imp(*this).gridPart();
-//  }
-
-//  std::shared_ptr< const BoundaryInfoType > boundaryInfo() const
-//  {
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).boundaryInfo());
-//    return CRTP::as_imp(*this).boundaryInfo();
-//  }
-
-//  std::shared_ptr< const ModelType > model() const
-//  {
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).model());
-//    return CRTP::as_imp(*this).model();
-//  }
-
-//  std::shared_ptr< VectorType > createVector() const
-//  {
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).createVector());
-//    return CRTP::as_imp(*this).createVector();
-//  }
-
-//  void visualize(const std::shared_ptr< const VectorType > vector,
-//                 const std::string filename,
-//                 const std::string name,
-//                 std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
-//                 const std::string prefix = "") const
-//  {
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).visualize(vector, filename, name, out, prefix));
-//    CRTP::as_imp(*this).visualize(vector, filename, name, out, prefix);
-//  }
-
-//  void init(std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
-//            const std::string prefix = "")
-//  {
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).init(out, prefix));
-//    CRTP::as_imp(*this).init(out, prefix);
-//  }
-
-//  bool initialized() const
-//  {
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).initialized());
-//    return CRTP::as_imp(*this).initialized();
-//  }
-
-//  void solve(std::shared_ptr< VectorType > solution,
-//             const ParamType& mu,
-//             const std::string linearSolverType,
-//             const double linearSolverPrecision,
-//             const size_t linearSolverMaxIterations,
-//             std::ostream& out = Dune::Stuff::Common::Logger().devnull(),
-//             const std::string prefix = "") const
-//  {
-//    if (!initialized())
-//      DUNE_THROW(Dune::InvalidStateException,
-//                 "\n" << Dune::Stuff::Common::colorStringRed("ERROR:")
-//                 << " call init() before calling solve()!");
-//    CHECK_INTERFACE_IMPLEMENTATION(CRTP::as_imp(*this).solve(solution,
-//                                                 mu,
-//                                                 linearSolverType,
-//                                                 linearSolverPrecision,
-//                                                 linearSolverMaxIterations,
-//                                                 out,
-//                                                 prefix));
-//    CRTP::as_imp(*this).solve(solution, mu, linearSolverType, linearSolverPrecision, linearSolverMaxIterations, out, prefix);
-//  }
-
-//  derived_type& CRTP::as_imp(*this)
-//  {
-//    return static_cast< derived_type& >(*this);
-//  }
-
-//  const derived_type& CRTP::as_imp(*this) const
-//  {
-//    return static_cast< const derived_type& >(*this);
-//  }
-//}; // class SolverParametricInterface< DomainFieldType, dimDomain, RangeFieldType, 1 >
 
 
 } // namespace LinearElliptic

@@ -6,20 +6,14 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_INTERFACES_HH
 #define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_INTERFACES_HH
 
-// we still need this for the vtk writer
-#ifdef HAVE_CMAKE_CONFIG
-  #include "cmake_config.h"
-#elif defined (HAVE_CONFIG_H)
-  #include "config.h"
-#endif
-
 #include <vector>
 
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/grid/common/gridview.hh>
+#include <dune/grid/io/file/vtk.hh>
 
+#include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/string.hh>
-#include <dune/stuff/common/color.hh>
-#include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/functions/default.hh>
 
 #include <dune/pymor/parameters/base.hh>
 #include <dune/pymor/functions/interfaces.hh>
@@ -29,153 +23,91 @@ namespace HDD {
 namespace LinearElliptic {
 
 
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
-class ProblemInterface;
-
-
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
-class ProblemInterface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim, true >
+template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+class ProblemInterface
   : public Pymor::Parametric
 {
-  typedef Pymor::Parametric BaseType;
 public:
-
-  typedef DomainFieldImp  DomainFieldType;
-  static const int        dimDomain = domainDim;
-
-  typedef RangeFieldImp   RangeFieldType;
-  static const int        dimRange = rangeDim;
+  typedef EntityImp EntityType;
+  typedef DomainFieldImp    DomainFieldType;
+  static const unsigned int dimDomain = domainDim;
+  typedef RangeFieldImp     RangeFieldType;
+  static const unsigned int dimRange = rangeDim;
 
   ProblemInterface(const Pymor::ParameterType tt = Pymor::ParameterType())
-    : BaseType(tt)
+    : Pymor::Parametric(tt)
   {}
 
   ProblemInterface(const Pymor::Parametric& other)
-    : BaseType(other)
+    : Pymor::Parametric(other)
   {}
 
-  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DiffusionType;
-  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > ForceType;
-  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > DirichletType;
-  typedef Pymor::ParametricFunctionInterface< DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > NeumannType;
+  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
+                                                      , RangeFieldType, 1, 1 >
+    DiffusionFactorType;
+//  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
+//                                                      , RangeFieldType, dimDomain, dimDomain >
+//    DiffusionTensorType;
+  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
+                                                      , RangeFieldType, dimRange >
+    FunctionType;
 
   static const std::string static_id()
   {
-    return "dune.hdd.linearelliptic.problem";
+    return "hdd.linearelliptic.problem";
   }
 
-  virtual const std::string id()
+  virtual const DiffusionFactorType& diffusion_factor() const = 0;
+
+//  virtual const DiffusionTensorType& diffusion_tensor() const = 0;
+
+  virtual const FunctionType& force() const = 0;
+
+  virtual const FunctionType& dirichlet() const = 0;
+
+  virtual const FunctionType& neumann() const = 0;
+
+  template< class G >
+  void visualize(const GridView< G >& grid_view,
+                 std::string filename,
+                 const bool subsampling = true,
+                 const VTK::OutputType vtk_output_type = VTK::appendedraw) const
   {
-    return "dune.hdd.linearelliptic.problem";
-  }
-
-  virtual std::shared_ptr< const DiffusionType > diffusion() const = 0;
-
-  virtual std::shared_ptr< const ForceType > force() const = 0;
-
-  virtual std::shared_ptr< const DirichletType > dirichlet() const = 0;
-
-  virtual std::shared_ptr< const NeumannType > neumann() const = 0;
-
-  template< class GridViewType >
-  void visualize(const GridViewType& gridView, std::string filename) const
-  {
-    // prepare data
-    Dune::VTKWriter< GridViewType > vtkWriter(gridView);
-    auto diffusionPlots = preparePlot(gridView, *(diffusion()), "diffusion");
-    auto forcePlots = preparePlot(gridView, *(force()), "force");
-    auto dirichletPlots = preparePlot(gridView, *(dirichlet()), "dirichlet");
-    auto neumannPlots = preparePlot(gridView, *(neumann()), "neumann");
-    // walk the grid view
-    for (typename GridViewType::template Codim< 0 >::Iterator it = gridView.template begin< 0 >();
-         it != gridView.template end< 0 >();
-         ++it) {
-      const auto& entity = *it;
-      const auto index = gridView.indexSet().index(entity);
-      const auto center = entity.geometry().center();
-      // do a piecewise constant projection of the data functions
-      plot_local(*(diffusion()), diffusionPlots, index, center);
-      plot_local(*(force()), forcePlots, index, center);
-      plot_local(*(dirichlet()), dirichletPlots, index, center);
-      plot_local(*(neumann()), neumannPlots, index, center);
-    } // walk the grid view
-    // write
-    //   * diffusion
-    for (size_t qq = 0; qq < diffusionPlots.size(); ++qq)
-      vtkWriter.addCellData(*(diffusionPlots[qq].second), diffusionPlots[qq].first);
-    //   * force
-    for (size_t qq = 0; qq < forcePlots.size(); ++qq)
-      vtkWriter.addCellData(*(forcePlots[qq].second), forcePlots[qq].first);
-    //   * dirichlet
-    for (size_t qq = 0; qq < dirichletPlots.size(); ++qq)
-      vtkWriter.addCellData(*(dirichletPlots[qq].second), dirichletPlots[qq].first);
-    //   * neumann
-    for (size_t qq = 0; qq < neumannPlots.size(); ++qq)
-      vtkWriter.addCellData(*(neumannPlots[qq].second), neumannPlots[qq].first);
-    vtkWriter.write(filename, Dune::VTK::ascii);
-    // clean up
-    for (auto element : diffusionPlots)
-      delete element.second;
-    for (auto element : forcePlots)
-      delete element.second;
-    for (auto element : dirichletPlots)
-      delete element.second;
-    for (auto element : neumannPlots)
-      delete element.second;
+    if (subsampling) {
+      SubsamplingVTKWriter< GridView< G > > vtk_writer(grid_view, VTK::nonconforming);
+      add_visualizations_(grid_view, vtk_writer);
+      vtk_writer.write(filename, vtk_output_type);
+    } else {
+      VTKWriter< GridView< G > > vtk_writer(grid_view, VTK::nonconforming);
+      add_visualizations_(grid_view, vtk_writer);
+      vtk_writer.write(filename, vtk_output_type);
+    }
   } // ... visualize(...) const
 
 private:
-  template< class GridViewType, class FunctionType >
-  std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > preparePlot(const GridViewType& gridView,
-                                                                                      const FunctionType& function,
-                                                                                      const std::string name) const
+  template< class GridViewType, class VTKWriterType >
+  void add_visualizations_(const GridViewType& grid_view, VTKWriterType& vtk_writer) const
   {
-    std::vector< std::pair< std::string, std::vector< RangeFieldType >* > > ret;
-    if (function.parametric()) {
-      if (function.affinely_decomposable()) {
-        for (size_t qq = 0; qq < function.num_components(); ++qq)
-          ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
-                          name + ", component " + Dune::Stuff::Common::toString(qq),
-                          new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
-        if (function.has_affine_part())
-          ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
-                          name + ", affine part",
-                          new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
-      } else
-        DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
-                         "not implemented for parametric functions which are not affinely decomposable!");
-    } else {
-      ret.push_back(std::pair< std::string, std::vector< RangeFieldType >* >(
-                      name,
-                      new std::vector< RangeFieldType >(gridView.indexSet().size(0), RangeFieldType(0))));
-    }
-    return ret;
-  }
+    add_function_visualization_(grid_view, diffusion_factor(), vtk_writer);
+    add_function_visualization_(grid_view, force(), vtk_writer);
+    add_function_visualization_(grid_view, dirichlet(), vtk_writer);
+    add_function_visualization_(grid_view, neumann(), vtk_writer);
+  } // ... add_visualizations_(...)
 
-  template< class FunctionType, class IndexType, class DomainType >
-  void plot_local(const FunctionType& function,
-                  std::vector< std::pair< std::string, std::vector< RangeFieldType >* > >& plots,
-                  const IndexType& index,
-                  const DomainType& center) const
+  template< class GridViewType, class F, class VTKWriterType >
+  void add_function_visualization_(const GridViewType& /*grid_view*/, const F& function, VTKWriterType& vtk_writer) const
   {
-    if (function.parametric() && function.affinely_decomposable()) {
-      for (size_t qq = 0; qq < function.num_components(); ++qq)
-        plots[qq].second->operator[](index) = function.component(qq)->evaluate(center);
-      if (function.has_affine_part())
-        plots[plots.size() - 1].second->operator[](index) = function.affine_part()->evaluate(center);
-    } else if (!function.parametric())
-      plots[0].second->operator[](index) = function.evaluate(center);
-    else
-      DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
-                       "not implemented for parametric functions which are not affinely decomposable!");
-  }
+    typedef Stuff::Function::VisualizationAdapter< GridViewType, F::dimRange > VisualizationAdapter;
+    for (size_t qq = 0; qq < function.num_components(); ++qq)
+      vtk_writer.addVertexData(std::make_shared< VisualizationAdapter >(*(function.component(qq))));
+    if (function.has_affine_part())
+      vtk_writer.addVertexData(std::make_shared< VisualizationAdapter >(*(function.affine_part())));
+  } // ... add_function_visualization_(...)
 }; // ProblemInterface
 
 
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
-
-//#include "default.hh"
 
 #endif // DUNE_HDD_LINEARELLIPTIC_PROBLEMS_INTERFACES_HH

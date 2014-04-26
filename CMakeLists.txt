@@ -45,6 +45,7 @@ if( NOT EIGEN_FOUND )
 endif( NOT EIGEN_FOUND )
 
 add_dune_modules(
+  hdd
   pymor
   stuff
   pdelab
@@ -70,7 +71,7 @@ set( COMMON_LIBS
      ${DUNE_LIBS}
      ${PARALIBS}
      ${CCGNU_LIBRARIES}
-     ${BOOST_LIBS}
+     ${Boost_SYSTEM_LIBRARY}
      ${GRIDLIBS}
 )
 

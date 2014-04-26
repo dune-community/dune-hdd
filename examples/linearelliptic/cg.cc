@@ -3,16 +3,11 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifdef HAVE_CMAKE_CONFIG
-  #include "cmake_config.h"
-#elif defined (HAVE_CONFIG_H)
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include <dune/stuff/common/string.hh>
 
-
-#include "cg-with-dune-gdt.hh"
+#include "cg.hh"
 
 template< class G, int p >
 std::string LinearellipticExampleCG< G, p >::static_id()

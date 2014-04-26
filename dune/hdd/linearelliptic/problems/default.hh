@@ -6,10 +6,14 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_DEFAULT_HH
 #define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_DEFAULT_HH
 
+#include "config.h"
+
 #include <memory>
 
 #include <dune/stuff/common/string.hh>
-#include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/functions/constant.hh>
+
 #include <dune/pymor/functions.hh>
 
 #include "interfaces.hh"
@@ -17,153 +21,158 @@
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
-namespace Problem {
+namespace Problems {
 
 
-template< class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim, bool scalarDiffusion = true >
+template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
 class Default
-  : public ProblemInterface< DomainFieldImp, domainDim, RangeFieldImp, rangeDim, scalarDiffusion >
+  : public ProblemInterface< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
 {
-  typedef ProblemInterface<  DomainFieldImp, domainDim, RangeFieldImp, rangeDim, scalarDiffusion >  BaseType;
+  typedef ProblemInterface< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, rangeDim > BaseType;
 public:
-  typedef Default< DomainFieldImp, domainDim, RangeFieldImp, rangeDim, scalarDiffusion >            ThisType;
+  typedef Default< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, rangeDim > ThisType;
 
-  typedef typename BaseType::DomainFieldType  DomainFieldType;
-  static const int                            dimDomain = BaseType::dimDomain;
+  using typename BaseType::EntityType;
+  using typename BaseType::DomainFieldType;
+  using BaseType::dimDomain;
+  using typename BaseType::RangeFieldType;
+  using BaseType::dimRange;
 
-  typedef typename BaseType::RangeFieldType   RangeFieldType;
-  static const int                            dimRange = BaseType::dimRange;
-
-  typedef typename BaseType::DiffusionType  DiffusionType;
-  typedef typename BaseType::ForceType      ForceType;
-  typedef typename BaseType::DirichletType  DirichletType;
-  typedef typename BaseType::NeumannType    NeumannType;
-
-  Default(const std::shared_ptr< const DiffusionType > diff,
-          const std::shared_ptr< const ForceType > forc,
-          const std::shared_ptr< const DirichletType > dir,
-          const std::shared_ptr< const NeumannType > neum)
-    : diffusion_(diff)
-    , force_(forc)
-    , dirichlet_(dir)
-    , neumann_(neum)
-  {
-    Pymor::Parametric::inherit_parameter_type(diffusion_->parameter_type(), "diffusion");
-    Pymor::Parametric::inherit_parameter_type(force_->parameter_type(),     "force");
-    Pymor::Parametric::inherit_parameter_type(dirichlet_->parameter_type(), "dirichlet");
-    Pymor::Parametric::inherit_parameter_type(neumann_->parameter_type(),   "neumann");
-  }
+  using typename BaseType::DiffusionFactorType;
+//  using typename BaseType::DiffusionTensorType;
+  using typename BaseType::FunctionType;
 
   static const std::string static_id()
   {
     return BaseType::static_id() + ".default";
   }
 
-  virtual const std::string id()
+  static Stuff::Common::ConfigTree default_config(const std::string sub_name = "")
   {
-    return BaseType::static_id() + ".default";
-  }
-
-  static Dune::ParameterTree defaultSettings(const std::string subName = "")
-  {
-    Dune::Stuff::Common::ExtendedParameterTree settings;
-    if (dimRange == 1) {
-      typedef Pymor::Function::Checkerboard< DomainFieldType, dimDomain, RangeFieldType > CheckerBoardFunction;
-      settings.add(CheckerBoardFunction::defaultSettings(),
-                   "diffusion");
-      settings["diffusion.type"] = CheckerBoardFunction::static_id();
-      settings["diffusion.parameterName"] = "diffusion";
-    } else {
-      settings.add(Stuff::FunctionExpression< DomainFieldType, dimDomain, RangeFieldType, dimRange >::defaultSettings(),
-                   "diffusion");
-      settings["diffusion.expression"] = "1.0";
-      settings["diffusion.order"] = "0";
-    }
-    settings["diffusion.name"] = "diffusion";
-    settings.add(Stuff::FunctionExpression< DomainFieldType, dimDomain, RangeFieldType, dimRange >::defaultSettings(),
-                 "force");
-    settings["force.name"] = "force";
-    settings["force.expression"] = "1.0";
-    settings["force.order"] = "0";
-    settings.add(Stuff::FunctionExpression< DomainFieldType, dimDomain, RangeFieldType, dimRange >::defaultSettings(),
-                 "dirichlet");
-    settings["dirichlet.name"] = "dirichlet";
-    settings["dirichlet.expression"] = "0.1*x[0]";
-    settings["dirichlet.order"] = "1";
-    settings.add(Stuff::FunctionExpression< DomainFieldType, dimDomain, RangeFieldType, dimRange >::defaultSettings(),
-                 "neumann");
-    settings["neumann.name"] = "neumann";
-    settings["neumann.expression"] = "0.1";
-    settings["neumann.order"] = "0";
-    if (subName.empty())
-      return settings;
+    Stuff::Common::ConfigTree config;
+    // diffusion factor
+    typedef Pymor::Function::Checkerboard< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
+        CheckerBoardFunctionType;
+    config.add(CheckerBoardFunctionType::defaultSettings(), "diffusion_factor");
+    config["diffusion_factor.parameterName"] = "diffusion_factor";
+    config["diffusion_factor.name"] = "diffusion_factor";
+    config["diffusion_factor.type"] = CheckerBoardFunctionType::static_id();
+//    // diffusion tensor
+//    typedef Stuff::Function::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+//        ConstantFunctionType;
+//    config.add(ConstantFunctionType::defaultSettings(), "diffusion_tensor");
+//    config["diffusion_tensor.name"] = "diffusion_tensor";
+//    config["diffusion_tensor.type"] = ConstantFunctionType::static_id();
+    // force
+    typedef Stuff::Function::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+        ExpressionFunctionType;
+    config["force.variable"] = "x";
+    config["force.expression"] = "1.0";
+    config["force.order"] = "0";
+    config["force.name"] = "force";
+    config["force.type"] = ExpressionFunctionType::static_id();
+    // dirichlet values
+    config["dirichlet.variable"] = "x";
+    config["dirichlet.expression"] = "0.1*x[0]";
+    config["dirichlet.order"] = "1";
+    config["dirichlet.name"] = "dirichlet";
+    config["dirichlet.type"] = ExpressionFunctionType::static_id();
+    // neumann values
+    config["neumann.variable"] = "x";
+    config["neumann.expression"] = "1.0";
+    config["neumann.order"] = "0";
+    config["neumann.name"] = "neumann";
+    config["neumann.type"] = ExpressionFunctionType::static_id();
+    if (sub_name.empty())
+      return config;
     else {
-      Dune::Stuff::Common::ExtendedParameterTree extendedSettings;
-      extendedSettings.add(settings, subName);
-      return extendedSettings;
+      Stuff::Common::ConfigTree tmp;
+      tmp.add(config, sub_name);
+      return tmp;
     }
-  } // ... defaultSettings(...)
+  } // ... default_config(...)
 
-  static ThisType* create(const Dune::ParameterTree settings = Dune::ParameterTree(),
-                          const std::string subName = static_id())
+  static std::unique_ptr< ThisType > create(const Stuff::Common::ConfigTree config = default_config(),
+                                            const std::string sub_name = static_id())
   {
-    // get correct description
-    Dune::Stuff::Common::ExtendedParameterTree sett;
-    if (settings.hasSub(subName))
-      sett = settings.sub(subName);
-    else
-      sett = settings;
-    return new ThisType(createVectorvaluedFunction< DomainFieldType, dimDomain, RangeFieldType, dimRange >("diffusion", sett),
-                        createVectorvaluedFunction< DomainFieldType, dimDomain, RangeFieldType, dimRange >("force", sett),
-                        createVectorvaluedFunction< DomainFieldType, dimDomain, RangeFieldType, dimRange >("dirichlet", sett),
-                        createVectorvaluedFunction< DomainFieldType, dimDomain, RangeFieldType, dimRange >("neumann", sett));
+    const Stuff::Common::ConfigTree cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    return std::unique_ptr< ThisType >(new ThisType(create_function< 1 >("diffusion_factor", cfg),
+//                        create_function< dimDomain, dimDomain >("diffusion_tensor", cfg),
+                        create_function< dimRange >("force", cfg),
+                        create_function< dimRange >("dirichlet", cfg),
+                        create_function< dimRange >("neumann", cfg)));
   } // ... create(...)
 
-  virtual std::shared_ptr< const DiffusionType > diffusion() const
+  Default(const std::shared_ptr< const DiffusionFactorType >& diff_fac,
+//          const std::shared_ptr< const DiffusionTensorType >& diff_ten,
+          const std::shared_ptr< const FunctionType >& forc,
+          const std::shared_ptr< const FunctionType >& dir,
+          const std::shared_ptr< const FunctionType >& neum)
+    : diffusion_factor_(diff_fac)
+//    , diffusion_tensor_(diff_ten)
+    , force_(forc)
+    , dirichlet_(dir)
+    , neumann_(neum)
   {
-    return diffusion_;
+    this->inherit_parameter_type(diffusion_factor_->parameter_type(), "diffusion_factor");
+//    this->inherit_parameter_type(diffusion_tensor_->parameter_type(), "diffusion_tensor");
+    this->inherit_parameter_type(force_->parameter_type(),     "force");
+    this->inherit_parameter_type(dirichlet_->parameter_type(), "dirichlet");
+    this->inherit_parameter_type(neumann_->parameter_type(),   "neumann");
   }
 
-  virtual std::shared_ptr< const ForceType > force() const
+  Default(const ThisType& other) = delete;
+
+  ThisType& operator=(const ThisType& other) = delete;
+
+  virtual const DiffusionFactorType& diffusion_factor() const DS_OVERRIDE
   {
-    return force_;
+    return *diffusion_factor_;
   }
 
-  virtual std::shared_ptr< const DirichletType > dirichlet() const
+//  virtual const DiffusionTensorType& diffusion_tensor() const DS_OVERRIDE
+//  {
+//    return *diffusion_tensor_;
+//  }
+
+  virtual const FunctionType& force() const DS_OVERRIDE
   {
-    return dirichlet_;
+    return *force_;
   }
 
-  virtual std::shared_ptr< const NeumannType > neumann() const
+  virtual const FunctionType& dirichlet() const DS_OVERRIDE
   {
-    return neumann_;
+    return *dirichlet_;
+  }
+
+  virtual const FunctionType& neumann() const DS_OVERRIDE
+  {
+    return *neumann_;
   }
 
 protected:
-  template< class D, int d, class R, int r >
-  static std::shared_ptr< const Pymor::ParametricFunctionInterface< D, d, R, r, 1 > >
-  createVectorvaluedFunction(const std::string& id,
-                             const Dune::Stuff::Common::ExtendedParameterTree& settings)
+  template< int r, int rC = 1 >
+      static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC > >
+  create_function(const std::string& id,
+                  const Stuff::Common::ConfigTree& config)
   {
+    typedef Stuff::Function::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC >
+        ExpressionFunctionType;
+    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC >
+        FunctionsProvider;
+    const Stuff::Common::ConfigTree cfg = config.sub(id);
+    const std::string type = cfg.get("type", ExpressionFunctionType::static_id());
+    return FunctionsProvider::create(type, cfg);
+  } // ... create_function(...)
 
-    const Dune::Stuff::Common::ExtendedParameterTree functionSettings = settings.sub(id);
-    std::string type;
-    // we do this instead of using get() with a default in order to prevent get() from throwing a warning
-    if (functionSettings.hasKey("type"))
-      type = functionSettings.get< std::string >("type");
-    else
-      type = Dune::Stuff::FunctionExpression< D, d, R, r >::static_id();
-    return std::shared_ptr< const Pymor::ParametricFunctionInterface< D, d, R, r, 1 > >(
-          Pymor::ParametricFunctions< D, d, R, r, 1 >::create(type, functionSettings));
-  } // ... createVectorvaluedFunction(...)
-
-  std::shared_ptr< const DiffusionType > diffusion_;
-  std::shared_ptr< const ForceType > force_;
-  std::shared_ptr< const DirichletType > dirichlet_;
-  std::shared_ptr< const NeumannType > neumann_;
+  std::shared_ptr< const DiffusionFactorType > diffusion_factor_;
+//  std::shared_ptr< const DiffusionTensorType > diffusion_tensor_;
+  std::shared_ptr< const FunctionType > force_;
+  std::shared_ptr< const FunctionType > dirichlet_;
+  std::shared_ptr< const FunctionType > neumann_;
 }; // class Default
 
-} // namespace Problem
+} // namespace Problems
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
