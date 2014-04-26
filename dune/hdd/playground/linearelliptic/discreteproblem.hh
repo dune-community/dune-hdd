@@ -6,8 +6,6 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETEPROBLEM_HH
 #define DUNE_HDD_LINEARELLIPTIC_DISCRETEPROBLEM_HH
 
-#include "config.h"
-
 #include <memory>
 
 #include <dune/common/mpihelper.hh>
