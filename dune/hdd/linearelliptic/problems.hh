@@ -14,7 +14,7 @@
 #include <dune/stuff/common/exceptions.hh>
 
 #include "problems/interfaces.hh"
-#include "problems/default.hh"
+#include "../playground/linearelliptic/problems/default.hh"
 
 namespace Dune {
 namespace HDD {
