@@ -55,7 +55,8 @@ template< class ImpTraits >
 class CachedDefault
   : public DiscretizationInterface< ImpTraits >
 {
-  typedef DiscretizationInterface< ImpTraits > BaseType;
+  typedef DiscretizationInterface< ImpTraits >  BaseType;
+  typedef CachedDefault< ImpTraits >            ThisType;
 public:
   using typename BaseType::GridViewType;
   using typename BaseType::BoundaryInfoType;
@@ -80,9 +81,9 @@ public:
     , problem_(prb)
   {}
 
-  CachedDefault(const CachedDefault& other) = delete;
+  CachedDefault(const ThisType& other) = default;
 
-  CachedDefault& operator=(const CachedDefault& other) = delete;
+  ThisType& operator=(const ThisType& other) = delete;
 
   const std::shared_ptr< const TestSpaceType >& test_space() const
   {
@@ -164,10 +165,10 @@ protected:
   const std::shared_ptr< const TestSpaceType > test_space_;
   const std::shared_ptr< const AnsatzSpaceType > ansatz_space_;
   const Stuff::Common::ConfigTree& boundary_info_cfg_;
-  const std::unique_ptr< const BoundaryInfoType > boundary_info_;
+  const std::shared_ptr< const BoundaryInfoType > boundary_info_;
   const ProblemType& problem_;
 
-  mutable std::map< Pymor::Parameter, std::unique_ptr< VectorType > > cache_;
+  mutable std::map< Pymor::Parameter, std::shared_ptr< VectorType > > cache_;
 }; // class CachedDefault
 
 
@@ -176,6 +177,7 @@ class ContainerBasedDefault
   : public CachedDefault< internal::ContainerBasedDefaultTraits< ImpTraits > >
 {
   typedef CachedDefault< internal::ContainerBasedDefaultTraits< ImpTraits > > BaseType;
+  typedef ContainerBasedDefault< ImpTraits >                                  ThisType;
 public:
   typedef internal::ContainerBasedDefaultTraits< ImpTraits > Traits;
   typedef typename Traits::MatrixType     MatrixType;
@@ -203,6 +205,10 @@ public:
     , matrix_(nullptr)
     , rhs_(nullptr)
   {}
+
+  ContainerBasedDefault(const ThisType& other) = default;
+
+  ThisType& operator=(const ThisType& other) = delete;
 
   OperatorType get_operator() const
   {
