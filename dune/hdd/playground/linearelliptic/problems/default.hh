@@ -64,7 +64,7 @@ public:
 //    config["diffusion_tensor.name"] = "diffusion_tensor";
 //    config["diffusion_tensor.type"] = ConstantFunctionType::static_id();
     // force
-    typedef Stuff::Function::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+    typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
         ExpressionFunctionType;
     config["force.variable"] = "x";
     config["force.expression"] = "1.0";
@@ -156,7 +156,7 @@ protected:
   create_function(const std::string& id,
                   const Stuff::Common::ConfigTree& config)
   {
-    typedef Stuff::Function::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC >
+    typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC >
         ExpressionFunctionType;
     typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC >
         FunctionsProvider;
