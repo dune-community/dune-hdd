@@ -16,6 +16,7 @@
 #include "problems/interfaces.hh"
 #include "../playground/linearelliptic/problems/default.hh"
 #include "../playground/linearelliptic/problems/ESV2007.hh"
+#include "../playground/linearelliptic/problems/thermalblock.hh"
 
 namespace Dune {
 namespace HDD {
@@ -33,6 +34,7 @@ public:
     return {
         Problems::Default< E, D, d, R, r >::static_id()
       , Problems::ESV2007< E, D, d, R, r >::static_id()
+      , Problems::Thermalblock< E, D, d, R, r >::static_id()
     };
   }
 
@@ -43,6 +45,8 @@ public:
     return Problems::Default< E, D, d, R, r >::default_config(sub_name);
   else if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
     return Problems::ESV2007< E, D, d, R, r >::default_config(sub_name);
+  else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
+    return Problems::Thermalblock< E, D, d, R, r >::default_config(sub_name);
   else
     DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
                           "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
@@ -55,6 +59,8 @@ public:
       return Problems::Default< E, D, d, R, r >::create(config);
     else if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
       return Problems::ESV2007< E, D, d, R, r >::create(config);
+    else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
+      return Problems::Thermalblock< E, D, d, R, r >::create(config);
     else
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
                             "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
