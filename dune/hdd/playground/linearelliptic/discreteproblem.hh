@@ -183,8 +183,11 @@ private:
   template< class ConfigProvider >
   static void write_config_to_file(std::ofstream& file)
   {
-    for (const auto& type : ConfigProvider::available())
-      file << ConfigProvider::default_config(type, type);
+    for (const auto& type : ConfigProvider::available()) {
+      auto config = ConfigProvider::default_config(type, type);
+      if (!config.empty())
+      file << config;
+    }
   } // ... write_config_to_file(...)
 
   std::string filename_;
