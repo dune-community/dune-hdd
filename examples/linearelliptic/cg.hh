@@ -30,7 +30,7 @@ public:
     return "linearelliptic.cg";
   }
 
-  static void write_config_file(const std::string filename = static_id() + ".settings")
+  static void write_config_file(const std::string filename = static_id() + ".cfg")
   {
     DiscreteProblemType::write_config(filename, static_id());
   }
