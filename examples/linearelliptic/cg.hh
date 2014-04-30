@@ -6,6 +6,8 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_HH
 
+#include "config.h"
+
 #include <memory>
 
 #include <dune/stuff/common/memory.hh>
@@ -67,6 +69,11 @@ public:
     return *discretization_;
   }
 
+  DiscretizationType* discretization_and_return_ptr() const
+  {
+    return new DiscretizationType(*discretization_);
+  }
+
 private:
   std::unique_ptr< DiscreteProblemType > discrete_problem_;
   std::unique_ptr< DiscretizationType > discretization_;
@@ -87,7 +94,7 @@ class YaspGrid;
 } // namespace Dune
 
 
-extern template class LinearellipticExampleCG< Dune::SGrid< 1, 2 > >;
+extern template class LinearellipticExampleCG< Dune::SGrid< 1, 1 > >;
 extern template class LinearellipticExampleCG< Dune::SGrid< 2, 2 > >;
 extern template class LinearellipticExampleCG< Dune::SGrid< 3, 3 > >;
 
