@@ -213,13 +213,13 @@ public:
   OperatorType get_operator() const
   {
     assert_everything_is_ready();
-    return OperatorType(matrix_);
+    return OperatorType(*matrix_);
   }
 
   FunctionalType get_rhs() const
   {
     assert_everything_is_ready();
-    return FunctionalType(rhs_);
+    return FunctionalType(*rhs_);
   }
 
   std::vector< std::string > available_products() const
@@ -240,7 +240,7 @@ public:
     const auto result = products_.find(id);
     if (result == products_.end())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, id);
-    return ProductType(result->second);
+    return ProductType(*(result->second));
   } // ... get_product(...)
 
   std::vector< std::string > available_vectors() const
