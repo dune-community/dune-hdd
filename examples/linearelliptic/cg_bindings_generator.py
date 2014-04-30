@@ -14,30 +14,33 @@ from dune.pymor.discretizations import inject_StationaryDiscretizationImplementa
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
     '''injects the user code into the module'''
     # first the discretization
-    GridPartType = 'Dune::grid::Part::Leaf::Const< Dune::SGrid< 2, 2 > >'
+    GridType = 'Dune::SGrid< 2, 2 >'
     RangeFieldType = 'double'
     dimRange = '1'
     polOrder = '1'
-    DiscretizationName = 'Dune::HDD::LinearElliptic::Discretization::ContinuousGalerkinWithDuneGDT'
+    MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
+    VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
+    DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::CG'
     DiscretizationFullName = (DiscretizationName + '< '
-                              + GridPartType + ', '
+                              + GridType + ', '
                               + RangeFieldType + ', '
                               + dimRange + ', ' + polOrder + ' >')
     discretization = inject_StationaryDiscretizationImplementation(
         module, exceptions, interfaces, CONFIG_H,
         DiscretizationName,
-        Traits={'VectorType': 'Dune::Pymor::LA::EigenDenseVector< double >',
-                'OperatorType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< Dune::Pymor::Operators::EigenRowMajorSparse< double > >',
-                'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< Dune::Pymor::LA::EigenDenseVector< double > >'},
-        template_parameters=[GridPartType, RangeFieldType, dimRange, polOrder])
+        Traits={'VectorType': VectorType,
+                'OperatorType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >',
+                'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >',
+                'ProductType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' > '},
+        template_parameters=[GridType, RangeFieldType, dimRange, polOrder])
     # then add the example
     LinearellipticExampleCG = module.add_class('LinearellipticExampleCG',
-                                               template_parameters=['Dune::SGrid< 2, 2 >', '1'])
+                                               template_parameters=['Dune::SGrid< 2, 2 >'])
     LinearellipticExampleCG.add_method('static_id',
                                        retval('std::string'),
                                        [], is_const=True, throw=[exceptions['PymorException'],
                                                                  exceptions['DuneException']])
-    LinearellipticExampleCG.add_method('write_settings_file',
+    LinearellipticExampleCG.add_method('write_config_file',
                                        None, [], is_const=True, throw=[exceptions['PymorException'],
                                                                        exceptions['DuneException']])
     LinearellipticExampleCG.add_constructor([], throw=[exceptions['PymorException'],
@@ -46,10 +49,6 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                        [param('const std::vector< std::string >', 'arguments')],
                                        is_const=True, throw=[exceptions['PymorException'],
                                                              exceptions['DuneException']])
-    LinearellipticExampleCG.add_method('initialized',
-                                       retval('bool'),
-                                       [], is_const=True, throw=[exceptions['PymorException'],
-                                                                 exceptions['DuneException']])
     LinearellipticExampleCG.add_method('discretization_and_return_ptr',
                                        retval(DiscretizationFullName + ' *', caller_owns_return=True),
                                        [], is_const=True, throw=[exceptions['PymorException'],
