@@ -6,8 +6,6 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_DEFAULT_HH
 #define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_DEFAULT_HH
 
-#include "config.h"
-
 #include <memory>
 
 #include <dune/stuff/common/string.hh>
@@ -28,6 +26,7 @@ template< class EntityImp, class DomainFieldImp, int domainDim, class RangeField
 class Default
   : public ProblemInterface< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, rangeDim >
 {
+protected:
   typedef ProblemInterface< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, rangeDim > BaseType;
 public:
   typedef Default< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, rangeDim > ThisType;
