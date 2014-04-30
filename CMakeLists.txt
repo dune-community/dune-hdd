@@ -72,6 +72,7 @@ set( COMMON_LIBS
      ${PARALIBS}
      ${CCGNU_LIBRARIES}
      ${Boost_SYSTEM_LIBRARY}
+     ${Boost_FILESYSTEM_LIBRARY}
      ${GRIDLIBS}
 )
 
