@@ -15,13 +15,14 @@
 
 #include "problems/interfaces.hh"
 #include "../playground/linearelliptic/problems/default.hh"
+#include "../playground/linearelliptic/problems/ESV2007.hh"
 
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 
 
-template< class E, class D, int d, class R, int r >
+template< class E, class D, int d, class R, int r = 1 >
 class ProblemProvider
 {
 public:
@@ -31,6 +32,7 @@ public:
   {
     return {
         Problems::Default< E, D, d, R, r >::static_id()
+      , Problems::ESV2007< E, D, d, R, r >::static_id()
     };
   }
 
@@ -39,16 +41,20 @@ public:
   {
   if (type == Problems::Default< E, D, d, R, r >::static_id())
     return Problems::Default< E, D, d, R, r >::default_config(sub_name);
+  else if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
+    return Problems::ESV2007< E, D, d, R, r >::default_config(sub_name);
   else
     DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
                           "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
   }
 
   static std::unique_ptr< InterfaceType > create(const std::string type = available()[0],
-                                                 const Stuff::Common::ConfigTree settings = default_config(available()[0]))
+                                                 const Stuff::Common::ConfigTree config = default_config(available()[0]))
   {
     if (type == Problems::Default< E, D, d, R, r >::static_id())
-      return Problems::Default< E, D, d, R, r >::create(settings);
+      return Problems::Default< E, D, d, R, r >::create(config);
+    else if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
+      return Problems::ESV2007< E, D, d, R, r >::create(config);
     else
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
                             "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
