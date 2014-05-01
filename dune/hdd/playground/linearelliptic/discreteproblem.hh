@@ -70,7 +70,7 @@ public:
     write_config_to_file< BoundaryInfoProvider >(file);
     write_config_to_file< ProblemProvider >(file);
     file.close();
-  } // ... writewriteSettingsFileFile(...)
+  } // ... write_config(...)
 
   DiscreteProblem(const std::string id, const std::vector< std::string >& arguments, const bool visualize = true)
   {
@@ -80,7 +80,7 @@ public:
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
 #else
-    MPIHelper::instance(argc, argv)
+    MPIHelper::instance(argc, argv);
 #endif
 
     // configuration
@@ -134,7 +134,7 @@ public:
       problem_->visualize(*grid_view, filename_ + ".problem");
       info << "done (took " << timer.elapsed() << "s)" << std::endl;
     } // if (visualize)
-  } // Problem
+  } // DiscreteProblem
 
   std::string filename() const
   {
