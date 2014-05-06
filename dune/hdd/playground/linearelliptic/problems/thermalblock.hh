@@ -60,7 +60,7 @@ public:
     checkerboard_config["name"] = "checkerboard_diffusion";
     checkerboard_config["parameterName"] = "diffusion_factor";
     config.add(checkerboard_config, "diffusion_factor");
-    Stuff::Common::ConfigTree constant_config = ConstantFunctionType::defaultSettings();
+    Stuff::Common::ConfigTree constant_config = ConstantFunctionType::default_config();
     constant_config["type"] = ConstantFunctionType::static_id();
     constant_config["name"] = "force";
     constant_config["value"] = "1.0";
@@ -136,6 +136,21 @@ public:
     file << "1.diffusion_factor = [1.0; 1.0; 0.1; 0.1]" << std::endl;
     file << GridProviderType::default_config(GridProviderType::static_id());
     file << ProblemType::default_config(ProblemType::static_id());
+    file << "[pymor]" << std::endl;
+    file << "training_set = random" << std::endl;
+    file << "num_training_samples = 100" << std::endl;
+    file << "reductor = generic" << std::endl;
+    file << "extension_algorithm = gram_schmidt" << std::endl;
+    file << "extension_algorithm_product = h1_semi" << std::endl;
+    file << "greedy_error_norm = h1_semi" << std::endl;
+    file << "use_estimator = False" << std::endl;
+    file << "max_rb_size = 100" << std::endl;
+    file << "target_error = 0.01" << std::endl;
+    file << "final_compression = False" << std::endl;
+    file << "compression_product = None" << std::endl;
+    file << "test_set = training" << std::endl;
+    file << "num_test_samples = 100" << std::endl;
+    file << "test_error_norm = h1_semi" << std::endl;
     file.close();
   } // ... write_config(...)
 
