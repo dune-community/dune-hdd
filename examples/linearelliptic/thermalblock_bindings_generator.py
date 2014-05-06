@@ -35,24 +35,25 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         template_parameters=[GridType, RangeFieldType, dimRange, polOrder])
     # then add the example
     ThermalblockExample = module.add_class('ThermalblockExample',
-                                               template_parameters=['Dune::SGrid< 2, 2 >'])
+                                           template_parameters=['Dune::SGrid< 2, 2 >'],
+                                           custom_name='ThermalblockExample')
     ThermalblockExample.add_method('static_id',
                                        retval('std::string'),
-                                       [], is_const=True, throw=[exceptions['PymorException'],
-                                                                 exceptions['DuneException']])
+                                       [], is_const=True, throw=[exceptions['Exception'],
+                                                                 exceptions['Exception']])
     ThermalblockExample.add_method('write_config_file',
-                                       None, [], is_const=True, throw=[exceptions['PymorException'],
-                                                                       exceptions['DuneException']])
-    ThermalblockExample.add_constructor([], throw=[exceptions['PymorException'],
-                                                       exceptions['DuneException']])
+                                       None, [], is_const=True, throw=[exceptions['Exception'],
+                                                                       exceptions['Exception']])
+    ThermalblockExample.add_constructor([], throw=[exceptions['Exception'],
+                                                       exceptions['Exception']])
     ThermalblockExample.add_method('initialize', None,
                                        [param('const std::vector< std::string >', 'arguments')],
-                                       is_const=True, throw=[exceptions['PymorException'],
-                                                             exceptions['DuneException']])
+                                       is_const=True, throw=[exceptions['Exception'],
+                                                             exceptions['Exception']])
     ThermalblockExample.add_method('discretization_and_return_ptr',
                                        retval(DiscretizationFullName + ' *', caller_owns_return=True),
-                                       [], is_const=True, throw=[exceptions['PymorException'],
-                                                                 exceptions['DuneException']],
+                                       [], is_const=True, throw=[exceptions['Exception'],
+                                                                 exceptions['Exception']],
                                        custom_name='discretization')
 
 if __name__ == '__main__':
