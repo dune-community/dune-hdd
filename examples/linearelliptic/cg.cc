@@ -5,8 +5,8 @@
 
 #include "config.h"
 
-#include "cg.hh"
-
+# include "cg.hh"
+#include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
 // sgrid
 #include <dune/stuff/common/disable_warnings.hh>
