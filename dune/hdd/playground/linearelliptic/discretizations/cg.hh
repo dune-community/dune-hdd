@@ -196,7 +196,7 @@ public:
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
-    if (!this->matrix_ || !this->rhs_) {
+    if (!this->container_based_initialized_) {
       Dune::Timer timer;
       this->matrix_ = std::make_shared< AffinelyDecomposedMatrixType >();
       this->rhs_ = std::make_shared< AffinelyDecomposedVectorType >();
@@ -427,7 +427,9 @@ public:
       this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
       this->products_.insert(std::make_pair("energy", energy_product_matrix));
       this->vectors_.insert(std::make_pair("dirichlet", dirichlet_vector));
-    } // if !(!this->matrix_ || !this->rhs_)
+
+      this->container_based_initialized_ = true;
+    } // if (!this->container_based_initialized_)
   } // ... init(...)
 }; // class CG
 
