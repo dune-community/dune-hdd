@@ -56,9 +56,9 @@ public:
   {
     typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > ConstantFunctionType;
     Stuff::Common::ConfigTree config;
-    Stuff::Common::ConfigTree checkerboard_config = CheckerboardFunctionType::defaultSettings();
+    Stuff::Common::ConfigTree checkerboard_config = CheckerboardFunctionType::default_config();
     checkerboard_config["name"] = "checkerboard_diffusion";
-    checkerboard_config["parameterName"] = "diffusion_factor";
+    checkerboard_config["parameter_name"] = "diffusion_factor";
     config.add(checkerboard_config, "diffusion_factor");
     Stuff::Common::ConfigTree constant_config = ConstantFunctionType::default_config();
     constant_config["type"] = ConstantFunctionType::static_id();

@@ -52,8 +52,8 @@ public:
     // diffusion factor
     typedef Pymor::Function::Checkerboard< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
         CheckerBoardFunctionType;
-    config.add(CheckerBoardFunctionType::defaultSettings(), "diffusion_factor");
-    config["diffusion_factor.parameterName"] = "diffusion_factor";
+    config.add(CheckerBoardFunctionType::default_config(), "diffusion_factor");
+    config["diffusion_factor.parameter_name"] = "diffusion_factor";
     config["diffusion_factor.name"] = "diffusion_factor";
     config["diffusion_factor.type"] = CheckerBoardFunctionType::static_id();
 //    // diffusion tensor
