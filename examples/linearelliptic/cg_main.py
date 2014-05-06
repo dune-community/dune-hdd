@@ -12,7 +12,7 @@ try:
     import linearellipticexamplecg as example_module
 
     # create example and write settings file
-    example = example_module.LinearellipticExampleCG__DuneSGrid__lt___2__2___gt__()
+    example = example_module.LinearellipticExampleCG()
     settingsFilename = example.static_id() + '.cfg'
     if not os.path.exists(settingsFilename):
         example.write_config_file()
