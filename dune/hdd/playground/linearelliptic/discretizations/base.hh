@@ -198,12 +198,11 @@ protected:
 
 public:
   ContainerBasedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
-                        const std::shared_ptr< const AnsatzSpaceType > ansatz_spc,
+                        const std::shared_ptr< const AnsatzSpaceType >& ansatz_spc,
                         const Stuff::Common::ConfigTree& bnd_inf_cfg,
                         const ProblemType& prb)
     : BaseType(test_spc, ansatz_spc, bnd_inf_cfg, prb)
-    , matrix_(nullptr)
-    , rhs_(nullptr)
+    , container_based_initialized_(false)
   {}
 
   ContainerBasedDefault(const ThisType& other) = default;
@@ -269,52 +268,42 @@ public:
    */
   void uncached_solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
+    assert_everything_is_ready();
     if (mu.type() != this->parameter_type())
       DUNE_THROW_COLORFULLY(Pymor::Exceptions::wrong_parameter_type,
                             mu.type() << " vs. " << this->parameter_type());
-//    Dune::Timer timer;
     // compute right hand side vector
     const auto& rhs = *(this->rhs_);
     std::shared_ptr< const VectorType > rhs_vector;
     if (!rhs.parametric())
       rhs_vector = rhs.affine_part();
     else {
-//      out << prefix << "computing rhs... " << std::flush;
-//      timer.reset();
       const Pymor::Parameter muRhs = this->map_parameter(mu, "rhs");
       rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(muRhs));
-//      out << "done (took " << timer.elapsed() << "s)" << std::endl;
     }
     const OperatorType lhsOperator(*(this->matrix_));
     if (lhsOperator.parametric()) {
-//      out << prefix << "computing lhs... " << std::flush;
-//      timer.reset();
       const Pymor::Parameter muLhs = Pymor::Parametric::map_parameter(mu, "lhs");
       const auto frozenOperator = lhsOperator.freeze_parameter(muLhs);
-//      out << "done (took " << timer.elapsed() << "s)" << std::endl;
-//      const std::string option = frozenOperator.invert_options()[0];
-//      out << prefix << "solving with '" << option << "' option... " << std::flush;
-//      timer.reset();
       frozenOperator.apply_inverse(*rhs_vector, vector/*, option*/);
-//      out << "done (took " << timer.elapsed() << "s)" << std::endl;
     } else {
       const auto nonparametricOperator = lhsOperator.affine_part();
       const std::string option = nonparametricOperator.invert_options()[0];
-//      out << prefix << "solving with '" << option << "' option... " << std::flush;
-//      timer.reset();
       nonparametricOperator.apply_inverse(*rhs_vector, vector, option);
-//      out << "done (took " << timer.elapsed() << "s)" << std::endl;
     }
   } // ... uncached_solve(...)
 
 protected:
-  bool assert_everything_is_ready() const
+  void assert_everything_is_ready() const
   {
-    if (!matrix_ || !rhs_)
+    if (!container_based_initialized_)
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::internal_error,
-                            "The discretization has to fill 'matrix_' and 'rhs_' during init()!");
+                            "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and set "
+                            << "container_based_initialized_ = true!\n"
+                            << "The user has to call init() before calling any other method!");
   } // ... assert_everything_is_ready()
 
+  bool container_based_initialized_;
   mutable std::shared_ptr< AffinelyDecomposedMatrixType > matrix_;
   mutable std::shared_ptr< AffinelyDecomposedVectorType > rhs_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedMatrixType > > products_;
