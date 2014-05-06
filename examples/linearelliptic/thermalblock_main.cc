@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "thermalblock.hh"
+# include "thermalblock.hh"
+#include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
 #include <boost/filesystem.hpp>
 

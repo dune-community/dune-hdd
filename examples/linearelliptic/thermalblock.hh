@@ -102,5 +102,6 @@ extern template class ThermalblockExample< Dune::YaspGrid< 1 > >;
 extern template class ThermalblockExample< Dune::YaspGrid< 2 > >;
 extern template class ThermalblockExample< Dune::YaspGrid< 3 > >;
 
+#include <dune/stuff/common/disable_warnings.hh> // <- here for the python bindings!
 
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH

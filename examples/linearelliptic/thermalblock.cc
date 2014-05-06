@@ -5,7 +5,8 @@
 
 #include "config.h"
 
-#include "thermalblock.hh"
+# include "thermalblock.hh"
+#include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
 
 // sgrid
