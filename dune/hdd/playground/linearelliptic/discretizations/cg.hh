@@ -8,19 +8,9 @@
 
 #include <memory>
 #include <vector>
-//#include <sstream>
 
-//#include <dune/common/exceptions.hh>
-//#include <dune/common/parametertree.hh>
 #include <dune/common/timer.hh>
 
-//#include <dune/grid/part/interface.hh>
-
-//#include <dune/fem/misc/mpimanager.hh>
-
-//#include <dune/stuff/common/logging.hh>
-//#include <dune/stuff/discretefunction/projection/dirichlet.hh>
-//#include <dune/stuff/common/parameter/tree.hh>
 #include <dune/stuff/common/configtree.hh>
 #include <dune/stuff/grid/partview.hh>
 #include <dune/stuff/grid/provider.hh>
@@ -39,15 +29,6 @@
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/elliptic.hh>
 
-//#include <dune/pymor/common/exceptions.hh>
-//#include <dune/pymor/la/container/eigen.hh>
-//#include <dune/pymor/la/container/affine.hh>
-//#include <dune/pymor/functionals/default.hh>
-//#include <dune/pymor/functionals/affine.hh>
-//#include <dune/pymor/operators/eigen.hh>
-//#include <dune/pymor/operators/affine.hh>
-
-//#include "../problems/interfaces.hh"
 #include "base.hh"
 
 namespace Dune {
