@@ -75,6 +75,10 @@ public:
                std::make_shared< FunctionType >(new ConstantFunctionType(0)))
   {}
 
+  virtual std::string type() const DS_OVERRIDE
+  {
+    return BaseType::BaseType::static_id() + ".ESV2007";
+  }
 }; // class ESV2007< ..., 1 >
 
 

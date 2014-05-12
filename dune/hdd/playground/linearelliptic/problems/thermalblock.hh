@@ -98,6 +98,10 @@ public:
     : BaseType(checkerboard_function, force, diffusion, neumann)
   {}
 
+  virtual std::string type() const DS_OVERRIDE
+  {
+    return BaseType::BaseType::static_id() + ".thermalblock";
+  }
 }; // class Thermalblock< ..., 1 >
 
 

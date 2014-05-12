@@ -41,7 +41,7 @@ public:
 //  using typename BaseType::DiffusionTensorType;
   using typename BaseType::FunctionType;
 
-  static const std::string static_id()
+  static std::string static_id()
   {
     return BaseType::static_id() + ".default";
   }
@@ -123,6 +123,11 @@ public:
   Default(const ThisType& other) = delete;
 
   ThisType& operator=(const ThisType& other) = delete;
+
+  virtual std::string type() const DS_OVERRIDE
+  {
+    return BaseType::static_id() + ".default";
+  }
 
   virtual const DiffusionFactorType& diffusion_factor() const DS_OVERRIDE
   {

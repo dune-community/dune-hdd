@@ -52,7 +52,12 @@ public:
                                                       , RangeFieldType, dimRange >
     FunctionType;
 
-  static const std::string static_id()
+  static std::string static_id()
+  {
+    return "hdd.linearelliptic.problem";
+  }
+
+  virtual std::string type() const
   {
     return "hdd.linearelliptic.problem";
   }
