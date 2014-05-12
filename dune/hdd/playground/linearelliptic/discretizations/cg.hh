@@ -17,13 +17,11 @@
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
 
-#include <dune/gdt/spaces/continuouslagrange/pdelab.hh>
-#include <dune/gdt/spaces/continuouslagrange/fem.hh>
-#include <dune/gdt/spaces/continuouslagrange/fem-localfunctions.hh>
+#include <dune/gdt/spaces/continuouslagrange.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
 #include <dune/gdt/operators/projections.hh>
-#include <dune/gdt/operators/elliptic.hh>
+#include <dune/gdt/operators/elliptic-cg.hh>
 #include <dune/gdt/functionals/l2.hh>
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
@@ -38,7 +36,7 @@ namespace Discretizations {
 
 
 // forward, needed in the Traits
-template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder = 1,
+template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder = 1,
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::ChooseBackend::eigen_sparse >
 class CG;
@@ -47,87 +45,28 @@ class CG;
 namespace internal {
 
 
-template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder,
+template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder,
           GDT::ChooseSpaceBackend space_backend,
           Stuff::LA::ChooseBackend la_backend >
 class CGTraits
 {
 public:
-  typedef CG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > derived_type;
+  typedef CG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > derived_type;
   typedef GridImp GridType;
   typedef RangeFieldImp RangeFieldType;
   static const unsigned int dimRange = rangeDim;
   static const unsigned int polOrder = polynomialOrder;
 
 private:
-  template< class G, class R, int r, int p, GDT::ChooseSpaceBackend b >
-  class SpaceChooser
-  {
-    static_assert(AlwaysFalse< G >::value, "No space available for this backend!");
-  };
+  typedef GDT::Spaces::ContinuousLagrangeProvider< GridType, layer, space_backend,
+                                                   polOrder, RangeFieldType, dimRange > SpaceProvider;
 
-  template< class G, class R, int r, int p >
-  class SpaceChooser< G, R, r, p, GDT::ChooseSpaceBackend::fem >
-  {
-    typedef typename Stuff::Grid::LeafPartView< G, Stuff::Grid::ChoosePartView::part >::Type GridPartViewType;
-  public:
-    typedef GDT::Spaces::ContinuousLagrange::FemBased< GridPartViewType, p, R, r > Type;
-  };
-
-  template< class G, class R, int r, int p >
-  class SpaceChooser< G, R, r, p, GDT::ChooseSpaceBackend::fem_localfunction >
-  {
-    typedef typename Stuff::Grid::LeafPartView< G, Stuff::Grid::ChoosePartView::part >::Type GridPartViewType;
-  public:
-    typedef GDT::Spaces::ContinuousLagrange::FemLocalfunctionsBased< GridPartViewType, p, R, r > Type;
-  };
-
-  template< class G, class R, int r, int p >
-  class SpaceChooser< G, R, r, p, GDT::ChooseSpaceBackend::pdelab >
-  {
-    typedef typename Stuff::Grid::LeafPartView< G, Stuff::Grid::ChoosePartView::view >::Type GridPartViewType;
-  public:
-    typedef GDT::Spaces::ContinuousLagrange::PdelabBased< GridPartViewType, p, R, r > Type;
-  };
-
-  template< class R, Stuff::LA::ChooseBackend b >
-  struct ContainerChooser
-  {
-    static_assert(AlwaysFalse< R >::value, "No container available for this backend!");
-  };
-
-  template< class R >
-  struct ContainerChooser< R, Stuff::LA::ChooseBackend::common_dense >
-  {
-    typedef Stuff::LA::CommonDenseMatrix< R > MatrixType;
-    typedef Stuff::LA::CommonDenseVector< R > VectorType;
-  };
-
-  template< class R >
-  struct ContainerChooser< R, Stuff::LA::ChooseBackend::istl_sparse >
-  {
-    typedef Stuff::LA::IstlRowMajorSparseMatrix< R > MatrixType;
-    typedef Stuff::LA::IstlDenseVector< R > VectorType;
-  };
-
-  template< class R >
-  struct ContainerChooser< R, Stuff::LA::ChooseBackend::eigen_dense >
-  {
-    typedef Stuff::LA::EigenDenseMatrix< R > MatrixType;
-    typedef Stuff::LA::EigenDenseVector< R > VectorType;
-  };
-
-  template< class R >
-  struct ContainerChooser< R, Stuff::LA::ChooseBackend::eigen_sparse >
-  {
-    typedef Stuff::LA::EigenRowMajorSparseMatrix< R > MatrixType;
-    typedef Stuff::LA::EigenDenseVector< R > VectorType;
-  };
+  friend class CG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend >;
 
 public:
-  typedef typename ContainerChooser< RangeFieldType, la_backend >::MatrixType MatrixType;
-  typedef typename ContainerChooser< RangeFieldType, la_backend >::VectorType VectorType;
-  typedef typename SpaceChooser< GridType, RangeFieldType, dimRange, polOrder, space_backend >::Type TestSpaceType;
+  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::VectorType VectorType;
+  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::MatrixType MatrixType;
+  typedef typename SpaceProvider::Type TestSpaceType;
   typedef TestSpaceType AnsatzSpaceType;
   typedef typename TestSpaceType::GridViewType GridViewType;
 }; // class CGTraits
@@ -136,15 +75,15 @@ public:
 } // namespace internal
 
 
-template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder,
+template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder,
           GDT::ChooseSpaceBackend space_backend,
           Stuff::LA::ChooseBackend la_backend >
 class CG
-  : public ContainerBasedDefault< internal::CGTraits< GridImp, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > >
+  : public ContainerBasedDefault< internal::CGTraits< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > >
 {
-  typedef ContainerBasedDefault< internal::CGTraits< GridImp, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > > BaseType;
+  typedef ContainerBasedDefault< internal::CGTraits< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > > BaseType;
 public:
-  typedef internal::CGTraits< GridImp, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > Traits;
+  typedef internal::CGTraits< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > Traits;
   typedef GridImp GridType;
   using typename BaseType::ProblemType;
   using typename BaseType::BoundaryInfoType;
@@ -156,7 +95,9 @@ public:
   using typename BaseType::RangeFieldType;
 
 private:
-  typedef Stuff::Grid::ProviderInterface< GridType > GridProviderType;
+  typedef typename Traits::SpaceProvider SpaceProvider;
+
+  typedef Stuff::Grid::ConstProviderInterface< GridType > GridProviderType;
   using typename BaseType::AffinelyDecomposedMatrixType;
   using typename BaseType::AffinelyDecomposedVectorType;
 
@@ -168,9 +109,10 @@ public:
 
   CG(const GridProviderType& grid_provider,
      const Stuff::Common::ConfigTree& bound_inf_cfg,
-     const ProblemType& prob)
-    : BaseType(std::make_shared< TestSpaceType >(grid_provider.template leaf< TestSpaceType::part_view_type >()),
-               std::make_shared< AnsatzSpaceType >(grid_provider.template leaf< AnsatzSpaceType::part_view_type >()),
+     const ProblemType& prob,
+     const int level = 0)
+    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
+               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
                bound_inf_cfg,
                prob)
   {}
