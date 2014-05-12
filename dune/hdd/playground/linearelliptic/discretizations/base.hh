@@ -234,7 +234,7 @@ public:
   ProductType get_product(const std::string id) const
   {
     if (products_.size() == 0)
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrongly,
+      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrong,
                             "Do not call get_product() if available_products() is empty!");
     const auto result = products_.find(id);
     if (result == products_.end())
@@ -255,7 +255,7 @@ public:
   AffinelyDecomposedVectorType get_vector(const std::string id) const
   {
     if (vectors_.size() == 0)
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrongly,
+      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrong,
                             "Do not call get_vector() if available_vectors() is empty!");
     const auto result = vectors_.find(id);
     if (result == vectors_.end())
