@@ -278,18 +278,17 @@ public:
     if (!rhs.parametric())
       rhs_vector = rhs.affine_part();
     else {
-      const Pymor::Parameter muRhs = this->map_parameter(mu, "rhs");
-      rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(muRhs));
+      const Pymor::Parameter mu_rhs = this->map_parameter(mu, "rhs");
+      rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(mu_rhs));
     }
     const OperatorType lhsOperator(*(this->matrix_));
     if (lhsOperator.parametric()) {
-      const Pymor::Parameter muLhs = Pymor::Parametric::map_parameter(mu, "lhs");
-      const auto frozenOperator = lhsOperator.freeze_parameter(muLhs);
-      frozenOperator.apply_inverse(*rhs_vector, vector/*, option*/);
+      const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
+      const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);
+      frozenOperator.apply_inverse(*rhs_vector, vector);
     } else {
       const auto nonparametricOperator = lhsOperator.affine_part();
-      const std::string option = nonparametricOperator.invert_options()[0];
-      nonparametricOperator.apply_inverse(*rhs_vector, vector, option);
+      nonparametricOperator.apply_inverse(*rhs_vector, vector);
     }
   } // ... uncached_solve(...)
 
