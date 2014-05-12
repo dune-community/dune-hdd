@@ -15,6 +15,7 @@
 #include <dune/hdd/playground/linearelliptic/discreteproblem.hh>
 #include <dune/hdd/playground/linearelliptic/discretizations/cg.hh>
 
+
 template< class GridImp >
 class LinearellipticExampleCG
 {
@@ -23,7 +24,10 @@ public:
   typedef Dune::HDD::LinearElliptic::DiscreteProblem< GridType > DiscreteProblemType;
   typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = DiscreteProblemType::dimRange;
-  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, RangeFieldType, dimRange, 1 > DiscretizationType;
+  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
+                                                          RangeFieldType, dimRange, 1,
+                                                          Dune::GDT::ChooseSpaceBackend::fem,
+                                                          Dune::Stuff::LA::ChooseBackend::eigen_sparse > DiscretizationType;
 
   static std::string static_id()
   {
