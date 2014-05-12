@@ -11,7 +11,7 @@
 #include <dune/common/static_assert.hh>
 
 #include <dune/stuff/functions/constant.hh>
-#include <dune/stuff/functions/expression.hh>
+#include <dune/stuff/functions/ESV2007.hh>
 #include <dune/stuff/common/memory.hh>
 
 #include <dune/pymor/functions/default.hh>
@@ -31,16 +31,16 @@ class ESV2007
 };
 
 
-template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp >
-class ESV2007< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
-  : public Default< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
+template< class EntityImp, class DomainFieldImp, class RangeFieldImp >
+class ESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
+  : public Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
 {
-  typedef Default< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > BaseType;
-  typedef ESV2007< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > ThisType;
+  typedef Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > BaseType;
+  typedef ESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ThisType;
 
-  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > ConstantFunctionType;
-  typedef Stuff::Functions::Expression< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > ExpressionFunctionType;
-  typedef Pymor::Function::NonparametricDefault< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > FunctionType;
+  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ConstantFunctionType;
+  typedef Stuff::Functions::ESV2007::Testcase1Force< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ForceType;
+  typedef Pymor::Function::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > FunctionType;
 
 public:
   static std::string static_id()
@@ -70,8 +70,8 @@ public:
 
   ESV2007(const size_t integration_order = default_config().get< size_t >("integration_order"))
     : BaseType(std::make_shared< FunctionType >(new ConstantFunctionType(1)),
-               std::make_shared< FunctionType >(new ExpressionFunctionType("x", "64.0 * pi * pi * (cos(8.0 * pi * x[0]) + cos(8.0 * pi * x[1]))", integration_order)),
-               std::make_shared< FunctionType >(new ExpressionFunctionType("x", "cos(8.0 * pi * x[0]) + cos(8.0 * pi * x[1])", integration_order)),
+               std::make_shared< FunctionType >(new ForceType(integration_order)),
+               std::make_shared< FunctionType >(new ConstantFunctionType(0)),
                std::make_shared< FunctionType >(new ConstantFunctionType(0)))
   {}
 
