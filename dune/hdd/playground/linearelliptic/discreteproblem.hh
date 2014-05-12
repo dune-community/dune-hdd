@@ -63,16 +63,17 @@ public:
     file << "info  = true" << std::endl;
     file << "debug = true" << std::endl;
     file << "file  = false" << std::endl;
+    file << "visualize = true" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [0.1; 0.1; 1.0; 1.0]" << std::endl;
-    file << "1.diffusion_factor = [1.0; 1.0; 0.1; 0.1]" << std::endl;
+    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
+    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
     write_config_to_file< GridProviders >(file);
     write_config_to_file< BoundaryInfoProvider >(file);
     write_config_to_file< ProblemProvider >(file);
     file.close();
   } // ... write_config(...)
 
-  DiscreteProblem(const std::string id, const std::vector< std::string >& arguments, const bool visualize = true)
+  DiscreteProblem(const std::string id, const std::vector< std::string >& arguments)
   {
     // mpi
     int argc = arguments.size();
@@ -91,7 +92,7 @@ public:
     filename_ = config_.get(id + ".filename", id);
 
     // logger
-    const Stuff::Common::ConfigTree& logger_config = config_.sub("logging");
+    const Stuff::Common::ConfigTree logger_config = config_.sub("logging");
     int log_flags = Stuff::Common::LOG_CONSOLE;
     debug_logging_ = logger_config.get< bool >("debug", false);
     if (logger_config.get< bool >("info"))
@@ -121,13 +122,17 @@ public:
       boundary_info_ = Stuff::Common::ConfigTree("type", boundary_info_type);
 
     info << "setting up ";
-    const std::string problem_type = config_.get< std::string >(id + ".problem");
-    info << "'" << problem_type << "'... " << std::flush;
     timer.reset();
+    const std::string problem_type = config_.get< std::string >(id + ".problem");
+    if (!debug_logging_)
+      info << "'" << problem_type << "'... " << std::flush;
     problem_ = ProblemProvider::create(problem_type, config_);
-    info << "done (took " << timer.elapsed() << "s)" << std::endl;
+    if (debug_logging_)
+      info << *problem_ << std::endl;
+    else
+      info << "done (took " << timer.elapsed() << "s)" << std::endl;
 
-    if (visualize) {
+    if (logger_config.get("visualize", true)) {
       info << "visualizing grid and problem... " << std::flush;
       timer.reset();
       grid_provider_->visualize(boundary_info_, filename_ + ".grid");
