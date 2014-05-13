@@ -6,8 +6,6 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_SWIPDG_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_SWIPDG_HH
 
-#include "config.h"
-
 #include <memory>
 
 #include <dune/stuff/common/memory.hh>
