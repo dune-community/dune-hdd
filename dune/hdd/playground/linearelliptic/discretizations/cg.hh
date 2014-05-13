@@ -21,7 +21,7 @@
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
 #include <dune/gdt/operators/projections.hh>
-#include <dune/gdt/operators/elliptic-cg.hh>
+#include <dune/gdt/playground/operators/elliptic-cg.hh>
 #include <dune/gdt/functionals/l2.hh>
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
@@ -115,7 +115,13 @@ public:
                std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
                bound_inf_cfg,
                prob)
-  {}
+  {
+    // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
+    if (this->problem_.diffusion_tensor().parametric())
+      DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
+    if (!this->problem_.diffusion_tensor().has_affine_part())
+      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+  } // CG(...)
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
@@ -168,7 +174,12 @@ public:
       // lhs operator
       typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
       const auto& diffusion_factor = this->problem_.diffusion_factor();
-      typedef GDT::Operators::EllipticCG< DiffusionFactorType, MatrixType, TestSpaceType > EllipticOperatorType;
+      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+      const auto& diffusion_tensor = this->problem_.diffusion_tensor();
+      assert(!diffusion_tensor.parametric());
+      assert(diffusion_tensor.has_affine_part());
+      typedef GDT::Operators::EllipticCG< DiffusionFactorType, MatrixType, TestSpaceType,
+                                          AnsatzSpaceType, GridViewType, DiffusionTensorType > EllipticOperatorType;
       const auto pattern = EllipticOperatorType::pattern(space);
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
       for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
@@ -177,12 +188,14 @@ public:
                                                                    pattern),
                                                     diffusion_factor.coefficient(qq));
         elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
+                                                                 *(diffusion_tensor.affine_part()),
                                                                  *(matrix.component(id)),
                                                                  space));
       }
       if (diffusion_factor.has_affine_part()) {
         matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern));
         elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
+                                                                 *(diffusion_tensor.affine_part()),
                                                                  *(matrix.affine_part()),
                                                                  space));
       }
