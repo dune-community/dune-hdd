@@ -11,6 +11,7 @@
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/common/configtree.hh>
 #include <dune/stuff/functions/constant.hh>
+#include <dune/stuff/functions/expression.hh>
 
 #include <dune/pymor/functions.hh>
 
@@ -38,7 +39,7 @@ public:
   using BaseType::dimRange;
 
   using typename BaseType::DiffusionFactorType;
-//  using typename BaseType::DiffusionTensorType;
+  using typename BaseType::DiffusionTensorType;
   using typename BaseType::FunctionType;
 
   static std::string static_id()
@@ -56,14 +57,14 @@ public:
     config["diffusion_factor.parameter_name"] = "diffusion_factor";
     config["diffusion_factor.name"] = "diffusion_factor";
     config["diffusion_factor.type"] = CheckerBoardFunctionType::static_id();
-//    // diffusion tensor
-//    typedef Stuff::Function::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
-//        ConstantFunctionType;
-//    config.add(ConstantFunctionType::defaultSettings(), "diffusion_tensor");
-//    config["diffusion_tensor.name"] = "diffusion_tensor";
-//    config["diffusion_tensor.type"] = ConstantFunctionType::static_id();
+    // diffusion tensor
+    typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+        ConstantFunctionType;
+    config.add(ConstantFunctionType::default_config(), "diffusion_tensor");
+    config["diffusion_tensor.name"] = "diffusion_tensor";
+    config["diffusion_tensor.type"] = ConstantFunctionType::static_id();
     // force
-    typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+    typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
         ExpressionFunctionType;
     config["force.variable"] = "x";
     config["force.expression"] = "1.0";
@@ -95,26 +96,26 @@ public:
                                             const std::string sub_name = static_id())
   {
     const Stuff::Common::ConfigTree cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
-    return std::unique_ptr< ThisType >(new ThisType(create_function< 1 >("diffusion_factor", cfg),
-//                        create_function< dimDomain, dimDomain >("diffusion_tensor", cfg),
-                        create_function< dimRange >("force", cfg),
-                        create_function< dimRange >("dirichlet", cfg),
-                        create_function< dimRange >("neumann", cfg)));
+    return std::unique_ptr< ThisType >(new ThisType(create_scalar_function("diffusion_factor", cfg),
+                                                    create_matrix_function("diffusion_tensor", cfg),
+                                                    create_vector_function("force", cfg),
+                                                    create_vector_function("dirichlet", cfg),
+                                                    create_vector_function("neumann", cfg)));
   } // ... create(...)
 
   Default(const std::shared_ptr< const DiffusionFactorType >& diff_fac,
-//          const std::shared_ptr< const DiffusionTensorType >& diff_ten,
+          const std::shared_ptr< const DiffusionTensorType >& diff_ten,
           const std::shared_ptr< const FunctionType >& forc,
           const std::shared_ptr< const FunctionType >& dir,
           const std::shared_ptr< const FunctionType >& neum)
     : diffusion_factor_(diff_fac)
-//    , diffusion_tensor_(diff_ten)
+    , diffusion_tensor_(diff_ten)
     , force_(forc)
     , dirichlet_(dir)
     , neumann_(neum)
   {
     this->inherit_parameter_type(diffusion_factor_->parameter_type(), "diffusion_factor");
-//    this->inherit_parameter_type(diffusion_tensor_->parameter_type(), "diffusion_tensor");
+    this->inherit_parameter_type(diffusion_tensor_->parameter_type(), "diffusion_tensor");
     this->inherit_parameter_type(force_->parameter_type(),     "force");
     this->inherit_parameter_type(dirichlet_->parameter_type(), "dirichlet");
     this->inherit_parameter_type(neumann_->parameter_type(),   "neumann");
@@ -134,10 +135,10 @@ public:
     return *diffusion_factor_;
   }
 
-//  virtual const DiffusionTensorType& diffusion_tensor() const DS_OVERRIDE
-//  {
-//    return *diffusion_tensor_;
-//  }
+  virtual const DiffusionTensorType& diffusion_tensor() const DS_OVERRIDE
+  {
+    return *diffusion_tensor_;
+  }
 
   virtual const FunctionType& force() const DS_OVERRIDE
   {
@@ -155,22 +156,47 @@ public:
   }
 
 protected:
-  template< int r, int rC = 1 >
-      static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC > >
-  create_function(const std::string& id,
+      static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 > >
+  create_scalar_function(const std::string& id,
                   const Stuff::Common::ConfigTree& config)
   {
-    typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC >
+    typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >
         ExpressionFunctionType;
-    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, r, rC >
+    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >
         FunctionsProvider;
     const Stuff::Common::ConfigTree cfg = config.sub(id);
     const std::string type = cfg.get("type", ExpressionFunctionType::static_id());
     return FunctionsProvider::create(type, cfg);
-  } // ... create_function(...)
+  } // ... create_scalar_function(...)
+
+      static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > >
+  create_vector_function(const std::string& id,
+                  const Stuff::Common::ConfigTree& config)
+  {
+    typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
+        ExpressionFunctionType;
+    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
+        FunctionsProvider;
+    const Stuff::Common::ConfigTree cfg = config.sub(id);
+    const std::string type = cfg.get("type", ExpressionFunctionType::static_id());
+    return FunctionsProvider::create(type, cfg);
+  } // ... create_vector_function(...)
+
+      static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > >
+  create_matrix_function(const std::string& id,
+                  const Stuff::Common::ConfigTree& config)
+  {
+    typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+        ConstantFunctionType;
+    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+        FunctionsProvider;
+    const Stuff::Common::ConfigTree cfg = config.sub(id);
+    const std::string type = cfg.get("type", ConstantFunctionType::static_id());
+    return FunctionsProvider::create(type, cfg);
+  } // ... create_matrix_function(...)
 
   std::shared_ptr< const DiffusionFactorType > diffusion_factor_;
-//  std::shared_ptr< const DiffusionTensorType > diffusion_tensor_;
+  std::shared_ptr< const DiffusionTensorType > diffusion_tensor_;
   std::shared_ptr< const FunctionType > force_;
   std::shared_ptr< const FunctionType > dirichlet_;
   std::shared_ptr< const FunctionType > neumann_;

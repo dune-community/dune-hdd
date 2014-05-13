@@ -46,8 +46,8 @@ public:
   {
     return {
         Problems::Default< E, D, d, R, r >::static_id()
-      , Problems::Thermalblock< E, D, d, R, r >::static_id()
       , Problems::MixedBoundaries< E, D, d, R, r >::static_id()
+      , Problems::Thermalblock< E, D, d, R, r >::static_id()
     };
   } // ... available(...)
 
@@ -56,10 +56,10 @@ public:
   {
   if (type == Problems::Default< E, D, d, R, r >::static_id())
     return Problems::Default< E, D, d, R, r >::default_config(sub_name);
-  else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
-    return Problems::Thermalblock< E, D, d, R, r >::default_config(sub_name);
   else if (type == Problems::MixedBoundaries< E, D, d, R, r >::static_id())
     return Problems::MixedBoundaries< E, D, d, R, r >::default_config(sub_name);
+  else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
+    return Problems::Thermalblock< E, D, d, R, r >::default_config(sub_name);
   else
     DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
                           "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
@@ -70,10 +70,10 @@ public:
   {
     if (type == Problems::Default< E, D, d, R, r >::static_id())
       return call_create< Problems::Default< E, D, d, R, r > >(config);
-    else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
-      return call_create< Problems::Thermalblock< E, D, d, R, r > >(config);
     else if (type == Problems::MixedBoundaries< E, D, d, R, r >::static_id())
       return call_create< Problems::MixedBoundaries< E, D, d, R, r > >(config);
+    else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
+      return call_create< Problems::Thermalblock< E, D, d, R, r > >(config);
     else
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
                             "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");

@@ -38,9 +38,11 @@ class ESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
   typedef Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > BaseType;
   typedef ESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ThisType;
 
-  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ConstantFunctionType;
+  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >    ScalarConstantFunctionType;
+  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 > ConstantFunctionType;
   typedef Stuff::Functions::ESV2007::Testcase1Force< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ForceType;
-  typedef Pymor::Function::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > FunctionType;
+  typedef Pymor::Function::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >     ScalarFunctionType;
+  typedef Pymor::Function::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 >  FunctionType;
 
 public:
   static std::string static_id()
@@ -69,15 +71,27 @@ public:
   } // ... create(...)
 
   ESV2007(const size_t integration_order = default_config().get< size_t >("integration_order"))
-    : BaseType(std::make_shared< FunctionType >(new ConstantFunctionType(1)),
-               std::make_shared< FunctionType >(new ForceType(integration_order)),
-               std::make_shared< FunctionType >(new ConstantFunctionType(0)),
-               std::make_shared< FunctionType >(new ConstantFunctionType(0)))
+    : BaseType(std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(1, "diffusion_factor")),
+               std::make_shared< FunctionType >(new ConstantFunctionType(unit_matrix(), "diffusion_tensor")),
+               std::make_shared< ScalarFunctionType >(new ForceType(integration_order,  "force")),
+               std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(0, "dirichlet")),
+               std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(0, "neumann")))
   {}
 
   virtual std::string type() const DS_OVERRIDE
   {
     return BaseType::BaseType::static_id() + ".ESV2007";
+  }
+
+private:
+  typedef typename ConstantFunctionType::RangeType MatrixType;
+
+  static MatrixType unit_matrix()
+  {
+    MatrixType matrix(RangeFieldImp(0));
+    matrix[0][0] = RangeFieldImp(1);
+    matrix[1][1] = RangeFieldImp(1);
+    return matrix;
   }
 }; // class ESV2007< ..., 1 >
 

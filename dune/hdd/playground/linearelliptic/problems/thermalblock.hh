@@ -45,6 +45,7 @@ class Thermalblock< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
 public:
   typedef Pymor::Function::Checkerboard< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
       CheckerboardFunctionType;
+  using typename BaseType::DiffusionTensorType;
   using typename BaseType::FunctionType;
 
   static std::string static_id()
@@ -54,19 +55,27 @@ public:
 
   static Stuff::Common::ConfigTree default_config(const std::string sub_name = "")
   {
-    typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > ConstantFunctionType;
+    typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
+        ConstantFunctionType;
+    typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, domainDim, domainDim >
+        ConstantMatrixFunctionType;
     Stuff::Common::ConfigTree config;
     Stuff::Common::ConfigTree checkerboard_config = CheckerboardFunctionType::default_config();
-    checkerboard_config["name"] = "checkerboard_diffusion";
+    checkerboard_config["name"] = "diffusion_factor";
+    checkerboard_config["type"] = CheckerboardFunctionType::static_id();
     checkerboard_config["parameter_name"] = "diffusion_factor";
     config.add(checkerboard_config, "diffusion_factor");
+    Stuff::Common::ConfigTree diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
+    diffusion_tensor_config["name"] = "diffusion_tensor";
+    diffusion_tensor_config["type"] = ConstantMatrixFunctionType::static_id();
+    config.add(diffusion_tensor_config, "diffusion_tensor");
     Stuff::Common::ConfigTree constant_config = ConstantFunctionType::default_config();
     constant_config["type"] = ConstantFunctionType::static_id();
     constant_config["name"] = "force";
-    constant_config["value"] = "1.0";
+    constant_config["value"] = "1";
     config.add(constant_config, "force");
     constant_config["name"] = "dirichlet";
-    constant_config["value"] = "0.0";
+    constant_config["value"] = "0";
     config.add(constant_config, "dirichlet");
     constant_config["name"] = "neumann";
     config.add(constant_config, "neumann");
@@ -86,16 +95,18 @@ public:
     std::shared_ptr< CheckerboardFunctionType >
         checkerboard_function(CheckerboardFunctionType::create(cfg.sub("diffusion_factor")));
     return Stuff::Common::make_unique< ThisType >(checkerboard_function,
-                                                  BaseType::template create_function< 1 >("force", cfg),
-                                                  BaseType::template create_function< 1 >("dirichlet", cfg),
-                                                  BaseType::template create_function< 1 >("neumann", cfg));
+                                                  BaseType::create_matrix_function("diffusion_tensor", cfg),
+                                                  BaseType::create_vector_function("force", cfg),
+                                                  BaseType::create_vector_function("dirichlet", cfg),
+                                                  BaseType::create_vector_function("neumann", cfg));
   } // ... create(...)
 
   Thermalblock(const std::shared_ptr< const CheckerboardFunctionType >& checkerboard_function,
+               const std::shared_ptr< const DiffusionTensorType >& diffusion_tensor,
                const std::shared_ptr< const FunctionType >& force,
                const std::shared_ptr< const FunctionType >& diffusion,
                const std::shared_ptr< const FunctionType >& neumann)
-    : BaseType(checkerboard_function, force, diffusion, neumann)
+    : BaseType(checkerboard_function, diffusion_tensor, force, diffusion, neumann)
   {}
 
   virtual std::string type() const DS_OVERRIDE
