@@ -20,17 +20,9 @@
 #include <dune/gdt/spaces/discontinuouslagrange.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
-#include <dune/gdt/operators/elliptic-swipdg.hh>
+#include <dune/gdt/playground/operators/elliptic-swipdg.hh>
 #include <dune/gdt/functionals/l2.hh>
-#include <dune/gdt/functionals/swipdg.hh>
-
-#include <dune/gdt/localevaluation/elliptic.hh>
-#include <dune/gdt/localoperator/codim0.hh>
-#include <dune/gdt/localoperator/codim1.hh>
-#include <dune/gdt/localevaluation/product.hh>
-#include <dune/gdt/localevaluation/swipdg.hh>
-#include <dune/gdt/localfunctional/codim0.hh>
-#include <dune/gdt/localfunctional/codim1.hh>
+#include <dune/gdt/playground/functionals/swipdg.hh>
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/elliptic.hh>
@@ -127,7 +119,13 @@ public:
                bound_inf_cfg,
                prob)
     , beta_(1.0)
-  {}
+  {
+    // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
+    if (this->problem_.diffusion_tensor().parametric())
+      DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
+    if (!this->problem_.diffusion_tensor().has_affine_part())
+      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+  } // SWIPDG(...)
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
@@ -149,7 +147,13 @@ public:
       // lhs operator
       typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
       const auto& diffusion_factor = this->problem_.diffusion_factor();
-      typedef Operators::EllipticSWIPDG< DiffusionFactorType, MatrixType, TestSpaceType > EllipticOperatorType;
+      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+      const auto& diffusion_tensor = this->problem_.diffusion_tensor();
+      assert(!diffusion_tensor.parametric());
+      assert(diffusion_tensor.has_affine_part());
+      typedef Operators::EllipticSWIPDG< DiffusionFactorType, MatrixType
+                                       , TestSpaceType, AnsatzSpaceType
+                                       , GridViewType, DiffusionTensorType > EllipticOperatorType;
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
       auto pattern = EllipticOperatorType::pattern(space);
       for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
@@ -157,6 +161,7 @@ public:
                                                     space.mapper().size(), space.mapper().size(), pattern);
         elliptic_operators.emplace_back(new EllipticOperatorType(
             *(diffusion_factor.component(qq)),
+            *(diffusion_tensor.affine_part()),
             boundary_info,
             *(matrix.component(id)),
             space));
@@ -166,6 +171,7 @@ public:
           matrix.register_affine_part(space.mapper().size(), space.mapper().size(), pattern);
         elliptic_operators.emplace_back(new EllipticOperatorType(
             *(diffusion_factor.affine_part()),
+            *(diffusion_tensor.affine_part()),
             boundary_info,
             *(matrix.affine_part()),
             space));
@@ -196,14 +202,15 @@ public:
         system_assembler.add(*force_functional);
       // * dirichlet boundary
       const auto& dirichlet = this->problem_.dirichlet();
-      typedef Functionals::DirichletBoundarySWIPDG< DiffusionFactorType, FunctionType, VectorType, TestSpaceType >
-          DirichletBoundaryFunctionalType;
+      typedef Functionals::DirichletBoundarySWIPDG< DiffusionFactorType, FunctionType, VectorType, TestSpaceType,
+                                                    GridViewType, DiffusionTensorType > DirichletBoundaryFunctionalType;
       std::vector< std::unique_ptr< DirichletBoundaryFunctionalType > > dirichlet_boundary_functionals;
       if (diffusion_factor.has_affine_part() && dirichlet.has_affine_part()) {
         if (!rhs.has_affine_part())
           rhs.register_affine_part(space.mapper().size());
         dirichlet_boundary_functionals.emplace_back(new DirichletBoundaryFunctionalType(
             *(diffusion_factor.affine_part()),
+            *(diffusion_tensor.affine_part()),
             *(dirichlet.affine_part()),
             boundary_info,
             *(rhs.affine_part()),
@@ -214,6 +221,7 @@ public:
           const size_t id = rhs.register_component(dirichlet.coefficient(qq), space.mapper().size());
           dirichlet_boundary_functionals.emplace_back(new DirichletBoundaryFunctionalType(
               *(diffusion_factor.affine_part()),
+              *(diffusion_tensor.affine_part()),
               *(dirichlet.component(qq)),
               boundary_info,
               *(rhs.component(id)),
@@ -225,6 +233,7 @@ public:
           const size_t id = rhs.register_component(diffusion_factor.coefficient(qq), space.mapper().size());
           dirichlet_boundary_functionals.emplace_back(new DirichletBoundaryFunctionalType(
               *(diffusion_factor.component(qq)),
+              *(diffusion_tensor.affine_part()),
               *(dirichlet.affine_part()),
               boundary_info,
               *(rhs.component(id)),
@@ -243,6 +252,7 @@ public:
           const size_t id = rhs.register_component(param, expression, space.mapper().size());
           dirichlet_boundary_functionals.emplace_back(new DirichletBoundaryFunctionalType(
               *(diffusion_factor.component(pp)),
+              *(diffusion_tensor.affine_part()),
               *(dirichlet.component(qq)),
               boundary_info,
               *(rhs.component(id)),
