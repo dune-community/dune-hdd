@@ -47,9 +47,9 @@ public:
   typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
                                                       , RangeFieldType, 1, 1 >
     DiffusionFactorType;
-//  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
-//                                                      , RangeFieldType, dimDomain, dimDomain >
-//    DiffusionTensorType;
+  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
+                                                      , RangeFieldType, dimDomain, dimDomain >
+    DiffusionTensorType;
   typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
                                                       , RangeFieldType, dimRange >
     FunctionType;
@@ -66,7 +66,7 @@ public:
 
   virtual const DiffusionFactorType& diffusion_factor() const = 0;
 
-//  virtual const DiffusionTensorType& diffusion_tensor() const = 0;
+  virtual const DiffusionTensorType& diffusion_tensor() const = 0;
 
   virtual const FunctionType& force() const = 0;
 
@@ -96,6 +96,8 @@ public:
     out << prefix << "problem '" << type() << "':" << std::endl;
     out << prefix << "  diffusion_factor:" << std::endl;
     diffusion_factor().report(out, prefix + "    ");
+    out << "\n" << prefix << "  diffusion_tensor:" << std::endl;
+    diffusion_tensor().report(out, prefix + "    ");
     out << "\n" << prefix << "  force:" << std::endl;
     force().report(out, prefix + "    ");
     out << "\n"<< prefix << "  dirichlet:" << std::endl;
@@ -109,6 +111,7 @@ private:
   void add_visualizations_(const GridViewType& grid_view, VTKWriterType& vtk_writer) const
   {
     add_function_visualization_(grid_view, diffusion_factor(), vtk_writer);
+//    add_function_visualization_(grid_view, diffusion_tensor(), vtk_writer);
     add_function_visualization_(grid_view, force(), vtk_writer);
     add_function_visualization_(grid_view, dirichlet(), vtk_writer);
     add_function_visualization_(grid_view, neumann(), vtk_writer);
