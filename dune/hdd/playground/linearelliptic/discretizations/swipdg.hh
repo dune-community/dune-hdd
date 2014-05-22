@@ -128,7 +128,7 @@ public:
                std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
                bound_inf_cfg,
                prob)
-    , beta_(1.0)
+    , beta_(GDT::LocalEvaluation::SWIPDG::internal::default_beta(dimDomain))
     , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::test_space())))
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
