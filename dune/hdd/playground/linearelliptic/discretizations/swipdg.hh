@@ -11,6 +11,10 @@
 
 #include <dune/common/timer.hh>
 
+#if HAVE_DUNE_GRID_MULTISCALE
+# include <dune/grid/multiscale/provider/interface.hh>
+#endif
+
 #include <dune/stuff/common/configtree.hh>
 #include <dune/stuff/grid/partview.hh>
 #include <dune/stuff/grid/provider.hh>
@@ -33,6 +37,11 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace Discretizations {
+
+
+// forward, for friendlyness
+template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder, Stuff::LA::ChooseBackend la_backend >
+class BlockSWIPDG;
 
 
 // forward, needed in the Traits
@@ -104,7 +113,11 @@ public:
 private:
   typedef typename Traits::SpaceProvider SpaceProvider;
 
+#if HAVE_DUNE_GRID_MULTISCALE
+  typedef grid::Multiscale::ProviderInterface< GridType > GridProviderType;
+#else
   typedef Stuff::Grid::ConstProviderInterface< GridType > GridProviderType;
+#endif
   using typename BaseType::AffinelyDecomposedMatrixType;
   using typename BaseType::AffinelyDecomposedVectorType;
 
@@ -123,9 +136,9 @@ public:
   SWIPDG(const GridProviderType& grid_provider,
          const Stuff::Common::ConfigTree& bound_inf_cfg,
          const ProblemType& prob,
-         const int level = 0)
-    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
-               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
+         const int level_or_subdomain = 0)
+    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
+               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
                bound_inf_cfg,
                prob)
     , beta_(GDT::LocalEvaluation::SWIPDG::internal::default_beta(dimDomain))
@@ -331,6 +344,8 @@ public:
   } // ... init(...)
 
 private:
+  friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
+
   const RangeFieldType beta_;
   PatternType pattern_;
 }; // class SWIPDG

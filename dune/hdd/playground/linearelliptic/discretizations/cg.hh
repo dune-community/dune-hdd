@@ -11,6 +11,10 @@
 
 #include <dune/common/timer.hh>
 
+#if HAVE_DUNE_GRID_MULTISCALE
+# include <dune/grid/multiscale/provider/interface.hh>
+#endif
+
 #include <dune/stuff/common/configtree.hh>
 #include <dune/stuff/grid/partview.hh>
 #include <dune/stuff/grid/provider.hh>
@@ -33,6 +37,11 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace Discretizations {
+
+
+// forward, for friendlyness
+template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder, Stuff::LA::ChooseBackend la_backend >
+class BlockSWIPDG;
 
 
 // forward, needed in the Traits
@@ -98,7 +107,11 @@ public:
 private:
   typedef typename Traits::SpaceProvider SpaceProvider;
 
+#if HAVE_DUNE_GRID_MULTISCALE
+  typedef grid::Multiscale::ProviderInterface< GridType > GridProviderType;
+#else
   typedef Stuff::Grid::ConstProviderInterface< GridType > GridProviderType;
+#endif
   using typename BaseType::AffinelyDecomposedMatrixType;
   using typename BaseType::AffinelyDecomposedVectorType;
 
@@ -376,6 +389,8 @@ public:
   } // ... init(...)
 
 private:
+  friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
+
   PatternType pattern_;
 }; // class CG
 
