@@ -5,6 +5,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_DUNE_GRID_MULTISCALE
+#undef HAVE_DUNE_GRID_MULTISCALE
+#endif
+
 #include <string>
 #include <vector>
 

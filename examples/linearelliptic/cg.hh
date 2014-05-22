@@ -8,6 +8,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_DUNE_GRID_MULTISCALE
+#undef HAVE_DUNE_GRID_MULTISCALE
+#endif
+
 #include <memory>
 
 #include <dune/stuff/common/memory.hh>

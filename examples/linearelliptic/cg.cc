@@ -5,6 +5,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_DUNE_GRID_MULTISCALE
+#undef HAVE_DUNE_GRID_MULTISCALE
+#endif
+
 # include "cg.hh"
 #include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
