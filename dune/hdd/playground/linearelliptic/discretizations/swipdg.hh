@@ -97,12 +97,22 @@ public:
   using typename BaseType::GridViewType;
   using typename BaseType::RangeFieldType;
 
+  typedef typename TestSpaceType::PatternType PatternType;
+
+  static const unsigned int dimDomain = BaseType::dimDomain;
+
 private:
   typedef typename Traits::SpaceProvider SpaceProvider;
 
   typedef Stuff::Grid::ConstProviderInterface< GridType > GridProviderType;
   using typename BaseType::AffinelyDecomposedMatrixType;
   using typename BaseType::AffinelyDecomposedVectorType;
+
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+  typedef GDT::Operators::EllipticSWIPDG< DiffusionFactorType, MatrixType
+                                        , TestSpaceType, AnsatzSpaceType
+                                        , GridViewType, DiffusionTensorType > EllipticOperatorType;
 
 public:
   static std::string static_id()
@@ -119,6 +129,7 @@ public:
                bound_inf_cfg,
                prob)
     , beta_(1.0)
+    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::test_space())))
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
     if (this->problem_.diffusion_tensor().parametric())
@@ -126,6 +137,11 @@ public:
     if (!this->problem_.diffusion_tensor().has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // SWIPDG(...)
+
+  const PatternType& pattern() const
+  {
+    return pattern_;
+  }
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
@@ -145,20 +161,14 @@ public:
       SystemAssembler< TestSpaceType > system_assembler(space);
 
       // lhs operator
-      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
       const auto& diffusion_factor = this->problem_.diffusion_factor();
-      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
       const auto& diffusion_tensor = this->problem_.diffusion_tensor();
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
-      typedef Operators::EllipticSWIPDG< DiffusionFactorType, MatrixType
-                                       , TestSpaceType, AnsatzSpaceType
-                                       , GridViewType, DiffusionTensorType > EllipticOperatorType;
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
-      auto pattern = EllipticOperatorType::pattern(space);
       for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
         const size_t id = matrix.register_component(diffusion_factor.coefficient(qq),
-                                                    space.mapper().size(), space.mapper().size(), pattern);
+                                                    space.mapper().size(), space.mapper().size(), pattern_);
         elliptic_operators.emplace_back(new EllipticOperatorType(
             *(diffusion_factor.component(qq)),
             *(diffusion_tensor.affine_part()),
@@ -168,7 +178,7 @@ public:
       }
       if (diffusion_factor.has_affine_part()) {
         if (!matrix.has_affine_part())
-          matrix.register_affine_part(space.mapper().size(), space.mapper().size(), pattern);
+          matrix.register_affine_part(space.mapper().size(), space.mapper().size(), pattern_);
         elliptic_operators.emplace_back(new EllipticOperatorType(
             *(diffusion_factor.affine_part()),
             *(diffusion_tensor.affine_part()),
@@ -322,6 +332,7 @@ public:
 
 private:
   const RangeFieldType beta_;
+  PatternType pattern_;
 }; // class SWIPDG
 
 

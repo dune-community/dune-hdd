@@ -93,6 +93,7 @@ public:
   using typename BaseType::VectorType;
   using typename BaseType::GridViewType;
   using typename BaseType::RangeFieldType;
+  using typename BaseType::PatternType;
 
 private:
   typedef typename Traits::SpaceProvider SpaceProvider;
@@ -100,6 +101,11 @@ private:
   typedef Stuff::Grid::ConstProviderInterface< GridType > GridProviderType;
   using typename BaseType::AffinelyDecomposedMatrixType;
   using typename BaseType::AffinelyDecomposedVectorType;
+
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+  typedef GDT::Operators::EllipticCG< DiffusionFactorType, MatrixType, TestSpaceType,
+                                      AnsatzSpaceType, GridViewType, DiffusionTensorType > EllipticOperatorType;
 
 public:
   static std::string static_id()
@@ -115,6 +121,7 @@ public:
                std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
                bound_inf_cfg,
                prob)
+    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::test_space())))
   {
     // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
     if (this->problem_.diffusion_tensor().parametric())
@@ -122,6 +129,11 @@ public:
     if (!this->problem_.diffusion_tensor().has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // CG(...)
+
+  const PatternType& pattern() const
+  {
+    return pattern_;
+  }
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
@@ -172,20 +184,15 @@ public:
         system_assembler.add(*projection_operator, new GDT::ApplyOn::BoundaryEntities< GridViewType >());
 
       // lhs operator
-      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
       const auto& diffusion_factor = this->problem_.diffusion_factor();
-      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
       const auto& diffusion_tensor = this->problem_.diffusion_tensor();
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
-      typedef GDT::Operators::EllipticCG< DiffusionFactorType, MatrixType, TestSpaceType,
-                                          AnsatzSpaceType, GridViewType, DiffusionTensorType > EllipticOperatorType;
-      const auto pattern = EllipticOperatorType::pattern(space);
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
       for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
         const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
                                                                    space.mapper().size(),
-                                                                   pattern),
+                                                                   pattern_),
                                                     diffusion_factor.coefficient(qq));
         elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
                                                                  *(diffusion_tensor.affine_part()),
@@ -193,7 +200,7 @@ public:
                                                                  space));
       }
       if (diffusion_factor.has_affine_part()) {
-        matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern));
+        matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
         elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
                                                                  *(diffusion_tensor.affine_part()),
                                                                  *(matrix.affine_part()),
@@ -337,7 +344,7 @@ public:
         clear_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
       // we always need an affine part in the system matrix for the dirichlet rows
       if (!matrix.has_affine_part())
-        matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern));
+        matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
       system_assembler.add(clear_and_set_dirichlet_rows,
                            *(matrix.affine_part()),
                            new GDT::ApplyOn::BoundaryEntities< GridViewType >());
@@ -367,6 +374,9 @@ public:
       this->container_based_initialized_ = true;
     } // if (!this->container_based_initialized_)
   } // ... init(...)
+
+private:
+  PatternType pattern_;
 }; // class CG
 
 

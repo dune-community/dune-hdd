@@ -36,6 +36,8 @@ public:
   typedef typename Traits::TestSpaceType    TestSpaceType;
   typedef typename Traits::AnsatzSpaceType  AnsatzSpaceType;
 
+  typedef typename TestSpaceType::PatternType PatternType;
+
   typedef typename GridViewType::Grid::template Codim< 0 >::Entity EntityType;
 
   typedef typename GridViewType::ctype    DomainFieldType;
@@ -80,6 +82,12 @@ public:
   {
     CHECK_CRTP(this->as_imp(*this).ansatz_space());
     return this->as_imp(*this).ansatz_space();
+  }
+
+  const PatternType& pattern() const
+  {
+    CHECK_CRTP(this->as_imp(*this).pattern());
+    return this->as_imp(*this).pattern();
   }
 
   const Stuff::Common::ConfigTree& boundary_info_cfg() const
