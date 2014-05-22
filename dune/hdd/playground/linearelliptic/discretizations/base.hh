@@ -164,7 +164,7 @@ public:
 protected:
   const std::shared_ptr< const TestSpaceType > test_space_;
   const std::shared_ptr< const AnsatzSpaceType > ansatz_space_;
-  const Stuff::Common::ConfigTree& boundary_info_cfg_;
+  const Stuff::Common::ConfigTree boundary_info_cfg_;
   const std::shared_ptr< const BoundaryInfoType > boundary_info_;
   const ProblemType& problem_;
 
