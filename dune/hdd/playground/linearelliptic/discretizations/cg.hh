@@ -38,7 +38,7 @@ namespace Discretizations {
 // forward, needed in the Traits
 template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder = 1,
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
-          Stuff::LA::ChooseBackend la_backend = Stuff::LA::ChooseBackend::eigen_sparse >
+          Stuff::LA::ChooseBackend la_backend = Stuff::LA::ChooseBackend::istl_sparse >
 class CG;
 
 
