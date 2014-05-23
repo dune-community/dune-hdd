@@ -18,7 +18,7 @@
 
 #include <dune/gdt/discretefunction/default.hh>
 
-#include "../../../linearelliptic/discretizations/interfaces.hh"
+#include "interfaces.hh"
 
 namespace Dune {
 namespace HDD {

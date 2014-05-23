@@ -20,7 +20,7 @@
 #include <dune/pymor/functions/default.hh>
 #include <dune/pymor/functions/checkerboard.hh>
 
-#include "default.hh"
+#include "../../../linearelliptic/problems/default.hh"
 
 namespace Dune {
 namespace HDD {

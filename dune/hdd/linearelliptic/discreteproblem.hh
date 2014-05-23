@@ -29,7 +29,7 @@
 # include <dune/grid/multiscale/provider.hh>
 #endif
 
-#include <dune/hdd/linearelliptic/problems.hh>
+#include "problems.hh"
 
 namespace Dune {
 namespace HDD {

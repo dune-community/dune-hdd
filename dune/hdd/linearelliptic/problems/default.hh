@@ -15,7 +15,7 @@
 
 #include <dune/pymor/functions.hh>
 
-#include "../../../linearelliptic/problems/interfaces.hh"
+#include "interfaces.hh"
 
 namespace Dune {
 namespace HDD {

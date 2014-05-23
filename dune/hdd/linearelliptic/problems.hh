@@ -14,8 +14,8 @@
 #include <dune/stuff/common/exceptions.hh>
 
 #include "problems/interfaces.hh"
-#include "../playground/linearelliptic/problems/default.hh"
-#include "../playground/linearelliptic/problems/ESV2007.hh"
+#include "problems/default.hh"
+#include "problems/ESV2007.hh"
 #include "../playground/linearelliptic/problems/mixed-boundaries.hh"
 #include "../playground/linearelliptic/problems/thermalblock.hh"
 
