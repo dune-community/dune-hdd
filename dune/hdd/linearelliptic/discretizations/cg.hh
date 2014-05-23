@@ -11,6 +11,10 @@
 
 #include <dune/common/timer.hh>
 
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
 #if HAVE_DUNE_GRID_MULTISCALE
 # include <dune/grid/multiscale/provider/interface.hh>
 #endif
@@ -396,6 +400,110 @@ private:
   PatternType pattern_;
 }; // class CG
 
+
+#if HAVE_ALUGRID
+# if HAVE_DUNE_FEM
+
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                   Stuff::Grid::ChooseLayer::leaf,
+                   double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                   Stuff::LA::ChooseBackend::common_dense >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                   Stuff::Grid::ChooseLayer::level,
+                   double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                   Stuff::LA::ChooseBackend::common_dense >;
+
+#   if HAVE_DUNE_ISTL
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::istl_sparse >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::level,
+                          double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::istl_sparse >;
+
+#   endif // HAVE_DUNE_ISTL
+#   if HAVE_EIGEN
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::eigen_dense >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::level,
+                          double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::eigen_dense >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::eigen_sparse >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::level,
+                          double, 1, 1, GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::eigen_sparse >;
+
+
+#   endif // HAVE_EIGEN
+# endif // HAVE_DUNE_FEM
+# if HAVE_DUNE_PDELAB
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::common_dense >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::level,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::common_dense >;
+
+#   if HAVE_DUNE_ISTL
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::istl_sparse >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::level,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::istl_sparse >;
+
+#   endif // HAVE_DUNE_ISTL
+#   if HAVE_EIGEN
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::eigen_dense >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::level,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::eigen_dense >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::eigen_sparse >;
+
+extern template class CG< ALUConformGrid< 2, 2 >,
+                          Stuff::Grid::ChooseLayer::level,
+                          double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
+                          Stuff::LA::ChooseBackend::eigen_sparse >;
+
+
+#   endif // HAVE_EIGEN
+# endif // HAVE_DUNE_PDELAB
+#endif // HAVE_ALUGRID
 
 } // namespace Discretizations
 } // namespace LinearElliptic
