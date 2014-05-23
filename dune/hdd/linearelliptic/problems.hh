@@ -10,6 +10,10 @@
 #include <vector>
 #include <memory>
 
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
 #include <dune/stuff/common/configtree.hh>
 #include <dune/stuff/common/exceptions.hh>
 
@@ -133,6 +137,15 @@ public:
   } // ... create(...)
 }; // clas ProblemProvider< ..., 2, ... 1 >
 
+
+#if HAVE_ALUGRID
+
+
+extern template class ProblemProvider< typename ALUConformGrid< 2, 2 >::template Codim< 0 >::Entity,
+                                       double, 2, double, 1 >;
+
+
+#endif // HAVE_ALUGRID
 
 } // namespace LinearElliptic
 } // namespace HDD
