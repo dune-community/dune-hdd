@@ -11,6 +11,10 @@
 #include <dune/common/mpihelper.hh>
 #include <dune/common/timer.hh>
 
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
 #if HAVE_DUNE_FEM
 # include <dune/fem/misc/mpimanager.hh>
 #endif
@@ -385,6 +389,13 @@ private:
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE
+#if HAVE_ALUGRID
+
+
+extern template class DiscreteProblem< ALUConformGrid< 2, 2 > >;
+
+
+#endif // HAVE_ALUGRID
 
 } // namespace LinearElliptic
 } // namespace HDD
