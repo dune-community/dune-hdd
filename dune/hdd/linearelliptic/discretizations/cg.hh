@@ -58,7 +58,11 @@ template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, in
           GDT::ChooseSpaceBackend space_backend,
           Stuff::LA::ChooseBackend la_backend >
 class CGTraits
+  : public internal::ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
+                                                  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType >
 {
+  typedef internal::ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
+  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType > BaseType;
 public:
   typedef CG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > derived_type;
   typedef GridImp GridType;
@@ -73,8 +77,6 @@ private:
   friend class CG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend >;
 
 public:
-  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::VectorType VectorType;
-  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::MatrixType MatrixType;
   typedef typename SpaceProvider::Type TestSpaceType;
   typedef TestSpaceType AnsatzSpaceType;
   typedef typename TestSpaceType::GridViewType GridViewType;
@@ -123,7 +125,7 @@ private:
 public:
   static std::string static_id()
   {
-    return typename DiscretizationInterface< Traits >::static_id() + ".cg";
+    return DiscretizationInterface< Traits >::static_id() + ".cg";
   }
 
   CG(const GridProviderType& grid_provider,

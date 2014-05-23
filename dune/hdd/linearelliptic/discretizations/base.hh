@@ -34,14 +34,12 @@ class ContainerBasedDefault;
 namespace internal {
 
 
-template< class ImpTraits >
+template< class MatrixImp, class VectorImp >
 class ContainerBasedDefaultTraits
-  : public ImpTraits
 {
 public:
-  typedef ContainerBasedDefault< ImpTraits > derived_type;
-  using typename ImpTraits::MatrixType;
-  using typename ImpTraits::VectorType;
+  typedef MatrixImp MatrixType;
+  typedef VectorImp VectorType;
   typedef Pymor::Operators::LinearAffinelyDecomposedContainerBased< MatrixType, VectorType > OperatorType;
   typedef OperatorType ProductType;
   typedef Pymor::Functionals::LinearAffinelyDecomposedVectorBased< VectorType > FunctionalType;
@@ -174,12 +172,12 @@ protected:
 
 template< class ImpTraits >
 class ContainerBasedDefault
-  : public CachedDefault< internal::ContainerBasedDefaultTraits< ImpTraits > >
+  : public CachedDefault< ImpTraits >
 {
-  typedef CachedDefault< internal::ContainerBasedDefaultTraits< ImpTraits > > BaseType;
-  typedef ContainerBasedDefault< ImpTraits >                                  ThisType;
+  typedef CachedDefault< ImpTraits >         BaseType;
+  typedef ContainerBasedDefault< ImpTraits > ThisType;
 public:
-  typedef internal::ContainerBasedDefaultTraits< ImpTraits > Traits;
+  typedef ImpTraits Traits;
   typedef typename Traits::MatrixType     MatrixType;
   typedef typename Traits::OperatorType   OperatorType;
   typedef typename Traits::ProductType    ProductType;

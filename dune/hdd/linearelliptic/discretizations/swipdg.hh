@@ -58,6 +58,8 @@ template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, in
           GDT::ChooseSpaceBackend space_backend,
           Stuff::LA::ChooseBackend la_backend >
 class SWIPDGTraits
+  : public internal::ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
+                                                  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType>
 {
 public:
   typedef SWIPDG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > derived_type;
@@ -73,8 +75,6 @@ private:
   friend class SWIPDG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend >;
 
 public:
-  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::VectorType VectorType;
-  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::MatrixType MatrixType;
   typedef typename SpaceProvider::Type TestSpaceType;
   typedef TestSpaceType AnsatzSpaceType;
   typedef typename TestSpaceType::GridViewType GridViewType;
@@ -130,7 +130,7 @@ private:
 public:
   static std::string static_id()
   {
-    return typename DiscretizationInterface< Traits >::static_id() + ".swipdg";
+    return DiscretizationInterface< Traits >::static_id() + ".swipdg";
   }
 
   SWIPDG(const GridProviderType& grid_provider,
