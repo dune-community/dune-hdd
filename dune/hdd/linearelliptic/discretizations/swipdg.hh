@@ -11,6 +11,10 @@
 
 #include <dune/common/timer.hh>
 
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
 #if HAVE_DUNE_GRID_MULTISCALE
 # include <dune/grid/multiscale/provider/interface.hh>
 #endif
@@ -350,6 +354,58 @@ private:
   PatternType pattern_;
 }; // class SWIPDG
 
+
+#if HAVE_ALUGRID && HAVE_DUNE_FEM_LOCALFUNCTIONS
+
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::common_dense >;
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::common_dense >;
+
+# if HAVE_DUNE_ISTL
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+
+# endif // HAVE_DUNE_ISTL
+# if HAVE_EIGEN
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::eigen_dense >;
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::eigen_dense >;
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+extern template class SWIPDG< ALUConformGrid< 2, 2 >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double, 1, 1, GDT::ChooseSpaceBackend::fem_localfunction,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+
+# endif // HAVE_EIGEN
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM_LOCALFUNCTIONS
 
 } // namespace Discretizations
 } // namespace LinearElliptic
