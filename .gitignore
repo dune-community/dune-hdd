@@ -26,3 +26,7 @@ demos
 demos-*
 *.pc
 *.kdev4
+.libs
+*.lo
+*.la
+.dirstamp

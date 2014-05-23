@@ -26,5 +26,5 @@ AC_DEFUN([DUNE_HDD_CHECKS],
 # not by dune-hdd itself
 AC_DEFUN([DUNE_HDD_CHECK_MODULE],
 [
-  DUNE_CHECK_MODULES([dune-hdd],[hdd/exists.hh])
+  DUNE_CHECK_MODULES([dune-hdd],[hdd/linearelliptic/problems.hh],[Dune::HDD::internal::lib_exists()])
 ])
