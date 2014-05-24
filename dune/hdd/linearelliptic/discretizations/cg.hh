@@ -113,10 +113,9 @@ public:
 private:
   typedef typename Traits::SpaceProvider SpaceProvider;
 
-#if HAVE_DUNE_GRID_MULTISCALE
-  typedef grid::Multiscale::ProviderInterface< GridType > GridProviderType;
-#else
   typedef Stuff::Grid::ConstProviderInterface< GridType > GridProviderType;
+#if HAVE_DUNE_GRID_MULTISCALE
+  typedef grid::Multiscale::ProviderInterface< GridType > MsGridProviderType;
 #endif
   using typename BaseType::AffinelyDecomposedMatrixType;
   using typename BaseType::AffinelyDecomposedVectorType;
@@ -140,7 +139,7 @@ public:
                std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
                bound_inf_cfg,
                prob)
-    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::test_space())))
+    , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
   {
     // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
     if (this->problem_.diffusion_tensor().parametric())
@@ -148,6 +147,25 @@ public:
     if (!this->problem_.diffusion_tensor().has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // CG(...)
+
+#if HAVE_DUNE_GRID_MULTISCALE
+  CG(const MsGridProviderType& grid_provider,
+     const Stuff::Common::ConfigTree& bound_inf_cfg,
+     const ProblemType& prob,
+     const int level = 0)
+    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
+               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
+               bound_inf_cfg,
+               prob)
+    , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
+  {
+    // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
+    if (this->problem_.diffusion_tensor().parametric())
+      DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
+    if (!this->problem_.diffusion_tensor().has_affine_part())
+      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+  } // CG(...)
+#endif // HAVE_DUNE_GRID_MULTISCALE
 
   const PatternType& pattern() const
   {
