@@ -29,7 +29,7 @@
 
 #include <dune/hdd/playground/linearelliptic/problems/zero-boundary.hh>
 
-#include "base.hh"
+#include "../../../linearelliptic/discretizations/base.hh"
 #include "swipdg.hh"
 
 namespace Dune {
@@ -94,6 +94,8 @@ protected:
 
 template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder, Stuff::LA::ChooseBackend la_backend >
 class BlockSWIPDGTraits
+  : public ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
+                                        typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType >
 {
 public:
   typedef BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend > derived_type;
@@ -106,15 +108,12 @@ private:
   typedef grid::Multiscale::ProviderInterface< GridType > GridProviderType;
   typedef LocalDiscretizationsContainer< GridType, RangeFieldType, dimRange, polOrder, la_backend >
       LocalDiscretizationsContainerType;
-  typedef typename LocalDiscretizationsContainerType::TestSpaceType      LocalTestSpaceType;
-  typedef typename LocalDiscretizationsContainerType::AnsatzSpaceType    LocalAnsatzSpaceType;
+  typedef typename LocalDiscretizationsContainerType::TestSpaceType   LocalTestSpaceType;
+  typedef typename LocalDiscretizationsContainerType::AnsatzSpaceType LocalAnsatzSpaceType;
 public:
   typedef GDT::Spaces::Block< LocalTestSpaceType >   TestSpaceType;
   typedef GDT::Spaces::Block< LocalAnsatzSpaceType > AnsatzSpaceType;
   typedef typename TestSpaceType::GridViewType GridViewType;
-
-  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::MatrixType MatrixType;
-  typedef typename Stuff::LA::Container< RangeFieldType, la_backend >::VectorType VectorType;
 }; // class BlockSWIPDGTraits
 
 
@@ -125,7 +124,7 @@ public:
  * \attention The given problem is replaced by a Problems::ZeroBoundary.
  * \attention The given boundary info config is replaced by a Stuff::Grid::BoundaryInfos::AllDirichlet.
  * \attention The boundary info for the local oversampled discretizations is hardwired to dirichlet zero atm!
- * \todo The local products are assembled using a local discretization. This might not be optimal, since we also
+ * \todo  The local products are assembled using a local discretization. This might not be optimal, since we also
  *        assemble a local system matric and right hand side which are never needed. But since this all happens in one
  *        grid walk the overhead seems ok.
  */
