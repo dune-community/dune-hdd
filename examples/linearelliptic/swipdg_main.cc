@@ -5,19 +5,8 @@
 
 #include "config.h"
 
-#ifdef HAVE_DUNE_GRID_MULTISCALE
-#undef HAVE_DUNE_GRID_MULTISCALE
-#endif
-
 #include <string>
 #include <vector>
-
-#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
-# define ENABLE_ALUGRID 1
-# include <dune/grid/alugrid.hh>
-#else
-# error This example requires alugrid!
-#endif
 
 #include "swipdg.hh"
 
@@ -27,7 +16,7 @@ int main(int argc, char** argv)
 {
   try {
     // create empty example
-    typedef LinearellipticExampleSWIPDG< Dune::ALUConformGrid< 2, 2 > > ExampleType;
+    typedef LinearellipticExampleSWIPDG< Dune::GridSelector::GridType > ExampleType;
 
     // read or write config file
     const std::string config_file_name = ExampleType::static_id() + ".cfg";

@@ -8,10 +8,19 @@
 
 #include <memory>
 
+#   include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/stuff/common/reenable_warnings.hh>
+# include <dune/grid/alugrid.hh>
+#endif
+#include <dune/stuff/common/disable_warnings.hh>
+# include <dune/grid/sgrid.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
+
 #include <dune/stuff/common/memory.hh>
 
-#include <dune/hdd/playground/linearelliptic/discreteproblem.hh>
-#include <dune/hdd/playground/linearelliptic/discretizations/swipdg.hh>
+#include <dune/hdd/linearelliptic/discreteproblem.hh>
+#include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
 
 template< class GridImp >
 class LinearellipticExampleSWIPDG
@@ -81,26 +90,14 @@ private:
 }; // class LinearellipticExampleSWIPDG
 
 
-namespace Dune {
-
-
-// forward grid declaratios
-template< int dim, int dimworld, typename _ctype >
-class SGrid;
-
-template< int dim >
-class YaspGrid;
-
-
-} // namespace Dune
-
-
 extern template class LinearellipticExampleSWIPDG< Dune::SGrid< 1, 1 > >;
-extern template class LinearellipticExampleSWIPDG< Dune::SGrid< 2, 2 > >;
-extern template class LinearellipticExampleSWIPDG< Dune::SGrid< 3, 3 > >;
 
-extern template class LinearellipticExampleSWIPDG< Dune::YaspGrid< 1 > >;
-extern template class LinearellipticExampleSWIPDG< Dune::YaspGrid< 2 > >;
-extern template class LinearellipticExampleSWIPDG< Dune::YaspGrid< 3 > >;
+#   include <dune/stuff/common/disable_warnings.hh>
+#if HAVE_ALUGRID
+#   include <dune/stuff/common/reenable_warnings.hh>
 
+extern template class LinearellipticExampleSWIPDG< Dune::ALUConformGrid< 2, 2 > >;
+
+
+#endif // HAVE_ALUGRID
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_SWIPDG_HH
