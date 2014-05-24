@@ -6,14 +6,19 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
 
-#include "config.h"
+#include "config.h" // <- here for the python bindings!
 
 #include <memory>
+
+#include <dune/stuff/common/disable_warnings.hh>
+# include <dune/grid/sgrid.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/common/memory.hh>
 
 #include <dune/hdd/playground/linearelliptic/problems/thermalblock.hh>
-#include <dune/hdd/playground/linearelliptic/discretizations/cg.hh>
+#include <dune/hdd/linearelliptic/discretizations/cg.hh>
+
 
 template< class GridImp >
 class ThermalblockExample
@@ -23,7 +28,8 @@ public:
   typedef Dune::HDD::LinearElliptic::DiscreteProblems::Thermalblock< GridType > DiscreteProblemType;
   typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = DiscreteProblemType::dimRange;
-  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, RangeFieldType, dimRange, 1 > DiscretizationType;
+  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
+                                                          RangeFieldType, dimRange, 1 > DiscretizationType;
 
   static std::string static_id()
   {
@@ -80,27 +86,9 @@ private:
 }; // class ThermalblockExample
 
 
-namespace Dune {
-
-
-// forward grid declaratios
-template< int dim, int dimworld, typename _ctype >
-class SGrid;
-
-template< int dim >
-class YaspGrid;
-
-
-} // namespace Dune
-
-
 extern template class ThermalblockExample< Dune::SGrid< 1, 1 > >;
 extern template class ThermalblockExample< Dune::SGrid< 2, 2 > >;
 extern template class ThermalblockExample< Dune::SGrid< 3, 3 > >;
-
-extern template class ThermalblockExample< Dune::YaspGrid< 1 > >;
-extern template class ThermalblockExample< Dune::YaspGrid< 2 > >;
-extern template class ThermalblockExample< Dune::YaspGrid< 3 > >;
 
 #include <dune/stuff/common/disable_warnings.hh> // <- here for the python bindings!
 

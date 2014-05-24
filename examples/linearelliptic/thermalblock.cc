@@ -5,22 +5,14 @@
 
 #include "config.h"
 
-# include "thermalblock.hh"
-#include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
-
-
-// sgrid
 #include <dune/stuff/common/disable_warnings.hh>
 # include <dune/grid/sgrid.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
+# include "thermalblock.hh"
+#include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
+
+
 template class ThermalblockExample< Dune::SGrid< 1, 1 > >;
 template class ThermalblockExample< Dune::SGrid< 2, 2 > >;
 template class ThermalblockExample< Dune::SGrid< 3, 3 > >;
-
-// yaspgrid
-#include <dune/grid/yaspgrid.hh>
-
-template class ThermalblockExample< Dune::YaspGrid< 1 > >;
-template class ThermalblockExample< Dune::YaspGrid< 2 > >;
-template class ThermalblockExample< Dune::YaspGrid< 3 > >;
