@@ -50,7 +50,7 @@ class BlockSWIPDG;
 
 // forward, needed in the Traits
 template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder = 1,
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem_localfunction,
+          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem_localfunctions,
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::ChooseBackend::istl_sparse >
 class SWIPDG;
 
