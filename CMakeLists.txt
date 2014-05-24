@@ -69,6 +69,7 @@ set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 # libs
 set( COMMON_LIBS
      ${DUNE_LIBS}
+     ${DUNE_DEFAULT_LIBS}
      ${PARALIBS}
      ${CCGNU_LIBRARIES}
      ${Boost_SYSTEM_LIBRARY}
