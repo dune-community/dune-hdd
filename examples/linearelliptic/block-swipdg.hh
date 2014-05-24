@@ -8,6 +8,10 @@
 
 #include <memory>
 
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
 #include <dune/stuff/common/memory.hh>
 
 #include <dune/hdd/playground/linearelliptic/discreteproblem.hh>
@@ -78,5 +82,13 @@ private:
   std::unique_ptr< DiscretizationType > discretization_;
 }; // class LinearellipticExampleBlockSWIPDG
 
+
+#if HAVE_ALUGRID
+
+
+extern template class LinearellipticExampleBlockSWIPDG< Dune::ALUConformGrid< 2, 2 > >;
+
+
+#endif // HAVE_ALUGRID
 
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_BLOCK_SWIPDG_HH
