@@ -6,6 +6,7 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_HH
 
+// we need this here atm for the pythin bindings
 #include "config.h"
 
 #ifdef HAVE_DUNE_GRID_MULTISCALE
@@ -14,10 +15,19 @@
 
 #include <memory>
 
+#   include <dune/stuff/common/disable_warnings.hh>
+#if HAVE_ALUGRID
+#   include <dune/stuff/common/reenable_warnings.hh>
+# include <dune/grid/alugrid.hh>
+#endif
+#include <dune/stuff/common/disable_warnings.hh>
+# include <dune/grid/sgrid.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
+
 #include <dune/stuff/common/memory.hh>
 
-#include <dune/hdd/playground/linearelliptic/discreteproblem.hh>
-#include <dune/hdd/playground/linearelliptic/discretizations/cg.hh>
+#include <dune/hdd/linearelliptic/discreteproblem.hh>
+#include <dune/hdd/linearelliptic/discretizations/cg.hh>
 
 
 template< class GridImp >
@@ -30,8 +40,8 @@ public:
   static const unsigned int dimRange = DiscreteProblemType::dimRange;
   typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
                                                           RangeFieldType, dimRange, 1,
-                                                          Dune::GDT::ChooseSpaceBackend::fem,
-                                                          Dune::Stuff::LA::ChooseBackend::eigen_sparse > DiscretizationType;
+                                                          Dune::GDT::ChooseSpaceBackend::pdelab,
+                                                          Dune::Stuff::LA::ChooseBackend::istl_sparse > DiscretizationType;
 
   static std::string static_id()
   {
@@ -88,27 +98,18 @@ private:
 }; // class LinearellipticExampleCG
 
 
-namespace Dune {
-
-
-// forward grid declaratios
-template< int dim, int dimworld, typename _ctype >
-class SGrid;
-
-template< int dim >
-class YaspGrid;
-
-
-} // namespace Dune
-
-
 extern template class LinearellipticExampleCG< Dune::SGrid< 1, 1 > >;
 extern template class LinearellipticExampleCG< Dune::SGrid< 2, 2 > >;
 extern template class LinearellipticExampleCG< Dune::SGrid< 3, 3 > >;
 
-extern template class LinearellipticExampleCG< Dune::YaspGrid< 1 > >;
-extern template class LinearellipticExampleCG< Dune::YaspGrid< 2 > >;
-extern template class LinearellipticExampleCG< Dune::YaspGrid< 3 > >;
+#   include <dune/stuff/common/disable_warnings.hh>
+#if HAVE_ALUGRID
+#   include <dune/stuff/common/reenable_warnings.hh>
+
+extern template class LinearellipticExampleCG< Dune::ALUConformGrid< 2, 2 > >;
+
+
+#endif // HAVE_ALUGRID
 
 #include <dune/stuff/common/disable_warnings.hh> // <- here for the python bindings!
 
