@@ -26,7 +26,7 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/common/configtree.hh>
 #include <dune/stuff/common/exceptions.hh>
-#include <dune/stuff/grid/partview.hh>
+#include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/common/memory.hh>
 
 #ifdef HAVE_DUNE_GRID_MULTISCALE

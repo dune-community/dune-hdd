@@ -20,7 +20,7 @@
 #endif
 
 #include <dune/stuff/common/configtree.hh>
-#include <dune/stuff/grid/partview.hh>
+#include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>

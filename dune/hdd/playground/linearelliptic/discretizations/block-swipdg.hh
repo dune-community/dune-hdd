@@ -17,7 +17,7 @@
 
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/configtree.hh>
-#include <dune/stuff/grid/partview.hh>
+#include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/la/container.hh>
