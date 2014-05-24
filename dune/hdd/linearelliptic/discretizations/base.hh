@@ -110,7 +110,7 @@ public:
 
   const ProblemType& problem() const
   {
-    return *problem_;
+    return problem_;
   }
 
   VectorType create_vector() const
