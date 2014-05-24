@@ -17,7 +17,8 @@ libhdd_la_SOURCES = \
   linearelliptic/discretizations/cg_sgrid_pdelab.cc \
   linearelliptic/discretizations/cg_alugrid_conform_2d_fem.cc \
   linearelliptic/discretizations/cg_alugrid_conform_2d_pdelab.cc \
-  linearelliptic/discretizations/swipdg_alugrid_conform_2d_femlocalfunctions.cc
+  linearelliptic/discretizations/swipdg_alugrid_conform_2d_femlocalfunctions.cc \
+  linearelliptic/discretizations/swipdg_sgrid_femlocalfunctions.cc
 
 libhdd_la_LIBADD = $(DUNE_LIBS) $(ALUGRID_LIBS)
 
