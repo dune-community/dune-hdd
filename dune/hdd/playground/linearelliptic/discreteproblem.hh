@@ -3,47 +3,30 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETEPROBLEM_HH
-#define DUNE_HDD_LINEARELLIPTIC_DISCRETEPROBLEM_HH
+#ifndef DUNE_HDD_PLAYGROUND_LINEARELLIPTIC_DISCRETEPROBLEM_HH
+#define DUNE_HDD_PLAYGROUND_LINEARELLIPTIC_DISCRETEPROBLEM_HH
 
-#include <memory>
-
-#include <dune/common/mpihelper.hh>
-#include <dune/common/timer.hh>
-
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
+#ifdef HAVE_DUNE_GRID_MULTISCALE
+# include <dune/grid/multiscale/provider.hh>
 #endif
 
-#if HAVE_DUNE_FEM
-# include <dune/fem/misc/mpimanager.hh>
-#endif
-
-#include <dune/stuff/common/parameter/tree.hh>
-#include <dune/stuff/common/logging.hh>
-#include <dune/stuff/common/string.hh>
-#include <dune/stuff/grid/provider.hh>
-#include <dune/stuff/grid/boundaryinfo.hh>
-#include <dune/stuff/common/configtree.hh>
-#include <dune/stuff/common/exceptions.hh>
-#include <dune/stuff/grid/layers.hh>
-#include <dune/stuff/common/memory.hh>
-
-#include "problems.hh"
+#include "../../linearelliptic/discreteproblem.hh"
 
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 
+#ifdef HAVE_DUNE_GRID_MULTISCALE
+
 
 template< class GridImp >
-class DiscreteProblem
+class DiscreteBlockProblem
 {
 public:
   typedef GridImp GridType;
-  typedef Stuff::Grid::ProviderInterface< GridType >  GridProviderType;
+  typedef grid::Multiscale::ProviderInterface< GridType > GridProviderType;
 private:
-  typedef Stuff::GridProviders< GridType > GridProviders;
+  typedef grid::Multiscale::MsGridProviders< GridType > GridProviders;
   typedef typename GridType::LeafIntersection IntersectionType;
   typedef Stuff::Grid::BoundaryInfoProvider< IntersectionType > BoundaryInfoProvider;
   typedef typename GridType::template Codim< 0 >::Entity EntityType;
@@ -68,16 +51,16 @@ public:
     file << "debug = true" << std::endl;
     file << "file  = false" << std::endl;
     file << "visualize = true" << std::endl;
-    file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
-    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
+//    file << "[parameter]" << std::endl;
+//    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
+//    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
     write_config_to_file< GridProviders >(file);
     write_config_to_file< BoundaryInfoProvider >(file);
     write_config_to_file< ProblemProvider >(file);
     file.close();
   } // ... write_config(...)
 
-  DiscreteProblem(const std::string id, const std::vector< std::string >& arguments)
+  DiscreteBlockProblem(const std::string id, const std::vector< std::string >& arguments)
   {
     // mpi
     int argc = arguments.size();
@@ -110,7 +93,7 @@ public:
 
     Timer timer;
     const std::string griprovider_type = config_.get< std::string >(id + ".gridprovider");
-    info << "creating grid with '" << griprovider_type << "'... " << std::flush;
+    info << "creating grid with '" << griprovider_type << "'..." << std::flush;
     grid_provider_ = GridProviders::create(griprovider_type, config_);
     const auto grid_view = grid_provider_->leaf_view();
     info << " done (took " << timer.elapsed()
@@ -139,11 +122,12 @@ public:
     if (logger_config.get("visualize", true)) {
       info << "visualizing grid and problem... " << std::flush;
       timer.reset();
+      grid_provider_->visualize(filename_ + ".ms_grid");
       grid_provider_->visualize(boundary_info_, filename_ + ".grid");
       problem_->visualize(*grid_view, filename_ + ".problem");
       info << "done (took " << timer.elapsed() << "s)" << std::endl;
     } // if (visualize)
-  } // DiscreteProblem
+  } // DiscreteBlockProblem
 
   std::string filename() const
   {
@@ -205,18 +189,13 @@ private:
   std::unique_ptr< GridProviderType > grid_provider_;
   Stuff::Common::ConfigTree boundary_info_;
   std::unique_ptr< const ProblemType > problem_;
-}; // class DiscreteProblem
-
-#if HAVE_ALUGRID
+}; // class DiscreteBlockProblem
 
 
-extern template class DiscreteProblem< ALUConformGrid< 2, 2 > >;
-
-
-#endif // HAVE_ALUGRID
+#endif // HAVE_DUNE_GRID_MULTISCALE
 
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_DISCRETEPROBLEM_HH
+#endif // DUNE_HDD_PLAYGROUND_LINEARELLIPTIC_DISCRETEPROBLEM_HH
