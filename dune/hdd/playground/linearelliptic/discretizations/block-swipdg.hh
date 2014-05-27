@@ -220,21 +220,9 @@ public:
       for (size_t ss = 0; ss < subdomains; ++ss) {
         // init the local discretizations (assembles matrices and patterns)
         this->local_discretizations_[ss]->init();
-        assert(!this->local_discretizations_[ss]->parametric());
-//        oversampled_discretizations_[ss]->init();
-//        // assemble the local products
-//        // * therefore create nonparametric local discretization
-//        LocalDiscretizationType local_product_discretization(grid_provider_,
-//                                                             this->all_dirichlet_boundary_config_,
-//                                                             this->zero_boundary_problem_,
-//                                                             ss);
-//        local_product_discretization.initialize();
-//        // and get all of the products
-//        for (auto id : local_product_discretization.available_products())
-//          local_products_[ss].insert(std::make_pair(id, local_product_discretization.get_product(id)));
         // and create the local containers
         // * the matrices
-        //   * just copy thos from the local discretizations
+        //   * just copy those from the local discretizations
         const auto local_operator = this->local_discretizations_[ss]->get_operator();
         local_matrices_[ss] = std::make_shared< AffinelyDecomposedMatrixType >();
         //   * we take the affine part only if the diffusion has one, otherwise it contains only the dirichlet rows,
@@ -244,63 +232,22 @@ public:
             DUNE_THROW(Stuff::Exceptions::internal_error, "The local operator is missing the affine part!");
           local_matrices_[ss]->register_affine_part(new MatrixType(*(local_operator.affine_part().container())));
         }
-//        if (local_operator.num_components() < problem_->diffusion()->num_components())
-//          DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
-//                           "The local operator should have " << problem_->diffusion()->num_components()
-//                           << " components (but has only " << local_operator.num_components() << ")!");
-//        for (DUNE_STUFF_SSIZE_T qq = 0; qq < problem_->diffusion()->num_components(); ++qq)
-//          local_matrices_[ss]->register_component(new MatrixType(
-//              local_operator.component(qq).container()->backend()),
-//              problem_->diffusion()->coefficient(qq));
+        if (local_operator.num_components() < this->problem().diffusion_factor().num_components())
+          DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
+                           "The local operator should have " << this->problem().diffusion_factor().num_components()
+                           << " components (but has only " << local_operator.num_components() << ")!");
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq)
+          local_matrices_[ss]->register_component(new MatrixType(
+              local_operator.component(qq).container()->backend()),
+              this->problem().diffusion_factor().coefficient(qq));
         // * and the vectors
         const auto local_functional = this->local_discretizations_[ss]->get_rhs();
         local_vectors_[ss] = std::make_shared< AffinelyDecomposedVectorType >();
-        //   * first the affine part
-        if (this->problem().force().has_affine_part() || this->problem().neumann().has_affine_part()) {
-          //   * which we copy from the local discretization
-          if (!local_functional.has_affine_part())
-            DUNE_THROW(Stuff::Exceptions::internal_error, "The local functional is missing the affine part!");
+        for (size_t qq = 0; qq < local_functional.num_components(); ++qq)
+          local_vectors_[ss]->register_component(new VectorType(*(local_functional.component(qq).container())),
+                                                 new Pymor::ParameterFunctional(local_functional.coefficient(qq)));
+        if (local_functional.has_affine_part())
           local_vectors_[ss]->register_affine_part(new VectorType(*(local_functional.affine_part().container())));
-        } else if (this->problem().diffusion_factor().has_affine_part()
-                   || this->problem().dirichlet().has_affine_part()) {
-          //   * but not, if it was due to the dirichlet boundary correction
-          //     In this case we just create an empty one, since the one of the local discretization has to be empty
-          local_vectors_[ss]->register_affine_part(local_functional.affine_part().container()->size());
-        }
-//        //   * then we copy the components from the local discretizations
-//        for (DUNE_STUFF_SSIZE_T qq = 0; qq < problem_->force()->num_components(); ++qq)
-//          local_vectors_[ss]->register_component(new VectorType(
-//              local_functional.component(qq).container()->backend()),
-//              problem_->force()->coefficient(qq));
-//        for (DUNE_STUFF_SSIZE_T qq = 0; qq < problem_->neumann()->num_components(); ++qq)
-//          local_vectors_[ss]->register_component(new VectorType(
-//              local_functional.component(problem_->force()->num_components() + qq).container()->backend()),
-//              problem_->neumann()->coefficient(qq));
-//        //   * and create the components due to the dirichlet boundary term
-//        if (problem_->diffusion()->has_affine_part())
-//          for (DUNE_STUFF_SSIZE_T qq = 0; qq < problem_->dirichlet()->num_components(); ++qq)
-//            local_vectors_[ss]->register_component(new VectorType(local_discretizations_[ss]->testSpace().mapper().size()),
-//                                                   problem_->dirichlet()->coefficient(qq));
-//        if (problem_->dirichlet()->has_affine_part())
-//          for (DUNE_STUFF_SSIZE_T qq = 0; qq < problem_->diffusion()->num_components(); ++qq)
-//            local_vectors_[ss]->register_component(new VectorType(local_discretizations_[ss]->testSpace().mapper().size()),
-//                                                   problem_->diffusion()->coefficient(qq));
-//        if (problem_->diffusion()->num_components() > 0 && problem_->dirichlet()->num_components() > 0) {
-//          Pymor::ParameterType diffusion_dirichlet_mu;
-//          for (auto key : problem_->diffusion()->parameter_type().keys())
-//            diffusion_dirichlet_mu.set(key, problem_->diffusion()->parameter_type().get(key));
-//          for (auto key : problem_->dirichlet()->parameter_type().keys())
-//            diffusion_dirichlet_mu.set(key, problem_->dirichlet()->parameter_type().get(key));
-//          for (DUNE_STUFF_SSIZE_T pp = 0; pp < problem_->diffusion()->num_components(); ++ pp) {
-//            for (DUNE_STUFF_SSIZE_T qq = 0; qq < problem_->dirichlet()->num_components(); ++qq) {
-//              const std::string expression = "(" + problem_->diffusion()->coefficient(pp)->expression()
-//                                             + ")*(" + problem_->dirichlet()->coefficient(qq)->expression() + ")";
-//              local_vectors_[ss]->register_component(new VectorType(local_discretizations_[ss]->testSpace().mapper().size()),
-//                                                     new Pymor::ParameterFunctional(diffusion_dirichlet_mu,
-//                                                                                    expression));
-//            }
-//          }
-//        } // create the local containers
 
         // create and copy the local patterns
         add_local_to_global_pattern(this->local_discretizations_[ss]->pattern(), ss, ss, pattern_);
@@ -390,9 +337,9 @@ public:
       // build global containers
       build_global_containers();
 
-//      // parameter
-//      this->inherit_parameter_type(*(local_matrices_[0]), "lhs");
-//      this->inherit_parameter_type(*(local_vectors_[0]), "rhs");
+      // parameter
+      this->inherit_parameter_type(*(this->matrix_), "lhs");
+      this->inherit_parameter_type(*(this->rhs_), "rhs");
 
       this->container_based_initialized_ = true;
     } // if (!this->container_based_initialized_)
@@ -602,12 +549,46 @@ private:
     }
   } // ... add_local_to_global_pattern(...)
 
-  template< class M >
-  void copy_local_to_global_matrix(const M& local_matrix,
+  void copy_local_to_global_matrix(const AffinelyDecomposedConstMatrixType& local_matrix,
+                                   const PatternType& local_pattern,
+                                   const size_t subdomain,
+                                   const size_t neighbor,
+                                   AffinelyDecomposedMatrixType& global_matrix) const
+  {
+    for (size_t qq = 0; qq < local_matrix.num_components(); ++qq) {
+      const auto coefficient = local_matrix.coefficient(qq);
+      ssize_t comp = find_component(global_matrix, *coefficient);
+      if (comp < 0)
+        comp = global_matrix.register_component(coefficient,
+                                                this->test_space()->mapper().size(),
+                                                this->ansatz_space()->mapper().size(),
+                                                pattern_);
+      assert(comp >= 0);
+      copy_local_to_global_matrix(*(local_matrix.component(qq)),
+                                  local_pattern,
+                                  subdomain,
+                                  neighbor,
+                                  *(global_matrix.component(comp)));
+    }
+    if (local_matrix.has_affine_part()) {
+      if (!global_matrix.has_affine_part())
+        global_matrix.register_affine_part(this->test_space_->mapper().size(),
+                                    this->ansatz_space_->mapper().size(),
+                                    pattern_);
+      copy_local_to_global_matrix(*(local_matrix.affine_part()),
+                                  local_pattern,
+                                  subdomain,
+                                  neighbor,
+                                  *(global_matrix.affine_part()));
+    }
+  } // copy_local_to_global_matrix(...)
+
+  template< class ML, class MG >
+  void copy_local_to_global_matrix(const Stuff::LA::MatrixInterface< ML >& local_matrix,
                                    const PatternType& local_pattern,
                                    const size_t test_subdomain,
                                    const size_t ansatz_subdomain,
-                                   M& global_matrix) const
+                                   Stuff::LA::MatrixInterface< MG >& global_matrix) const
   {
     for (size_t local_ii = 0; local_ii < local_pattern.size(); ++local_ii) {
       const size_t global_ii = this->test_space()->mapper().mapToGlobal(test_subdomain, local_ii);
@@ -618,10 +599,34 @@ private:
     }
   } // ... copy_local_to_global_matrix(...)
 
-  template< class V >
-  void copy_local_to_global_vector(const V& local_vector,
+  void copy_local_to_global_vector(const AffinelyDecomposedConstVectorType& local_vector,
                                    const size_t subdomain,
-                                   V& global_vector) const
+                                   AffinelyDecomposedVectorType& global_vector) const
+  {
+    for (size_t qq = 0; qq < local_vector.num_components(); ++qq) {
+      const auto coefficient = local_vector.coefficient(qq);
+      ssize_t comp = find_component(global_vector, *coefficient);
+      if (comp < 0)
+        comp = global_vector.register_component(coefficient,
+                                                this->test_space()->mapper().size());
+      assert(comp >= 0);
+      copy_local_to_global_vector(*(local_vector.component(qq)),
+                                  subdomain,
+                                  *(global_vector.component(comp)));
+    }
+    if (local_vector.has_affine_part()) {
+      if (!global_vector.has_affine_part())
+        global_vector.register_affine_part(this->test_space()->mapper().size());
+      copy_local_to_global_vector(*(local_vector.affine_part()),
+                                  subdomain,
+                                  *(global_vector.affine_part()));
+    }
+  } // copy_local_to_global_vector(...)
+
+  template< class VL, class VG >
+  void copy_local_to_global_vector(const Stuff::LA::VectorInterface< VL >& local_vector,
+                                   const size_t subdomain,
+                                   Stuff::LA::VectorInterface< VG >& global_vector) const
   {
     for (size_t local_ii = 0; local_ii < local_vector.size(); ++local_ii) {
       const size_t global_ii = this->test_space()->mapper().mapToGlobal(subdomain, local_ii);
@@ -646,21 +651,27 @@ private:
 
     // lhs
     // * dirichlet boundary terms
-    typedef typename ProblemType::DiffusionFactorType::NonparametricType  DiffusionType;
-    typedef GDT::LocalOperator::Codim1BoundaryIntegral< GDT::LocalEvaluation::SWIPDG::BoundaryLHS< DiffusionType > >
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    typedef GDT::LocalOperator::Codim1BoundaryIntegral< GDT::LocalEvaluation::SWIPDG::BoundaryLHS< DiffusionFactorType, DiffusionTensorType > >
         DirichletOperatorType;
     typedef GDT::LocalAssembler::Codim1BoundaryMatrix< DirichletOperatorType > DirichletMatrixAssemblerType;
     std::vector< DirichletOperatorType* > dirichlet_operators;
     std::vector< DirichletMatrixAssemblerType* > dirichlet_matrix_assemblers;
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq) {
-      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor().component(qq))));
+      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor().component(qq)),
+                                                              *(diffusion_tensor.affine_part())));
       dirichlet_matrix_assemblers.push_back(new DirichletMatrixAssemblerType(*(dirichlet_operators[qq])));
       boundary_assembler.add(*(dirichlet_matrix_assemblers[qq]),
                              *(local_matrix.component(qq)),
                              new GDT::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
     if (this->problem().diffusion_factor().has_affine_part()) {
-      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor().affine_part())));
+      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor().affine_part()),
+                                                              *(diffusion_tensor.affine_part())));
       dirichlet_matrix_assemblers.push_back(new DirichletMatrixAssemblerType(*(
           dirichlet_operators[dirichlet_operators.size() - 1])));
       boundary_assembler.add(*(dirichlet_matrix_assemblers[dirichlet_matrix_assemblers.size() - 1]),
@@ -693,8 +704,9 @@ private:
 
     // * dirichlet boundary terms
     typedef typename ProblemType::FunctionType::NonparametricType  DirichletType;
-    typedef GDT::LocalFunctional::Codim1Integral< GDT::LocalEvaluation::SWIPDG::BoundaryRHS< DiffusionType,
-                                                                                            DirichletType > >
+    typedef GDT::LocalFunctional::Codim1Integral< GDT::LocalEvaluation::SWIPDG::BoundaryRHS< DiffusionFactorType,
+                                                                                             DirichletType,
+                                                                                             DiffusionTensorType > >
         DirichletFunctionalType;
     typedef GDT::LocalAssembler::Codim1Vector< DirichletFunctionalType > DirichletVectorAssemblerType;
     std::vector< DirichletFunctionalType* > dirichlet_functionals;
@@ -703,6 +715,7 @@ private:
     if (this->problem().diffusion_factor().has_affine_part()) {
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet().num_components(); ++qq) {
         dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor().affine_part()),
+                                                                    *(diffusion_tensor.affine_part()),
                                                                     *(this->problem().dirichlet().component(qq))));
         dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
@@ -715,6 +728,7 @@ private:
     if (this->problem().dirichlet().has_affine_part()) {
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq) {
         dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor().component(qq)),
+                                                                    *(diffusion_tensor.affine_part()),
                                                                     *(this->problem().dirichlet().affine_part())));
         dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
@@ -727,6 +741,7 @@ private:
     for (DUNE_STUFF_SSIZE_T pp = 0; pp < this->problem().diffusion_factor().num_components(); ++ pp) {
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet().num_components(); ++qq) {
         dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor().component(pp)),
+                                                                    *(diffusion_tensor.affine_part()),
                                                                     *(this->problem().dirichlet().component(qq))));
         dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
@@ -770,14 +785,20 @@ private:
                                          outer_test_space, outer_ansatz_space,
                                          *(ms_grid_->couplingGridPart(subdomain, neighbour)));
 
-    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionType;
-    typedef GDT::LocalOperator::Codim1CouplingIntegral< GDT::LocalEvaluation::SWIPDG::Inner< DiffusionType > >
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    typedef GDT::LocalOperator::Codim1CouplingIntegral< GDT::LocalEvaluation::SWIPDG::Inner< DiffusionFactorType,
+                                                                                             DiffusionTensorType > >
         CouplingOperatorType;
     typedef GDT::LocalAssembler::Codim1CouplingMatrix< CouplingOperatorType > CouplingMatrixAssemblerType;
     std::vector< CouplingOperatorType* > coupling_operators;
     std::vector< CouplingMatrixAssemblerType* > coupling_matrix_assemblers;
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq) {
-      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor().component(qq))));
+      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor().component(qq)),
+                                                            *(diffusion_tensor.affine_part())));
       coupling_matrix_assemblers.push_back(new CouplingMatrixAssemblerType(*(coupling_operators[qq])));
       coupling_assembler.addLocalAssembler(*(coupling_matrix_assemblers[qq]),
                                            *(inside_inside_matrix.component(qq)),
@@ -786,7 +807,8 @@ private:
                                            *(outside_outside_matrix.component(qq)));
     }
     if (this->problem().diffusion_factor().has_affine_part()) {
-      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor().affine_part())));
+      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor().affine_part()),
+                                                            *(diffusion_tensor.affine_part())));
       coupling_matrix_assemblers.push_back(new CouplingMatrixAssemblerType(*(
           coupling_operators[coupling_operators.size() - 1])));
       coupling_assembler.addLocalAssembler(*(coupling_matrix_assemblers[coupling_matrix_assemblers.size() - 1]),
@@ -806,31 +828,17 @@ private:
 
   void build_global_containers()
   {
-    // initialize global matrix
-    auto& system_matrix = *(this->matrix_);
-    if (local_matrices_[0]->has_affine_part())
-      system_matrix.register_affine_part(new MatrixType(this->test_space()->mapper().size(),
-                                                        this->ansatz_space()->mapper().size(),
-                                                        pattern_));
-    for (DUNE_STUFF_SSIZE_T qq = 0; qq < local_matrices_[0]->num_components(); ++qq)
-      system_matrix.register_component(new MatrixType(this->test_space()->mapper().size(),
-                                                      this->ansatz_space()->mapper().size(),
-                                                      pattern_),
-                                       local_matrices_[0]->coefficient(qq));
     // walk the subdomains
     for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
-      const auto& local_matrix = *(local_matrices_[ss]);
-      if (local_matrix.has_affine_part())
-        copy_local_to_global_matrix(*(local_matrix.affine_part()),
-                                    this->local_discretizations_[ss]->pattern(),
-                                    ss, ss,
-                                    *(system_matrix.affine_part()));
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < local_matrix.num_components(); ++qq) {
-        copy_local_to_global_matrix(*(local_matrix.component(qq)),
-                                    this->local_discretizations_[ss]->pattern(),
-                                    ss, ss,
-                                    *(system_matrix.component(qq)));
-      }
+
+      copy_local_to_global_matrix(*(local_matrices_[ss]),
+                                  this->local_discretizations_[ss]->pattern(),
+                                  ss,
+                                  ss,
+                                  *(this->matrix_));
+      copy_local_to_global_vector(*(local_vectors_[ss]),
+                                  ss,
+                                  *(this->rhs_));
 
       // walk the neighbours
       for (const size_t& nn : ms_grid_->neighborsOf(ss)) {
@@ -838,72 +846,48 @@ private:
           // get the coupling patterns
           const auto result_inside_outside_pattern = inside_outside_patterns_[ss].find(nn);
           if (result_inside_outside_pattern == inside_outside_patterns_[ss].end())
-            DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense,
+            DUNE_THROW(Stuff::Exceptions::internal_error,
                              "The coupling pattern for subdomain " << ss << " and neighbour " << nn << "is missing!");
           const auto& inside_outside_pattern = *(result_inside_outside_pattern->second);
           const auto result_outside_inside_pattern = outside_inside_patterns_[nn].find(ss);
           if (result_outside_inside_pattern == outside_inside_patterns_[nn].end())
-            DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense,
+            DUNE_THROW(Stuff::Exceptions::internal_error,
                              "The coupling pattern for neighbour " << nn << " and subdomain " << ss << "is missing!");
           const auto& outside_inside_pattern = *(result_outside_inside_pattern->second);
           // and the coupling matrices
           auto result_inside_outside_matrix = inside_outside_matrices_[ss].find(nn);
           if (result_inside_outside_matrix == inside_outside_matrices_[ss].end())
-            DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense,
+            DUNE_THROW(Stuff::Exceptions::internal_error,
                              "The coupling matrix for subdomain " << ss << " and neighbour " << nn << "is missing!");
           auto& inside_outside_matrix = *(result_inside_outside_matrix->second);
           auto result_outside_inside_matrix = outside_inside_matrices_[nn].find(ss);
           if (result_outside_inside_matrix == outside_inside_matrices_[nn].end())
-            DUNE_PYMOR_THROW(Pymor::Exception::this_does_not_make_any_sense,
+            DUNE_THROW(Stuff::Exceptions::internal_error,
                              "The coupling matrix for neighbour " << nn << " and subdomain " << ss << "is missing!");
           auto& outside_inside_matrix = *(result_outside_inside_matrix->second);
           // and copy them into the global matrix
-          if (inside_outside_matrix.has_affine_part())
-            copy_local_to_global_matrix(*(inside_outside_matrix.affine_part()),
-                                        inside_outside_pattern,
-                                        ss, nn,
-                                        *(system_matrix.affine_part()));
-          for (DUNE_STUFF_SSIZE_T qq = 0; qq < inside_outside_matrix.num_components(); ++qq) {
-            copy_local_to_global_matrix(*(inside_outside_matrix.component(qq)),
-                                        inside_outside_pattern,
-                                        ss, nn,
-                                        *(system_matrix.component(qq)));
-          }
-          if (outside_inside_matrix.has_affine_part())
-            copy_local_to_global_matrix(*(outside_inside_matrix.affine_part()),
-                                        outside_inside_pattern,
-                                        nn, ss,
-                                        *(system_matrix.affine_part()));
-          for (DUNE_STUFF_SSIZE_T qq = 0; qq < outside_inside_matrix.num_components(); ++qq) {
-            copy_local_to_global_matrix(*(outside_inside_matrix.component(qq)),
-                                        outside_inside_pattern,
-                                        nn, ss,
-                                        *(system_matrix.component(qq)));
-          }
+          copy_local_to_global_matrix(inside_outside_matrix,
+                                      inside_outside_pattern,
+                                      ss, nn,
+                                      *(this->matrix_));
+          copy_local_to_global_matrix(outside_inside_matrix,
+                                      outside_inside_pattern,
+                                      nn, ss,
+                                      *(this->matrix_));
         }
       } // walk the neighbours
     } // walk the subdomains
-
-    // initialize global vector
-    auto& rhs_vector = *(this->rhs_);
-    if (local_vectors_[0]->has_affine_part())
-      rhs_vector.register_affine_part(new VectorType(this->test_space()->mapper().size()));
-    for (DUNE_STUFF_SSIZE_T qq = 0; qq < local_vectors_[0]->num_components(); ++qq)
-      rhs_vector.register_component(new VectorType(this->test_space()->mapper().size()),
-                                    local_vectors_[0]->coefficient(qq));
-    // walk the subdomains
-    for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
-      auto local_vector = *(local_vectors_[ss]);
-      if (local_vector.has_affine_part())
-        copy_local_to_global_vector(*(local_vector.affine_part()),
-                                    ss,
-                                    *(rhs_vector.affine_part()));
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < local_vector.num_components(); ++qq)
-        copy_local_to_global_vector(*(local_vector.component(qq)),
-                                    ss,
-                                    *(rhs_vector.component(qq)));
-    } // walk the subdomains
   } // ... build_global_containers(...)
+
+  template< class AffinelyDecomposedContainerType >
+  ssize_t find_component(const AffinelyDecomposedContainerType& container,
+                         const Pymor::ParameterFunctional& coefficient) const
+  {
+    for (size_t qq = 0; qq < container.num_components(); ++qq)
+      if (*(container.coefficient(qq)) == coefficient)
+        return qq;
+    return -1;
+  } // ... find_component(...)
 
   const GridProviderType& grid_provider_;
   std::shared_ptr< const MsGridType > ms_grid_;
