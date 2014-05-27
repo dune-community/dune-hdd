@@ -179,8 +179,6 @@ public:
   {
     if (!this->container_based_initialized_) {
       Dune::Timer timer;
-      this->matrix_ = std::make_shared< AffinelyDecomposedMatrixType >();
-      this->rhs_ = std::make_shared< AffinelyDecomposedVectorType >();
       auto dirichlet_vector = std::make_shared< AffinelyDecomposedVectorType >();
 
       auto& matrix = *(this->matrix_);

@@ -187,9 +187,6 @@ public:
     if (!this->container_based_initialized_) {
       using namespace GDT;
 
-      this->matrix_ = std::make_shared< AffinelyDecomposedMatrixType >();
-      this->rhs_ = std::make_shared< AffinelyDecomposedVectorType >();
-
       auto& matrix = *(this->matrix_);
       auto& rhs = *(this->rhs_);
       const auto& space = *(this->test_space_);

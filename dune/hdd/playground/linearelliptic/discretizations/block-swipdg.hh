@@ -807,7 +807,6 @@ private:
   void build_global_containers()
   {
     // initialize global matrix
-    this->matrix_ = std::make_shared< AffinelyDecomposedMatrixType >();
     auto& system_matrix = *(this->matrix_);
     if (local_matrices_[0]->has_affine_part())
       system_matrix.register_affine_part(new MatrixType(this->test_space()->mapper().size(),
@@ -886,7 +885,6 @@ private:
     } // walk the subdomains
 
     // initialize global vector
-    this->rhs_ = std::make_shared< AffinelyDecomposedVectorType >();
     auto& rhs_vector = *(this->rhs_);
     if (local_vectors_[0]->has_affine_part())
       rhs_vector.register_affine_part(new VectorType(this->test_space()->mapper().size()));
