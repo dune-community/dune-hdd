@@ -72,7 +72,7 @@ int main(int argc, char** argv)
         info << "discretization is not parametric, solving... " << std::flush;
         timer.reset();
         discretization.solve(solution);
-        info << " done (took " << timer.elapsed() << "s)" << std::endl;
+        info << "done (took " << timer.elapsed() << "s)" << std::endl;
         discretization.visualize(solution, example.static_id() + ".solution", "solution");
       } // solve
 
