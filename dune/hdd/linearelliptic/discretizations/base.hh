@@ -201,11 +201,33 @@ public:
                         const ProblemType& prb)
     : BaseType(test_spc, ansatz_spc, bnd_inf_cfg, prb)
     , container_based_initialized_(false)
+    , matrix_(std::make_shared< AffinelyDecomposedMatrixType >())
+    , rhs_(std::make_shared< AffinelyDecomposedVectorType >())
   {}
 
   ContainerBasedDefault(const ThisType& other) = default;
 
   ThisType& operator=(const ThisType& other) = delete;
+
+  std::shared_ptr< AffinelyDecomposedMatrixType >& system_matrix()
+  {
+    return matrix_;
+  }
+
+  const std::shared_ptr< const AffinelyDecomposedMatrixType >& system_matrix() const
+  {
+    return matrix_;
+  }
+
+  std::shared_ptr< AffinelyDecomposedVectorType > rhs()
+  {
+    return rhs_;
+  }
+
+  const std::shared_ptr< const AffinelyDecomposedVectorType >& rhs() const
+  {
+    return rhs_;
+  }
 
   OperatorType get_operator() const
   {
@@ -301,8 +323,8 @@ protected:
   } // ... assert_everything_is_ready()
 
   bool container_based_initialized_;
-  mutable std::shared_ptr< AffinelyDecomposedMatrixType > matrix_;
-  mutable std::shared_ptr< AffinelyDecomposedVectorType > rhs_;
+  std::shared_ptr< AffinelyDecomposedMatrixType > matrix_;
+  std::shared_ptr< AffinelyDecomposedVectorType > rhs_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedMatrixType > > products_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedVectorType > > vectors_;
 }; // class ContainerBasedDefault
