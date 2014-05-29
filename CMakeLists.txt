@@ -79,4 +79,5 @@ set( COMMON_LIBS
 
 add_subdirectory(doc)
 add_subdirectory(examples)
+add_subdirectory(tests)
 
