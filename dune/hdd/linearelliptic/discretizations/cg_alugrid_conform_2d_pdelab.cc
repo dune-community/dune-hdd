@@ -20,24 +20,24 @@ namespace Discretizations {
 #if HAVE_ALUGRID && HAVE_DUNE_PDELAB
 
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::leaf,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::common_dense >;
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::level,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::common_dense >;
 
 # if HAVE_DUNE_ISTL
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::leaf,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::istl_sparse >;
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::level,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::istl_sparse >;
@@ -45,22 +45,22 @@ template class CG< ALUConformGrid< 2, 2 >,
 # endif // HAVE_DUNE_ISTL
 # if HAVE_EIGEN
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::leaf,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::eigen_dense >;
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::level,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::eigen_dense >;
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::leaf,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::eigen_sparse >;
 
-template class CG< ALUConformGrid< 2, 2 >,
+template class CG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >,
                    Stuff::Grid::ChooseLayer::level,
                    double, 1, 1, GDT::ChooseSpaceBackend::pdelab,
                    Stuff::LA::ChooseBackend::eigen_sparse >;

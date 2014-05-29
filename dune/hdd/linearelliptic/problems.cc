@@ -26,7 +26,8 @@ namespace LinearElliptic {
 #if HAVE_ALUGRID
 
 
-template class ProblemProvider< typename ALUConformGrid< 2, 2 >::template Codim< 0 >::Entity, double, 2, double, 1 >;
+template class ProblemProvider< typename ALUGrid< 2, 2, Dune::simplex, Dune::conforming >::template Codim< 0 >::Entity,
+                                double, 2, double, 1 >;
 
 
 #endif // HAVE_ALUGRID

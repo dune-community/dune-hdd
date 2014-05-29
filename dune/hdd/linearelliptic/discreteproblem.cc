@@ -19,7 +19,7 @@ namespace LinearElliptic {
 #if HAVE_ALUGRID
 
 
-template class DiscreteProblem< ALUConformGrid< 2, 2 > >;
+template class DiscreteProblem< ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >;
 
 
 #endif // HAVE_ALUGRID

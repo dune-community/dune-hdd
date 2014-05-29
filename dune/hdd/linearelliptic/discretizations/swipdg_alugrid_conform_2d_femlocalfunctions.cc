@@ -20,33 +20,33 @@ namespace Discretizations {
 #if HAVE_ALUGRID && HAVE_DUNE_FEM_LOCALFUNCTIONS
 
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
 
 # if HAVE_DUNE_ISTL
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
 
 # endif // HAVE_DUNE_ISTL
 # if HAVE_EIGEN
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
 
-template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                        GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 
