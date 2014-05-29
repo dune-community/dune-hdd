@@ -61,12 +61,13 @@ template< class TestCaseType >
 struct linearelliptic_SWIPDG_discretization
   : public ::testing::Test
 {
+  template< GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
   static void eoc_study()
   {
     const TestCaseType test_case;
     test_case.print_header(test_out);
     test_out << std::endl;
-    LinearElliptic::Tests::EocStudySWIPDG< TestCaseType, 1 > eoc_study(test_case);
+    LinearElliptic::Tests::EocStudySWIPDG< TestCaseType, 1, space_backend, la_backend > eoc_study(test_case);
     auto errors = eoc_study.run(test_out);
     for (const auto& norm : eoc_study.provided_norms())
       if (!Dune::Stuff::Common::FloatCmp::lt(errors[norm],
@@ -77,12 +78,26 @@ struct linearelliptic_SWIPDG_discretization
         DUNE_THROW(errors_are_not_as_expected, ss.str());
       }
   } // ... eoc_study()
+
+  static void eoc_study_using_fem_localfunctions_and_istl()
+  {
+    eoc_study< GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >();
+  }
+
+  static void eoc_study_using_fem_localfunctions_and_eigen_sparse()
+  {
+    eoc_study< GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >();
+  }
+
 }; // linearelliptic_SWIPDG_discretization
 
 
 TYPED_TEST_CASE(linearelliptic_SWIPDG_discretization, AluConform2dTestCases);
-TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study) {
-  this->eoc_study();
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_localfunctions_and_istl) {
+  this->eoc_study_using_fem_localfunctions_and_istl();
+}
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_localfunctions_and_eigen_sparse) {
+  this->eoc_study_using_fem_localfunctions_and_eigen_sparse();
 }
 
 

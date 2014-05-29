@@ -23,7 +23,7 @@ namespace Tests {
 namespace internal {
 
 
-template< class TestCaseType, int polOrder >
+template< class TestCaseType, int polOrder, GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
 class Discretization
 {
   typedef typename TestCaseType::GridType GridType;
@@ -37,11 +37,13 @@ public:
 } // namespace internal
 
 
-template< class TestCaseType, int polOrder >
+template< class TestCaseType, int polOrder, GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
 class EocStudySWIPDG
-  : public EocStudyBase< TestCaseType, typename internal::Discretization< TestCaseType, polOrder >::Type >
+  : public EocStudyBase< TestCaseType, typename internal::Discretization< TestCaseType, polOrder, space_backend, la_backend >::Type >
 {
-  typedef EocStudyBase< TestCaseType, typename internal::Discretization< TestCaseType, polOrder >::Type > BaseType;
+  typedef EocStudyBase
+      < TestCaseType, typename internal::Discretization< TestCaseType, polOrder, space_backend, la_backend >::Type >
+    BaseType;
 
   typedef typename BaseType::DiscretizationType DiscretizationType;
   typedef typename BaseType::GridViewType GridViewType;
