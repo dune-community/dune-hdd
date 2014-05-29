@@ -45,54 +45,38 @@ namespace Tests {
  *  expected_results().
  */
 template< class TestCaseType, class DiscretizationImp >
-class EocStudyBase
-  : public Dune::Stuff::Common::ConvergenceStudy
+class EstimatorStudyBase
+  : public Stuff::Common::ConvergenceStudy
 {
-  typedef Dune::Stuff::Common::ConvergenceStudy BaseType;
 protected:
-
+  typedef Stuff::Common::ConvergenceStudy BaseType;
   typedef DiscretizationImp DiscretizationType;
   typedef typename DiscretizationType::VectorType VectorType;
-  typedef typename DiscretizationType::AnsatzSpaceType SpaceType;
-  typedef GDT::DiscreteFunction< SpaceType, VectorType >      DiscreteFunctionType;
-  typedef GDT::ConstDiscreteFunction< SpaceType, VectorType > ConstDiscreteFunctionType;
-
-  typedef typename TestCaseType::ExactSolutionType ExactSolutionType;
-  typedef typename TestCaseType::template Level< Stuff::Grid::ChoosePartView::view >::Type GridViewType;
-  typedef typename TestCaseType::FunctionType FunctionType;
 
 public:
-  EocStudyBase(const TestCaseType& test_case)
+  EstimatorStudyBase(const TestCaseType& test_case)
     : test_case_(test_case)
     , current_refinement_(0)
     , last_computed_refinement_(std::numeric_limits< size_t >::max())
     , time_to_solution_(0)
-    , reference_solution_computed_(false)
-    , reference_discretization_(nullptr)
-    , reference_solution_vector_(nullptr)
-    , current_solution_vector_(nullptr)
   {}
 
-  virtual ~EocStudyBase() {}
+  virtual ~EstimatorStudyBase() {}
 
   virtual size_t num_refinements() const DS_OVERRIDE DS_FINAL
   {
     return test_case_.num_refinements();
   }
 
-  virtual double norm_reference_solution(const std::string type) DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > provided_norms() const DS_OVERRIDE
   {
-    if (test_case_.provides_exact_solution()) {
-      return compute_norm_(*(test_case_.reference_grid_view()), test_case_.exact_solution(), type);
-    } else {
-      compute_reference_solution();
-      assert(reference_discretization_);
-      assert(reference_solution_vector_);
-      const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
-                                                         *reference_solution_vector_,
-                                                         "reference solution");
-      return compute_norm_(*(test_case_.reference_grid_view()), reference_solution, type);
-    }
+    return available_estimators();
+  }
+
+  virtual double norm_reference_solution(const std::string /*type*/) DS_OVERRIDE
+  {
+    DUNE_THROW(Stuff::Exceptions::internal_error,
+               "Stuff::Common::ConvergenceStudy is not supposed to call this when we call run(false, ...)!");
   } // ... norm_reference_solution(...)
 
   virtual size_t current_grid_size() const DS_OVERRIDE DS_FINAL
@@ -110,7 +94,7 @@ public:
     return Fem::GridWidth::calcGridWidth(*grid_part);
   } // ... current_grid_width(...)
 
-  virtual double compute_on_current_refinement() DS_OVERRIDE DS_FINAL
+  virtual double compute_on_current_refinement() DS_OVERRIDE
   {
     using namespace Dune;
     using namespace Dune::GDT;
@@ -126,27 +110,12 @@ public:
       current_solution_vector_on_level_ = Stuff::Common::make_unique< VectorType >(discretization.create_vector());
       discretization.solve(*current_solution_vector_on_level_);
       time_to_solution_ = timer.elapsed();
-      const ConstDiscreteFunctionType current_refinement_solution(*discretization.ansatz_space(),
-                                                             *current_solution_vector_on_level_,
-                                                             "solution on current level");
-      // prolong to reference grid part
-      if (!reference_solution_computed_)
-        compute_reference_solution();
-      const auto reference_grid_view = test_case_.reference_grid_view();
-      const Operators::Prolongation< GridViewType > prolongation_operator(*reference_grid_view);
-      assert(reference_discretization_);
-      if (!current_solution_vector_)
-        current_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
-      DiscreteFunctionType reference_refinement_solution(*(reference_discretization_->ansatz_space()),
-                                                    *current_solution_vector_,
-                                                    "solution on reference grid part");
-      prolongation_operator.apply(current_refinement_solution, reference_refinement_solution);
       last_computed_refinement_ = current_refinement_;
     }
     return time_to_solution_;
   } // ... compute_on_current_refinement(...)
 
-  virtual double current_error_norm(const std::string type) DS_OVERRIDE DS_FINAL
+  virtual double current_error_norm(const std::string type) DS_OVERRIDE
   {
     // get current solution
     assert(current_refinement_ < test_case_.num_refinements());
@@ -154,26 +123,8 @@ public:
       compute_on_current_refinement();
     }
     assert(last_computed_refinement_ == current_refinement_);
-    assert(current_solution_vector_);
-    if (!reference_solution_computed_)
-      compute_reference_solution();
-    assert(reference_discretization_);
-    const ConstDiscreteFunctionType current_solution(*(reference_discretization_->ansatz_space()),
-                                                     *current_solution_vector_,
-                                                     "current solution");
-    // compute error
-    if (test_case_.provides_exact_solution()) {
-      return compute_norm_(*(test_case_.reference_grid_view()), test_case_.exact_solution() - current_solution, type);
-    } else {
-      // get reference solution
-      compute_reference_solution();
-      assert(reference_discretization_);
-      assert(reference_solution_vector_);
-      const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
-                                                         *reference_solution_vector_,
-                                                         "reference solution");
-      return compute_norm_(*(test_case_.reference_grid_view()), reference_solution- current_solution, type);
-    }
+    assert(current_solution_vector_on_level_);
+    std::abort();
   } // ... current_error_norm(...)
 
   virtual void refine() DS_OVERRIDE DS_FINAL
@@ -184,7 +135,139 @@ public:
 
   std::map< std::string, std::vector< double > > run(std::ostream& out = std::cout)
   {
-    return BaseType::run(true, out);
+    return BaseType::run(false, out);
+  }
+
+protected:
+  virtual std::vector< std::string > available_estimators() const = 0;
+
+  virtual double estimate_(const VectorType& vector, const std::string type) const = 0;
+
+  const TestCaseType& test_case_;
+  size_t current_refinement_;
+  size_t last_computed_refinement_;
+  double time_to_solution_;
+  std::unique_ptr< VectorType > current_solution_vector_on_level_;
+}; // class EstimatorStudyBase
+
+
+template< class TestCaseType, class DiscretizationImp >
+class EocStudyBase
+  : public EstimatorStudyBase< TestCaseType, DiscretizationImp >
+{
+  typedef EstimatorStudyBase< TestCaseType, DiscretizationImp > BaseType;
+protected:
+  typedef typename BaseType::DiscretizationType DiscretizationType;
+  typedef typename BaseType::VectorType VectorType;
+
+  typedef typename DiscretizationType::AnsatzSpaceType SpaceType;
+  typedef GDT::DiscreteFunction< SpaceType, VectorType >      DiscreteFunctionType;
+  typedef GDT::ConstDiscreteFunction< SpaceType, VectorType > ConstDiscreteFunctionType;
+
+  typedef typename TestCaseType::ExactSolutionType ExactSolutionType;
+  typedef typename TestCaseType::template Level< Stuff::Grid::ChoosePartView::view >::Type GridViewType;
+  typedef typename TestCaseType::FunctionType FunctionType;
+
+public:
+  EocStudyBase(const TestCaseType& test_case)
+    : BaseType(test_case)
+    , reference_solution_computed_(false)
+    , reference_discretization_(nullptr)
+    , reference_solution_vector_(nullptr)
+    , current_solution_vector_(nullptr)
+  {}
+
+  virtual ~EocStudyBase() {}
+
+  virtual std::vector< std::string > provided_norms() const DS_OVERRIDE DS_FINAL
+  {
+    return available_norms();
+  }
+
+  virtual double norm_reference_solution(const std::string type) DS_OVERRIDE DS_FINAL
+  {
+    if (this->test_case_.provides_exact_solution()) {
+      return compute_norm_(*(this->test_case_.reference_grid_view()), this->test_case_.exact_solution(), type);
+    } else {
+      compute_reference_solution();
+      assert(reference_discretization_);
+      assert(reference_solution_vector_);
+      const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
+                                                         *reference_solution_vector_,
+                                                         "reference solution");
+      return compute_norm_(*(this->test_case_.reference_grid_view()), reference_solution, type);
+    }
+  } // ... norm_reference_solution(...)
+
+  virtual double compute_on_current_refinement() DS_OVERRIDE DS_FINAL
+  {
+    using namespace Dune;
+    using namespace Dune::GDT;
+    if (this->current_refinement_ != this->last_computed_refinement_) {
+      assert(this->current_refinement_ < this->test_case_.num_refinements());
+      // compute solution
+      Timer timer;
+      DiscretizationType discretization(this->test_case_,
+                                        this->test_case_.boundary_info(),
+                                        this->test_case_.problem(),
+                                        this->test_case_.level_of(this->current_refinement_));
+      discretization.init();
+      this->current_solution_vector_on_level_ = Stuff::Common::make_unique< VectorType >(discretization.create_vector());
+      discretization.solve(*this->current_solution_vector_on_level_);
+      this->time_to_solution_ = timer.elapsed();
+      const ConstDiscreteFunctionType current_refinement_solution(*discretization.ansatz_space(),
+                                                                  *this->current_solution_vector_on_level_,
+                                                                  "solution on current level");
+      // prolong to reference grid part
+      if (!reference_solution_computed_)
+        compute_reference_solution();
+      const auto reference_grid_view = this->test_case_.reference_grid_view();
+      const Operators::Prolongation< GridViewType > prolongation_operator(*reference_grid_view);
+      assert(reference_discretization_);
+      if (!current_solution_vector_)
+        current_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
+      DiscreteFunctionType reference_refinement_solution(*(reference_discretization_->ansatz_space()),
+                                                    *current_solution_vector_,
+                                                    "solution on reference grid part");
+      prolongation_operator.apply(current_refinement_solution, reference_refinement_solution);
+      this->last_computed_refinement_ = this->current_refinement_;
+    }
+    return this->time_to_solution_;
+  } // ... compute_on_current_refinement(...)
+
+  virtual double current_error_norm(const std::string type) DS_OVERRIDE DS_FINAL
+  {
+    // get current solution
+    assert(this->current_refinement_ < this->test_case_.num_refinements());
+    if (this->last_computed_refinement_ != this->current_refinement_) {
+      compute_on_current_refinement();
+    }
+    assert(this->last_computed_refinement_ == this->current_refinement_);
+    assert(current_solution_vector_);
+    if (!reference_solution_computed_)
+      compute_reference_solution();
+    assert(reference_discretization_);
+    const ConstDiscreteFunctionType current_solution(*(reference_discretization_->ansatz_space()),
+                                                     *current_solution_vector_,
+                                                     "current solution");
+    // compute error
+    if (this->test_case_.provides_exact_solution()) {
+      return compute_norm_(*(this->test_case_.reference_grid_view()), this->test_case_.exact_solution() - current_solution, type);
+    } else {
+      // get reference solution
+      compute_reference_solution();
+      assert(reference_discretization_);
+      assert(reference_solution_vector_);
+      const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
+                                                         *reference_solution_vector_,
+                                                         "reference solution");
+      return compute_norm_(*(this->test_case_.reference_grid_view()), reference_solution- current_solution, type);
+    }
+  } // ... current_error_norm(...)
+
+  std::map< std::string, std::vector< double > > run(std::ostream& out = std::cout)
+  {
+    return BaseType::BaseType::run(true, out);
   }
 
 private:
@@ -192,10 +275,10 @@ private:
   {
     if (!reference_solution_computed_) {
       reference_discretization_
-          = Stuff::Common::make_unique< DiscretizationType >(test_case_,
-                                                             test_case_.boundary_info(),
-                                                             test_case_.problem(),
-                                                             test_case_.reference_level());
+          = Stuff::Common::make_unique< DiscretizationType >(this->test_case_,
+                                                             this->test_case_.boundary_info(),
+                                                             this->test_case_.problem(),
+                                                             this->test_case_.reference_level());
       reference_discretization_->init();
       reference_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
       reference_discretization_->solve(*reference_solution_vector_);
@@ -203,18 +286,19 @@ private:
     }
   } // ... compute_reference_solution()
 
+  virtual std::vector< std::string > available_estimators() const = 0;
+
+  virtual double estimate_(const VectorType& vector, const std::string type) const = 0;
+
+  virtual std::vector< std::string > available_norms() const = 0;
+
   virtual double compute_norm_(const GridViewType& grid_view,
                                const FunctionType& function,
                                const std::string type) const = 0;
 
-  const TestCaseType& test_case_;
-  size_t current_refinement_;
-  size_t last_computed_refinement_;
-  double time_to_solution_;
   bool reference_solution_computed_;
   std::unique_ptr< DiscretizationType > reference_discretization_;
   std::unique_ptr< VectorType > reference_solution_vector_;
-  std::unique_ptr< VectorType > current_solution_vector_on_level_;
   std::unique_ptr< VectorType > current_solution_vector_;
 }; // class EocStudyBase
 
