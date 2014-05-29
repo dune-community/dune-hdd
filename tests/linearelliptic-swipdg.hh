@@ -48,6 +48,7 @@ class EocStudySWIPDG
   typedef typename BaseType::DiscretizationType DiscretizationType;
   typedef typename BaseType::GridViewType GridViewType;
   typedef typename BaseType::FunctionType FunctionType;
+  typedef typename BaseType::VectorType   VectorType;
 
 public:
   EocStudySWIPDG(const TestCaseType& test_case)
@@ -61,9 +62,14 @@ public:
     return DiscretizationType::static_id() + " (polorder " + Stuff::Common::toString(polOrder) + ")";
   }
 
-  virtual std::vector< std::string > provided_norms() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
   {
     return {"L2", "H1_semi"};
+  }
+
+  virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
+  {
+    return {};
   }
 
   virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
@@ -181,6 +187,11 @@ private:
     } else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
   } // ... compute_norm_(...)
+
+  virtual double estimate_(const VectorType& /*vector*/, const std::string /*type*/) const
+  {
+    DUNE_THROW(NotImplemented, "");
+  }
 }; // class EocStudySWIPDG
 
 
