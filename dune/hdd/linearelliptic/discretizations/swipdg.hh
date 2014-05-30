@@ -27,6 +27,7 @@
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
+#include <dune/stuff/playground/functions/ESV2007.hh>
 
 #include <dune/gdt/spaces/discontinuouslagrange.hh>
 #include <dune/gdt/discretefunction/default.hh>
@@ -37,6 +38,9 @@
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/elliptic.hh>
+#include <dune/gdt/operators/oswaldinterpolation.hh>
+#include <dune/gdt/playground/spaces/finitevolume/default.hh>
+#include <dune/gdt/operators/projections.hh>
 
 #include "base.hh"
 
@@ -133,11 +137,24 @@ private:
                                         , TestSpaceType, AnsatzSpaceType
                                         , GridViewType, DiffusionTensorType > EllipticOperatorType;
 
+  static std::string nonconformity_estimator_id() {  return "eta_NC"; }
+  static std::string residual_estimator_id() {       return "eta_R"; }
+
+  static const size_t over_integrate = 2;
+
 public:
   static std::string static_id()
   {
     return DiscretizationInterface< Traits >::static_id() + ".swipdg";
   }
+
+  static std::vector< std::string > available_estimators()
+  {
+    return {
+        nonconformity_estimator_id()
+      , residual_estimator_id()
+    };
+  } // ... available_estimators()
 
   SWIPDG(const GridProviderType& grid_provider,
          const Stuff::Common::ConfigTree& bound_inf_cfg,
@@ -366,7 +383,80 @@ public:
     } // if (!this->container_based_initialized_)
   } // ... init(...)
 
+  RangeFieldType estimate(const VectorType& vector, const std::string type) const
+  {
+    if (type == nonconformity_estimator_id())
+      return compute_nonconformity_estimator(vector);
+    else if (type == residual_estimator_id())
+      return compute_residual_estimator();
+    else
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "type '" << type << "' is not one of available_estimators()!");
+  } // ... estimate(...)
+
 private:
+  RangeFieldType compute_nonconformity_estimator(const VectorType& vector) const
+  {
+    using namespace Dune;
+    using namespace Dune::GDT;
+
+    const ConstDiscreteFunction< AnsatzSpaceType, VectorType > discrete_solution(*(this->ansatz_space()), vector);
+
+    VectorType oswald_interpolation_vector(this->ansatz_space()->mapper().size());
+    DiscreteFunction< AnsatzSpaceType, VectorType > oswald_interpolation(*(this->ansatz_space()),
+                                                                         oswald_interpolation_vector);
+
+    const Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*(this->grid_view()));
+    oswald_interpolation_operator.apply(discrete_solution, oswald_interpolation);
+
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = this->problem().diffusion_factor();
+    assert(!diffusion_factor.parametric());
+    assert(diffusion_factor.has_affine_part());
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    const Products::Elliptic< DiffusionFactorType, GridViewType, RangeFieldType, DiffusionTensorType >
+        elliptic_product(*(diffusion_factor.affine_part()), *(diffusion_tensor.affine_part()), *(this->grid_view()));
+    return std::sqrt(elliptic_product.apply2(discrete_solution - oswald_interpolation,
+                                             discrete_solution - oswald_interpolation,
+                                             over_integrate));
+  } // ... compute_nonconformity_estimator(...)
+
+  RangeFieldType compute_residual_estimator() const
+  {
+    using namespace Dune;
+    using namespace GDT;
+    const auto grid_view = this->grid_view();
+
+    typedef Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+    const P0SpaceType p0_space(grid_view);
+    VectorType p0_force_vector(p0_space.mapper().size());
+    DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
+
+    const auto& force = this->problem().force();
+    assert(!force.parametric());
+    assert(force.has_affine_part());
+    Operators::Projection< GridViewType > projection_operator(*grid_view);
+    projection_operator.apply(*force.affine_part(), p0_force);
+
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = this->problem().diffusion_factor();
+    assert(!diffusion_factor.parametric());
+    assert(diffusion_factor.has_affine_part());
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
+    const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+
+    const Products::WeightedL2< GridViewType, CutoffFunctionType >
+        weighted_l2_product(*grid_view, cutoff_function, over_integrate);
+    return weighted_l2_product.induced_norm(*force.affine_part() - p0_force);
+  } // ... compute_residual_estimator_ESV07(...)
+
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
 
   const RangeFieldType beta_;
