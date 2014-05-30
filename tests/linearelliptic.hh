@@ -97,14 +97,14 @@ public:
 
   virtual size_t current_grid_size() const DS_OVERRIDE DS_FINAL
   {
-    assert(current_refinement_ < test_case_.num_refinements());
+    assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
     return test_case_.grid()->size(level, 0);
   } // ... current_grid_size(...)
 
   virtual double current_grid_width() const DS_OVERRIDE DS_FINAL
   {
-    assert(current_refinement_ < test_case_.num_refinements());
+    assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
     const auto grid_part = test_case_.template level< Stuff::Grid::ChoosePartView::part >(level);
     return Fem::GridWidth::calcGridWidth(*grid_part);
@@ -115,7 +115,7 @@ public:
     using namespace Dune;
     using namespace Dune::GDT;
     if (current_refinement_ != last_computed_refinement_) {
-      assert(current_refinement_ < test_case_.num_refinements());
+      assert(current_refinement_ <= num_refinements());
       // compute solution
       Timer timer;
       DiscretizationType discretization(test_case_,
@@ -149,7 +149,7 @@ public:
   virtual double current_error_norm(const std::string type) DS_OVERRIDE DS_FINAL
   {
     // get current solution
-    assert(current_refinement_ < test_case_.num_refinements());
+    assert(current_refinement_ <= num_refinements());
     if (last_computed_refinement_ != current_refinement_) {
       compute_on_current_refinement();
     }
@@ -178,7 +178,7 @@ public:
 
   virtual void refine() DS_OVERRIDE DS_FINAL
   {
-    if (current_refinement_ < test_case_.num_refinements())
+    if (current_refinement_ <= num_refinements())
       ++current_refinement_;
   } // ... refine()
 
