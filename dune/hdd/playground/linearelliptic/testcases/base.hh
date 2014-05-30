@@ -55,7 +55,7 @@ public:
 
   int level_of(const size_t refinement) const
   {
-    assert(refinement < num_refinements());
+    assert(refinement <= num_refinements());
     return levels_[refinement];
   }
 
