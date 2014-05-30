@@ -68,7 +68,7 @@ struct linearelliptic_SWIPDG_discretization
     test_case.print_header(test_out);
     test_out << std::endl;
     LinearElliptic::Tests::EocStudySWIPDG< TestCaseType, 1, space_backend, la_backend > eoc_study(test_case);
-    auto errors = eoc_study.run(test_out);
+    auto errors = eoc_study.run(false, test_out);
     for (const auto& norm : eoc_study.provided_norms())
       if (!Dune::Stuff::Common::FloatCmp::lt(errors[norm],
                                              truncate_vector(eoc_study.expected_results(norm), errors[norm].size()))) {
