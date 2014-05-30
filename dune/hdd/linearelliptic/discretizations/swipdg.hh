@@ -41,6 +41,9 @@
 #include <dune/gdt/operators/oswaldinterpolation.hh>
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/operators/projections.hh>
+#include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
+#include <dune/gdt/playground/operators/fluxreconstruction.hh>
+#include <dune/gdt/playground/products/ESV2007.hh>
 
 #include "base.hh"
 
@@ -139,6 +142,7 @@ private:
 
   static std::string nonconformity_estimator_id() {  return "eta_NC"; }
   static std::string residual_estimator_id() {       return "eta_R"; }
+  static std::string diffusive_flux_estimator_id() { return "eta_DF"; }
 
   static const size_t over_integrate = 2;
 
@@ -153,6 +157,7 @@ public:
     return {
         nonconformity_estimator_id()
       , residual_estimator_id()
+      , diffusive_flux_estimator_id()
     };
   } // ... available_estimators()
 
@@ -389,6 +394,8 @@ public:
       return compute_nonconformity_estimator(vector);
     else if (type == residual_estimator_id())
       return compute_residual_estimator();
+    else if (type == diffusive_flux_estimator_id())
+      return compute_diffusive_flux_estimator(vector);
     else
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "type '" << type << "' is not one of available_estimators()!");
@@ -455,7 +462,49 @@ private:
     const Products::WeightedL2< GridViewType, CutoffFunctionType >
         weighted_l2_product(*grid_view, cutoff_function, over_integrate);
     return weighted_l2_product.induced_norm(*force.affine_part() - p0_force);
-  } // ... compute_residual_estimator_ESV07(...)
+  } // ... compute_residual_estimator(...)
+
+  RangeFieldType compute_diffusive_flux_estimator(const VectorType& vector) const
+  {
+    using namespace Dune;
+    using namespace Dune::GDT;
+
+    const auto grid_view = this->grid_view();
+    typedef ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
+    const ConstDiscreteFunctionType discrete_solution(*this->ansatz_space(), vector);
+
+    typedef Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+    const RTN0SpaceType rtn0_space(grid_view);
+    VectorType diffusive_flux_vector(rtn0_space.mapper().size());
+    typedef DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
+    RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
+
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = this->problem().diffusion_factor();
+    assert(!diffusion_factor.parametric());
+    assert(diffusion_factor.has_affine_part());
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
+      diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+    diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
+
+    Products::ESV2007::DiffusiveFluxEstimate< GridViewType,
+                                              DiffusionFactorType,
+                                              RTN0DiscreteFunctionType,
+                                              ConstDiscreteFunctionType,
+                                              ConstDiscreteFunctionType,
+                                              RangeFieldType,
+                                              DiffusionTensorType >
+      diffusive_flux_estimator_product(*grid_view, discrete_solution, discrete_solution,
+                                       *diffusion_factor.affine_part(),
+                                       *diffusion_tensor.affine_part(),
+                                       diffusive_flux,
+                                       1);
+    return std::sqrt(diffusive_flux_estimator_product.apply2());
+  } // ... compute_diffusive_flux_estimator(...)
 
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
 
