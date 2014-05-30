@@ -19,6 +19,7 @@
 
 #include <boost/filesystem.hpp>
 
+
 int main(int argc, char** argv)
 {
   try {
@@ -74,6 +75,9 @@ int main(int argc, char** argv)
         discretization.solve(solution);
         info << "done (took " << timer.elapsed() << "s)" << std::endl;
         discretization.visualize(solution, example.static_id() + ".solution", "solution");
+        info << "estimating error: " << std::flush;
+        timer.reset();
+        info << discretization.estimate(solution) << " (took " << timer.elapsed() << "s)" << std::endl;
       } // solve
 
     } // read or write config file
