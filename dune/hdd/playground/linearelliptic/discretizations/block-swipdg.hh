@@ -10,16 +10,25 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <cmath>
+
+#if HAVE_EIGEN
+# include <Eigen/Eigenvalues>
+#endif
 
 #include <dune/common/timer.hh>
+
+#include <dune/geometry/quadraturerules.hh>
 
 #include <dune/grid/multiscale/provider.hh>
 
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/float_cmp.hh>
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/functions/constant.hh>
+#include <dune/stuff/functions/interfaces.hh>
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
 
@@ -122,6 +131,86 @@ public:
 }; // class BlockSWIPDGTraits
 
 
+template< class FunctionType, class EntityType, int dimRange, int dimRangeCols >
+class Minimum
+{
+  static_assert(AlwaysFalse< FunctionType >::value, "Not implemented for these dimensions!");
+};
+
+template< class FunctionType, class EntityType >
+class Minimum< FunctionType, EntityType, 1, 1 >
+{
+  typedef typename FunctionType::RangeFieldType RangeFieldType;
+
+public:
+  /**
+   * We try to find the minimum of a polynomial of given order by evaluating it at the points of a quadrature that
+   * would integrate this polynomial exactly.
+   * \todo These are just some heuristics and should be replaced by something proper.
+   */
+  static RangeFieldType compute(const FunctionType& function, const EntityType& entity)
+  {
+    typename FunctionType::RangeType tmp_value(0);
+    RangeFieldType ret = std::numeric_limits< RangeFieldType >::max();
+    const auto local_function = function.local_function(entity);
+    const size_t ord = local_function->order();
+    assert(ord < std::numeric_limits< int >::max());
+    const auto& quadrature = QuadratureRules< typename FunctionType::DomainFieldType
+                                            , FunctionType::dimDomain >::rule(entity.type(), int(ord));
+    const auto quad_point_it_end = quadrature.end();
+    for (auto quad_point_it = quadrature.begin(); quad_point_it != quad_point_it_end; ++quad_point_it) {
+      local_function->evaluate(quad_point_it->position(), tmp_value);
+      ret = std::min(ret, tmp_value[0]);
+    }
+    return ret;
+  } // ... compute(...)
+}; // class Minimum< ..., 1, 1 >
+
+
+template< class FunctionType, class EntityType, int dimDomain >
+class Minimum< FunctionType, EntityType, dimDomain, dimDomain >
+{
+  typedef typename FunctionType::RangeFieldType RangeFieldType;
+
+public:
+  static RangeFieldType compute(const FunctionType& function, const EntityType& entity)
+  {
+#if !HAVE_EIGEN
+    static_assert(AlwaysFalse< DT >::value, "You are missing eigen!");
+#endif
+    const auto local_function = function.local_function(entity);
+    assert(local_function->order() == 0);
+    const auto& reference_element = ReferenceElements< typename FunctionType::DomainFieldType
+                                                     , FunctionType::dimDomain >::general(entity.type());
+    const Stuff::LA::EigenDenseMatrix< RangeFieldType >
+        tensor = local_function->evaluate(reference_element.position(0, 0));
+    ::Eigen::EigenSolver< typename Stuff::LA::EigenDenseMatrix< RangeFieldType >::BackendType >
+        eigen_solver(tensor.backend());
+    assert(eigen_solver.info() == ::Eigen::Success);
+    const auto eigenvalues = eigen_solver.eigenvalues(); // <- this should be an Eigen vector of std::complex
+    RangeFieldType min_ev = std::numeric_limits< RangeFieldType >::max();
+    for (size_t ii = 0; ii < eigenvalues.size(); ++ii) {
+      // assert this is real
+      assert(std::abs(eigenvalues[ii].imag()) < 1e-15);
+      // assert that this eigenvalue is positive
+      const RangeFieldType eigenvalue = eigenvalues[ii].real();
+      assert(eigenvalue > 1e-15);
+      min_ev = std::min(min_ev, eigenvalue);
+    }
+    return min_ev;
+  } // ... compute(...)
+}; // class Minimum< ..., dimDomain, dimDomain >
+
+
+template< class FunctionType, class EntityType >
+static typename FunctionType::RangeFieldType compute_minimum(const FunctionType& function, const EntityType& entity)
+{
+  static const int dimRange = FunctionType::dimRange;
+  static const int dimRangeCols = FunctionType::dimRangeCols;
+  return Minimum< FunctionType, EntityType, dimRange, dimRangeCols >::compute(function, entity);
+} // ... compute_minimum(...)
+
+
 } // namespace internal
 
 
@@ -129,9 +218,6 @@ public:
  * \attention The given problem is replaced by a Problems::ZeroBoundary.
  * \attention The given boundary info config is replaced by a Stuff::Grid::BoundaryInfos::AllDirichlet.
  * \attention The boundary info for the local oversampled discretizations is hardwired to dirichlet zero atm!
- * \todo  The local products are assembled using a local discretization. This might not be optimal, since we also
- *        assemble a local system matric and right hand side which are never needed. But since this all happens in one
- *        grid walk the overhead seems ok.
  */
 template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder, Stuff::LA::ChooseBackend la_backend >
 class BlockSWIPDG
@@ -399,10 +485,12 @@ public:
       local_eta_nc_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
     const auto eta_nc_difference = discrete_solution - oswald_interpolation;
 
-    typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
-    const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-    const  LocalOperator::Codim0Integral< LocalEvaluation::Product< CutoffFunctionType > >
-      local_eta_r_product(1, cutoff_function);
+    typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
+        ConstantFunctionType;
+    typedef typename ConstantFunctionType::DomainType DomainType;
+    const ConstantFunctionType constant_one(1);
+    const  LocalOperator::Codim0Integral< LocalEvaluation::Product< ConstantFunctionType > >
+      local_eta_r_product(1, constant_one);
     const auto eta_r_difference = *force.affine_part() - p0_force;
 
     const LocalOperator::Codim0Integral< LocalEvaluation::ESV2007::DiffusiveFluxEstimate< DiffusionFactorType
@@ -410,41 +498,84 @@ public:
                                                                                         , DiffusionTensorType > >
       local_eta_df_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), diffusive_flux);
 
-    // walk the grid
-    double eta_nc_t_squared = 0.0;
+    std::vector< DynamicMatrix< RangeFieldType > >
+        tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
+                                       local_eta_r_product.numTmpObjectsRequired()),
+                              local_eta_df_product.numTmpObjectsRequired()),
+                     DynamicMatrix< RangeFieldType >(1, 1, 0.0));
+    DynamicMatrix< RangeFieldType > local_result_matrix(1, 1, 0.0);
+
+    // walk the subdomains
+    double eta_nc_squared = 0.0;
     double eta_r_squared = 0.0;
     double eta_df_squared = 0.0;
-    std::vector< DynamicMatrix< RangeFieldType > > tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
-                                                                                  local_eta_r_product.numTmpObjectsRequired()),
-                                                                         local_eta_df_product.numTmpObjectsRequired()),
-                                                                DynamicMatrix< RangeFieldType >(1, 1, 0.0));
-    DynamicMatrix< RangeFieldType > local_result_matrix(1, 1, 0.0);
-    const auto entity_it_end = grid_view->template end< 0 >();
-    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
-      const auto& entity = *entity_it;
+    for (size_t subdomain = 0; subdomain < ms_grid_->size(); ++subdomain) {
+      const auto local_grid_part = ms_grid_->localGridPart(subdomain);
 
-      local_result_matrix *= 0.0;
-      const auto local_eta_nc_difference = eta_nc_difference.local_function(entity);
-      local_eta_nc_product.apply(*local_eta_nc_difference, *local_eta_nc_difference, local_result_matrix, tmp_matrices);
-      assert(local_result_matrix.rows() >= 1);
-      assert(local_result_matrix.cols() >= 1);
-      eta_nc_t_squared += local_result_matrix[0][0];
+      // some storage
+      std::vector< DomainType > vertices;
+      RangeFieldType min_diffusion_value = std::numeric_limits< RangeFieldType >::max();
 
-      local_result_matrix *= 0.0;
-      const auto local_eta_r_difference = eta_r_difference.local_function(entity);
-      local_eta_r_product.apply(*local_eta_r_difference, *local_eta_r_difference, local_result_matrix, tmp_matrices);
-      assert(local_result_matrix.rows() >= 1);
-      assert(local_result_matrix.cols() >= 1);
-      eta_r_squared += local_result_matrix[0][0];
+      // walk the local grid
+      double eta_nc_T_squared = 0.0;
+      double eta_r_T_squared = 0.0;
+      double eta_df_T_squared = 0.0;
+      const auto entity_it_end = local_grid_part->template end< 0 >();
+      for (auto entity_it = local_grid_part->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+        const auto& entity = *entity_it;
 
-      local_result_matrix *= 0.0;
-      const auto local_discrete_solution = discrete_solution.local_function(entity);
-      local_eta_df_product.apply(*local_discrete_solution, *local_discrete_solution, local_result_matrix, tmp_matrices);
-      assert(local_result_matrix.rows() >= 1);
-      assert(local_result_matrix.cols() >= 1);
-      eta_df_squared += local_result_matrix[0][0];
-    } // walk the grid
-    return std::sqrt(eta_nc_t_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
+        // collect all vertices
+        for (int cc = 0; cc < entity.template count< dimDomain >(); ++cc)
+          vertices.push_back(entity.template subEntity< dimDomain >(cc)->geometry().center());
+
+        // compute minimum diffusion
+        const RangeFieldType min_diffusion_value_entity
+            =   internal::compute_minimum(*diffusion_factor.affine_part(), entity)
+              * internal::compute_minimum(*diffusion_tensor.affine_part(), entity);
+        min_diffusion_value = std::min(min_diffusion_value, min_diffusion_value_entity);
+
+        local_result_matrix *= 0.0;
+        const auto local_eta_nc_difference = eta_nc_difference.local_function(entity);
+        local_eta_nc_product.apply(*local_eta_nc_difference, *local_eta_nc_difference, local_result_matrix, tmp_matrices);
+        assert(local_result_matrix.rows() >= 1);
+        assert(local_result_matrix.cols() >= 1);
+        eta_nc_T_squared += local_result_matrix[0][0];
+
+        local_result_matrix *= 0.0;
+        const auto local_eta_r_difference = eta_r_difference.local_function(entity);
+        local_eta_r_product.apply(*local_eta_r_difference, *local_eta_r_difference, local_result_matrix, tmp_matrices);
+        assert(local_result_matrix.rows() >= 1);
+        assert(local_result_matrix.cols() >= 1);
+        eta_r_T_squared += local_result_matrix[0][0];
+
+        local_result_matrix *= 0.0;
+        const auto local_discrete_solution = discrete_solution.local_function(entity);
+        local_eta_df_product.apply(*local_discrete_solution, *local_discrete_solution, local_result_matrix, tmp_matrices);
+        assert(local_result_matrix.rows() >= 1);
+        assert(local_result_matrix.cols() >= 1);
+        eta_df_T_squared += local_result_matrix[0][0];
+      } // walk the local grid
+
+      // compute diameter
+      DomainFieldType diameter(0);
+      DomainType tmp_diff;
+      for (size_t cc = 0; cc < vertices.size(); ++cc) {
+        const auto& vertex = vertices[cc];
+        for (size_t dd = cc + 1; dd < vertices.size(); ++dd) {
+          const auto& other_vertex = vertices[dd];
+          tmp_diff = vertex - other_vertex;
+          diameter = std::max(diameter, tmp_diff.two_norm());
+        }
+      }
+
+      const RangeFieldType poincare_constant = 1.0 / (M_PIl * M_PIl);
+      assert(min_diffusion_value > 0.0);
+
+      eta_nc_squared += eta_nc_T_squared;
+      eta_r_squared += ((poincare_constant * diameter * diameter) / min_diffusion_value) * eta_r_T_squared;
+      eta_df_squared += eta_df_T_squared;
+    } // walk the subdomains
+    return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
   } // ... estimate(...)
 
 private:
