@@ -5,6 +5,8 @@
 
 #include "config.h"
 
+#define DUNE_GRID_MULTISCALE_PROVIDER_CUBE_DISABLE_CHECKS 1
+
 #include <string>
 #include <vector>
 
