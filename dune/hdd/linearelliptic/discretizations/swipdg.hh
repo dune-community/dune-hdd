@@ -402,7 +402,7 @@ private:
     }
   }; // class ComputeEstimator
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID
   template< class DiscImp >
   class ComputeEstimator< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 >
   {
@@ -603,13 +603,13 @@ private:
         local_eta_df_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), diffusive_flux);
 
       // walk the grid
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
       double eta = 0.0;
-#else
-      double eta_nc_t_squared = 0.0;
+# else
+      double eta_nc_squared = 0.0;
       double eta_r_squared = 0.0;
       double eta_df_squared = 0.0;
-#endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
+# endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
       std::vector< DynamicMatrix< RangeFieldType > > tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
                                                                                     local_eta_r_product.numTmpObjectsRequired()),
                                                                            local_eta_df_product.numTmpObjectsRequired()),
@@ -624,46 +624,46 @@ private:
         local_eta_nc_product.apply(*local_eta_nc_difference, *local_eta_nc_difference, local_result_matrix, tmp_matrices);
         assert(local_result_matrix.rows() >= 1);
         assert(local_result_matrix.cols() >= 1);
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
-        const double eta_nc_t_squared = local_result_matrix[0][0];
-#else
-        eta_nc_t_squared += local_result_matrix[0][0];
-#endif
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
+        const double eta_nc_squared = local_result_matrix[0][0];
+# else
+        eta_nc_squared += local_result_matrix[0][0];
+# endif
 
         local_result_matrix *= 0.0;
         const auto local_eta_r_difference = eta_r_difference.local_function(entity);
         local_eta_r_product.apply(*local_eta_r_difference, *local_eta_r_difference, local_result_matrix, tmp_matrices);
         assert(local_result_matrix.rows() >= 1);
         assert(local_result_matrix.cols() >= 1);
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
         const double eta_r = std::sqrt(local_result_matrix[0][0]);
-#else
+# else
         eta_r_squared += local_result_matrix[0][0];
-#ensif
+# endif
 
         local_result_matrix *= 0.0;
         const auto local_discrete_solution = discrete_solution.local_function(entity);
         local_eta_df_product.apply(*local_discrete_solution, *local_discrete_solution, local_result_matrix, tmp_matrices);
         assert(local_result_matrix.rows() >= 1);
         assert(local_result_matrix.cols() >= 1);
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
         const double eta_df = std::sqrt(local_result_matrix[0][0]);
-#else
+# else
         eta_df_squared += local_result_matrix[0][0];
-#endif
+# endif
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
-        eta += eta_nc_t_squared + std::pow(eta_r + eta_df, 2);
-#endif
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
+        eta += eta_nc_squared + std::pow(eta_r + eta_df, 2);
+# endif
       } // walk the grid
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMANTION
       return std::sqrt(eta);
-#else
-      return std::sqrt(eta_nc_t_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
-#endif
+# else
+      return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
+# endif
     } // ... compute_estimator(...)
   }; // class ComputeEstimator
-//#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID
 
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
 
