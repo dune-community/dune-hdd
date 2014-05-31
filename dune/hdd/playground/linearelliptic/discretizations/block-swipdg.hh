@@ -30,7 +30,7 @@
 #include <dune/hdd/playground/linearelliptic/problems/zero-boundary.hh>
 
 #include "../../../linearelliptic/discretizations/base.hh"
-#include "swipdg.hh"
+#include "../../../linearelliptic/discretizations/swipdg.hh"
 
 namespace Dune {
 namespace HDD {
