@@ -14,6 +14,7 @@
 #include <dune/stuff/functions/expression.hh>
 
 #include <dune/pymor/functions.hh>
+#include <dune/pymor/functions/default.hh>
 
 #include "interfaces.hh"
 
@@ -42,6 +43,19 @@ public:
   using typename BaseType::DiffusionTensorType;
   using typename BaseType::FunctionType;
 
+  typedef typename DiffusionFactorType::NonparametricType NonparametricDiffusionFactorType;
+  typedef typename DiffusionTensorType::NonparametricType NonparametricDiffusionTensorType;
+  typedef typename FunctionType::NonparametricType NonparametricFunctionType;
+
+private:
+  typedef Pymor::Function::NonparametricDefault< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
+      DiffusionFactorWrapperType;
+  typedef Pymor::Function::NonparametricDefault
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > DiffusiontensorWrapperType;
+  typedef Pymor::Function::NonparametricDefault< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      FunctionWrapperType;
+
+public:
   static std::string static_id()
   {
     return BaseType::static_id() + ".default";
@@ -102,6 +116,18 @@ public:
                                                     create_vector_function("dirichlet", cfg),
                                                     create_vector_function("neumann", cfg)));
   } // ... create(...)
+
+  Default(const std::shared_ptr< const NonparametricDiffusionFactorType >& diff_fac,
+          const std::shared_ptr< const NonparametricDiffusionTensorType >& diff_ten,
+          const std::shared_ptr< const NonparametricFunctionType >& forc,
+          const std::shared_ptr< const NonparametricFunctionType >& dir,
+          const std::shared_ptr< const NonparametricFunctionType >& neum)
+    : diffusion_factor_(std::make_shared< DiffusionFactorWrapperType >(diff_fac))
+    , diffusion_tensor_(std::make_shared< DiffusiontensorWrapperType >(diff_ten))
+    , force_(std::make_shared< FunctionWrapperType >(forc))
+    , dirichlet_(std::make_shared< FunctionWrapperType >(dir))
+    , neumann_(std::make_shared< FunctionWrapperType >(neum))
+  {}
 
   Default(const std::shared_ptr< const DiffusionFactorType >& diff_fac,
           const std::shared_ptr< const DiffusionTensorType >& diff_ten,
