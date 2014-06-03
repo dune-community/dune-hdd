@@ -247,10 +247,10 @@ public:
   typedef grid::Multiscale::ProviderInterface< GridImp > GridProviderType;
   typedef typename GridProviderType::MsGridType MsGridType;
 
-private:
   typedef typename Traits::LocalDiscretizationsContainerType::DiscretizationType LocalDiscretizationType;
   typedef typename TestSpaceType::PatternType PatternType;
 
+private:
   using typename BaseType::AffinelyDecomposedMatrixType;
   using typename BaseType::AffinelyDecomposedVectorType;
   typedef Pymor::LA::AffinelyDecomposedConstContainer< MatrixType > AffinelyDecomposedConstMatrixType;
@@ -298,6 +298,11 @@ public:
     if (!this->problem_.diffusion_tensor().has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // BlockSWIPDG(...)
+
+  const std::vector< std::shared_ptr< LocalDiscretizationType > >& local_discretizations() const
+  {
+    return this->local_discretizations_;
+  }
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
