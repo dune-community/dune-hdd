@@ -316,9 +316,9 @@ protected:
   void assert_everything_is_ready() const
   {
     if (!container_based_initialized_)
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::internal_error,
+      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrong,
                             "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and set "
-                            << "container_based_initialized_ = true!\n"
+                            << "container_based_initialized_ to true!\n"
                             << "The user has to call init() before calling any other method!");
   } // ... assert_everything_is_ready()
 
