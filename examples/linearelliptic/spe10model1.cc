@@ -155,7 +155,7 @@ int main(int argc, char** argv)
     Stuff::Common::ConfigTree config = Spe10Model1FunctionType::default_config();
     config["upper_right"] = "[5 1]";
     config["num_elements"] = "[100 20]";
-    config["num_partitions"] = "[5 1]";
+    config["num_partitions"] = "[20 4]";
     std::shared_ptr< Spe10Model1FunctionType > spe10_model1_function(Spe10Model1FunctionType::create(config));
     typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
         ConstantFunctionType;
@@ -165,10 +165,10 @@ int main(int argc, char** argv)
     typedef IndicatorFunction< EntityType, DomainFieldType, dimDomain, RangeFieldType > IndicatorFunctionType;
     const RangeFieldType scale = 1.0;
     auto force = std::shared_ptr< IndicatorFunctionType >(
-                   new IndicatorFunctionType({{{{0.70, 0.60}, {0.90, 0.80}},  1.0 * scale},
-                                              {{{1.00, 0.30}, {1.20, 0.50}},  1.0 * scale},
-                                              {{{4.15, 0.30}, {4.35, 0.50}}, -1.0 * scale},
-                                              {{{3.30, 0.45}, {3.50, 0.65}}, -1.0 * scale}}, "force"));
+                   new IndicatorFunctionType({{{{0.55, 0.70}, {0.70, 0.85}},  1.0 * scale},
+                                              {{{0.45, 0.15}, {0.60, 0.30}},  1.0 * scale},
+                                              {{{3.00, 0.75}, {3.15, 0.90}}, -1.0 * scale},
+                                              {{{4.30, 0.50}, {4.45, 0.65}}, -1.0 * scale}}, "force"));
     typedef LinearElliptic::Problems::Default< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
         ProblemType;
     const ProblemType problem(one, spe10_model1_function, force, dirichlet, neumann);
@@ -296,12 +296,14 @@ int main(int argc, char** argv)
       subdomains_by_estimator[local_estimator_contributions[ss] / sum_local_estimators] = ss;
     }
 
-    std::cout << "local error contributions:" << std::endl;
-    for (auto element : subdomains_by_error)
-      std::cout << "  " << element.second << ": " << std::floor(100.0 * element.first) << " %" << std::endl;
-    std::cout << "local estimator contributions:" << std::endl;
-    for (auto element : subdomains_by_estimator)
-      std::cout << "  " << element.second << ": " << std::floor(100.0 * element.first) << " %" << std::endl;
+    if (reference_level_provider.ms_grid()->size() <= 20) {
+      std::cout << "local error contributions:" << std::endl;
+      for (auto element : subdomains_by_error)
+        std::cout << "  " << element.second << ": " << std::floor(100.0 * element.first) << " %" << std::endl;
+      std::cout << "local estimator contributions:" << std::endl;
+      for (auto element : subdomains_by_estimator)
+        std::cout << "  " << element.second << ": " << std::floor(100.0 * element.first) << " %" << std::endl;
+    }
 
     std::cout << "visualizing local errors/estimators... " << std::flush;
     timer.reset();
