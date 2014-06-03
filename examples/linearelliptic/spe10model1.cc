@@ -1,4 +1,4 @@
-// This file is part of the dune-hdd project:
+﻿// This file is part of the dune-hdd project:
 //   http://users.dune-project.org/projects/dune-hdd
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
@@ -13,8 +13,16 @@
 #endif
 
 #include <dune/common/timer.hh>
+#include <dune/common/fvector.hh>
+
+#if HAVE_DUNE_FEM
+# include <dune/fem/misc/mpimanager.hh>
+#else
+# include <dune/common/parallel/mpihelper.hh>
+#endif
 
 #include <dune/grid/io/file/dgfparser.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
 
 #include <dune/grid/multiscale/provider/cube.hh>
 
@@ -23,11 +31,14 @@
 #include <dune/stuff/functions/interfaces.hh>
 #include <dune/stuff/common/float_cmp.hh>
 #include <dune/stuff/common/memory.hh>
-#include <dune/stuff/common/fvector.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
 
+#include <dune/gdt/operators/prolongations.hh>
+#include <dune/gdt/discretefunction/default.hh>
+#include <dune/gdt/playground/products/elliptic.hh>
+
 #include <dune/hdd/linearelliptic/problems/default.hh>
-#include <dune/hdd/linearelliptic/discretizations/cg.hh>
+#include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
 
 using namespace Dune;
 using namespace HDD;
@@ -122,35 +133,37 @@ private:
 }; // class IndicatorFunction
 
 
-int main(int /*argc*/, char** /*argv*/)
+int main(int argc, char** argv)
 {
   try {
+#if HAVE_DUNE_FEM
+    Fem::MPIManager::initialize(argc, argv);
+#else
+    MPIHelper::instance(argc, argv);
+#endif
+
     typedef ALUGrid< 2, 2, simplex, conforming > GridType;
     typedef GridType::Codim< 0 >::Entity         EntityType;
     typedef GridType::ctype   DomainFieldType;
     static const unsigned int dimDomain = GridType::dimension;
+    typedef Dune::FieldVector< DomainFieldType, dimDomain > DomainType;
     typedef double            RangeFieldType;
     static const unsigned int dimRange = 1;
 
-    typedef Stuff::Functions::Spe10Model1< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
-        Spe10Model1FunctionType;
+    typedef Stuff::Functions::Spe10Model1
+        < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > Spe10Model1FunctionType;
     Stuff::Common::ConfigTree config = Spe10Model1FunctionType::default_config();
     config["upper_right"] = "[5 1]";
     config["num_elements"] = "[100 20]";
-    config["num_partitions"] = "1";
+    config["num_partitions"] = "[5 1]";
     std::shared_ptr< Spe10Model1FunctionType > spe10_model1_function(Spe10Model1FunctionType::create(config));
     typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
         ConstantFunctionType;
+    auto one = std::make_shared< ConstantFunctionType >(1.0, "diffusion_factor");
     auto dirichlet = std::make_shared< ConstantFunctionType >(0.0, "dirichlet");
     auto neumann = std::make_shared< ConstantFunctionType >(0.0, "neumann");
-    typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
-        ConstantMatrixFunctionType;
-    typename ConstantMatrixFunctionType::RangeType unit_matrix(0.0);
-    for (size_t dd = 0; dd < dimDomain; ++dd)
-      unit_matrix[dd][dd] = 1.0;
-    auto unit_matrix_function = std::make_shared< ConstantMatrixFunctionType >(unit_matrix, "diffusion tensor");
     typedef IndicatorFunction< EntityType, DomainFieldType, dimDomain, RangeFieldType > IndicatorFunctionType;
-    const RangeFieldType scale = 100.0;
+    const RangeFieldType scale = 1.0;
     auto force = std::shared_ptr< IndicatorFunctionType >(
                    new IndicatorFunctionType({{{{0.70, 0.60}, {0.90, 0.80}},  1.0 * scale},
                                               {{{1.00, 0.30}, {1.20, 0.50}},  1.0 * scale},
@@ -158,30 +171,158 @@ int main(int /*argc*/, char** /*argv*/)
                                               {{{3.30, 0.45}, {3.50, 0.65}}, -1.0 * scale}}, "force"));
     typedef LinearElliptic::Problems::Default< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
         ProblemType;
-    const ProblemType problem(spe10_model1_function, unit_matrix_function, force, dirichlet, neumann);
+    const ProblemType problem(one, spe10_model1_function, force, dirichlet, neumann);
 
     typedef Stuff::Grid::Providers::Cube< GridType > GridProvider;
-    auto grid_provider = GridProvider::create(config);
-    grid_provider->grid()->globalRefine(1);
-    const int level = grid_provider->grid()->maxLevel();
-    grid_provider->grid()->globalRefine(2 * DGFGridInfo< GridType >::refineStepsForHalf());
-//    const int reference_level = grid_provider->grid()->maxLevel();
-    grid_provider->visualize("grid");
+    auto level_grid_provider = GridProvider::create(config);
+    level_grid_provider->grid()->globalRefine(1);
 
-    problem.visualize(*grid_provider->leaf_view(), "problem");
+    typedef grid::Multiscale::Providers::Cube< GridType > MsGridProviderType;
+    MsGridProviderType level_provider(level_grid_provider->grid(),
+                                      config.get< DomainType >("lower_left"),
+                                      config.get< DomainType >("upper_right"),
+                                      config.get< std::vector< size_t >  >("num_partitions", dimDomain));
+
+    typedef Stuff::Grid::Providers::Cube< GridType > GridProvider;
+    auto reference_grid_provider = GridProvider::create(config);
+    reference_grid_provider->grid()->globalRefine(1);
+    reference_grid_provider->grid()->globalRefine(2 * DGFGridInfo< GridType >::refineStepsForHalf());
+    MsGridProviderType reference_level_provider(reference_grid_provider->grid(),
+                                                config.get< DomainType >("lower_left"),
+                                                config.get< DomainType >("upper_right"),
+                                                config.get< std::vector< size_t >  >("num_partitions", dimDomain));
+
+    problem.visualize(*level_grid_provider->leaf_view(), "problem");
 
     std::cout << "solving... " << std::flush;
     Dune::Timer timer;
-    LinearElliptic::Discretizations::CG< GridType, Stuff::Grid::ChooseLayer::level, RangeFieldType, dimRange, 1 >
-        discretization(*grid_provider,
-                       Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config(),
-                       problem,
-                       level);
+    typedef LinearElliptic::Discretizations::BlockSWIPDG < GridType, RangeFieldType, dimRange, 1 > DiscretizationType;
+    DiscretizationType discretization(level_provider,
+                                      Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config(),
+                                      problem);
     discretization.init();
     auto solution = discretization.create_vector();
     discretization.solve(solution);
     std::cout << "done (took " << timer.elapsed() << "s)" << std::endl;
     discretization.visualize(solution, "solution", "solution");
+
+    std::cout << "computing reference solution... " << std::flush;
+    timer.reset();
+    DiscretizationType reference_discretization(reference_level_provider,
+                                                Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config(),
+                                                problem);
+    reference_discretization.init();
+    auto reference_solution = reference_discretization.create_vector();
+    reference_discretization.solve(reference_solution);
+    std::cout << "done (took " << timer.elapsed() << "s)" << std::endl;
+
+    std::cout << "prolonging solution... " << std::flush;
+    timer.reset();
+    typedef typename DiscretizationType::AnsatzSpaceType SpaceType;
+    typedef typename SpaceType::GridViewType GridViewType;
+    typedef typename DiscretizationType::VectorType VectorType;
+    ConstDiscreteFunction< SpaceType, VectorType > discrete_solution_on_level(*discretization.ansatz_space(),
+                                                                              solution);
+    auto solution_on_reference_level = reference_discretization.create_vector();
+    const auto& reference_grid_view = *reference_discretization.ansatz_space()->grid_view();
+    DiscreteFunction< SpaceType, VectorType > discrete_solution_on_reference_level(*reference_discretization.ansatz_space(),
+                                                                                   solution_on_reference_level);
+    Operators::Prolongation< GridViewType >(reference_grid_view).apply(discrete_solution_on_level,
+                                                                       discrete_solution_on_reference_level);
+    std::cout << "done (took " << timer.elapsed() << "s)" << std::endl;
+
+    std::cout << "computing energy error... " << std::flush;
+    timer.reset();
+    Products::Elliptic< ConstantFunctionType, GridViewType, RangeFieldType, Spe10Model1FunctionType >
+        elliptic_product(*one, *spe10_model1_function, reference_grid_view);
+    ConstDiscreteFunction< SpaceType, VectorType > discrete_reference_solution(*reference_discretization.ansatz_space(),
+                                                                               reference_solution);
+    const auto difference = discrete_solution_on_reference_level - discrete_reference_solution;
+    const RangeFieldType energy_error = std::sqrt(elliptic_product.apply2(difference, difference));
+    std::cout << "done (is " << energy_error << ", took " << timer.elapsed() << "s)" << std::endl;
+
+    std::cout << "estimating error... " << std::flush;
+    timer.reset();
+    const RangeFieldType estimate = discretization.estimate(solution);
+    std::cout << "done (is " << estimate << ", took " << timer.elapsed() << "s)" << std::endl;
+
+    std::cout << "computing local error/estimator contributions... " << std::flush;
+    timer.reset();
+    // walk the multiscale grid
+    std::vector< RangeFieldType > local_error_contributions(reference_level_provider.ms_grid()->size());
+    std::vector< RangeFieldType > local_estimator_contributions(reference_level_provider.ms_grid()->size());
+    typedef typename DiscretizationType::LocalDiscretizationType LocalDiscretizationType;
+    const auto& local_reference_discretizations = reference_discretization.local_discretizations();
+    assert(local_reference_discretizations.size() == reference_level_provider.ms_grid()->size());
+    for (size_t ss = 0; ss < reference_level_provider.ms_grid()->size(); ++ss) {
+      const auto& local_reference_discretization = *local_reference_discretizations[ss];
+      typedef typename LocalDiscretizationType::AnsatzSpaceType LocalAnsatzSpaceType;
+      typedef typename LocalAnsatzSpaceType::GridViewType LocalGridViewType;
+      const auto local_grid_view = local_reference_discretization.ansatz_space()->grid_view();
+      // project level and reference solutions to local reference grid parts
+      auto local_level_solution_vector = local_reference_discretization.create_vector();
+      DiscreteFunction< LocalAnsatzSpaceType, VectorType >
+          local_level_solution(*local_reference_discretization.ansatz_space(), local_level_solution_vector);
+      Operators::Prolongation< LocalGridViewType >(*local_grid_view).apply(discrete_solution_on_level,
+                                                                           local_level_solution);
+      auto local_reference_solution_vector = local_reference_discretization.create_vector();
+      DiscreteFunction< LocalAnsatzSpaceType, VectorType >
+          local_reference_solution(*local_reference_discretization.ansatz_space(), local_reference_solution_vector);
+      Operators::Prolongation< LocalGridViewType >(*local_grid_view).apply(discrete_reference_solution,
+                                                                           local_reference_solution);
+      // compute energy error
+      Products::Elliptic< ConstantFunctionType, LocalGridViewType, RangeFieldType, Spe10Model1FunctionType >
+          local_elliptic_product(*one, *spe10_model1_function, *local_grid_view);
+      const auto local_difference = local_level_solution - local_reference_solution;
+      local_error_contributions[ss] = local_elliptic_product.apply2(local_difference, local_difference);
+
+      // compute estimator
+      local_estimator_contributions[ss] = discretization.estimate_local(solution, ss);
+    } // walk the multiscale grid
+    std::cout << "done (took " << timer.elapsed() << "s):" << std::endl;
+    RangeFieldType sum_local_errors = 0.0;
+    RangeFieldType sum_local_estimators = 0.0;
+    for (size_t ss = 0; ss < reference_level_provider.ms_grid()->size(); ++ss) {
+      sum_local_errors += local_error_contributions[ss];
+      sum_local_estimators += local_estimator_contributions[ss];
+    }
+    std::cout << "  energy error: " << std::sqrt(sum_local_errors) << std::endl;
+    std::cout << "  estimator: " << std::sqrt(3.0) * std::sqrt(sum_local_estimators) << std::endl;
+
+    std::map< RangeFieldType, size_t > subdomains_by_error;
+    std::map< RangeFieldType, size_t > subdomains_by_estimator;
+    for (size_t ss = 0; ss < reference_level_provider.ms_grid()->size(); ++ss) {
+      subdomains_by_error[local_error_contributions[ss] / sum_local_errors] = ss;
+      subdomains_by_estimator[local_estimator_contributions[ss] / sum_local_estimators] = ss;
+    }
+
+    std::cout << "local error contributions:" << std::endl;
+    for (auto element : subdomains_by_error)
+      std::cout << "  " << element.second << ": " << std::floor(100.0 * element.first) << " %" << std::endl;
+    std::cout << "local estimator contributions:" << std::endl;
+    for (auto element : subdomains_by_estimator)
+      std::cout << "  " << element.second << ": " << std::floor(100.0 * element.first) << " %" << std::endl;
+
+    std::cout << "visualizing local errors/estimators... " << std::flush;
+    timer.reset();
+    const auto& global_level_grid_view = level_provider.ms_grid()->globalGridPart()->gridView();
+    std::vector< double > local_error_visualization(global_level_grid_view.indexSet().size(0));
+    std::vector< double > local_estimator_visualization(global_level_grid_view.indexSet().size(0));
+    const auto entity_it_end = global_level_grid_view.template end< 0 >();
+    for (auto entity_it = global_level_grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+      const auto& entity = *entity_it;
+      const size_t index = global_level_grid_view.indexSet().index(entity);
+      const size_t subdomain = level_provider.ms_grid()->subdomainOf(entity);
+      assert(subdomain < level_provider.ms_grid()->size());
+      local_error_visualization[index] = local_error_contributions[subdomain] / sum_local_errors;
+      local_estimator_visualization[index] = local_estimator_contributions[subdomain] / sum_local_estimators;
+    }
+    VTKWriter< typename MsGridProviderType::MsGridType::GlobalGridPartType::GridViewType >
+        vtk_writer(global_level_grid_view);
+    vtk_writer.addCellData(local_error_visualization, "local error contribution");
+    vtk_writer.addCellData(local_estimator_visualization, "local estimator contribution");
+    vtk_writer.write("local_contributions", VTK::appendedraw);
+    std::cout << "done (took " << timer.elapsed() << "s):" << std::endl;
 
     // if we came that far we can as well be happy about it
     return 0;
