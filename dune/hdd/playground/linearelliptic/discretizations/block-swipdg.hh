@@ -583,6 +583,152 @@ public:
     return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
   } // ... estimate(...)
 
+  /**
+   * \return eta_T^2 := eta_nc^T^2 + eta_r^T^2 + eta_df^T^2
+   */
+  RangeFieldType estimate_local(const VectorType& vector, const size_t subdomain) const
+  {
+    if (this->parametric()) DUNE_THROW(NotImplemented, "No time for that atm!");
+
+    using namespace GDT;
+
+    typedef typename MsGridType::GlobalGridViewType GlobalGridViewType;
+    const auto grid_view = ms_grid_->globalGridView();
+    typedef ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
+    const ConstDiscreteFunctionType discrete_solution(*this->ansatz_space(), vector);
+
+    VectorType oswald_interpolation_vector(this->ansatz_space()->mapper().size());
+    typedef DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
+    DiscreteFunctionType oswald_interpolation(*this->ansatz_space(), oswald_interpolation_vector);
+    const Operators::OswaldInterpolation< GlobalGridViewType > oswald_interpolation_operator(*grid_view);
+    oswald_interpolation_operator.apply(discrete_solution, oswald_interpolation);
+
+    typedef Spaces::FiniteVolume::Default< GlobalGridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+    const P0SpaceType p0_space(grid_view);
+    VectorType p0_force_vector(p0_space.mapper().size());
+    DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
+    Operators::Projection< GlobalGridViewType > projection_operator(*grid_view);
+    const auto& force = this->problem().force();
+    assert(!force.parametric());
+    assert(force.has_affine_part());
+    projection_operator.apply(*force.affine_part(), p0_force);
+
+    typedef Spaces::RaviartThomas::PdelabBased< GlobalGridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+    const RTN0SpaceType rtn0_space(grid_view);
+    VectorType diffusive_flux_vector(rtn0_space.mapper().size());
+    typedef DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
+    RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
+
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = this->problem().diffusion_factor();
+    assert(!diffusion_factor.parametric());
+    assert(diffusion_factor.has_affine_part());
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    const Operators::DiffusiveFluxReconstruction< GlobalGridViewType, DiffusionFactorType, DiffusionTensorType >
+      diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+    diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
+
+    const LocalOperator::Codim0Integral< LocalEvaluation::Elliptic< DiffusionFactorType, DiffusionTensorType > >
+      local_eta_nc_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+    const auto eta_nc_difference = discrete_solution - oswald_interpolation;
+
+    typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
+        ConstantFunctionType;
+    typedef typename ConstantFunctionType::DomainType DomainType;
+    const ConstantFunctionType constant_one(1);
+    const  LocalOperator::Codim0Integral< LocalEvaluation::Product< ConstantFunctionType > >
+      local_eta_r_product(1, constant_one);
+    const auto eta_r_difference = *force.affine_part() - p0_force;
+
+    const LocalOperator::Codim0Integral< LocalEvaluation::ESV2007::DiffusiveFluxEstimate< DiffusionFactorType
+                                                                                        , RTN0DiscreteFunctionType
+                                                                                        , DiffusionTensorType > >
+      local_eta_df_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), diffusive_flux);
+
+    std::vector< DynamicMatrix< RangeFieldType > >
+        tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
+                                       local_eta_r_product.numTmpObjectsRequired()),
+                              local_eta_df_product.numTmpObjectsRequired()),
+                     DynamicMatrix< RangeFieldType >(1, 1, 0.0));
+    DynamicMatrix< RangeFieldType > local_result_matrix(1, 1, 0.0);
+
+    // estimate
+    assert(subdomain < ms_grid_->size());
+    double eta_nc_squared = 0.0;
+    double eta_r_squared = 0.0;
+    double eta_df_squared = 0.0;
+//    for (size_t subdomain = 0; subdomain < ms_grid_->size(); ++subdomain) {
+      const auto local_grid_part = ms_grid_->localGridPart(subdomain);
+
+      // some storage
+      std::vector< DomainType > vertices;
+      RangeFieldType min_diffusion_value = std::numeric_limits< RangeFieldType >::max();
+
+      // walk the local grid
+      double eta_nc_T_squared = 0.0;
+      double eta_r_T_squared = 0.0;
+      double eta_df_T_squared = 0.0;
+      const auto entity_it_end = local_grid_part->template end< 0 >();
+      for (auto entity_it = local_grid_part->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+        const auto& entity = *entity_it;
+
+        // collect all vertices
+        for (int cc = 0; cc < entity.template count< dimDomain >(); ++cc)
+          vertices.push_back(entity.template subEntity< dimDomain >(cc)->geometry().center());
+
+        // compute minimum diffusion
+        const RangeFieldType min_diffusion_value_entity
+            =   internal::compute_minimum(*diffusion_factor.affine_part(), entity)
+              * internal::compute_minimum(*diffusion_tensor.affine_part(), entity);
+        min_diffusion_value = std::min(min_diffusion_value, min_diffusion_value_entity);
+
+        local_result_matrix *= 0.0;
+        const auto local_eta_nc_difference = eta_nc_difference.local_function(entity);
+        local_eta_nc_product.apply(*local_eta_nc_difference, *local_eta_nc_difference, local_result_matrix, tmp_matrices);
+        assert(local_result_matrix.rows() >= 1);
+        assert(local_result_matrix.cols() >= 1);
+        eta_nc_T_squared += local_result_matrix[0][0];
+
+        local_result_matrix *= 0.0;
+        const auto local_eta_r_difference = eta_r_difference.local_function(entity);
+        local_eta_r_product.apply(*local_eta_r_difference, *local_eta_r_difference, local_result_matrix, tmp_matrices);
+        assert(local_result_matrix.rows() >= 1);
+        assert(local_result_matrix.cols() >= 1);
+        eta_r_T_squared += local_result_matrix[0][0];
+
+        local_result_matrix *= 0.0;
+        const auto local_discrete_solution = discrete_solution.local_function(entity);
+        local_eta_df_product.apply(*local_discrete_solution, *local_discrete_solution, local_result_matrix, tmp_matrices);
+        assert(local_result_matrix.rows() >= 1);
+        assert(local_result_matrix.cols() >= 1);
+        eta_df_T_squared += local_result_matrix[0][0];
+      } // walk the local grid
+
+      // compute diameter
+      DomainFieldType diameter(0);
+      DomainType tmp_diff;
+      for (size_t cc = 0; cc < vertices.size(); ++cc) {
+        const auto& vertex = vertices[cc];
+        for (size_t dd = cc + 1; dd < vertices.size(); ++dd) {
+          const auto& other_vertex = vertices[dd];
+          tmp_diff = vertex - other_vertex;
+          diameter = std::max(diameter, tmp_diff.two_norm());
+        }
+      }
+
+      const RangeFieldType poincare_constant = 1.0 / (M_PIl * M_PIl);
+      assert(min_diffusion_value > 0.0);
+
+      eta_nc_squared += eta_nc_T_squared;
+      eta_r_squared += ((poincare_constant * diameter * diameter) / min_diffusion_value) * eta_r_T_squared;
+      eta_df_squared += eta_df_T_squared;
+//    } // walk the subdomains
+    return eta_nc_squared + eta_r_squared + eta_df_squared;
+  } // ... estimate_local(...)
+
 private:
   class CouplingAssembler
   {
