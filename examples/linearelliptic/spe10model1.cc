@@ -32,10 +32,12 @@
 #include <dune/stuff/common/float_cmp.hh>
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
+#include <dune/stuff/common/string.hh>
 
 #include <dune/gdt/operators/prolongations.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/playground/products/elliptic.hh>
+#include <dune/gdt/operators/fluxreconstruction.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
@@ -153,9 +155,11 @@ int main(int argc, char** argv)
     typedef Stuff::Functions::Spe10Model1
         < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > Spe10Model1FunctionType;
     Stuff::Common::ConfigTree config = Spe10Model1FunctionType::default_config();
+    const std::string x_elements = "5";
+    const std::string y_elements = "1";
     config["upper_right"] = "[5 1]";
     config["num_elements"] = "[100 20]";
-    config["num_partitions"] = "[20 4]";
+    config["num_partitions"] = "[" + x_elements + " " + y_elements + "]";
     std::shared_ptr< Spe10Model1FunctionType > spe10_model1_function(Spe10Model1FunctionType::create(config));
     typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
         ConstantFunctionType;
@@ -204,7 +208,6 @@ int main(int argc, char** argv)
     auto solution = discretization.create_vector();
     discretization.solve(solution);
     std::cout << "done (took " << timer.elapsed() << "s)" << std::endl;
-    discretization.visualize(solution, "solution", "solution");
 
     std::cout << "computing reference solution... " << std::flush;
     timer.reset();
@@ -223,6 +226,24 @@ int main(int argc, char** argv)
     typedef typename DiscretizationType::VectorType VectorType;
     ConstDiscreteFunction< SpaceType, VectorType > discrete_solution_on_level(*discretization.ansatz_space(),
                                                                               solution);
+    discrete_solution_on_level.visualize("solution_grid_"
+                                         + DSC::toString(discrete_solution_on_level.space().grid_view()->indexSet().size(0))
+                                         + "_msgrid_" + x_elements + "x" + y_elements);
+
+    typedef Spaces::RaviartThomas::PdelabBased< typename SpaceType::GridViewType, 0, RangeFieldType, dimDomain >
+        RTN0SpaceType;
+    const RTN0SpaceType rtn0_space(discretization.grid_view());
+    VectorType diffusive_flux_vector(rtn0_space.mapper().size());
+    DiscreteFunction< RTN0SpaceType, VectorType > diffusive_flux(rtn0_space, diffusive_flux_vector);
+    const Operators::DiffusiveFluxReconstruction< typename SpaceType::GridViewType, ConstantFunctionType, Spe10Model1FunctionType >
+      diffusive_flux_reconstruction(*discretization.grid_view(),
+                                    *one,
+                                    *spe10_model1_function);
+    diffusive_flux_reconstruction.apply(discrete_solution_on_level, diffusive_flux);
+    diffusive_flux.visualize("diffusive_flux_grid_"
+                             + DSC::toString(discrete_solution_on_level.space().grid_view()->indexSet().size(0))
+                             + "_msgrid_" + x_elements + "x" + y_elements);
+
     auto solution_on_reference_level = reference_discretization.create_vector();
     const auto& reference_grid_view = *reference_discretization.ansatz_space()->grid_view();
     DiscreteFunction< SpaceType, VectorType > discrete_solution_on_reference_level(*reference_discretization.ansatz_space(),
@@ -231,13 +252,21 @@ int main(int argc, char** argv)
                                                                        discrete_solution_on_reference_level);
     std::cout << "done (took " << timer.elapsed() << "s)" << std::endl;
 
+    ConstDiscreteFunction< SpaceType, VectorType > discrete_reference_solution(*reference_discretization.ansatz_space(),
+                                                                               reference_solution);
+    auto difference_vector = discrete_solution_on_reference_level.vector() - discrete_reference_solution.vector();
+    for (auto& element : difference_vector)
+      element = std::abs(element);
+    ConstDiscreteFunction< SpaceType, VectorType > difference(*reference_discretization.ansatz_space(),
+                                                              difference_vector);
+    difference.visualize("difference_grid_"
+                         + DSC::toString(discrete_reference_solution.space().grid_view()->indexSet().size(0))
+                         + "_msgrid_" + x_elements + "x" + y_elements);
+
     std::cout << "computing energy error... " << std::flush;
     timer.reset();
     Products::Elliptic< ConstantFunctionType, GridViewType, RangeFieldType, Spe10Model1FunctionType >
         elliptic_product(*one, *spe10_model1_function, reference_grid_view);
-    ConstDiscreteFunction< SpaceType, VectorType > discrete_reference_solution(*reference_discretization.ansatz_space(),
-                                                                               reference_solution);
-    const auto difference = discrete_solution_on_reference_level - discrete_reference_solution;
     const RangeFieldType energy_error = std::sqrt(elliptic_product.apply2(difference, difference));
     std::cout << "done (is " << energy_error << ", took " << timer.elapsed() << "s)" << std::endl;
 
@@ -323,7 +352,7 @@ int main(int argc, char** argv)
         vtk_writer(global_level_grid_view);
     vtk_writer.addCellData(local_error_visualization, "local error contribution");
     vtk_writer.addCellData(local_estimator_visualization, "local estimator contribution");
-    vtk_writer.write("local_contributions", VTK::appendedraw);
+    vtk_writer.write("local_contributions_msgrid_" + x_elements + "x" + y_elements, VTK::appendedraw);
     std::cout << "done (took " << timer.elapsed() << "s):" << std::endl;
 
     // if we came that far we can as well be happy about it
