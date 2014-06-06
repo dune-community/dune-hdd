@@ -60,7 +60,7 @@ class BlockSWIPDG;
 
 // forward, needed in the Traits
 template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder = 1,
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem_localfunctions,
+          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::ChooseBackend::istl_sparse >
 class SWIPDG;
 
@@ -672,74 +672,74 @@ private:
 }; // class SWIPDG
 
 
-#if HAVE_DUNE_FEM_LOCALFUNCTIONS
+#if HAVE_DUNE_FEM
 
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
 # if HAVE_DUNE_ISTL
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
 # endif // HAVE_DUNE_ISTL
 # if HAVE_EIGEN
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 # endif // HAVE_EIGEN
-#endif // HAVE_DUNE_FEM_LOCALFUNCTIONS
-#if HAVE_ALUGRID && HAVE_DUNE_FEM_LOCALFUNCTIONS
+#endif // HAVE_DUNE_FEM
+#if HAVE_ALUGRID && HAVE_DUNE_FEM
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
 # if HAVE_DUNE_ISTL
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
 # endif // HAVE_DUNE_ISTL
 # if HAVE_EIGEN
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                              GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
+                              GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 
 # endif // HAVE_EIGEN
-#endif // HAVE_ALUGRID && HAVE_DUNE_FEM_LOCALFUNCTIONS
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM
 
 } // namespace Discretizations
 } // namespace LinearElliptic

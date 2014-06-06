@@ -17,41 +17,41 @@ namespace HDD {
 namespace LinearElliptic {
 namespace Discretizations {
 
-#if HAVE_ALUGRID && HAVE_DUNE_FEM_LOCALFUNCTIONS
+#if HAVE_ALUGRID && HAVE_DUNE_FEM
 
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::common_dense >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
 # if HAVE_DUNE_ISTL
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
 # endif // HAVE_DUNE_ISTL
 # if HAVE_EIGEN
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_dense >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 template class SWIPDG< ALUGrid< 2, 2, Dune::simplex, Dune::conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
-                       GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >;
+                       GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 
 # endif // HAVE_EIGEN
-#endif // HAVE_ALUGRID && HAVE_DUNE_FEM_LOCALFUNCTIONS
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM
 
 } // namespace Discretizations
 } // namespace LinearElliptic
