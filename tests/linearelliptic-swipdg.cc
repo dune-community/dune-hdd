@@ -81,25 +81,25 @@ struct linearelliptic_SWIPDG_discretization
       }
   } // ... eoc_study()
 
-  static void eoc_study_using_fem_localfunctions_and_istl()
+  static void eoc_study_using_fem_and_istl()
   {
-    eoc_study< GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::istl_sparse >();
+    eoc_study< GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >();
   }
 
-  static void eoc_study_using_fem_localfunctions_and_eigen_sparse()
+  static void eoc_study_using_fem_and_eigen_sparse()
   {
-    eoc_study< GDT::ChooseSpaceBackend::fem_localfunctions, Stuff::LA::ChooseBackend::eigen_sparse >();
+    eoc_study< GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >();
   }
 
 }; // linearelliptic_SWIPDG_discretization
 
 
 TYPED_TEST_CASE(linearelliptic_SWIPDG_discretization, AluConform2dTestCases);
-TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_localfunctions_and_istl) {
-  this->eoc_study_using_fem_localfunctions_and_istl();
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {
+  this->eoc_study_using_fem_and_istl();
 }
-TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_localfunctions_and_eigen_sparse) {
-  this->eoc_study_using_fem_localfunctions_and_eigen_sparse();
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {
+  this->eoc_study_using_fem_and_eigen_sparse();
 }
 
 
