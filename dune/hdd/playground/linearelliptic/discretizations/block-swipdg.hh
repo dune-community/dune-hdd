@@ -67,7 +67,7 @@ class LocalDiscretizationsContainer
   typedef grid::Multiscale::ProviderInterface< GridType > GridProviderType;
 public:
   typedef SWIPDG< GridType, Stuff::Grid::ChooseLayer::local, RangeFieldType, dimRange
-                , polOrder, GDT::ChooseSpaceBackend::fem_localfunctions, la_backend > DiscretizationType;
+                , polOrder, GDT::ChooseSpaceBackend::fem, la_backend > DiscretizationType;
   typedef typename DiscretizationType::ProblemType     ProblemType;
   typedef typename DiscretizationType::TestSpaceType   TestSpaceType;
   typedef typename DiscretizationType::AnsatzSpaceType AnsatzSpaceType;
