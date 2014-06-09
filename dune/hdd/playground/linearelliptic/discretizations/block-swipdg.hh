@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <cmath>
+#include <limits>
 
 #if HAVE_EIGEN
 # include <Eigen/Eigenvalues>
@@ -40,6 +41,9 @@
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
+#include <dune/gdt/products/l2.hh>
+#include <dune/gdt/products/h1.hh>
+#include <dune/gdt/assembler/system.hh>
 
 #include <dune/hdd/playground/linearelliptic/problems/zero-boundary.hh>
 
@@ -240,6 +244,9 @@ public:
   using typename BaseType::RangeFieldType;
   using typename BaseType::MatrixType;
   using typename BaseType::VectorType;
+  using typename BaseType::OperatorType;
+  using typename BaseType::ProductType;
+  using typename BaseType::FunctionalType;
 
   static const unsigned int dimDomain = BaseType::dimDomain;
   static const unsigned int dimRange = BaseType::dimRange;
@@ -433,13 +440,176 @@ public:
       // build global containers
       build_global_containers();
 
-      // parameter
+      // products
+      typedef typename MsGridType::GlobalGridPartType::GridViewType GlobalGridViewType;
+      const auto& global_grid_view = ms_grid_->globalGridPart()->gridView();
+      GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(*this->test_space(),
+                                                                                                  *this->ansatz_space(),
+                                                                                                  global_grid_view);
+
+      // * L2
+      typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
+          L2ProductType;
+      auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      l2_product_matrix->register_affine_part(this->test_space()->mapper().size(),
+                                              this->ansatz_space()->mapper().size(),
+                                              L2ProductType::pattern(*this->test_space(),
+                                                                     *this->ansatz_space()));
+      L2ProductType l2_product(*(l2_product_matrix->affine_part()),
+                               *this->test_space(),
+                               global_grid_view,
+                               *this->ansatz_space());
+      system_assembler.add(l2_product);
+      // * H1 semi
+      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
+          H1ProductType;
+      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      h1_product_matrix->register_affine_part(this->test_space()->mapper().size(),
+                                              this->ansatz_space()->mapper().size(),
+                                              H1ProductType::pattern(*this->test_space(),
+                                                                     *this->ansatz_space()));
+      H1ProductType h1_product(*(h1_product_matrix->affine_part()),
+                               *this->test_space(),
+                               global_grid_view,
+                               *this->ansatz_space());
+      system_assembler.add(h1_product);
+      system_assembler.assemble();
+
+      // finalize
       this->inherit_parameter_type(*(this->matrix_), "lhs");
       this->inherit_parameter_type(*(this->rhs_), "rhs");
+      this->products_.insert(std::make_pair("l2", l2_product_matrix));
+      this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
 
       this->container_based_initialized_ = true;
     } // if (!this->container_based_initialized_)
   } // ... init(...)
+
+  DUNE_STUFF_SSIZE_T num_subdomains() const
+  {
+    return ms_grid_->size();
+  }
+
+  std::vector< DUNE_STUFF_SSIZE_T > neighbouring_subdomains(const DUNE_STUFF_SSIZE_T ss) const
+  {
+    if (ss < 0 || ss >= num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+    const auto set_of_neighbours = ms_grid_->neighborsOf(ss);
+    return std::vector< DUNE_STUFF_SSIZE_T >(set_of_neighbours.begin(), set_of_neighbours.end());
+  }
+
+  VectorType localize_vector(const VectorType& global_vector, const size_t ss) const
+  {
+    if (ss >= num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+    if (global_vector.size() != this->ansatz_space()->mapper().size())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "The size() of global_vector (" << global_vector.dim()
+                 << ") does not match the size() of the ansatz space (" << this->ansatz_space()->mapper().size() << ")!");
+    assert(ss < this->local_discretizations_.size());
+    VectorType local_vector = this->local_discretizations_[ss]->create_vector();
+    for (size_t ii = 0; ii < local_vector.size(); ++ii)
+      local_vector.set_entry(ii, global_vector.get_entry(this->ansatz_space()->mapper().mapToGlobal(ss, ii)));
+    return local_vector;
+  } // ... localize_vetor(...)
+
+  VectorType* localize_vector_and_return_ptr(const VectorType& global_vector, const DUNE_STUFF_SSIZE_T ss) const
+  {
+    assert(ss >= 0);
+    assert(ss < std::numeric_limits< size_t >::max());
+    return new VectorType(localize_vector(global_vector, size_t(ss)));
+  }
+
+  ProductType get_local_product(const size_t ss, const std::string id) const
+  {
+    if (ss >= num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+    return this->local_discretizations_[ss]->get_product(id);
+  }
+
+  ProductType* get_local_product_and_return_ptr(const DUNE_STUFF_SSIZE_T ss, const std::string id) const
+  {
+    assert(ss >= 0);
+    assert(ss < std::numeric_limits< size_t >::max());
+    return new ProductType(get_local_product(size_t(ss), id));
+  }
+
+  OperatorType get_local_operator(const size_t ss) const
+  {
+    if (ss >= num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+    assert(ss < int(local_matrices_.size()));
+    return OperatorType(*(local_matrices_[ss]));
+  }
+
+  OperatorType* get_local_operator_and_return_ptr(const DUNE_STUFF_SSIZE_T ss) const
+  {
+    assert(ss >= 0);
+    assert(ss < std::numeric_limits< size_t >::max());
+    return new OperatorType(get_local_operator(size_t(ss)));
+  }
+
+  OperatorType get_coupling_operator(const size_t ss, const size_t nn) const
+  {
+    if (ss >= num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                       "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+    const auto neighbours = ms_grid_->neighborsOf(ss);
+    if (neighbours.count(nn) == 0)
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "Subdomain " << nn << " is not a neighbour of subdomain " << ss
+                 << " (call neighbouring_subdomains(" << ss << ") to find out)!");
+    if (ss < nn) {
+      // we need to look for this coupling operator in the inside/outside context
+      const auto result_inside_outside_matrix = inside_outside_matrices_[ss].find(nn);
+      if (result_inside_outside_matrix == inside_outside_matrices_[ss].end())
+        DUNE_THROW(Stuff::Exceptions::internal_error,
+                         "The coupling matrix for subdomain " << ss << " and neighbour " << nn << " is missing!");
+      const auto inside_outside_matrix = result_inside_outside_matrix->second;
+      return OperatorType(*inside_outside_matrix);
+    } else if (nn < ss) {
+      // we need to look for this coupling operator in the outside/inside context
+      const auto result_outside_inside_matrix = outside_inside_matrices_[ss].find(nn);
+      if (result_outside_inside_matrix == outside_inside_matrices_[ss].end())
+        DUNE_THROW(Stuff::Exceptions::internal_error,
+                   "The coupling matrix for neighbour " << nn << " and subdomain " << ss << " is missing!");
+      const auto outside_inside_matrix = result_outside_inside_matrix->second;
+      return OperatorType(*outside_inside_matrix);
+    } else {
+      // the above exception should have cought this
+      DUNE_THROW(Stuff::Exceptions::internal_error,
+                 "The multiscale grid is corrupted! Subdomain " << ss << " must not be its own neighbour!");
+    }
+  } // ... get_coupling_operator(...)
+
+  OperatorType* get_coupling_operator_and_return_ptr(const DUNE_STUFF_SSIZE_T ss, const DUNE_STUFF_SSIZE_T nn) const
+  {
+    assert(ss >= 0);
+    assert(ss < std::numeric_limits< size_t >::max());
+    assert(nn >= 0);
+    assert(nn < std::numeric_limits< size_t >::max());
+    return new OperatorType(get_coupling_operator(size_t(ss), size_t(nn)));
+  }
+
+  FunctionalType get_local_functional(const size_t ss) const
+  {
+    if (ss >= num_subdomains())
+      DUNE_PYMOR_THROW(Pymor::Exception::index_out_of_range,
+                       "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+    assert(ss < local_vectors_.size());
+    return FunctionalType(*(local_vectors_[ss]));
+  }
+
+  FunctionalType* get_local_functional_and_return_ptr(const DUNE_STUFF_SSIZE_T ss) const
+  {
+    assert(ss >= 0);
+    assert(ss < std::numeric_limits< size_t >::max());
+    return new FunctionalType(get_local_functional(size_t(ss)));
+  }
 
   RangeFieldType estimate(const VectorType& vector) const
   {
