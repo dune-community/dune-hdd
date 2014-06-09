@@ -19,8 +19,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     RangeFieldType = 'double'
     dimRange = '1'
     polOrder = '1'
-    MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
-    VectorType = 'Dune::Stuff::LA::IstlDenseVector< ' + RangeFieldType + ' >'
+    MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
+    VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
     OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
     ProductType = OperatorType
     FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
@@ -28,7 +28,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     DiscretizationFullName = (DiscretizationName + '< '
                               + GridType + ', '
                               + RangeFieldType + ', '
-                              + dimRange + ', ' + polOrder + ' >')
+                              + dimRange + ', ' + polOrder + ', '
+                              + 'Dune::Stuff::LA::ChooseBackend::eigen_sparse >')
     discretization = inject_StationaryMultiscaleDiscretizationImplementation(
         module, exceptions, interfaces, CONFIG_H,
         DiscretizationName,
@@ -36,7 +37,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                 'OperatorType': OperatorType,
                 'FunctionalType': FunctionalType,
                 'ProductType': ProductType},
-        template_parameters=[GridType, RangeFieldType, dimRange, polOrder])
+        template_parameters=[GridType, RangeFieldType, dimRange, polOrder, 'Dune::Stuff::LA::ChooseBackend::eigen_sparse'])
     # then add the example
     ThermalblockExample = module.add_class('ThermalblockExample',
                                            template_parameters=[GridType],
