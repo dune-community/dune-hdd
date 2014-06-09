@@ -49,6 +49,7 @@ import pymor.core as core
 core.logger.MAX_HIERACHY_LEVEL = 2
 from pymor import defaults
 from pymor.algorithms import greedy, gram_schmidt_basis_extension, pod_basis_extension, trivial_basis_extension
+from pymor.playground.algorithms import greedy_lrbms
 from pymor.core import cache
 from pymor.core.exceptions import ConfigError
 from pymor.discretizations import StationaryDiscretization
@@ -187,6 +188,113 @@ Greedy basis generation:
     return report_string, greedy_data
 
 
+def perform_lrbms(config, multiscale_discretization, training_samples):
+
+    num_subdomains = multiscale_discretization._impl.num_subdomains()
+
+    # parse config
+    # first the extension algorithm product, if needed
+    extension_algorithm_id = config.get('pymor', 'extension_algorithm')
+    if extension_algorithm_id in {'gram_schmidt', 'pod'}:
+        extension_algorithm_product_id = config.get('pymor', 'extension_algorithm_product')
+        if extension_algorithm_product_id == 'None':
+            extension_algorithm_products = [None for ss in np.arange(num_subdomains)]
+        else:
+            extension_algorithm_products = [multiscale_discretization.local_product(ss, extension_algorithm_product_id)
+                                            for ss in np.arange(num_subdomains)]
+    # then the extension algorithm
+    if extension_algorithm_id == 'gram_schmidt':
+        extension_algorithm = [partial(gram_schmidt_basis_extension, product=extension_algorithm_products[ss])
+                               for ss in np.arange(num_subdomains)]
+        extension_algorithm_id += ' ({})'.format(extension_algorithm_product_id)
+    elif extension_algorithm_id == 'pod':
+        extension_algorithm = [partial(pod_basis_extension, product=extension_algorithm_products[ss])
+                               for ss in np.arange(num_subdomains)]
+        extension_algorithm_id += ' ({})'.format(extension_algorithm_product_id)
+    elif extension_algorithm_id == 'trivial':
+        extension_algorithm = [trivial_basis_extension for ss in np.arange(num_subdomains)]
+    else:
+        raise ConfigError('unknown \'pymor.extension_algorithm\' given:\'{}\''.format(extension_algorithm_id))
+
+    greedy_error_norm_id = config.get('pymor', 'greedy_error_norm')
+    if greedy_error_norm_id == 'None':
+        greedy_error_norm = None
+    else:
+        greedy_error_norm = induced_norm(multiscale_discretization.products[greedy_error_norm_id])
+
+    greedy_use_estimator = config.getboolean('pymor', 'use_estimator')
+    assert greedy_use_estimator is False
+    greedy_max_rb_size = config.getint('pymor', 'max_rb_size')
+    greedy_target_error = config.getfloat('pymor', 'target_error')
+
+    # do the actual work
+    greedy_data = greedy_lrbms(multiscale_discretization,
+                               reduce_generic_rb,
+                               training_samples,
+                               initial_basis=[multiscale_discretization.local_rhs(ss).type_source.empty(dim=multiscale_discretization.local_rhs(ss).dim_source)
+                                             for ss in np.arange(num_subdomains)],
+                               use_estimator=greedy_use_estimator,
+                               error_norm=greedy_error_norm,
+                               extension_algorithm=extension_algorithm,
+                               max_extensions=greedy_max_rb_size,
+                               target_error=greedy_target_error)
+
+    reduced_basis = greedy_data['basis']
+    rb_size = [len(local_data) for local_data in reduced_basis]
+
+    # perform final compression
+    final_compression = config.getboolean('pymor', 'final_compression')
+    if final_compression:
+        t = time.time()
+        logger.info('Applying final compression ...')
+
+        # select local product
+        compression_product_id = config.get('pymor', 'compression_product')
+        if compression_product_id == 'None':
+            compression_products = [None for ss in np.arange(num_subdomains)]
+        else:
+            compression_products = [multiscale_discretization.local_product(ss, compression_product_id)
+                                            for ss in np.arange(num_subdomains)]
+
+        # do the actual work
+        reduced_basis = [pod(reduced_basis[ss], product=compression_products[ss]) for ss in np.arange(num_subdomains)]
+
+        rd, rc, _ = reduce_generic_rb(multiscale_discretization, reduced_basis)
+        greedy_data['reduced_discretization'], greedy_data['reconstructor'] = rd, rc
+
+        time_compression = time.time() - t
+        compressed_rb_size = [len(local_data) for local_data in reduced_basis]
+
+        #report
+        report_string = '''
+Greedy basis generation:
+    used estimator:        {greedy_use_estimator}
+    error norm:            {greedy_error_norm_id}
+    extension method:      {extension_algorithm_id}
+    prescribed basis size: {greedy_max_rb_size}
+    prescribed error:      {greedy_target_error}
+    actual basis size:     {rb_size}
+    greedy time:           {greedy_data[time]}
+    compression method:     pod ({compression_product_id})
+    compressed basis size:  {compressed_rb_size}
+    final compression time: {time_compression}
+'''.format(**locals())
+    else:
+        #report
+        report_string = '''
+Greedy basis generation:
+    used estimator:        {greedy_use_estimator}
+    error norm:            {greedy_error_norm_id}
+    extension method:      {extension_algorithm_id}
+    prescribed basis size: {greedy_max_rb_size}
+    prescribed error:      {greedy_target_error}
+    actual basis size:     {rb_size}
+    elapsed time:          {greedy_data[time]}
+'''.format(**locals())
+
+    return report_string, greedy_data
+
+
 def test_quality(config, test_samples, detailed_discretization, greedy_data, strategy = 'stochastic'):
 
     # parse config
@@ -290,7 +398,7 @@ if __name__ == '__main__':
         raise ConfigError('unknown \'training_set\' sampling strategy given: \'{}\''.format(training_set_sampling_strategy))
 
     logger.info('running standard rb for global discretization:')
-    reduction_report, data = perform_standard_rb(config, discretization, training_samples)
+    reduction_report, data = perform_lrbms(config, discretization, training_samples)
     logger.info(reduction_report)
 
     # test quality
