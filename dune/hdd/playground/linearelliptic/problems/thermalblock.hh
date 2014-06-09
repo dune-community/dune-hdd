@@ -375,7 +375,7 @@ public:
     if (visualize) {
       info << "visualizing grid and problem... " << std::flush;
       timer.reset();
-      grid_provider_->visualize(boundary_info_, filename_ + ".grid");
+      grid_provider_->visualize(filename_ + ".grid");
       problem_->visualize(*grid_view, filename_ + ".problem");
       info << "done (took " << timer.elapsed() << "s)" << std::endl;
     } // if (visualize)
