@@ -209,8 +209,7 @@ protected:
   } // ... create_vector_function(...)
 
       static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > >
-  create_matrix_function(const std::string& id,
-                  const Stuff::Common::ConfigTree& config)
+  create_matrix_function(const std::string& id, const Stuff::Common::ConfigTree& config)
   {
     typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
         ConstantFunctionType;
