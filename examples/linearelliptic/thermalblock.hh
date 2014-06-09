@@ -10,14 +10,17 @@
 
 #include <memory>
 
-#include <dune/stuff/common/disable_warnings.hh>
-# include <dune/grid/sgrid.hh>
-#include <dune/stuff/common/reenable_warnings.hh>
+#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
+# define ENABLE_ALUGRID 1
+# include <dune/grid/alugrid.hh>
+#else
+# error This example requires alugrid!
+#endif
 
 #include <dune/stuff/common/memory.hh>
 
 #include <dune/hdd/playground/linearelliptic/problems/thermalblock.hh>
-#include <dune/hdd/linearelliptic/discretizations/cg.hh>
+#include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
 
 
 template< class GridImp >
@@ -25,11 +28,10 @@ class ThermalblockExample
 {
 public:
   typedef GridImp GridType;
-  typedef Dune::HDD::LinearElliptic::DiscreteProblems::Thermalblock< GridType > DiscreteProblemType;
+  typedef Dune::HDD::LinearElliptic::DiscreteProblems::ThermalblockMultiScale< GridType > DiscreteProblemType;
   typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = DiscreteProblemType::dimRange;
-  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
-                                                          RangeFieldType, dimRange, 1 > DiscretizationType;
+  typedef Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG< GridType, RangeFieldType, dimRange, 1 > DiscretizationType;
 
   static std::string static_id()
   {

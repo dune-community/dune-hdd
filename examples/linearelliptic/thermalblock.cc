@@ -5,14 +5,18 @@
 
 #include "config.h"
 
-#include <dune/stuff/common/disable_warnings.hh>
-# include <dune/grid/sgrid.hh>
-#include <dune/stuff/common/reenable_warnings.hh>
+#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
+# define ENABLE_ALUGRID 1
+# include <dune/grid/alugrid.hh>
+#endif
 
 # include "thermalblock.hh"
 #include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
+#if HAVE_ALUGRID
 
-template class ThermalblockExample< Dune::SGrid< 1, 1 > >;
-template class ThermalblockExample< Dune::SGrid< 2, 2 > >;
-template class ThermalblockExample< Dune::SGrid< 3, 3 > >;
+
+template class ThermalblockExample< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >;
+
+
+#endif // HAVE_ALUGRID

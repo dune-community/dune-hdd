@@ -8,6 +8,13 @@
 #include <string>
 #include <vector>
 
+#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
+# define ENABLE_ALUGRID 1
+# include <dune/grid/alugrid.hh>
+#else
+# error This example requires alugrid!
+#endif
+
 # include "thermalblock.hh"
 #include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
@@ -17,7 +24,7 @@ int main(int argc, char** argv)
 {
   try {
     // create empty example
-    typedef ThermalblockExample< Dune::GridSelector::GridType > ExampleType;
+    typedef ThermalblockExample< Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > > ExampleType;
 
     // read or write config file
     const std::string config_file_name = ExampleType::static_id() + ".cfg";

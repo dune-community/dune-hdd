@@ -14,13 +14,13 @@ from dune.pymor.discretizations import inject_StationaryDiscretizationImplementa
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
     '''injects the user code into the module'''
     # first the discretization
-    GridType = 'Dune::SGrid< 2, 2 >'
+    GridType = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
     RangeFieldType = 'double'
     dimRange = '1'
     polOrder = '1'
-    MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
-    VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
-    DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::CG'
+    MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
+    VectorType = 'Dune::Stuff::LA::IstlDenseVector< ' + RangeFieldType + ' >'
+    DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG'
     DiscretizationFullName = (DiscretizationName + '< '
                               + GridType + ', '
                               + RangeFieldType + ', '
@@ -35,25 +35,20 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         template_parameters=[GridType, RangeFieldType, dimRange, polOrder])
     # then add the example
     ThermalblockExample = module.add_class('ThermalblockExample',
-                                           template_parameters=['Dune::SGrid< 2, 2 >'],
+                                           template_parameters=[GridType],
                                            custom_name='ThermalblockExample')
     ThermalblockExample.add_method('static_id',
                                        retval('std::string'),
-                                       [], is_const=True, throw=[exceptions['Exception'],
-                                                                 exceptions['Exception']])
+                                       [], is_const=True, throw=[exceptions['Exception']])
     ThermalblockExample.add_method('write_config_file',
-                                       None, [], is_const=True, throw=[exceptions['Exception'],
-                                                                       exceptions['Exception']])
-    ThermalblockExample.add_constructor([], throw=[exceptions['Exception'],
-                                                       exceptions['Exception']])
+                                       None, [], is_const=True, throw=[exceptions['Exception']])
+    ThermalblockExample.add_constructor([], throw=[exceptions['Exception']])
     ThermalblockExample.add_method('initialize', None,
                                        [param('const std::vector< std::string >', 'arguments')],
-                                       is_const=True, throw=[exceptions['Exception'],
-                                                             exceptions['Exception']])
+                                       is_const=True, throw=[exceptions['Exception']])
     ThermalblockExample.add_method('discretization_and_return_ptr',
                                        retval(DiscretizationFullName + ' *', caller_owns_return=True),
-                                       [], is_const=True, throw=[exceptions['Exception'],
-                                                                 exceptions['Exception']],
+                                       [], is_const=True, throw=[exceptions['Exception']],
                                        custom_name='discretization')
 
 if __name__ == '__main__':
