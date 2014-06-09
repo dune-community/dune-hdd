@@ -114,8 +114,8 @@ def perform_standard_rb(config, detailed_discretization, training_samples):
         raise ConfigError('unknown \'pymor.extension_algorithm\' given: \'{}\''.format(extension_algorithm_id))
 
     greedy_error_norm_id = config.get('pymor', 'greedy_error_norm')
-    assert greedy_error_norm_id == 'h1_semi'
-    greedy_error_norm = detailed_discretization.h1_semi_norm
+    assert greedy_error_norm_id in {'l2', 'h1_semi'}
+    greedy_error_norm = induced_norm(detailed_discretization.products[greedy_error_norm_id])
 
     greedy_use_estimator = config.getboolean('pymor', 'use_estimator')
     greedy_max_rb_size = config.getint('pymor', 'max_rb_size')
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     else:
         raise ConfigError('unknown \'training_set\' sampling strategy given: \'{}\''.format(training_set_sampling_strategy))
 
-    logger.info('running standard rb for global cg discretization:')
+    logger.info('running standard rb for global discretization:')
     reduction_report, data = perform_standard_rb(config, discretization, training_samples)
     logger.info(reduction_report)
 
