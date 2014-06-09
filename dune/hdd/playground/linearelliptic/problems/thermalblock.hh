@@ -147,8 +147,8 @@ public:
     file << "debug = true" << std::endl;
     file << "file  = false" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [0.1; 0.1; 1.0; 1.0]" << std::endl;
-    file << "1.diffusion_factor = [1.0; 1.0; 0.1; 0.1]" << std::endl;
+    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
+    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
     file << GridProviderType::default_config(GridProviderType::static_id());
     file << ProblemType::default_config(ProblemType::static_id());
     file << "[pymor]" << std::endl;
