@@ -9,6 +9,7 @@ from pybindgen import param, retval
 
 from dune.pymor.core import prepare_python_bindings, inject_lib_dune_pymor, finalize_python_bindings
 from dune.pymor.discretizations import inject_StationaryDiscretizationImplementation
+from dune.pymor.discretizations import inject_StationaryMultiscaleDiscretizationImplementation
 
 
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
@@ -20,18 +21,21 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     polOrder = '1'
     MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
     VectorType = 'Dune::Stuff::LA::IstlDenseVector< ' + RangeFieldType + ' >'
+    OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
+    ProductType = OperatorType
+    FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
     DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG'
     DiscretizationFullName = (DiscretizationName + '< '
                               + GridType + ', '
                               + RangeFieldType + ', '
                               + dimRange + ', ' + polOrder + ' >')
-    discretization = inject_StationaryDiscretizationImplementation(
+    discretization = inject_StationaryMultiscaleDiscretizationImplementation(
         module, exceptions, interfaces, CONFIG_H,
         DiscretizationName,
         Traits={'VectorType': VectorType,
-                'OperatorType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >',
-                'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >',
-                'ProductType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' > '},
+                'OperatorType': OperatorType,
+                'FunctionalType': FunctionalType,
+                'ProductType': ProductType},
         template_parameters=[GridType, RangeFieldType, dimRange, polOrder])
     # then add the example
     ThermalblockExample = module.add_class('ThermalblockExample',
