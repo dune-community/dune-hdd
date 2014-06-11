@@ -15,7 +15,8 @@ from dune.pymor.discretizations import inject_StationaryMultiscaleDiscretization
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
     '''injects the user code into the module'''
     # first the discretization
-    GridType = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
+    #GridType = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
+    GridType = 'Dune::SGrid< 2, 2 >'
     RangeFieldType = 'double'
     dimRange = '1'
     polOrder = '1'
