@@ -65,6 +65,7 @@ public:
     Stuff::Common::ConfigTree checkerboard_config = CheckerboardFunctionType::default_config();
     checkerboard_config["name"] = "diffusion_factor";
     checkerboard_config["type"] = CheckerboardFunctionType::static_id();
+    checkerboard_config["num_elements"] = "[4 4 4]";
     checkerboard_config["parameter_name"] = "diffusion_factor";
     config.add(checkerboard_config, "diffusion_factor");
     Stuff::Common::ConfigTree diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
@@ -149,8 +150,7 @@ public:
     file << "debug = true" << std::endl;
     file << "file  = false" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
-    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
+    file << "0.diffusion_factor = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]" << std::endl;
     file << GridProviderType::default_config(GridProviderType::static_id());
     file << ProblemType::default_config(ProblemType::static_id());
     file << "[pymor]" << std::endl;
@@ -281,7 +281,6 @@ public:
   typedef GridImp GridType;
   typedef grid::Multiscale::Providers::Cube< GridType > GridProviderType;
 private:
-  typedef Stuff::Grid::BoundaryInfos::AllDirichlet< typename GridType::LeafIntersection > BoundaryInfoType;
   typedef typename GridType::template Codim< 0 >::Entity EntityType;
   typedef typename GridType::ctype DomainFieldType;
   static const unsigned int dimDomain = GridType::dimension;
@@ -298,18 +297,18 @@ public:
     file << "filename = " << id << std::endl;
     file << "[logging]" << std::endl;
     file << "info  = true" << std::endl;
-    file << "debug = true" << std::endl;
+    file << "debug = false" << std::endl;
     file << "file  = false" << std::endl;
+    file << "visualize = false" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
-    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
+    file << "0.diffusion_factor = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]" << std::endl;
     file << GridProviderType::default_config(GridProviderType::static_id());
     file << ProblemType::default_config(ProblemType::static_id());
     file << "[pymor]" << std::endl;
     file << "training_set = random" << std::endl;
     file << "num_training_samples = 100" << std::endl;
     file << "reductor = generic" << std::endl;
-    file << "extension_algorithm = gram_schmidt" << std::endl;
+    file << "extension_algorithm = pod" << std::endl;
     file << "extension_algorithm_product = h1_semi" << std::endl;
     file << "greedy_error_norm = h1_semi" << std::endl;
     file << "use_estimator = False" << std::endl;
@@ -364,7 +363,11 @@ public:
       info << "s";
     info << ")" << std::endl;
 
-    boundary_info_ = Stuff::Common::ConfigTree("type", BoundaryInfoType::static_id());
+    boundary_info_ = Stuff::Grid::BoundaryInfoConfigs::NormalBased::default_config();
+    boundary_info_["dirichlet.0"] = "[0.0 -1.0]";
+    boundary_info_["dirichlet.1"] = "[0.0 1.0]";
+    boundary_info_["neumann.0"] = "[1.0 0.0]";
+    boundary_info_["neumann.1"] = "[-1.0 0.0]";
 
     info << "setting up ";
     info << "'" << ProblemType::static_id() << "'... " << std::flush;
@@ -372,10 +375,11 @@ public:
     problem_ = ProblemType::create(config_);
     info << "done (took " << timer.elapsed() << "s)" << std::endl;
 
-    if (visualize) {
+    if (visualize && logger_config.get("visualize", false)) {
       info << "visualizing grid and problem... " << std::flush;
       timer.reset();
-      grid_provider_->visualize(filename_ + ".grid");
+      grid_provider_->visualize(boundary_info_, filename_ + ".grid");
+      grid_provider_->visualize(filename_ + ".msgrid");
       problem_->visualize(*grid_view, filename_ + ".problem");
       info << "done (took " << timer.elapsed() << "s)" << std::endl;
     } // if (visualize)
