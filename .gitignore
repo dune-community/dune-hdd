@@ -30,3 +30,4 @@ demos-*
 *.lo
 *.la
 .dirstamp
+*.swp
