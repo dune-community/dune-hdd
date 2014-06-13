@@ -19,6 +19,10 @@ add_library(dunehdd-linearelliptic-thermalblock
             STATIC
             "thermalblock.cc")
 
+add_library(dunehdd-linearelliptic-online-enrichment
+            STATIC
+            "online_enrichment.cc")
+
 
 #ADD_EXECUTABLE(example_linearelliptic_cg "cg_main.cc" ${COMMON_HEADER})
 #TARGET_LINK_LIBRARIES(example_linearelliptic_cg
@@ -35,9 +39,14 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_block_swipdg
                       dunehdd-linearelliptic-block-swipdg
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-ADD_EXECUTABLE(example_linearelliptic_thermalblock  "thermalblock_main.cc" ${COMMON_HEADER})
+ADD_EXECUTABLE(example_linearelliptic_thermalblock "thermalblock_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
                       dunehdd-linearelliptic-thermalblock
+                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+
+ADD_EXECUTABLE(example_linearelliptic_online_enrichment "online_enrichment_main.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_online_enrichment
+                      dunehdd-linearelliptic-online-enrichment
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 ADD_EXECUTABLE(example_linearelliptic_spe10model1 "spe10model1.cc" ${COMMON_HEADER})
@@ -45,3 +54,4 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_spe10model1 ${COMMON_LIBS})
 
 #add_python_bindings(linearellipticexamplecg cg_bindings_generator.py cg.hh dunehdd-linearelliptic-cg)
 add_python_bindings(linearellipticexamplethermalblock thermalblock_bindings_generator.py thermalblock.hh dunehdd-linearelliptic-thermalblock)
+add_python_bindings(linearellipticexampleonlineenrichment online_enrichment_bindings_generator.py online-enrichment.hh dunehdd-linearelliptic-online-enrichment)
