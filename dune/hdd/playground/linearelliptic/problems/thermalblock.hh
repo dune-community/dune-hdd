@@ -107,9 +107,9 @@ public:
   Thermalblock(const std::shared_ptr< const CheckerboardFunctionType >& checkerboard_function,
                const std::shared_ptr< const DiffusionTensorType >& diffusion_tensor,
                const std::shared_ptr< const FunctionType >& force,
-               const std::shared_ptr< const FunctionType >& diffusion,
+               const std::shared_ptr< const FunctionType >& dirichlet,
                const std::shared_ptr< const FunctionType >& neumann)
-    : BaseType(checkerboard_function, diffusion_tensor, force, diffusion, neumann)
+    : BaseType(checkerboard_function, diffusion_tensor, force, dirichlet, neumann)
   {}
 
   virtual std::string type() const DS_OVERRIDE
