@@ -64,15 +64,15 @@ public:
     return "hdd.linearelliptic.problem";
   }
 
-  virtual const DiffusionFactorType& diffusion_factor() const = 0;
+  virtual const std::shared_ptr< const DiffusionFactorType >& diffusion_factor() const = 0;
 
-  virtual const DiffusionTensorType& diffusion_tensor() const = 0;
+  virtual const std::shared_ptr< const DiffusionTensorType >& diffusion_tensor() const = 0;
 
-  virtual const FunctionType& force() const = 0;
+  virtual const std::shared_ptr< const FunctionType >& force() const = 0;
 
-  virtual const FunctionType& dirichlet() const = 0;
+  virtual const std::shared_ptr< const FunctionType >& dirichlet() const = 0;
 
-  virtual const FunctionType& neumann() const = 0;
+  virtual const std::shared_ptr< const FunctionType >& neumann() const = 0;
 
   template< class G >
   void visualize(const GridView< G >& grid_view,
@@ -95,26 +95,26 @@ public:
   {
     out << prefix << "problem '" << type() << "':" << std::endl;
     out << prefix << "  diffusion_factor:" << std::endl;
-    diffusion_factor().report(out, prefix + "    ");
+    diffusion_factor()->report(out, prefix + "    ");
     out << "\n" << prefix << "  diffusion_tensor:" << std::endl;
-    diffusion_tensor().report(out, prefix + "    ");
+    diffusion_tensor()->report(out, prefix + "    ");
     out << "\n" << prefix << "  force:" << std::endl;
-    force().report(out, prefix + "    ");
+    force()->report(out, prefix + "    ");
     out << "\n"<< prefix << "  dirichlet:" << std::endl;
-    dirichlet().report(out, prefix + "    ");
+    dirichlet()->report(out, prefix + "    ");
     out << "\n" << prefix << "  neumann:" << std::endl;
-    neumann().report(out, prefix + "    ");
+    neumann()->report(out, prefix + "    ");
   } // ... report(...)
 
 private:
   template< class GridViewType, class VTKWriterType >
   void add_visualizations_(const GridViewType& grid_view, VTKWriterType& vtk_writer) const
   {
-    add_function_visualization_(grid_view, diffusion_factor(), vtk_writer);
-//    add_function_visualization_(grid_view, diffusion_tensor(), vtk_writer);
-    add_function_visualization_(grid_view, force(), vtk_writer);
-    add_function_visualization_(grid_view, dirichlet(), vtk_writer);
-    add_function_visualization_(grid_view, neumann(), vtk_writer);
+    add_function_visualization_(grid_view, *diffusion_factor(), vtk_writer);
+//    add_function_visualization_(grid_view, *diffusion_tensor(), vtk_writer);
+    add_function_visualization_(grid_view, *force(), vtk_writer);
+    add_function_visualization_(grid_view, *dirichlet(), vtk_writer);
+    add_function_visualization_(grid_view, *neumann(), vtk_writer);
   } // ... add_visualizations_(...)
 
   template< class GridViewType, class F, class VTKWriterType >
