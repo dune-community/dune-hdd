@@ -14,6 +14,7 @@
 
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/string.hh>
+#include <dune/stuff/common/memory.hh>
 #include <dune/stuff/functions/default.hh>
 
 #include <dune/pymor/parameters/base.hh>
@@ -22,6 +23,15 @@
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
+namespace Problems {
+
+
+// forward, needed for with_mu()
+template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
+class Default;
+
+
+} // namespace Problems
 
 
 template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim >
@@ -106,6 +116,19 @@ public:
     neumann()->report(out, prefix + "    ");
   } // ... report(...)
 
+  std::shared_ptr< ThisType > with_mu(const Pymor::Parameter mu = Pymor::Parameter()) const
+  {
+    if (mu.type() != this->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "mu is " << mu.type() << ", should be " << this->parameter_type() << "!");
+    typedef Problems::Default< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > DefaultProblemType;
+    return std::make_shared< DefaultProblemType >(diffusion_factor()->with_mu(this->map_parameter(mu, "diffusion_factor")),
+                                                  diffusion_tensor()->with_mu(this->map_parameter(mu, "diffusion_tensor")),
+                                                  force()->with_mu(this->map_parameter(mu, "force")),
+                                                  dirichlet()->with_mu(this->map_parameter(mu, "dirichlet")),
+                                                  neumann()->with_mu(this->map_parameter(mu, "neumann")));
+  } // ... with_mu(...)
+
 private:
   template< class GridViewType, class VTKWriterType >
   void add_visualizations_(const GridViewType& grid_view, VTKWriterType& vtk_writer) const
@@ -144,5 +167,7 @@ std::ostream& operator<<(std::ostream& out, const ProblemInterface< E, D, d, R, 
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
+
+#include "default.hh"
 
 #endif // DUNE_HDD_LINEARELLIPTIC_PROBLEMS_INTERFACES_HH
