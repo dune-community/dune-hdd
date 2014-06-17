@@ -156,29 +156,29 @@ public:
     return BaseType::static_id() + ".default";
   }
 
-  virtual const DiffusionFactorType& diffusion_factor() const DS_OVERRIDE
+  virtual const std::shared_ptr< const DiffusionFactorType >& diffusion_factor() const DS_OVERRIDE
   {
-    return *diffusion_factor_;
+    return diffusion_factor_;
   }
 
-  virtual const DiffusionTensorType& diffusion_tensor() const DS_OVERRIDE
+  virtual const std::shared_ptr< const DiffusionTensorType >& diffusion_tensor() const DS_OVERRIDE
   {
-    return *diffusion_tensor_;
+    return diffusion_tensor_;
   }
 
-  virtual const FunctionType& force() const DS_OVERRIDE
+  virtual const std::shared_ptr< const FunctionType >& force() const DS_OVERRIDE
   {
-    return *force_;
+    return force_;
   }
 
-  virtual const FunctionType& dirichlet() const DS_OVERRIDE
+  virtual const std::shared_ptr< const FunctionType >& dirichlet() const DS_OVERRIDE
   {
-    return *dirichlet_;
+    return dirichlet_;
   }
 
-  virtual const FunctionType& neumann() const DS_OVERRIDE
+  virtual const std::shared_ptr< const FunctionType >& neumann() const DS_OVERRIDE
   {
-    return *neumann_;
+    return neumann_;
   }
 
 protected:
