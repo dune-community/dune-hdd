@@ -165,9 +165,9 @@ public:
     , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::ansatz_space())))
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
-    if (this->problem_.diffusion_tensor().parametric())
+    if (this->problem_.diffusion_tensor()->parametric())
       DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor().has_affine_part())
+    if (!this->problem_.diffusion_tensor()->has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // SWIPDG(...)
 
@@ -184,9 +184,9 @@ public:
     , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::ansatz_space())))
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
-    if (this->problem_.diffusion_tensor().parametric())
+    if (this->problem_.diffusion_tensor()->parametric())
       DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor().has_affine_part())
+    if (!this->problem_.diffusion_tensor()->has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // SWIPDG(...)
 #endif // HAVE_DUNE_GRID_MULTISCALE
@@ -211,8 +211,8 @@ public:
       SystemAssembler< TestSpaceType > system_assembler(space);
 
       // lhs operator
-      const auto& diffusion_factor = this->problem_.diffusion_factor();
-      const auto& diffusion_tensor = this->problem_.diffusion_tensor();
+      const auto& diffusion_factor = *(this->problem_.diffusion_factor());
+      const auto& diffusion_tensor = *(this->problem_.diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
@@ -242,7 +242,7 @@ public:
       // rhs functional
       // * volume
       typedef typename ProblemType::FunctionType::NonparametricType FunctionType;
-      const auto& force = this->problem_.force();
+      const auto& force = *(this->problem_.force());
       typedef Functionals::L2Volume< FunctionType, VectorType, TestSpaceType > L2VolumeFunctionalType;
       std::vector< std::unique_ptr< L2VolumeFunctionalType > > force_functionals;
       for (size_t qq = 0; qq < force.num_components(); ++qq) {
@@ -261,7 +261,7 @@ public:
       for (auto& force_functional : force_functionals)
         system_assembler.add(*force_functional);
       // * dirichlet boundary
-      const auto& dirichlet = this->problem_.dirichlet();
+      const auto& dirichlet = *(this->problem_.dirichlet());
       typedef Functionals::DirichletBoundarySWIPDG< DiffusionFactorType, FunctionType, VectorType, TestSpaceType,
                                                     GridViewType, DiffusionTensorType > DirichletBoundaryFunctionalType;
       std::vector< std::unique_ptr< DirichletBoundaryFunctionalType > > dirichlet_boundary_functionals;
@@ -323,7 +323,7 @@ public:
         system_assembler.add(*dirichlet_boundary_functional);
 
       // * neumann boundary
-      const auto& neumann = this->problem_.neumann();
+      const auto& neumann = *(this->problem_.neumann());
       typedef Functionals::L2Face< FunctionType, VectorType, TestSpaceType > L2FaceFunctionalType;
       std::vector< std::unique_ptr< L2FaceFunctionalType > > neumann_boundary_functionals;
       for (size_t qq = 0; qq < neumann.num_components(); ++qq) {
