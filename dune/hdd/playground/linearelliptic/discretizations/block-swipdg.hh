@@ -38,6 +38,7 @@
 #include <dune/gdt/playground/localevaluation/swipdg.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/operators/oswaldinterpolation.hh>
+#include <dune/gdt/operators/projections.hh>
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
@@ -45,6 +46,7 @@
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/assembler/system.hh>
 
+#include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/playground/linearelliptic/problems/zero-boundary.hh>
 
 #include "../../../linearelliptic/discretizations/base.hh"
@@ -86,10 +88,12 @@ public:
     : zero_boundary_problem_(prob)
     , all_dirichlet_boundary_config_(Stuff::Grid::BoundaryInfos::AllDirichlet< IntersectionType >::default_config())
     , all_neumann_boundary_config_(Stuff::Grid::BoundaryInfos::AllNeumann< IntersectionType >::default_config())
+    , multiscale_boundary_config_(Stuff::Grid::BoundaryInfoConfigs::IdBased::default_config())
     , local_discretizations_(grid_provider.num_subdomains(), nullptr)
     , local_test_spaces_(grid_provider.num_subdomains(), nullptr)
     , local_ansatz_spaces_(grid_provider.num_subdomains(), nullptr)
   {
+    multiscale_boundary_config_["neumann"] = "7";
     for (size_t ss = 0; ss < grid_provider.num_subdomains(); ++ss) {
       local_discretizations_[ss] = std::make_shared< DiscretizationType >(grid_provider,
                                                                           all_neumann_boundary_config_,
@@ -104,6 +108,7 @@ protected:
   const FakeProblemType zero_boundary_problem_;
   const Stuff::Common::ConfigTree all_dirichlet_boundary_config_;
   const Stuff::Common::ConfigTree all_neumann_boundary_config_;
+  Stuff::Common::ConfigTree multiscale_boundary_config_;
   std::vector< std::shared_ptr< DiscretizationType > > local_discretizations_;
   std::vector< std::shared_ptr< const TestSpaceType > > local_test_spaces_;
   std::vector< std::shared_ptr< const AnsatzSpaceType > > local_ansatz_spaces_;
@@ -1178,6 +1183,74 @@ public:
 
     return ret;
   } // ... estimate_local(...)
+
+  VectorType solve_for_local_correction(const std::vector< VectorType >& local_vectors,
+                                        const size_t subdomain,
+                                        const Pymor::Parameter mu = Pymor::Parameter()) const
+  {
+    using namespace GDT;
+
+    if (mu.type() != this->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "mu is " << mu.type() << ", should be " << this->parameter_type() << "!");
+    if (local_vectors.size() != ms_grid_->size())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "local_vectors is of size " << local_vectors.size() << " and should be of size " << ms_grid_->size());
+    VectorType vector(this->ansatz_space()->mapper().size());
+    for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
+      if (local_vectors[ss].size() != this->local_discretizations_[ss]->ansatz_space()->mapper().size())
+        DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                   "local_vectors[" << ss << "] is of size " << local_vectors[ss].size() << " and should be of size "
+                   << this->local_discretizations_[ss]->ansatz_space()->mapper().size());
+      if (!local_vectors[ss].valid())
+        DUNE_THROW(Stuff::Exceptions::wrong_input_given, "local_vectors[" << ss << "] contains NaN or INF!");
+      copy_local_to_global_vector(local_vectors[ss], ss, vector);
+    }
+
+    const std::string prefix = "subdomain_" + DSC::toString(subdomain) + "_";
+
+    const ConstDiscreteFunction< AnsatzSpaceType, VectorType > current_global_solution(*this->ansatz_space(), vector);
+    current_global_solution.visualize(prefix + "current_solution_global");
+
+    typedef SWIPDG< typename MsGridType::GridType, Stuff::Grid::ChooseLayer::local_oversampled, RangeFieldType, dimRange
+                  , 1, GDT::ChooseSpaceBackend::fem, la_backend > OversampledDiscretizationType;
+    OversampledDiscretizationType oversampled_discretization(grid_provider_,
+                                                             this->multiscale_boundary_config_,
+                                                             this->problem(),
+                                                             subdomain);
+    oversampled_discretization.init();
+
+    DiscreteFunction< typename OversampledDiscretizationType::AnsatzSpaceType, VectorType >
+        current_oversampled_solution(*oversampled_discretization.ansatz_space());
+    const Operators::Projection< typename OversampledDiscretizationType::GridViewType >
+        oversampled_projection_operator(*oversampled_discretization.grid_view());
+    oversampled_projection_operator.apply(current_global_solution, current_oversampled_solution);
+    current_oversampled_solution.visualize(prefix + "current_solution_oversampled");
+
+    if (!oversampled_discretization.rhs()->has_affine_part())
+      oversampled_discretization.rhs()->register_affine_part(oversampled_discretization.test_space()->mapper().size());
+    if (oversampled_discretization.system_matrix()->parametric()) {
+      const auto oversampled_system_matrix = oversampled_discretization.system_matrix()->freeze_parameter(mu);
+      *(oversampled_discretization.rhs()->affine_part())
+          -= oversampled_system_matrix * current_oversampled_solution.vector();
+    } else {
+      const auto& oversampled_system_matrix = *(oversampled_discretization.system_matrix()->affine_part());
+      *(oversampled_discretization.rhs()->affine_part())
+          -= oversampled_system_matrix * current_oversampled_solution.vector();
+    }
+
+    oversampled_discretization.solve(current_oversampled_solution.vector(), mu);
+    current_oversampled_solution.visualize(prefix + "correction_oversampled");
+
+    DiscreteFunction< typename LocalDiscretizationType::AnsatzSpaceType, VectorType >
+        local_solution(*this->local_discretizations_[subdomain]->ansatz_space());
+    const Operators::Projection< typename LocalDiscretizationType::GridViewType >
+        local_projection_operator(*this->local_discretizations_[subdomain]->grid_view());
+    local_projection_operator.apply(current_oversampled_solution, local_solution);
+    local_solution.visualize(prefix + "correction_local");
+
+    return local_solution.vector();
+  } // ... solve_for_local_correction(...)
 
 private:
   class CouplingAssembler
