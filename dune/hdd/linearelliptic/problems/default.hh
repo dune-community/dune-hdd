@@ -147,8 +147,6 @@ public:
     this->inherit_parameter_type(neumann_->parameter_type(),   "neumann");
   }
 
-  Default(const ThisType& other) = delete;
-
   ThisType& operator=(const ThisType& other) = delete;
 
   virtual std::string type() const DS_OVERRIDE
