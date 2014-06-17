@@ -300,9 +300,9 @@ public:
 //    , outside_inside_coupling_matrices_(ms_grid_->size())
   {
     // in case of parametric diffusion tensor everything is too complicated
-    if (this->problem_.diffusion_tensor().parametric())
+    if (this->problem_.diffusion_tensor()->parametric())
       DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor().has_affine_part())
+    if (!this->problem_.diffusion_tensor()->has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // BlockSWIPDG(...)
 
@@ -330,19 +330,19 @@ public:
         local_matrices_[ss] = std::make_shared< AffinelyDecomposedMatrixType >();
         //   * we take the affine part only if the diffusion has one, otherwise it contains only the dirichlet rows,
         //     thus it is empty, since the local problems are purely neumann
-        if (this->problem().diffusion_factor().has_affine_part()) {
+        if (this->problem().diffusion_factor()->has_affine_part()) {
           if (!local_operator.has_affine_part())
             DUNE_THROW(Stuff::Exceptions::internal_error, "The local operator is missing the affine part!");
           local_matrices_[ss]->register_affine_part(new MatrixType(*(local_operator.affine_part().container())));
         }
-        if (local_operator.num_components() < this->problem().diffusion_factor().num_components())
+        if (local_operator.num_components() < this->problem().diffusion_factor()->num_components())
           DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
-                           "The local operator should have " << this->problem().diffusion_factor().num_components()
+                           "The local operator should have " << this->problem().diffusion_factor()->num_components()
                            << " components (but has only " << local_operator.num_components() << ")!");
-        for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq)
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq)
           local_matrices_[ss]->register_component(new MatrixType(
               local_operator.component(qq).container()->backend()),
-              this->problem().diffusion_factor().coefficient(qq));
+              this->problem().diffusion_factor()->coefficient(qq));
         // * and the vectors
         const auto local_functional = this->local_discretizations_[ss]->get_rhs();
         local_vectors_[ss] = std::make_shared< AffinelyDecomposedVectorType >();
@@ -406,7 +406,7 @@ public:
             // create the coupling matrices
             auto inside_outside_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
             auto outside_inside_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-            if (this->problem().diffusion_factor().has_affine_part()) {
+            if (this->problem().diffusion_factor()->has_affine_part()) {
               inside_outside_matrix->register_affine_part(new MatrixType(inner_test_mapper.size(),
                                                                          outer_ansatz_mapper.size(),
                                                                          inside_outside_pattern));
@@ -414,15 +414,15 @@ public:
                                                                          inner_ansatz_mapper.size(),
                                                                          outside_inside_pattern));
             }
-            for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq) {
+            for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
               inside_outside_matrix->register_component(new MatrixType(inner_test_mapper.size(),
                                                                        outer_ansatz_mapper.size(),
                                                                        inside_outside_pattern),
-                                                        this->problem().diffusion_factor().coefficient(qq));
+                                                        this->problem().diffusion_factor()->coefficient(qq));
               outside_inside_matrix->register_component(new MatrixType(outer_test_mapper.size(),
                                                                        inner_ansatz_mapper.size(),
                                                                        outside_inside_pattern),
-                                                        this->problem().diffusion_factor().coefficient(qq));
+                                                        this->problem().diffusion_factor()->coefficient(qq));
             }
             // and assemble them
             assemble_coupling_contributions(ss, nn,
@@ -1207,7 +1207,7 @@ private:
     // * dirichlet boundary terms
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
     typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    const auto& diffusion_tensor = *(this->problem().diffusion_tensor());
     assert(!diffusion_tensor.parametric());
     assert(diffusion_tensor.has_affine_part());
     typedef GDT::LocalOperator::Codim1BoundaryIntegral< GDT::LocalEvaluation::SWIPDG::BoundaryLHS< DiffusionFactorType, DiffusionTensorType > >
@@ -1215,16 +1215,16 @@ private:
     typedef GDT::LocalAssembler::Codim1BoundaryMatrix< DirichletOperatorType > DirichletMatrixAssemblerType;
     std::vector< DirichletOperatorType* > dirichlet_operators;
     std::vector< DirichletMatrixAssemblerType* > dirichlet_matrix_assemblers;
-    for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq) {
-      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor().component(qq)),
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
+      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->component(qq)),
                                                               *(diffusion_tensor.affine_part())));
       dirichlet_matrix_assemblers.push_back(new DirichletMatrixAssemblerType(*(dirichlet_operators[qq])));
       boundary_assembler.add(*(dirichlet_matrix_assemblers[qq]),
                              *(local_matrix.component(qq)),
                              new GDT::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
-    if (this->problem().diffusion_factor().has_affine_part()) {
-      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor().affine_part()),
+    if (this->problem().diffusion_factor()->has_affine_part()) {
+      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->affine_part()),
                                                               *(diffusion_tensor.affine_part())));
       dirichlet_matrix_assemblers.push_back(new DirichletMatrixAssemblerType(*(
           dirichlet_operators[dirichlet_operators.size() - 1])));
@@ -1240,15 +1240,15 @@ private:
     typedef GDT::LocalAssembler::Codim1Vector< NeumannFunctionalType > NeumannVectorAssemblerType;
     std::vector< NeumannFunctionalType* > neumann_functionals;
     std::vector< NeumannVectorAssemblerType* > neumann_vector_assemblers;
-    for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().neumann().num_components(); ++qq) {
-      neumann_functionals.push_back(new NeumannFunctionalType(*(this->problem().neumann().component(qq))));
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().neumann()->num_components(); ++qq) {
+      neumann_functionals.push_back(new NeumannFunctionalType(*(this->problem().neumann()->component(qq))));
       neumann_vector_assemblers.push_back(new NeumannVectorAssemblerType(*(neumann_functionals[qq])));
       boundary_assembler.add(*(neumann_vector_assemblers[qq]),
-                             *(local_vector.component(this->problem().force().num_components() + qq)),
+                             *(local_vector.component(this->problem().force()->num_components() + qq)),
                              new GDT::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
-    if (this->problem().neumann().has_affine_part()) {
-      neumann_functionals.push_back(new NeumannFunctionalType(*(this->problem().neumann().affine_part())));
+    if (this->problem().neumann()->has_affine_part()) {
+      neumann_functionals.push_back(new NeumannFunctionalType(*(this->problem().neumann()->affine_part())));
       neumann_vector_assemblers.push_back(new NeumannVectorAssemblerType(*(
           neumann_functionals[neumann_functionals.size() - 1])));
       boundary_assembler.add(*(neumann_vector_assemblers[neumann_vector_assemblers.size() - 1]),
@@ -1265,12 +1265,12 @@ private:
     typedef GDT::LocalAssembler::Codim1Vector< DirichletFunctionalType > DirichletVectorAssemblerType;
     std::vector< DirichletFunctionalType* > dirichlet_functionals;
     std::vector< DirichletVectorAssemblerType* > dirichlet_vector_assemblers;
-    size_t component_index = this->problem().force().num_components() + this->problem().neumann().num_components();
-    if (this->problem().diffusion_factor().has_affine_part()) {
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet().num_components(); ++qq) {
-        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor().affine_part()),
+    size_t component_index = this->problem().force()->num_components() + this->problem().neumann()->num_components();
+    if (this->problem().diffusion_factor()->has_affine_part()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet()->num_components(); ++qq) {
+        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->affine_part()),
                                                                     *(diffusion_tensor.affine_part()),
-                                                                    *(this->problem().dirichlet().component(qq))));
+                                                                    *(this->problem().dirichlet()->component(qq))));
         dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
@@ -1279,11 +1279,11 @@ private:
         ++component_index;
       }
     }
-    if (this->problem().dirichlet().has_affine_part()) {
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq) {
-        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor().component(qq)),
+    if (this->problem().dirichlet()->has_affine_part()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
+        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(qq)),
                                                                     *(diffusion_tensor.affine_part()),
-                                                                    *(this->problem().dirichlet().affine_part())));
+                                                                    *(this->problem().dirichlet()->affine_part())));
         dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
@@ -1292,11 +1292,11 @@ private:
         ++component_index;
       }
     }
-    for (DUNE_STUFF_SSIZE_T pp = 0; pp < this->problem().diffusion_factor().num_components(); ++ pp) {
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet().num_components(); ++qq) {
-        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor().component(pp)),
+    for (DUNE_STUFF_SSIZE_T pp = 0; pp < this->problem().diffusion_factor()->num_components(); ++ pp) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet()->num_components(); ++qq) {
+        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(pp)),
                                                                     *(diffusion_tensor.affine_part()),
-                                                                    *(this->problem().dirichlet().component(qq))));
+                                                                    *(this->problem().dirichlet()->component(qq))));
         dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
@@ -1341,7 +1341,7 @@ private:
 
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
     typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    const auto& diffusion_tensor = *(this->problem().diffusion_tensor());
     assert(!diffusion_tensor.parametric());
     assert(diffusion_tensor.has_affine_part());
     typedef GDT::LocalOperator::Codim1CouplingIntegral< GDT::LocalEvaluation::SWIPDG::Inner< DiffusionFactorType,
@@ -1350,8 +1350,8 @@ private:
     typedef GDT::LocalAssembler::Codim1CouplingMatrix< CouplingOperatorType > CouplingMatrixAssemblerType;
     std::vector< CouplingOperatorType* > coupling_operators;
     std::vector< CouplingMatrixAssemblerType* > coupling_matrix_assemblers;
-    for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor().num_components(); ++qq) {
-      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor().component(qq)),
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
+      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor()->component(qq)),
                                                             *(diffusion_tensor.affine_part())));
       coupling_matrix_assemblers.push_back(new CouplingMatrixAssemblerType(*(coupling_operators[qq])));
       coupling_assembler.addLocalAssembler(*(coupling_matrix_assemblers[qq]),
@@ -1360,8 +1360,8 @@ private:
                                            *(outside_inside_matrix.component(qq)),
                                            *(outside_outside_matrix.component(qq)));
     }
-    if (this->problem().diffusion_factor().has_affine_part()) {
-      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor().affine_part()),
+    if (this->problem().diffusion_factor()->has_affine_part()) {
+      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor()->affine_part()),
                                                             *(diffusion_tensor.affine_part())));
       coupling_matrix_assemblers.push_back(new CouplingMatrixAssemblerType(*(
           coupling_operators[coupling_operators.size() - 1])));
