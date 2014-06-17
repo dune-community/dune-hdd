@@ -899,6 +899,11 @@ public:
     return eta_nc_squared + eta_r_squared + eta_df_squared;
   } // ... estimate_local(...)
 
+  VectorType* create_ones() const
+  {
+    return new VectorType(this->ansatz_space()->mapper().size(), 1.0);
+  }
+
 private:
   class CouplingAssembler
   {
