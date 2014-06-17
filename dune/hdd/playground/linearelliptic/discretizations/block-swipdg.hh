@@ -904,6 +904,85 @@ public:
     return new VectorType(this->ansatz_space()->mapper().size(), 1.0);
   }
 
+  void visualize_information(const std::vector< VectorType >& local_vectors,
+                             const std::string& filename,
+                             const Pymor::Parameter mu = Pymor::Parameter(),
+                             const Pymor::Parameter mu_fixed = Pymor::Parameter()) const
+  {
+    using namespace GDT;
+
+    if (mu.type() != this->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "mu is " << mu.type() << ", should be " << this->parameter_type() << "!");
+    if (mu_fixed.type() != this->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "mu_fixed is " << mu_fixed.type() << ", should be " << this->parameter_type() << "!");
+    if (local_vectors.size() != ms_grid_->size())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "local_vectors is of size " << local_vectors.size() << " and should be of size " << ms_grid_->size());
+    VectorType vector(this->ansatz_space()->mapper().size());
+    for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
+      if (local_vectors[ss].size() != this->local_discretizations_[ss]->ansatz_space()->mapper().size())
+        DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                   "local_vectors[" << ss << "] is of size " << local_vectors[ss].size() << " and should be of size "
+                   << this->local_discretizations_[ss]->ansatz_space()->mapper().size());
+      if (!local_vectors[ss].valid())
+        DUNE_THROW(Stuff::Exceptions::wrong_input_given, "local_vectors[" << ss << "] contains NaN or INF!");
+      copy_local_to_global_vector(local_vectors[ss], ss, vector);
+    }
+
+    VectorType solution = this->create_vector();
+    this->solve(solution, mu);
+
+    // difference
+    VectorType difference_vector = solution - vector;
+    typedef DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
+    DiscreteFunctionType difference(*this->ansatz_space(), difference_vector);
+
+    // estimator
+    auto local_estimates = estimate_local(local_vectors, mu, mu_fixed);
+
+    // energy error
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = this->problem().diffusion_factor();
+    const auto nonparametric_diffusion_factor = diffusion_factor->with_mu(mu);
+    const LocalOperator::Codim0Integral< LocalEvaluation::Elliptic< DiffusionFactorType, DiffusionTensorType > >
+        local_energy_product(1, *nonparametric_diffusion_factor, *diffusion_tensor->affine_part());
+    std::vector< DynamicMatrix< RangeFieldType > > tmp_matrices(local_energy_product.numTmpObjectsRequired(),
+                                                                DynamicMatrix< RangeFieldType >(1, 1, 0.0));
+    DynamicMatrix< RangeFieldType > local_result_matrix(1, 1, 0.0);
+    const auto grid_view = ms_grid_->globalGridView();
+    std::vector< double > energy_error_visualization(grid_view->indexSet().size(0), 0.0);
+    std::vector< double > estimator_visualization(grid_view->indexSet().size(0), 0.0);
+    const auto entity_it_end = grid_view->template end< 0 >();
+    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+      const auto& entity = *entity_it;
+
+      const auto local_difference = difference.local_function(entity);
+      local_energy_product.apply(*local_difference,
+                                 *local_difference,
+                                 local_result_matrix,
+                                 tmp_matrices);
+      assert(local_result_matrix.rows() >= 1);
+      assert(local_result_matrix.cols() >= 1);
+      const size_t index = grid_view->indexSet().index(entity);
+      energy_error_visualization[index] = local_result_matrix[0][0];
+      estimator_visualization[index] = local_estimates[ms_grid_->subdomainOf(entity)];
+    }
+    VTKWriter< typename MsGridType::GlobalGridViewType > vtk_writer(*grid_view);
+    vtk_writer.addCellData(energy_error_visualization, "energy error");
+    vtk_writer.addCellData(estimator_visualization, "estimator");
+    vtk_writer.write(filename + ".energy_error", VTK::appendedraw);
+
+    // visualize difference
+    for (auto& element : difference.vector())
+      element = std::abs(element);
+    difference.visualize(filename + ".difference");
+  } // ... visualize_information(...)
+
   std::vector< double > estimate_local(const std::vector< VectorType >& local_vectors,
                                        const Pymor::Parameter mu = Pymor::Parameter(),
                                        const Pymor::Parameter mu_fixed = Pymor::Parameter()) const
