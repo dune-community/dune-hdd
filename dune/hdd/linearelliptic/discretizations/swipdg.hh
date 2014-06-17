@@ -162,7 +162,7 @@ public:
                bound_inf_cfg,
                prob)
     , beta_(GDT::LocalEvaluation::SWIPDG::internal::default_beta(dimDomain))
-    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::test_space())))
+    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::ansatz_space())))
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
     if (this->problem_.diffusion_tensor().parametric())
@@ -181,7 +181,7 @@ public:
                bound_inf_cfg,
                prob)
     , beta_(GDT::LocalEvaluation::SWIPDG::internal::default_beta(dimDomain))
-    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::test_space())))
+    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::ansatz_space())))
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
     if (this->problem_.diffusion_tensor().parametric())
