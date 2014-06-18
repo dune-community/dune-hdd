@@ -32,6 +32,7 @@
 #include <dune/gdt/spaces/discontinuouslagrange.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
+#include <dune/gdt/playground/assembler/functors.hh>
 #include <dune/gdt/playground/operators/elliptic-swipdg.hh>
 #include <dune/gdt/functionals/l2.hh>
 #include <dune/gdt/playground/functionals/swipdg.hh>
@@ -209,6 +210,8 @@ public:
       out << prefix << "assembling... " << std::flush;
       Dune::Timer timer;
       SystemAssembler< TestSpaceType > system_assembler(space);
+      Functor::DirichletDetector< GridViewType > dirichlet_detector(this->boundary_info());
+      system_assembler.add(dirichlet_detector);
 
       // lhs operator
       const auto& diffusion_factor = *(this->problem_.diffusion_factor());
@@ -367,6 +370,9 @@ public:
       // do the actual assembling
       system_assembler.walk();
       out << "done (took " << timer.elapsed() << "s)" << std::endl;
+
+      if (!dirichlet_detector.found())
+        this->purely_neumann_ = true;
 
       // build parameter type
       this->inherit_parameter_type(matrix.parameter_type(), "lhs");
