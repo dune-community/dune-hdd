@@ -11,6 +11,7 @@
 
 #include <dune/stuff/common/crtp.hh>
 #include <dune/stuff/common/exceptions.hh>
+#include <dune/stuff/la/solver.hh>
 
 #include <dune/pymor/operators/base.hh>
 #include <dune/pymor/operators/affine.hh>
@@ -201,6 +202,7 @@ public:
                         const ProblemType& prb)
     : BaseType(test_spc, ansatz_spc, bnd_inf_cfg, prb)
     , container_based_initialized_(false)
+    , purely_neumann_(false)
     , matrix_(std::make_shared< AffinelyDecomposedMatrixType >())
     , rhs_(std::make_shared< AffinelyDecomposedVectorType >())
   {}
@@ -290,25 +292,36 @@ public:
   {
     assert_everything_is_ready();
     if (mu.type() != this->parameter_type())
-      DUNE_THROW_COLORFULLY(Pymor::Exceptions::wrong_parameter_type,
-                            mu.type() << " vs. " << this->parameter_type());
-    // compute right hand side vector
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type, mu.type() << " vs. " << this->parameter_type());
     const auto& rhs = *(this->rhs_);
-    std::shared_ptr< const VectorType > rhs_vector;
-    if (!rhs.parametric())
-      rhs_vector = rhs.affine_part();
-    else {
-      const Pymor::Parameter mu_rhs = this->map_parameter(mu, "rhs");
-      rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(mu_rhs));
-    }
-    const OperatorType lhsOperator(*(this->matrix_));
-    if (lhsOperator.parametric()) {
-      const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
-      const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);
-      frozenOperator.apply_inverse(*rhs_vector, vector);
+    const auto& matrix = *(this->matrix_);
+    if (purely_neumann_) {
+      VectorType tmp_rhs = rhs.parametric() ? rhs.freeze_parameter(this->map_parameter(mu, "rhs"))
+                                            : *(rhs.affine_part());
+      MatrixType tmp_system_matrix = matrix.parametric() ? matrix.freeze_parameter(this->map_parameter(mu, "lhs"))
+                                                         : *(matrix.affine_part());
+      tmp_system_matrix.unit_row(0);
+      tmp_rhs.set_entry(0, 0.0);
+      Stuff::LA::Solver< MatrixType >(tmp_system_matrix).apply(tmp_rhs, vector);
+      vector /= vector.mean();
     } else {
-      const auto nonparametricOperator = lhsOperator.affine_part();
-      nonparametricOperator.apply_inverse(*rhs_vector, vector);
+      // compute right hand side vector
+      std::shared_ptr< const VectorType > rhs_vector;
+      if (!rhs.parametric())
+        rhs_vector = rhs.affine_part();
+      else {
+        const Pymor::Parameter mu_rhs = this->map_parameter(mu, "rhs");
+        rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(mu_rhs));
+      }
+      const OperatorType lhsOperator(matrix);
+      if (lhsOperator.parametric()) {
+        const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
+        const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);
+        frozenOperator.apply_inverse(*rhs_vector, vector);
+      } else {
+        const auto nonparametricOperator = lhsOperator.affine_part();
+        nonparametricOperator.apply_inverse(*rhs_vector, vector);
+      }
     }
   } // ... uncached_solve(...)
 
@@ -323,6 +336,7 @@ protected:
   } // ... assert_everything_is_ready()
 
   bool container_based_initialized_;
+  bool purely_neumann_;
   std::shared_ptr< AffinelyDecomposedMatrixType > matrix_;
   std::shared_ptr< AffinelyDecomposedVectorType > rhs_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedMatrixType > > products_;
