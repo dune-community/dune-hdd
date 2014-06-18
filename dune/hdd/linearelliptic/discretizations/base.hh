@@ -303,7 +303,7 @@ public:
       tmp_system_matrix.unit_row(0);
       tmp_rhs.set_entry(0, 0.0);
       Stuff::LA::Solver< MatrixType >(tmp_system_matrix).apply(tmp_rhs, vector);
-      vector /= vector.mean();
+      vector -= vector.mean();
     } else {
       // compute right hand side vector
       std::shared_ptr< const VectorType > rhs_vector;
