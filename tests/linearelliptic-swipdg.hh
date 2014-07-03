@@ -140,10 +140,10 @@ private:
     } else if (type == "H1_semi") {
       return Products::H1SemiGeneric< GridViewType >(grid_view).induced_norm(function);
     } else if (type == "energy") {
-      const auto& diffusion_factor = this->test_case_.problem().diffusion_factor();
+      const auto& diffusion_factor = *(this->test_case_.problem().diffusion_factor());
       assert(!diffusion_factor.parametric());
       assert(diffusion_factor.has_affine_part());
-      const auto& diffusion_tensor = this->test_case_.problem().diffusion_tensor();
+      const auto& diffusion_tensor = *(this->test_case_.problem().diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       Products::Elliptic< DiffusionFactorType, GridViewType, double, DiffusionTensorType >
