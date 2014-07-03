@@ -460,11 +460,11 @@ private:
       oswald_interpolation_operator.apply(discrete_solution, oswald_interpolation);
 
       typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = disc.problem().diffusion_factor();
+      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
       assert(!diffusion_factor.parametric());
       assert(diffusion_factor.has_affine_part());
       typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = disc.problem().diffusion_tensor();
+      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       const Products::Elliptic< DiffusionFactorType, GridViewType, RangeFieldType, DiffusionTensorType >
@@ -485,18 +485,18 @@ private:
       VectorType p0_force_vector(p0_space.mapper().size());
       DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
 
-      const auto& force = disc.problem().force();
+      const auto& force = *(disc.problem().force());
       assert(!force.parametric());
       assert(force.has_affine_part());
       Operators::Projection< GridViewType > projection_operator(*grid_view);
       projection_operator.apply(*force.affine_part(), p0_force);
 
       typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = disc.problem().diffusion_factor();
+      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
       assert(!diffusion_factor.parametric());
       assert(diffusion_factor.has_affine_part());
       typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = disc.problem().diffusion_tensor();
+      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
@@ -523,11 +523,11 @@ private:
       RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
 
       typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = disc.problem().diffusion_factor();
+      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
       assert(!diffusion_factor.parametric());
       assert(diffusion_factor.has_affine_part());
       typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = disc.problem().diffusion_tensor();
+      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
@@ -570,7 +570,7 @@ private:
       typedef DiscreteFunction< P0SpaceType, VectorType > P0DiscreteFunctionType;
       P0DiscreteFunctionType p0_force(p0_space, p0_force_vector);
       Operators::Projection< GridViewType > projection_operator(*grid_view);
-      const auto& force = disc.problem().force();
+      const auto& force = *(disc.problem().force());
       assert(!force.parametric());
       assert(force.has_affine_part());
       projection_operator.apply(*force.affine_part(), p0_force);
@@ -582,11 +582,11 @@ private:
       RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
 
       typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = disc.problem().diffusion_factor();
+      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
       assert(!diffusion_factor.parametric());
       assert(diffusion_factor.has_affine_part());
       typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = disc.problem().diffusion_tensor();
+      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
