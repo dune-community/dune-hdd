@@ -783,7 +783,7 @@ public:
     VectorType p0_force_vector(p0_space.mapper().size());
     DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
     Operators::Projection< GlobalGridViewType > projection_operator(*grid_view);
-    const auto& force = this->problem().force();
+    const auto& force = *(this->problem().force());
     assert(!force.parametric());
     assert(force.has_affine_part());
     projection_operator.apply(*force.affine_part(), p0_force);
@@ -795,11 +795,11 @@ public:
     RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
 
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-    const auto& diffusion_factor = this->problem().diffusion_factor();
+    const auto& diffusion_factor = *(this->problem().diffusion_factor());
     assert(!diffusion_factor.parametric());
     assert(diffusion_factor.has_affine_part());
     typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto& diffusion_tensor = this->problem().diffusion_tensor();
+    const auto& diffusion_tensor = *(this->problem().diffusion_tensor());
     assert(!diffusion_tensor.parametric());
     assert(diffusion_tensor.has_affine_part());
     const Operators::DiffusiveFluxReconstruction< GlobalGridViewType, DiffusionFactorType, DiffusionTensorType >
