@@ -616,9 +616,20 @@ public:
     return new FunctionalType(get_local_functional(size_t(ss)));
   }
 
-  RangeFieldType estimate(const VectorType& vector) const
+  RangeFieldType estimate(const VectorType& vector,
+                          const Pymor::Parameter mu = Pymor::Parameter(),
+                          const Pymor::Parameter mu_fixed = Pymor::Parameter(),
+                          const Pymor::Parameter mu_minimizing = Pymor::Parameter()) const
   {
-    if (this->parametric()) DUNE_THROW(NotImplemented, "No time for that atm!");
+    if (mu.type() != this->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "mu is " << mu.type() << ", should be " << this->parameter_type() << "!");
+    if (mu_fixed.type() != this->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "mu_fixed is " << mu_fixed.type() << ", should be " << this->parameter_type() << "!");
+    if (mu_minimizing.type() != this->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "mu_minimizing is " << mu_minimizing.type() << ", should be " << this->parameter_type() << "!");
 
     using namespace GDT;
 
@@ -638,10 +649,8 @@ public:
     VectorType p0_force_vector(p0_space.mapper().size());
     DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
     Operators::Projection< GlobalGridViewType > projection_operator(*grid_view);
-    const auto& force = this->problem().force();
-    assert(!force.parametric());
-    assert(force.has_affine_part());
-    projection_operator.apply(*force.affine_part(), p0_force);
+    const auto force = this->problem().force()->with_mu(this->map_parameter(mu, "force"));
+    projection_operator.apply(*force, p0_force);
 
     typedef Spaces::RaviartThomas::PdelabBased< GlobalGridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
     const RTN0SpaceType rtn0_space(grid_view);
@@ -650,19 +659,21 @@ public:
     RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
 
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-    const auto& diffusion_factor = this->problem().diffusion_factor();
-    assert(!diffusion_factor.parametric());
-    assert(diffusion_factor.has_affine_part());
+    const auto diffusion_factor = this->problem().diffusion_factor()->with_mu(this->map_parameter(mu,
+                                                                                                  "diffusion_factor"));
+    const auto diffusion_factor_minimizing = this->problem().diffusion_factor()->with_mu(this->map_parameter(mu_minimizing,
+                                                                                                             "diffusion_factor"));
     typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto& diffusion_tensor = this->problem().diffusion_tensor();
-    assert(!diffusion_tensor.parametric());
-    assert(diffusion_tensor.has_affine_part());
+    const auto diffusion_tensor = this->problem().diffusion_tensor()->with_mu(this->map_parameter(mu,
+                                                                                                  "diffusion_tensor"));
+    const auto diffusion_tensor_minimizing = this->problem().diffusion_tensor()->with_mu(this->map_parameter(mu_minimizing,
+                                                                                                             "diffusion_tensor"));
     const Operators::DiffusiveFluxReconstruction< GlobalGridViewType, DiffusionFactorType, DiffusionTensorType >
-      diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+      diffusive_flux_reconstruction(*grid_view, *diffusion_factor, *diffusion_tensor);
     diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
 
     const LocalOperator::Codim0Integral< LocalEvaluation::Elliptic< DiffusionFactorType, DiffusionTensorType > >
-      local_eta_nc_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+      local_eta_nc_product(1, *diffusion_factor, *diffusion_tensor);
     const auto eta_nc_difference = discrete_solution - oswald_interpolation;
 
     typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
@@ -671,12 +682,16 @@ public:
     const ConstantFunctionType constant_one(1);
     const  LocalOperator::Codim0Integral< LocalEvaluation::Product< ConstantFunctionType > >
       local_eta_r_product(1, constant_one);
-    const auto eta_r_difference = *force.affine_part() - p0_force;
+    const auto eta_r_difference = *force - p0_force;
 
+    const auto diffusion_factor_fixed = this->problem().diffusion_factor()->with_mu(this->map_parameter(mu_fixed,
+                                                                                                        "diffusion_factor"));
+    const auto diffusion_tensor_fixed = this->problem().diffusion_tensor()->with_mu(this->map_parameter(mu_fixed,
+                                                                                                        "diffusion_tensor"));
     const LocalOperator::Codim0Integral< LocalEvaluation::ESV2007::DiffusiveFluxEstimate< DiffusionFactorType
                                                                                         , RTN0DiscreteFunctionType
                                                                                         , DiffusionTensorType > >
-      local_eta_df_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), diffusive_flux);
+      local_eta_df_product(1, *diffusion_factor_fixed, *diffusion_tensor_fixed, diffusive_flux);
 
     std::vector< DynamicMatrix< RangeFieldType > >
         tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
@@ -710,8 +725,8 @@ public:
 
         // compute minimum diffusion
         const RangeFieldType min_diffusion_value_entity
-            =   internal::compute_minimum(*diffusion_factor.affine_part(), entity)
-              * internal::compute_minimum(*diffusion_tensor.affine_part(), entity);
+            =   internal::compute_minimum(*diffusion_factor_minimizing, entity)
+              * internal::compute_minimum(*diffusion_tensor_minimizing, entity);
         min_diffusion_value = std::min(min_diffusion_value, min_diffusion_value_entity);
 
         local_result_matrix *= 0.0;
@@ -755,7 +770,18 @@ public:
       eta_r_squared += ((poincare_constant * diameter * diameter) / min_diffusion_value) * eta_r_T_squared;
       eta_df_squared += eta_df_T_squared;
     } // walk the subdomains
-    return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
+
+    assert(!this->problem().diffusion_tensor()->parametric());
+    assert(!this->problem().force()->parametric());
+    assert(!this->problem().dirichlet()->parametric());
+    assert(!this->problem().neumann()->parametric());
+    const double alpha = this->problem().diffusion_factor()->alpha(mu, mu_fixed);
+    const double gamma = this->problem().diffusion_factor()->gamma(mu, mu_fixed);
+    assert(alpha > 0.0);
+    assert(gamma > 0.0);
+    const double parameter_factor = std::max(std::sqrt(gamma), 1.0/std::sqrt(alpha));
+
+    return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + parameter_factor * std::sqrt(eta_df_squared);
   } // ... estimate(...)
 
   /**
