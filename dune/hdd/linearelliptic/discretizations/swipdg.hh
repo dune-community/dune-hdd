@@ -714,33 +714,33 @@ extern template class SWIPDG< SGrid< 1, 1 >, Stuff::Grid::ChooseLayer::level, do
 #endif // HAVE_DUNE_FEM
 #if HAVE_ALUGRID && HAVE_DUNE_FEM
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::common_dense >;
 
 # if HAVE_DUNE_ISTL
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >;
 
 # endif // HAVE_DUNE_ISTL
 # if HAVE_EIGEN
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_dense >;
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::leaf, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
-extern template class SWIPDG< ALUConformGrid< 2, 2 >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >, Stuff::Grid::ChooseLayer::level, double, 1, 1,
                               GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >;
 
 
