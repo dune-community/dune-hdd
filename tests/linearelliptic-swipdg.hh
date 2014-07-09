@@ -31,7 +31,8 @@ class Discretization
   typedef typename TestCaseType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = TestCaseType::dimRange;
 public:
-  typedef Discretizations::SWIPDG< GridType, Stuff::Grid::ChooseLayer::level, RangeFieldType, dimRange, polOrder > Type;
+  typedef Discretizations::SWIPDG
+      < GridType, Stuff::Grid::ChooseLayer::level, RangeFieldType, dimRange, polOrder, space_backend, la_backend > Type;
 }; // class Discretization
 
 
