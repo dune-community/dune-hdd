@@ -62,7 +62,7 @@ add_dune_modules(
 )
 
 # header
-file( GLOB_RECURSE hdd "${CMAKE_CURRENT_SOURCE_DIR}/dune/*.hh" )
+file( GLOB_RECURSE hdd "${CMAKE_CURRENT_SOURCE_DIR}/*.hh" )
 set( COMMON_HEADER ${hdd} ${DUNE_HEADERS} )
 set_source_files_properties( ${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1 )
 
