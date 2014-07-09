@@ -274,7 +274,7 @@ public:
 
   static std::string static_id()
   {
-    return typename DiscretizationInterface< Traits >::static_id() + ".block-swipdg";
+    return DiscretizationInterface< Traits >::static_id() + ".block-swipdg";
   }
 
   BlockSWIPDG(const GridProviderType& grid_provider,
