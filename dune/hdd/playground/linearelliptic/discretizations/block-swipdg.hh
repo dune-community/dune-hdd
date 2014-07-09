@@ -616,6 +616,22 @@ public:
     return new FunctionalType(get_local_functional(size_t(ss)));
   }
 
+  static std::vector< std::string > available_estimators()
+  {
+    return { "eta" } ;
+  }
+
+  RangeFieldType estimate(const VectorType& vector, const std::string type) const
+  {
+    if (type == "eta") {
+      if (this->parametric())
+        DUNE_THROW(NotImplemented, "Yet");
+      return estimate(vector);
+    } else
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "type '" << type << "' is not one of available_estimators()!");
+  } // ... estimate(...)
+
   RangeFieldType estimate(const VectorType& vector,
                           const Pymor::Parameter mu = Pymor::Parameter(),
                           const Pymor::Parameter mu_fixed = Pymor::Parameter(),
