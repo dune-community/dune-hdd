@@ -91,6 +91,15 @@ struct linearelliptic_SWIPDG_discretization
     eoc_study< GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >();
   }
 
+//  static void eoc_study_using_pdelab_and_istl()
+//  {
+//    eoc_study< GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >();
+//  }
+
+//  static void eoc_study_using_pdelab_and_eigen_sparse()
+//  {
+//    eoc_study< GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::eigen_sparse >();
+//  }
 }; // linearelliptic_SWIPDG_discretization
 
 
@@ -101,6 +110,12 @@ TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {
 TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {
   this->eoc_study_using_fem_and_eigen_sparse();
 }
+//TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_pdelab_and_istl) {
+//  this->eoc_study_using_pdelab_and_istl();
+//}
+//TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_pdelab_and_eigen_sparse) {
+//  this->eoc_study_using_pdelab_and_eigen_sparse();
+//}
 
 
 int main(int argc, char** argv)
