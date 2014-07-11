@@ -322,16 +322,17 @@ public:
   virtual double norm_reference_solution(const std::string type) DS_OVERRIDE DS_FINAL
   {
     if (is_norm(type)) {
-      if (test_case_.provides_exact_solution()) {
-        return compute_norm_(*(test_case_.reference_grid_view()), test_case_.exact_solution(), type);
-      } else {
+      const auto reference_grid_view = test_case_.reference_provider()->template global< Stuff::Grid::ChoosePartView::view >();
+      if (test_case_.provides_exact_solution())
+        return compute_norm_(*reference_grid_view, test_case_.exact_solution(), type);
+      else {
         compute_reference_solution();
         assert(reference_discretization_);
         assert(reference_solution_vector_);
         const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm_(*(test_case_.reference_grid_view()), reference_solution, type);
+        return compute_norm_(*reference_grid_view, reference_solution, type);
       }
     } else
       return 1.0;
