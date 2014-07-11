@@ -991,8 +991,8 @@ public:
 
     // energy error
     typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto& diffusion_tensor = this->problem().diffusion_tensor();
-    assert(!diffusion_tensor.parametric());
+    const auto diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor->parametric());
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
     const auto& diffusion_factor = this->problem().diffusion_factor();
     const auto nonparametric_diffusion_factor = diffusion_factor->with_mu(mu);
