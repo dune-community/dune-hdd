@@ -443,6 +443,7 @@ public:
       out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
 
       // build global containers
+      pattern_.sort();
       build_global_containers();
 
       // products
@@ -1490,10 +1491,9 @@ private:
     for (size_t local_ii = 0; local_ii < local.size(); ++local_ii) {
       const size_t global_ii = this->test_space()->mapper().mapToGlobal(test_subdomain, local_ii);
       const auto& local_rows = local.inner(local_ii);
-      auto& global_rows = global.inner(global_ii);
       for (const auto& local_jj : local_rows) {
         const size_t global_jj = this->ansatz_space()->mapper().mapToGlobal(ansatz_subdomain, local_jj);
-        global_rows.insert(global_jj);
+        global.insert(global_ii, global_jj);
       }
     }
   } // ... add_local_to_global_pattern(...)
