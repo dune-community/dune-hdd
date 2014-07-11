@@ -11,11 +11,10 @@ SUBDIRDS = .
 noinst_LTLIBRARIES = libhdd.la
 
 libhdd_la_SOURCES = \
-  linearelliptic/problems.cc
-
-#  linearelliptic/discreteproblem.cc
-#  linearelliptic/discretizations/cg_alugrid_conform_2d_fem.cc
-#  linearelliptic/discretizations/swipdg_alugrid_conform_2d_femlocalfunctions.cc
+  linearelliptic/problems.cc \
+  linearelliptic/discreteproblem.cc \
+  linearelliptic/discretizations/cg_alugrid_conform_2d_fem.cc \
+  linearelliptic/discretizations/swipdg_alugrid_conform_2d_femlocalfunctions.cc
 
 #  linearelliptic/discretizations/cg_sgrid_fem.cc
 #  linearelliptic/discretizations/cg_sgrid_pdelab.cc
