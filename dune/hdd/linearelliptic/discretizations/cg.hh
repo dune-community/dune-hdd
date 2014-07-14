@@ -145,9 +145,9 @@ public:
     , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
   {
     // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
-    if (this->problem_.diffusion_tensor().parametric())
+    if (this->problem_.diffusion_tensor()->parametric())
       DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor().has_affine_part())
+    if (!this->problem_.diffusion_tensor()->has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // CG(...)
 
@@ -163,9 +163,9 @@ public:
     , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
   {
     // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
-    if (this->problem_.diffusion_tensor().parametric())
+    if (this->problem_.diffusion_tensor()->parametric())
       DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor().has_affine_part())
+    if (!this->problem_.diffusion_tensor()->has_affine_part())
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // CG(...)
 #endif // HAVE_DUNE_GRID_MULTISCALE
@@ -193,7 +193,7 @@ public:
 
       // project dirichlet boundary values
       typedef typename ProblemType::FunctionType::NonparametricType DirichletType;
-      const auto& dirichlet = this->problem_.dirichlet();
+      const auto& dirichlet = *(this->problem_.dirichlet());
       typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
       typedef GDT::Operators::DirichletProjectionLocalizable< GridViewType, DirichletType, DiscreteFunctionType >
           DirichletProjectionOperator;
@@ -222,8 +222,8 @@ public:
         system_assembler.add(*projection_operator, new GDT::ApplyOn::BoundaryEntities< GridViewType >());
 
       // lhs operator
-      const auto& diffusion_factor = this->problem_.diffusion_factor();
-      const auto& diffusion_tensor = this->problem_.diffusion_tensor();
+      const auto& diffusion_factor = *(this->problem_.diffusion_factor());
+      const auto& diffusion_tensor = *(this->problem_.diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
@@ -250,7 +250,7 @@ public:
       // rhs functional
       // * force
       typedef typename ProblemType::FunctionType::NonparametricType ForceType;
-      const auto& force = this->problem_.force();
+      const auto& force = *(this->problem_.force());
       typedef GDT::Functionals::L2Volume< ForceType, VectorType, TestSpaceType > L2VolumeFunctionalType;
       std::vector< std::unique_ptr< L2VolumeFunctionalType > > force_functionals;
       for (size_t qq = 0; qq < force.num_components(); ++qq) {
@@ -269,7 +269,7 @@ public:
         system_assembler.add(*force_functional);
       // * neumann
       typedef typename ProblemType::FunctionType::NonparametricType NeumannType;
-      const auto& neumann = this->problem_.neumann();
+      const auto& neumann = *(this->problem_.neumann());
       typedef GDT::Functionals::L2Face< NeumannType, VectorType, TestSpaceType > L2FaceFunctionalType;
       std::vector< std::unique_ptr< L2FaceFunctionalType > > neumann_functionals;
       for (size_t qq = 0; qq < neumann.num_components(); ++qq) {
