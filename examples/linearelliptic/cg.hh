@@ -9,18 +9,12 @@
 // we need this here atm for the pythin bindings
 #include "config.h"
 
-#ifdef HAVE_DUNE_GRID_MULTISCALE
-#undef HAVE_DUNE_GRID_MULTISCALE
-#endif
-
 #include <memory>
 
-#   include <dune/stuff/common/disable_warnings.hh>
-#if HAVE_ALUGRID
-#   include <dune/stuff/common/reenable_warnings.hh>
-# include <dune/grid/alugrid.hh>
-#endif
 #include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
 # include <dune/grid/sgrid.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
@@ -110,7 +104,6 @@ extern template class LinearellipticExampleCG< Dune::ALUConformGrid< 2, 2 > >;
 
 
 #endif // HAVE_ALUGRID
+#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_HH
 
 #include <dune/stuff/common/disable_warnings.hh> // <- here for the python bindings!
-
-#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_HH
