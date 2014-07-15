@@ -15,16 +15,24 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     '''injects the user code into the module'''
     # first the discretization
     GridType = 'Dune::SGrid< 2, 2 >'
+    GridLayerType = 'Dune::Stuff::Grid::ChooseLayer::leaf'
     RangeFieldType = 'double'
     dimRange = '1'
     polOrder = '1'
-    MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
-    VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
+    SpaceBackendType = 'Dune::GDT::ChooseSpaceBackend::pdelab'
+    LaBackendType = 'Dune::Stuff::LA::ChooseBackend::istl_sparse'
+    if 'istl_sparse' in LaBackendType:
+        MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
+        VectorType = 'Dune::Stuff::LA::IstlDenseVector< ' + RangeFieldType + ' >'
+    elif 'eigen_sparse' in LaBackendType:
+        MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
+        VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
     DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::CG'
     DiscretizationFullName = (DiscretizationName + '< '
-                              + GridType + ', '
-                              + RangeFieldType + ', '
-                              + dimRange + ', ' + polOrder + ' >')
+                              + GridType + ', ' + GridLayerType + ', '
+                              + RangeFieldType + ', ' + dimRange + ', ' + polOrder + ', '
+                              + SpaceBackendType + ', '
+                              + LaBackendType + ' >')
     discretization = inject_StationaryDiscretizationImplementation(
         module, exceptions, interfaces, CONFIG_H,
         DiscretizationName,
@@ -32,7 +40,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                 'OperatorType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >',
                 'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >',
                 'ProductType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' > '},
-        template_parameters=[GridType, RangeFieldType, dimRange, polOrder])
+        template_parameters=[GridType, GridLayerType, RangeFieldType, dimRange, polOrder, SpaceBackendType, LaBackendType ])
     # then add the example
     LinearellipticExampleCG = module.add_class('LinearellipticExampleCG',
                                                template_parameters=['Dune::SGrid< 2, 2 >'],
