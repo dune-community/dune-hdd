@@ -140,11 +140,17 @@ public:
     , dirichlet_(dir)
     , neumann_(neum)
   {
-    this->inherit_parameter_type(diffusion_factor_->parameter_type(), "diffusion_factor");
-    this->inherit_parameter_type(diffusion_tensor_->parameter_type(), "diffusion_tensor");
-    this->inherit_parameter_type(force_->parameter_type(),     "force");
-    this->inherit_parameter_type(dirichlet_->parameter_type(), "dirichlet");
-    this->inherit_parameter_type(neumann_->parameter_type(),   "neumann");
+    update_parameter_dependency();
+  }
+
+  Default(const ThisType& other)
+    : diffusion_factor_(other.diffusion_factor_)
+    , diffusion_tensor_(other.diffusion_tensor_)
+    , force_(other.force_)
+    , dirichlet_(other.dirichlet_)
+    , neumann_(other.neumann_)
+  {
+    update_parameter_dependency();
   }
 
   ThisType& operator=(const ThisType& other) = delete;
@@ -217,6 +223,15 @@ protected:
     const std::string type = cfg.get("type", ConstantFunctionType::static_id());
     return FunctionsProvider::create(type, cfg);
   } // ... create_matrix_function(...)
+
+  void update_parameter_dependency()
+  {
+    this->inherit_parameter_type(diffusion_factor_->parameter_type(), "diffusion_factor");
+    this->inherit_parameter_type(diffusion_tensor_->parameter_type(), "diffusion_tensor");
+    this->inherit_parameter_type(force_->parameter_type(),     "force");
+    this->inherit_parameter_type(dirichlet_->parameter_type(), "dirichlet");
+    this->inherit_parameter_type(neumann_->parameter_type(),   "neumann");
+  } // ... update_parameter_dependency()
 
   std::shared_ptr< const DiffusionFactorType > diffusion_factor_;
   std::shared_ptr< const DiffusionTensorType > diffusion_tensor_;
