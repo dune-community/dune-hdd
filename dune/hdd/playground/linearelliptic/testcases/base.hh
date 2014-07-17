@@ -100,11 +100,13 @@ public:
                      const int initial_refinements,
                      const size_t num_refinements)
   {
+#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
     std::cerr << Stuff::Common::Colors::red
               << "warning: running a multiscale testcase!\n"
               << "      => the boundaryinfo is set to AllDirichlet and all boundary values are set to zero!\n"
               << "         please manually check the testcase for compliance!\n"
               << Stuff::Common::StreamModifiers::normal << std::endl;
+#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
     const auto lower_left = grid_cfg.get< DomainType >("lower_left");
     const auto upper_right = grid_cfg.get< DomainType >("upper_right");
     const auto num_elements = grid_cfg.get< std::vector< unsigned int > >("num_elements", dimDomain);
@@ -127,7 +129,7 @@ public:
                                                                            upper_right,
                                                                            num_partitions,
                                                                            num_oversampling_layers);
-  } // Base(...)
+  } // MultiscaleCubeBase(...)
 
   size_t num_refinements() const
   {
