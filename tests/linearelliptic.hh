@@ -436,7 +436,7 @@ public:
 
   virtual std::vector< double > expected_results(const std::string type) const = 0;
 
-private:
+protected:
   void compute_reference_solution()
   {
     if (!reference_solution_computed_) {
@@ -451,7 +451,6 @@ private:
     }
   } // ... compute_reference_solution()
 
-protected:
   bool is_norm(const std::string type) const
   {
     const auto available_norms = available_norms_();
@@ -478,7 +477,6 @@ private:
   bool reference_solution_computed_;
 protected:
   std::unique_ptr< DiscretizationType > current_discretization_;
-private:
   std::unique_ptr< VectorType > current_solution_vector_on_level_;
   std::unique_ptr< DiscretizationType > reference_discretization_;
   std::unique_ptr< VectorType > reference_solution_vector_;
