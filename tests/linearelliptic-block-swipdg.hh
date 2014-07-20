@@ -25,14 +25,14 @@ namespace internal {
 
 
 template< class TestCaseType, int polOrder, Stuff::LA::ChooseBackend la_backend >
-class Discretization
+class DiscretizationBlockSWIPDG
 {
   typedef typename TestCaseType::GridType GridType;
   typedef typename TestCaseType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = TestCaseType::dimRange;
 public:
   typedef Discretizations::BlockSWIPDG< GridType, RangeFieldType, dimRange, polOrder, la_backend > Type;
-}; // class Discretization
+}; // class DiscretizationBlockSWIPDG
 
 
 } // namespace internal
@@ -40,10 +40,10 @@ public:
 
 template< class TestCaseType, int polOrder, Stuff::LA::ChooseBackend la_backend >
 class EocStudyBlockSWIPDG
-  : public MultiscaleEocStudyBase< TestCaseType, typename internal::Discretization< TestCaseType, polOrder, la_backend >::Type >
+  : public MultiscaleEocStudyBase< TestCaseType, typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type >
 {
   typedef MultiscaleEocStudyBase
-      < TestCaseType, typename internal::Discretization< TestCaseType, polOrder, la_backend >::Type > BaseType;
+      < TestCaseType, typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type > BaseType;
 
   typedef typename BaseType::DiscretizationType DiscretizationType;
   typedef typename DiscretizationType::GridViewType GridViewType;
@@ -59,8 +59,10 @@ public:
 
   virtual std::string identifier() const DS_OVERRIDE DS_FINAL
   {
-    return DiscretizationType::static_id() + " (polorder " + Stuff::Common::toString(polOrder) + ")";
-  }
+    return DiscretizationType::static_id()
+        + " (polorder " + Stuff::Common::toString(polOrder)
+        + ", " + this->test_case_.partitioning() + " partitioning)";
+  } // ... identifier(...)
 
   virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
   {
@@ -88,31 +90,72 @@ public:
   {
     if (std::is_same< TestCaseType, TestCases::ESV2007Multiscale< ALUConformGrid< 2, 2 > > >::value
         || std::is_same< TestCaseType, TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > > >::value) {
-      if (polOrder == 1) {
-        if (type == "L2")
-          return {1.84e-02, 4.54e-03, 1.13e-03, 2.79e-04};
-        else if (type == "H1_semi")
-          return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
-        if (type == "energy")
-          return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
-        else if (type == "eta_NC")
-          return {1.90e-1, 9.73e-2, 4.90e-2, 2.46e-2};
-        else if (type == "eta_R")
-          return {7.24e-2, 1.83e-2, 4.55e-3, 1.15e-3};
-        else if (type == "eta_DF") {
-          // these are the values reported in the paper
-//          return {3.39e-1, 1.70e-1, 8.40e-2, 4.19e-2};
-          // but we do not want the test to fail each time, so we report these
-          return {3.56e-1, 1.77e-1, 8.74e-2, 4.36e-2};
-        } else if (type == "eta")
-          return {4.50e-01, 2.08e-01,  9.92e-02, 4.86e-02};
-        else if (type == "efficiency")
-          return {1.21, 1.21, 1.21, 1.21};
-        else
-          DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+      if (this->test_case_.partitioning() == "[1 1 1]") {
+        if (polOrder == 1) {
+          if (type == "energy")
+            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+          else if (type == "eta_NC")
+            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
+          else if (type == "eta_R")
+            return {5.80e-01, 2.91e-01, 1.46e-01, 7.28e-02};
+          else if (type == "eta_DF") {
+            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
+          } else if (type == "eta")
+            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
+          else
+            DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+        } else
+          DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
+      } else if (this->test_case_.partitioning() == "[2 2 1]") {
+        if (polOrder == 1) {
+          if (type == "energy")
+            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+          else if (type == "eta_NC")
+            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
+          else if (type == "eta_R")
+            return {2.90e-01, 1.46e-01, 7.28e-02, 3.64e-02};
+          else if (type == "eta_DF") {
+            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
+          } else if (type == "eta")
+            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
+          else
+            DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+        } else
+          DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
+      } else if (this->test_case_.partitioning() == "[4 4 1]") {
+        if (polOrder == 1) {
+          if (type == "energy")
+            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+          else if (type == "eta_NC")
+            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
+          else if (type == "eta_R")
+            return {1.46e-01, 7.27e-02, 3.64e-02, 1.82e-02};
+          else if (type == "eta_DF") {
+            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
+          } else if (type == "eta")
+            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
+          else
+            DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+        } else
+          DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
+      } else if (this->test_case_.partitioning() == "[8 8 1]") {
+        if (polOrder == 1) {
+          if (type == "energy")
+            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+          else if (type == "eta_NC")
+            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
+          else if (type == "eta_R")
+            return {7.24e-02, 3.64e-02, 1.83e-02, 9.10e-03};
+          else if (type == "eta_DF") {
+            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
+          } else if (type == "eta")
+            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
+          else
+            DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+        } else
+          DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
       } else
-        DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
-
+        DUNE_THROW(NotImplemented, "Please record the expected results for this partitioning!");
     } else
       DUNE_THROW(NotImplemented, "Please record the expected results for this TestCaseType/GridType combination!");
   } // ... expected_results(...)
@@ -121,9 +164,7 @@ private:
   virtual std::vector< std::string > available_norms_() const DS_OVERRIDE DS_FINAL
   {
     return {
-        "L2"
-      , "H1_semi"
-      , "energy"
+      "energy"
     };
   } // ... available_norms_(...)
 
