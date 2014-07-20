@@ -22,6 +22,7 @@
 #include "problems/ESV2007.hh"
 #include "../playground/linearelliptic/problems/mixed-boundaries.hh"
 #include "../playground/linearelliptic/problems/thermalblock.hh"
+#include "../playground/linearelliptic/problems/OS2014.hh"
 
 namespace Dune {
 namespace HDD {
@@ -115,6 +116,7 @@ public:
   {
     auto base = BaseType::available();
     base.push_back(Problems::ESV2007< E, D, d, R, r >::static_id());
+    base.push_back(Problems::OS2014< E, D, d, R, r >::static_id());
     return base;
   } // ... available(...)
 
@@ -123,6 +125,8 @@ public:
   {
   if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
     return Problems::ESV2007< E, D, d, R, r >::default_config(sub_name);
+  else if (type == Problems::OS2014< E, D, d, R, r >::static_id())
+    return Problems::OS2014< E, D, d, R, r >::default_config(sub_name);
   else
     return BaseType::default_config(type, sub_name);
   } // ... default_config(...)
@@ -132,6 +136,8 @@ public:
   {
     if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
       return BaseType::template call_create< Problems::ESV2007< E, D, d, R, r > >(config);
+    else if (type == Problems::OS2014< E, D, d, R, r >::static_id())
+      return BaseType::template call_create< Problems::OS2014< E, D, d, R, r > >(config);
     else
       return BaseType::create(type, config);
   } // ... create(...)
