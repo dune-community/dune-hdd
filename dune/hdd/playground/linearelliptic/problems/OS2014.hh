@@ -85,7 +85,7 @@ public:
 
   virtual std::string type() const DS_OVERRIDE
   {
-    return BaseType::BaseType::static_id() + ".ESV2007";
+    return BaseType::BaseType::static_id() + ".OS2014";
   }
 
 private:
@@ -103,11 +103,11 @@ private:
                                                                    "x",
                                                                    "1+sin(2*pi*x[0])*sin(2*pi*x[1])",
                                                                    integration_order,
-                                                                   "sin"));
+                                                                   "affine_part"));
     ret->register_component(new ExpressionFunctionType("x",
                                                        "-sin(2*pi*x[0])*sin(2*pi*x[1])",
                                                        integration_order,
-                                                       "sin"),
+                                                       "component_0"),
                             new Pymor::ParameterFunctional("mu", 1, "mu"));
     return ret;
   } // ... create_diffusion_factor_(...)
