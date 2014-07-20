@@ -99,6 +99,7 @@ public:
   MultiscaleCubeBase(const Stuff::Common::ConfigTree& grid_cfg,
                      const int initial_refinements,
                      const size_t num_refinements)
+    : partitions_(grid_cfg.get< std::string >("num_partitions"))
   {
 #ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
     std::cerr << Stuff::Common::Colors::red
@@ -131,6 +132,11 @@ public:
                                                                            num_oversampling_layers);
   } // MultiscaleCubeBase(...)
 
+  std::string partitioning() const
+  {
+    return partitions_;
+  }
+
   size_t num_refinements() const
   {
     assert(level_providers_.size() > 0);
@@ -149,6 +155,7 @@ public:
   }
 
 private:
+  const std::string partitions_;
   std::vector< std::unique_ptr< MsGridProviderType > > level_providers_;
   std::unique_ptr< MsGridProviderType > reference_provider_;
 }; // class MultiscaleCubeBase
