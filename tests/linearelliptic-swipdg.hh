@@ -25,7 +25,7 @@ namespace internal {
 
 
 template< class TestCaseType, int polOrder, GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
-class Discretization
+class DiscretizationSWIPDG
 {
   typedef typename TestCaseType::GridType GridType;
   typedef typename TestCaseType::RangeFieldType RangeFieldType;
@@ -33,7 +33,7 @@ class Discretization
 public:
   typedef Discretizations::SWIPDG
       < GridType, Stuff::Grid::ChooseLayer::level, RangeFieldType, dimRange, polOrder, space_backend, la_backend > Type;
-}; // class Discretization
+}; // class DiscretizationSWIPDG
 
 
 } // namespace internal
@@ -41,10 +41,10 @@ public:
 
 template< class TestCaseType, int polOrder, GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
 class EocStudySWIPDG
-  : public EocStudyBase< TestCaseType, typename internal::Discretization< TestCaseType, polOrder, space_backend, la_backend >::Type >
+  : public EocStudyBase< TestCaseType, typename internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type >
 {
   typedef EocStudyBase
-      < TestCaseType, typename internal::Discretization< TestCaseType, polOrder, space_backend, la_backend >::Type >
+      < TestCaseType, typename internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type >
     BaseType;
 
   typedef typename BaseType::DiscretizationType DiscretizationType;
