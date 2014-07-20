@@ -10,7 +10,9 @@
 #include <ostream>
 
 #include <dune/grid/common/gridview.hh>
-#include <dune/grid/io/file/vtk.hh>
+#include <dune/stuff/common/disable_warnings.hh>
+# include <dune/grid/io/file/vtk.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/string.hh>
@@ -144,7 +146,7 @@ private:
   void add_function_visualization_(const GridViewType& /*grid_view*/, const F& function, VTKWriterType& vtk_writer) const
   {
     typedef Stuff::Functions::VisualizationAdapter< GridViewType, F::dimRange > VisualizationAdapter;
-    for (size_t qq = 0; qq < function.num_components(); ++qq)
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < function.num_components(); ++qq)
       vtk_writer.addVertexData(std::make_shared< VisualizationAdapter >(*(function.component(qq))));
     if (function.has_affine_part())
       vtk_writer.addVertexData(std::make_shared< VisualizationAdapter >(*(function.affine_part())));

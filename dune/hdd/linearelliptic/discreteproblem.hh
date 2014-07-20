@@ -7,6 +7,7 @@
 #define DUNE_HDD_LINEARELLIPTIC_DISCRETEPROBLEM_HH
 
 #include <memory>
+#include <limits>
 
 #include <dune/common/mpihelper.hh>
 #include <dune/common/timer.hh>
@@ -16,7 +17,9 @@
 #endif
 
 #if HAVE_DUNE_FEM
-# include <dune/fem/misc/mpimanager.hh>
+# include <dune/stuff/common/disable_warnings.hh>
+#   include <dune/fem/misc/mpimanager.hh>
+# include <dune/stuff/common/reenable_warnings.hh>
 #endif
 
 #include <dune/stuff/common/parameter/tree.hh>
@@ -80,7 +83,8 @@ public:
   DiscreteProblem(const std::string id, const std::vector< std::string >& arguments)
   {
     // mpi
-    int argc = arguments.size();
+    assert(arguments.size() < std::numeric_limits< int >::max());
+    int argc = int(arguments.size());
     char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);

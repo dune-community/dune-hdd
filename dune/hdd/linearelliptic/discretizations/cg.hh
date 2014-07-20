@@ -11,10 +11,10 @@
 
 #include <dune/common/timer.hh>
 
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
-#endif
 #include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
 # include <dune/grid/sgrid.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
@@ -199,7 +199,7 @@ public:
           DirichletProjectionOperator;
       std::vector< std::unique_ptr< DiscreteFunctionType > > dirichlet_projections;
       std::vector< std::unique_ptr< DirichletProjectionOperator > > dirichlet_projection_operators;
-      for (size_t qq = 0; qq < dirichlet.num_components(); ++qq) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet.num_components(); ++qq) {
         const size_t id = dirichlet_vector->register_component(new VectorType(space.mapper().size()),
                                                                dirichlet.coefficient(qq));
         dirichlet_projections.emplace_back(new DiscreteFunctionType(space, *(dirichlet_vector->component(id))));
@@ -227,7 +227,7 @@ public:
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
-      for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
         const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
                                                                    space.mapper().size(),
                                                                    pattern_),
@@ -253,7 +253,7 @@ public:
       const auto& force = *(this->problem_.force());
       typedef GDT::Functionals::L2Volume< ForceType, VectorType, TestSpaceType > L2VolumeFunctionalType;
       std::vector< std::unique_ptr< L2VolumeFunctionalType > > force_functionals;
-      for (size_t qq = 0; qq < force.num_components(); ++qq) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < force.num_components(); ++qq) {
         const size_t id = rhs.register_component(new VectorType(space.mapper().size()), force.coefficient(qq));
         force_functionals.emplace_back(new L2VolumeFunctionalType(*(force.component(qq)),
                                                                   *(rhs.component(id)),
@@ -272,7 +272,7 @@ public:
       const auto& neumann = *(this->problem_.neumann());
       typedef GDT::Functionals::L2Face< NeumannType, VectorType, TestSpaceType > L2FaceFunctionalType;
       std::vector< std::unique_ptr< L2FaceFunctionalType > > neumann_functionals;
-      for (size_t qq = 0; qq < neumann.num_components(); ++qq) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < neumann.num_components(); ++qq) {
         const size_t id = rhs.register_component(new VectorType(space.mapper().size()), neumann.coefficient(qq));
         neumann_functionals.emplace_back(new L2FaceFunctionalType(*(neumann.component(qq)),
                                                                   *(rhs.component(id)),
@@ -310,7 +310,7 @@ public:
       typedef GDT::Products::EllipticAssemblable< DiffusionFactorType, MatrixType, TestSpaceType > EnergyProductType;
       auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       std::vector< std::unique_ptr< EnergyProductType > > energy_products;
-      for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
         const size_t id = energy_product_matrix->register_component(new MatrixType(space.mapper().size(),
                                                                                    space.mapper().size(),
                                                                                    EnergyProductType::pattern(space)),
@@ -343,7 +343,7 @@ public:
         *(rhs.affine_part()) -= tmp;
       }
       if (matrix.has_affine_part()) {
-        for (size_t qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
           const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
                                                     dirichlet_vector->coefficient(qq));
           matrix.affine_part()->mv(*(dirichlet_vector->component(qq)), tmp);
@@ -351,7 +351,7 @@ public:
         }
       }
       if (dirichlet_vector->has_affine_part()) {
-        for (size_t qq = 0; qq < matrix.num_components(); ++qq) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq) {
           const size_t ind = rhs.register_component(new VectorType(space.mapper().size()), matrix.coefficient(qq));
           matrix.component(qq)->mv(*(dirichlet_vector->affine_part()), tmp);
           *(rhs.component(ind)) -= tmp;
@@ -362,8 +362,8 @@ public:
         param.set(key, matrix.parameter_type().get(key));
       for (auto key : dirichlet_vector->parameter_type().keys())
         param.set(key, dirichlet_vector->parameter_type().get(key));
-      for (size_t pp = 0; pp < matrix.num_components(); ++ pp) {
-        for (size_t qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
+      for (DUNE_STUFF_SSIZE_T pp = 0; pp < matrix.num_components(); ++ pp) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
           const std::string expression = "(" + matrix.coefficient(pp)->expression()
                                          + ")*(" + dirichlet_vector->coefficient(qq)->expression() + ")";
           const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
@@ -386,13 +386,13 @@ public:
       system_assembler.add(clear_and_set_dirichlet_rows,
                            *(matrix.affine_part()),
                            new GDT::ApplyOn::BoundaryEntities< GridViewType >());
-      for (size_t qq = 0; qq < matrix.num_components(); ++qq)
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
         system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)),
                              new GDT::ApplyOn::BoundaryEntities< GridViewType >());
       if (rhs.has_affine_part())
         system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()),
                              new GDT::ApplyOn::BoundaryEntities< GridViewType >());
-      for (size_t qq = 0; qq < matrix.num_components(); ++qq)
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
         system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
                              new GDT::ApplyOn::BoundaryEntities< GridViewType >());
       system_assembler.walk();
