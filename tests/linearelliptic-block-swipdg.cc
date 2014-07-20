@@ -60,9 +60,9 @@ struct linearelliptic_SWIPDG_discretization
   : public ::testing::Test
 {
   template< Stuff::LA::ChooseBackend la_backend >
-  static void eoc_study()
+  static void eoc_study(const std::string partitioning = "[1 1 1]")
   {
-    const TestCaseType test_case;
+    const TestCaseType test_case(partitioning);
     test_case.print_header(test_out);
     test_out << std::endl;
     LinearElliptic::Tests::EocStudyBlockSWIPDG< TestCaseType, 1, la_backend > eoc_study(test_case);
@@ -76,26 +76,21 @@ struct linearelliptic_SWIPDG_discretization
         DUNE_THROW(errors_are_not_as_expected, ss.str());
       }
   } // ... eoc_study()
-
-  static void eoc_study_using_istl()
-  {
-    eoc_study< Stuff::LA::ChooseBackend::istl_sparse >();
-  }
-
-  static void eoc_study_using_eigen_sparse()
-  {
-    eoc_study< Stuff::LA::ChooseBackend::eigen_sparse >();
-  }
-
 }; // linearelliptic_SWIPDG_discretization
 
 
 TYPED_TEST_CASE(linearelliptic_SWIPDG_discretization, AluConform2dTestCases);
-TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {
-  this->eoc_study_using_istl();
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_1_subdomain) {
+  this->template eoc_study< Stuff::LA::ChooseBackend::istl_sparse >("[1 1 1]");
 }
-TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {
-  this->eoc_study_using_eigen_sparse();
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_4_subdomain) {
+  this->template eoc_study< Stuff::LA::ChooseBackend::istl_sparse >("[2 2 1]");
+}
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_16_subdomain) {
+  this->template eoc_study< Stuff::LA::ChooseBackend::istl_sparse >("[4 4 1]");
+}
+TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_64_subdomain) {
+  this->template eoc_study< Stuff::LA::ChooseBackend::istl_sparse >("[8 8 1]");
 }
 
 
