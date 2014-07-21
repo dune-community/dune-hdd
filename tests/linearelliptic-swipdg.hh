@@ -6,6 +6,10 @@
 #ifndef DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 #define DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
 #include <dune/stuff/common/exceptions.hh>
 
 #include <dune/gdt/products/l2.hh>
@@ -88,6 +92,7 @@ public:
 
   virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
   {
+#if HAVE_ALUGRID
     if (std::is_same< TestCaseType, TestCases::ESV2007< ALUConformGrid< 2, 2 > > >::value
         || std::is_same< TestCaseType, TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > > >::value) {
       if (polOrder == 1) {
@@ -95,7 +100,7 @@ public:
           return {1.84e-02, 4.54e-03, 1.13e-03, 2.79e-04};
         else if (type == "H1_semi")
           return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
-        if (type == "energy")
+        else if (type == "energy")
           return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
         else if (type == "eta_NC")
           return {1.90e-1, 9.73e-2, 4.90e-2, 2.46e-2};
@@ -114,8 +119,25 @@ public:
           DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
       } else
         DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
-
+    } else if (std::is_same< TestCaseType, TestCases::OS2014< ALUConformGrid< 2, 2 > > >::value
+               || std::is_same< TestCaseType, TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > > >::value) {
+      if (polOrder == 1) {
+        if (type == "energy")
+          return {4.75e-01, 2.63e-01, 1.28e-01, 5.62e-02};
+        else if (type == "eta_NC")
+          return {2.39e-01, 1.43e-01, 6.83e-02, 3.14e-02};
+        else if (type == "eta_R")
+          return {8.19e-02, 1.99e-02, 4.84e-03, 1.20e-03};
+        else if (type == "eta_DF") {
+          return {6.35e-01, 3.62e-01, 1.88e-01, 9.18e-02};
+        } else if (type == "eta")
+          return {7.51e-01, 4.06e-01, 2.01e-01, 9.80e-02};
+        else
+          DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+      } else
+        DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
     } else
+#endif // HAVE_ALUGRID
       DUNE_THROW(NotImplemented, "Please record the expected results for this TestCaseType/GridType combination!");
   } // ... expected_results(...)
 
