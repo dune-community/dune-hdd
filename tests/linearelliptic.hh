@@ -145,6 +145,8 @@ public:
                                                              test_case_.problem(),
                                                              test_case_.level_of(current_refinement_));
       current_discretization_->init();
+test_case_.problem().visualize(*current_discretization_->grid_view(),
+                               "problem_refinement_" + DSC::toString(current_refinement_));
       current_solution_vector_on_level_
           = Stuff::Common::make_unique< VectorType >(current_discretization_->create_vector());
       current_discretization_->solve(*current_solution_vector_on_level_);
@@ -152,6 +154,7 @@ public:
       const ConstDiscreteFunctionType current_refinement_solution(*current_discretization_->ansatz_space(),
                                                                   *current_solution_vector_on_level_,
                                                                   "solution on current level");
+current_refinement_solution.visualize("refinement_" + DSC::toString(current_refinement_));
       // prolong to reference grid part
       if (!reference_solution_computed_)
         compute_reference_solution();
@@ -222,8 +225,11 @@ private:
                                                              test_case_.problem(),
                                                              test_case_.reference_level());
       reference_discretization_->init();
+test_case_.problem().visualize(*reference_discretization_->grid_view(),
+                               "problem_reference_refinement");
       reference_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
       reference_discretization_->solve(*reference_solution_vector_);
+reference_discretization_->visualize(*reference_solution_vector_, "reference_solution", "reference_solution");
       reference_solution_computed_ = true;
     }
   } // ... compute_reference_solution()

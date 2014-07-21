@@ -52,7 +52,7 @@ public:
 protected:
   static ParametersType default_parameters_()
   {
-    return ParametersType({{"current", Pymor::Parameter("mu", 0.5)},
+    return ParametersType({{"current", Pymor::Parameter("mu", 0.1)},
                            {"fixed", Pymor::Parameter("mu", 1)},
                            {"minimizing", Pymor::Parameter("mu", 0.1)}});
   }
