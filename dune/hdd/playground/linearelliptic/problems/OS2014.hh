@@ -10,7 +10,6 @@
 
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/expression.hh>
-#include <dune/stuff/functions/ESV2007.hh>
 
 #include <dune/pymor/functions/default.hh>
 
@@ -43,7 +42,6 @@ class OS2014< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
   typedef Pymor::Function::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 >
       ParametricMatrixFunctionType;
 
-  typedef Stuff::Functions::ESV2007::Testcase1Force< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ForceType;
   typedef Stuff::Functions::Expression< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ExpressionFunctionType;
   typedef Pymor::Function::AffinelyDecomposableDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
       DefaultParametricFunctionType;
@@ -79,8 +77,8 @@ public:
   OS2014(const size_t integration_order = default_config().get< size_t >("integration_order"))
     : BaseType(create_diffusion_factor_(integration_order),
                std::make_shared< ParametricMatrixFunctionType >(new ConstantMatrixFunctionType(unit_matrix_(),
-                                                                                                  "diffusion_tensor")),
-               std::make_shared< ParametricScalarFunctionType >(new ForceType(integration_order,  "force")),
+                                                                                                "diffusion_tensor")),
+               std::make_shared< ParametricScalarFunctionType >(new ConstantScalarFunctionType(1, "force")),
                std::make_shared< ParametricScalarFunctionType >(new ConstantScalarFunctionType(0, "dirichlet")),
                std::make_shared< ParametricScalarFunctionType >(new ConstantScalarFunctionType(0, "neumann")))
   {}
@@ -103,17 +101,17 @@ private:
   {
     auto ret = std::make_shared< DefaultParametricFunctionType >(new ExpressionFunctionType(
                                                                    "x",
-                                                                   "1+0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
+                                                                   "1+sin(2*pi*x[0])*sin(2*pi*x[1])",
                                                                    integration_order,
                                                                    "affine_part"));
     ret->register_component(new ExpressionFunctionType("x",
-                                                       "-0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
+                                                       "-sin(2*pi*x[0])*sin(2*pi*x[1])",
                                                        integration_order,
                                                        "component_0"),
                             new Pymor::ParameterFunctional("mu", 1, "mu"));
     return ret;
   } // ... create_diffusion_factor_(...)
-}; // class OS2014< ..., 2, ..., 1 >
+}; // class OS2014< ..., 1 >
 
 
 } // namespace Problems
