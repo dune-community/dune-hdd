@@ -22,7 +22,7 @@
 # include <dune/grid/multiscale/provider/interface.hh>
 #endif
 
-#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/la/container.hh>
@@ -135,7 +135,7 @@ public:
   }
 
   CG(const GridProviderType& grid_provider,
-     const Stuff::Common::ConfigTree& bound_inf_cfg,
+     const Stuff::Common::Configuration& bound_inf_cfg,
      const ProblemType& prob,
      const int level = 0)
     : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
@@ -153,7 +153,7 @@ public:
 
 #if HAVE_DUNE_GRID_MULTISCALE
   CG(const MsGridProviderType& grid_provider,
-     const Stuff::Common::ConfigTree& bound_inf_cfg,
+     const Stuff::Common::Configuration& bound_inf_cfg,
      const ProblemType& prob,
      const int level = 0)
     : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),

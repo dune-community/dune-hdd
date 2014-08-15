@@ -29,7 +29,7 @@
 #include <dune/grid/multiscale/provider.hh>
 
 #include <dune/stuff/common/logging.hh>
-#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/common/float_cmp.hh>
 #include <dune/stuff/common/fixed_map.hh>
 #include <dune/stuff/grid/layers.hh>
@@ -114,9 +114,9 @@ public:
 
 protected:
   const FakeProblemType zero_boundary_problem_;
-  const Stuff::Common::ConfigTree all_dirichlet_boundary_config_;
-  const Stuff::Common::ConfigTree all_neumann_boundary_config_;
-  Stuff::Common::ConfigTree multiscale_boundary_config_;
+  const Stuff::Common::Configuration all_dirichlet_boundary_config_;
+  const Stuff::Common::Configuration all_neumann_boundary_config_;
+  Stuff::Common::Configuration multiscale_boundary_config_;
   std::vector< std::shared_ptr< DiscretizationType > > local_discretizations_;
   std::vector< std::shared_ptr< const TestSpaceType > > local_test_spaces_;
   std::vector< std::shared_ptr< const AnsatzSpaceType > > local_ansatz_spaces_;
@@ -787,7 +787,7 @@ public:
   }
 
   BlockSWIPDG(const GridProviderType& grid_provider,
-              const Stuff::Common::ConfigTree& /*bound_inf_cfg*/,
+              const Stuff::Common::Configuration& /*bound_inf_cfg*/,
               const ProblemType& prob)
     : LocalDiscretizationsBaseType(grid_provider, prob)
     , BaseType(std::make_shared< TestSpaceType >(grid_provider.ms_grid(), this->local_test_spaces_),

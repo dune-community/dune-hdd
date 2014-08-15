@@ -90,7 +90,7 @@ public:
     return this->as_imp(*this).pattern();
   }
 
-  const Stuff::Common::ConfigTree& boundary_info_cfg() const
+  const Stuff::Common::Configuration& boundary_info_cfg() const
   {
     CHECK_CRTP(this->as_imp(*this).boundary_info_cfg());
     return this->as_imp(*this).boundary_info_cfg();

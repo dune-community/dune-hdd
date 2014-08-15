@@ -9,7 +9,7 @@
 #include <memory>
 
 #include <dune/stuff/common/string.hh>
-#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/expression.hh>
 
@@ -61,9 +61,9 @@ public:
     return BaseType::static_id() + ".default";
   }
 
-  static Stuff::Common::ConfigTree default_config(const std::string sub_name = "")
+  static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
-    Stuff::Common::ConfigTree config;
+    Stuff::Common::Configuration config;
     // diffusion factor
     typedef Pymor::Function::Checkerboard< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
         CheckerBoardFunctionType;
@@ -100,16 +100,16 @@ public:
     if (sub_name.empty())
       return config;
     else {
-      Stuff::Common::ConfigTree tmp;
+      Stuff::Common::Configuration tmp;
       tmp.add(config, sub_name);
       return tmp;
     }
   } // ... default_config(...)
 
-  static std::unique_ptr< ThisType > create(const Stuff::Common::ConfigTree config = default_config(),
+  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config = default_config(),
                                             const std::string sub_name = static_id())
   {
-    const Stuff::Common::ConfigTree cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     return std::unique_ptr< ThisType >(new ThisType(create_scalar_function("diffusion_factor", cfg),
                                                     create_matrix_function("diffusion_tensor", cfg),
                                                     create_vector_function("force", cfg),
@@ -188,38 +188,38 @@ public:
 protected:
       static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 > >
   create_scalar_function(const std::string& id,
-                  const Stuff::Common::ConfigTree& config)
+                  const Stuff::Common::Configuration& config)
   {
     typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >
         ExpressionFunctionType;
     typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >
         FunctionsProvider;
-    const Stuff::Common::ConfigTree cfg = config.sub(id);
+    const Stuff::Common::Configuration cfg = config.sub(id);
     const std::string type = cfg.get("type", ExpressionFunctionType::static_id());
     return FunctionsProvider::create(type, cfg);
   } // ... create_scalar_function(...)
 
       static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 > >
   create_vector_function(const std::string& id,
-                  const Stuff::Common::ConfigTree& config)
+                  const Stuff::Common::Configuration& config)
   {
     typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
         ExpressionFunctionType;
     typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
         FunctionsProvider;
-    const Stuff::Common::ConfigTree cfg = config.sub(id);
+    const Stuff::Common::Configuration cfg = config.sub(id);
     const std::string type = cfg.get("type", ExpressionFunctionType::static_id());
     return FunctionsProvider::create(type, cfg);
   } // ... create_vector_function(...)
 
       static std::shared_ptr< Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > >
-  create_matrix_function(const std::string& id, const Stuff::Common::ConfigTree& config)
+  create_matrix_function(const std::string& id, const Stuff::Common::Configuration& config)
   {
     typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
         ConstantFunctionType;
     typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
         FunctionsProvider;
-    const Stuff::Common::ConfigTree cfg = config.sub(id);
+    const Stuff::Common::Configuration cfg = config.sub(id);
     const std::string type = cfg.get("type", ConstantFunctionType::static_id());
     return FunctionsProvider::create(type, cfg);
   } // ... create_matrix_function(...)

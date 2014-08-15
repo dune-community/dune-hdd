@@ -70,7 +70,7 @@ private:
 public:
   CachedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
                 const std::shared_ptr< const AnsatzSpaceType > ansatz_spc,
-                const Stuff::Common::ConfigTree& bnd_inf_cfg,
+                const Stuff::Common::Configuration& bnd_inf_cfg,
                 const ProblemType& prb)
     : BaseType(prb)
     , test_space_(test_spc)
@@ -99,7 +99,7 @@ public:
     return test_space_->grid_view();
   }
 
-  const Stuff::Common::ConfigTree& boundary_info_cfg() const
+  const Stuff::Common::Configuration& boundary_info_cfg() const
   {
     return boundary_info_cfg_;
   }
@@ -163,7 +163,7 @@ public:
 protected:
   const std::shared_ptr< const TestSpaceType > test_space_;
   const std::shared_ptr< const AnsatzSpaceType > ansatz_space_;
-  const Stuff::Common::ConfigTree boundary_info_cfg_;
+  const Stuff::Common::Configuration boundary_info_cfg_;
   const std::shared_ptr< const BoundaryInfoType > boundary_info_;
   const ProblemType& problem_;
 
@@ -198,7 +198,7 @@ protected:
 public:
   ContainerBasedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
                         const std::shared_ptr< const AnsatzSpaceType >& ansatz_spc,
-                        const Stuff::Common::ConfigTree& bnd_inf_cfg,
+                        const Stuff::Common::Configuration& bnd_inf_cfg,
                         const ProblemType& prb)
     : BaseType(test_spc, ansatz_spc, bnd_inf_cfg, prb)
     , container_based_initialized_(false)

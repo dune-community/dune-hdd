@@ -56,22 +56,22 @@ public:
     return BaseType::BaseType::static_id() + ".OS2014";
   }
 
-  static Stuff::Common::ConfigTree default_config(const std::string sub_name = "")
+  static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
-    Stuff::Common::ConfigTree config("integration_order", "3");
+    Stuff::Common::Configuration config("integration_order", "3");
     if (sub_name.empty())
       return config;
     else {
-      Stuff::Common::ConfigTree tmp;
+      Stuff::Common::Configuration tmp;
       tmp.add(config, sub_name);
       return tmp;
     }
   } // ... default_config(...)
 
-  static std::unique_ptr< ThisType > create(const Stuff::Common::ConfigTree config = default_config(),
+  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config = default_config(),
                                             const std::string sub_name = static_id())
   {
-    const Stuff::Common::ConfigTree cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     return Stuff::Common::make_unique< ThisType >(cfg.get("integration_order",
                                                           default_config().get< size_t >("integration_order")));
   } // ... create(...)

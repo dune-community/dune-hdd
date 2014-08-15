@@ -14,7 +14,7 @@
 # include <dune/grid/alugrid.hh>
 #endif
 
-#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/common/exceptions.hh>
 
 #include "problems/interfaces.hh"
@@ -45,7 +45,7 @@ public:
 
 protected:
   template< class ProblemType >
-  static std::unique_ptr< ProblemType > call_create(const Stuff::Common::ConfigTree& config)
+  static std::unique_ptr< ProblemType > call_create(const Stuff::Common::Configuration& config)
   {
     if (config.empty())
       return ProblemType::create();
@@ -63,7 +63,7 @@ public:
     };
   } // ... available(...)
 
-  static Stuff::Common::ConfigTree default_config(const std::string type = available()[0],
+  static Stuff::Common::Configuration default_config(const std::string type = available()[0],
                                                   const std::string sub_name = "")
   {
   if (type == Problems::Default< E, D, d, R, r >::static_id())
@@ -78,7 +78,7 @@ public:
   } // ... default_config(...)
 
   static std::unique_ptr< InterfaceType > create(const std::string type = available()[0],
-                                                 const Stuff::Common::ConfigTree config = default_config(available()[0]))
+                                                 const Stuff::Common::Configuration config = default_config(available()[0]))
   {
     if (type == Problems::Default< E, D, d, R, r >::static_id())
       return call_create< Problems::Default< E, D, d, R, r > >(config);
@@ -120,7 +120,7 @@ public:
     return base;
   } // ... available(...)
 
-  static Stuff::Common::ConfigTree default_config(const std::string type = available()[0],
+  static Stuff::Common::Configuration default_config(const std::string type = available()[0],
                                                   const std::string sub_name = "")
   {
   if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
@@ -132,7 +132,7 @@ public:
   } // ... default_config(...)
 
   static std::unique_ptr< InterfaceType > create(const std::string type = available()[0],
-                                                 const Stuff::Common::ConfigTree config = Stuff::Common::ConfigTree())
+                                                 const Stuff::Common::Configuration config = Stuff::Common::Configuration())
   {
     if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
       return BaseType::template call_create< Problems::ESV2007< E, D, d, R, r > >(config);

@@ -22,12 +22,12 @@
 # include <dune/stuff/common/reenable_warnings.hh>
 #endif
 
-#include <dune/stuff/common/parameter/tree.hh>
+#include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
-#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/common/memory.hh>
@@ -93,14 +93,14 @@ public:
 #endif
 
     // configuration
-    config_ = Stuff::Common::ConfigTree(argc, argv, id + ".cfg");
+    config_ = Stuff::Common::Configuration(argc, argv, id + ".cfg");
     if (!config_.has_sub(id))
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::configuration_error,
-                            "Missing sub '" << id << "' in the following ConfigTree:\n\n" << config_);
+                            "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
     filename_ = config_.get(id + ".filename", id);
 
     // logger
-    const Stuff::Common::ConfigTree logger_config = config_.sub("logging");
+    const Stuff::Common::Configuration logger_config = config_.sub("logging");
     int log_flags = Stuff::Common::LOG_CONSOLE;
     debug_logging_ = logger_config.get< bool >("debug", false);
     if (logger_config.get< bool >("info"))
@@ -127,7 +127,7 @@ public:
     if (config_.has_sub(boundary_info_type))
       boundary_info_ = config_.sub(boundary_info_type);
     else
-      boundary_info_ = Stuff::Common::ConfigTree("type", boundary_info_type);
+      boundary_info_ = Stuff::Common::Configuration("type", boundary_info_type);
 
     info << "setting up ";
     timer.reset();
@@ -154,7 +154,7 @@ public:
     return filename_;
   }
 
-  const Stuff::Common::ConfigTree& config() const
+  const Stuff::Common::Configuration& config() const
   {
     return config_;
   }
@@ -174,7 +174,7 @@ public:
     return *grid_provider_;
   }
 
-  const Stuff::Common::ConfigTree& boundary_info() const
+  const Stuff::Common::Configuration& boundary_info() const
   {
     return boundary_info_;
   }
@@ -204,10 +204,10 @@ private:
   } // ... write_config_to_file(...)
 
   std::string filename_;
-  Stuff::Common::ConfigTree config_;
+  Stuff::Common::Configuration config_;
   bool debug_logging_;
   std::unique_ptr< GridProviderType > grid_provider_;
-  Stuff::Common::ConfigTree boundary_info_;
+  Stuff::Common::Configuration boundary_info_;
   std::unique_ptr< const ProblemType > problem_;
 }; // class DiscreteProblem
 

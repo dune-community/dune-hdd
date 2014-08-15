@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 
     typedef Stuff::Functions::Spe10Model1
         < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > Spe10Model1FunctionType;
-    Stuff::Common::ConfigTree config = Spe10Model1FunctionType::default_config();
+    Stuff::Common::Configuration config = Spe10Model1FunctionType::default_config();
     const std::string x_elements = "5";
     const std::string y_elements = "1";
     config["upper_right"] = "[5 1]";

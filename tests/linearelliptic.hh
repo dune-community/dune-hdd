@@ -36,7 +36,7 @@ namespace Tests {
  *  Assumes that the DiscretizationImp is derived from Discretizations::ContainerBasedDefault and has a ctor of type
  *  DiscretizationImp(Stuff::Grid::ConstProviderInterface, BoundaryInfoConfig, ProblemType, level).
  *  Assumes that TestCaseType is derived from TestCases::Base and additionally provides
- *  * const Stuff::Common::ConfigTree& boundary_info() const
+ *  * const Stuff::Common::Configuration& boundary_info() const
  *  * const ProblemType& problem() const
  *  * bool provides_exact_solution() const
  *  * const ExactSolutionType& exact_solution() const

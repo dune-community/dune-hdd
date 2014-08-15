@@ -47,9 +47,9 @@ public:
     return BaseType::BaseType::static_id() + ".mixedboundaries";
   }
 
-  static Stuff::Common::ConfigTree default_config(const std::string sub_name = "")
+  static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
-    Stuff::Common::ConfigTree config;
+    Stuff::Common::Configuration config;
     config.add(ConstantScalarFunctionType::default_config(), "diffusion_factor");
     config["diffusion_factor.type"] = ConstantScalarFunctionType::static_id();
     config["diffusion_factor.name"] = "diffusion_factor";
@@ -73,17 +73,17 @@ public:
     if (sub_name.empty())
       return config;
     else {
-      Stuff::Common::ConfigTree tmp;
+      Stuff::Common::Configuration tmp;
       tmp.add(config, sub_name);
       return tmp;
     }
   } // ... default_config(...)
 
-  static std::unique_ptr< ThisType > create(const Stuff::Common::ConfigTree config = default_config(),
+  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config = default_config(),
                                             const std::string sub_name = static_id())
   {
-    Stuff::Common::ConfigTree cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
-    const Stuff::Common::ConfigTree default_cfg = default_config();
+    Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    const Stuff::Common::Configuration default_cfg = default_config();
     if (!cfg.has_sub("diffusion_factor"))
       cfg.add(default_cfg.sub("diffusion_factor"), "diffusion_factor");
     if (!cfg.has_sub("diffusion_tensor"))

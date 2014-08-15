@@ -114,7 +114,7 @@ public:
         << "====================================================================" << std::endl;
   } // ... print_header(...)
 
-  const Stuff::Common::ConfigTree& boundary_info() const
+  const Stuff::Common::Configuration& boundary_info() const
   {
     return boundary_info_cfg_;
   }
@@ -147,7 +147,7 @@ public:
 
 protected:
   const ParametersType parameters_;
-  const Stuff::Common::ConfigTree boundary_info_cfg_;
+  const Stuff::Common::Configuration boundary_info_cfg_;
   const ParametricProblemType parametric_problem_;
   const std::shared_ptr< ProblemType > problem_;
   const ExactSolutionType exact_solution_;
@@ -261,7 +261,7 @@ public:
 //            << std::setprecision(2) << std::scientific << gamma_tilde_sqrt_  << std::endl;
 //  } // ... print_header(...)
 
-//  const Stuff::Common::ConfigTree& boundary_info() const
+//  const Stuff::Common::Configuration& boundary_info() const
 //  {
 //    return boundary_info_cfg_;
 //  }
@@ -293,9 +293,9 @@ public:
 //  }
 
 //private:
-//  static Stuff::Common::ConfigTree initial_grid_cfg(const std::string num_partitions)
+//  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
 //  {
-//    Stuff::Common::ConfigTree grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
+//    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
 //    grid_cfg["lower_left"] = "-1";
 //    grid_cfg["upper_right"] = "1";
 //    grid_cfg["num_elements"] = "4";
@@ -315,7 +315,7 @@ public:
 //  } // ... initial_refinements()
 
 //  const ParametersType parameters_;
-//  const Stuff::Common::ConfigTree boundary_info_cfg_;
+//  const Stuff::Common::Configuration boundary_info_cfg_;
 //  const RealProblemType real_problem_;
 //  const std::shared_ptr< ProblemType > problem_;
 //  const ExactSolutionType exact_solution_;

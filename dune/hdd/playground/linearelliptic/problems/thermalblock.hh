@@ -56,24 +56,24 @@ public:
     return BaseType::BaseType::static_id() + ".thermalblock";
   }
 
-  static Stuff::Common::ConfigTree default_config(const std::string sub_name = "")
+  static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
     typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
         ConstantFunctionType;
     typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, domainDim, domainDim >
         ConstantMatrixFunctionType;
-    Stuff::Common::ConfigTree config;
-    Stuff::Common::ConfigTree checkerboard_config = CheckerboardFunctionType::default_config();
+    Stuff::Common::Configuration config;
+    Stuff::Common::Configuration checkerboard_config = CheckerboardFunctionType::default_config();
     checkerboard_config["name"] = "diffusion_factor";
     checkerboard_config["type"] = CheckerboardFunctionType::static_id();
     checkerboard_config["num_elements"] = "[4 4 4]";
     checkerboard_config["parameter_name"] = "diffusion_factor";
     config.add(checkerboard_config, "diffusion_factor");
-    Stuff::Common::ConfigTree diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
+    Stuff::Common::Configuration diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
     diffusion_tensor_config["name"] = "diffusion_tensor";
     diffusion_tensor_config["type"] = ConstantMatrixFunctionType::static_id();
     config.add(diffusion_tensor_config, "diffusion_tensor");
-    Stuff::Common::ConfigTree constant_config = ConstantFunctionType::default_config();
+    Stuff::Common::Configuration constant_config = ConstantFunctionType::default_config();
     constant_config["type"] = ConstantFunctionType::static_id();
     constant_config["name"] = "force";
     constant_config["value"] = "1";
@@ -86,16 +86,16 @@ public:
     if (sub_name.empty())
       return config;
     else {
-      Stuff::Common::ConfigTree tmp;
+      Stuff::Common::Configuration tmp;
       tmp.add(config, sub_name);
       return tmp;
     }
   } // ... default_config(...)
 
-  static std::unique_ptr< ThisType > create(const Stuff::Common::ConfigTree config = default_config(),
+  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config = default_config(),
                                             const std::string sub_name = static_id())
   {
-    const Stuff::Common::ConfigTree cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     std::shared_ptr< CheckerboardFunctionType >
         checkerboard_function(CheckerboardFunctionType::create(cfg.sub("diffusion_factor")));
     return Stuff::Common::make_unique< ThisType >(checkerboard_function,
@@ -146,12 +146,12 @@ public:
     return BaseType::BaseType::static_id() + ".localthermalblock";
   }
 
-  static Stuff::Common::ConfigTree default_config(const std::string sub_name = "")
+  static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
     typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
         ConstantFunctionType;
-    Stuff::Common::ConfigTree config;
-    Stuff::Common::ConfigTree constant_config = ConstantFunctionType::default_config();
+    Stuff::Common::Configuration config;
+    Stuff::Common::Configuration constant_config = ConstantFunctionType::default_config();
     constant_config["type"] = ConstantFunctionType::static_id();
     constant_config["name"] = "force";
     constant_config["value"] = "1";
@@ -164,16 +164,16 @@ public:
     if (sub_name.empty())
       return config;
     else {
-      Stuff::Common::ConfigTree tmp;
+      Stuff::Common::Configuration tmp;
       tmp.add(config, sub_name);
       return tmp;
     }
   } // ... default_config(...)
 
-  static std::unique_ptr< ThisType > create(const Stuff::Common::ConfigTree config = default_config(),
+  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config = default_config(),
                                             const std::string sub_name = static_id())
   {
-    const Stuff::Common::ConfigTree cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     return Stuff::Common::make_unique< ThisType >(BaseType::create_vector_function("force", cfg),
                                                   BaseType::create_vector_function("dirichlet", cfg),
                                                   BaseType::create_vector_function("neumann", cfg));
@@ -221,7 +221,7 @@ private:
 
   static std::shared_ptr< NonparametricFunctionType > create_diffusion_tensor()
   {
-    Stuff::Common::ConfigTree diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
+    Stuff::Common::Configuration diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
     diffusion_tensor_config["name"] = "diffusion_tensor";
     return std::make_shared< NonparametricFunctionType >(ConstantMatrixFunctionType::create(diffusion_tensor_config));
   } // ... create_diffusion_tensor()
@@ -292,14 +292,14 @@ public:
 #endif
 
     // configuration
-    config_ = Stuff::Common::ConfigTree(argc, argv, id + ".cfg");
+    config_ = Stuff::Common::Configuration(argc, argv, id + ".cfg");
     if (!config_.has_sub(id))
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::configuration_error,
-                            "Missing sub '" << id << "' in the following ConfigTree:\n\n" << config_);
+                            "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
     filename_ = config_.get(id + ".filename", id);
 
     // logger
-    const Stuff::Common::ConfigTree& logger_config = config_.sub("logging");
+    const Stuff::Common::Configuration& logger_config = config_.sub("logging");
     int log_flags = Stuff::Common::LOG_CONSOLE;
     debug_logging_ = logger_config.get< bool >("debug", false);
     if (logger_config.get< bool >("info"))
@@ -321,7 +321,7 @@ public:
       info << "s";
     info << ")" << std::endl;
 
-    boundary_info_ = Stuff::Common::ConfigTree("type", BoundaryInfoType::static_id());
+    boundary_info_ = Stuff::Common::Configuration("type", BoundaryInfoType::static_id());
 
     info << "setting up ";
     info << "'" << ProblemType::static_id() << "'... " << std::flush;
@@ -343,7 +343,7 @@ public:
     return filename_;
   }
 
-  const Stuff::Common::ConfigTree& config() const
+  const Stuff::Common::Configuration& config() const
   {
     return config_;
   }
@@ -363,7 +363,7 @@ public:
     return *grid_provider_;
   }
 
-  const Stuff::Common::ConfigTree& boundary_info() const
+  const Stuff::Common::Configuration& boundary_info() const
   {
     return boundary_info_;
   }
@@ -375,10 +375,10 @@ public:
 
 private:
   std::string filename_;
-  Stuff::Common::ConfigTree config_;
+  Stuff::Common::Configuration config_;
   bool debug_logging_;
   std::unique_ptr< GridProviderType > grid_provider_;
-  Stuff::Common::ConfigTree boundary_info_;
+  Stuff::Common::Configuration boundary_info_;
   std::unique_ptr< const ProblemType > problem_;
 }; // class Thermalblock
 
@@ -443,14 +443,14 @@ public:
 #endif
 
     // configuration
-    config_ = Stuff::Common::ConfigTree(argc, argv, id + ".cfg");
+    config_ = Stuff::Common::Configuration(argc, argv, id + ".cfg");
     if (!config_.has_sub(id))
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::configuration_error,
-                            "Missing sub '" << id << "' in the following ConfigTree:\n\n" << config_);
+                            "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
     filename_ = config_.get(id + ".filename", id);
 
     // logger
-    const Stuff::Common::ConfigTree& logger_config = config_.sub("logging");
+    const Stuff::Common::Configuration& logger_config = config_.sub("logging");
     int log_flags = Stuff::Common::LOG_CONSOLE;
     debug_logging_ = logger_config.get< bool >("debug", false);
     if (logger_config.get< bool >("info"))
@@ -499,7 +499,7 @@ public:
     return filename_;
   }
 
-  const Stuff::Common::ConfigTree& config() const
+  const Stuff::Common::Configuration& config() const
   {
     return config_;
   }
@@ -519,7 +519,7 @@ public:
     return *grid_provider_;
   }
 
-  const Stuff::Common::ConfigTree& boundary_info() const
+  const Stuff::Common::Configuration& boundary_info() const
   {
     return boundary_info_;
   }
@@ -531,10 +531,10 @@ public:
 
 private:
   std::string filename_;
-  Stuff::Common::ConfigTree config_;
+  Stuff::Common::Configuration config_;
   bool debug_logging_;
   std::unique_ptr< GridProviderType > grid_provider_;
-  Stuff::Common::ConfigTree boundary_info_;
+  Stuff::Common::Configuration boundary_info_;
   std::unique_ptr< const ProblemType > problem_;
 }; // class ThermalblockMultiScale
 
@@ -601,14 +601,14 @@ public:
 #endif
 
     // configuration
-    config_ = Stuff::Common::ConfigTree(argc, argv, id + ".cfg");
+    config_ = Stuff::Common::Configuration(argc, argv, id + ".cfg");
     if (!config_.has_sub(id))
       DUNE_THROW_COLORFULLY(Stuff::Exceptions::configuration_error,
-                            "Missing sub '" << id << "' in the following ConfigTree:\n\n" << config_);
+                            "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
     filename_ = config_.get(id + ".filename", id);
 
     // logger
-    const Stuff::Common::ConfigTree& logger_config = config_.sub("logging");
+    const Stuff::Common::Configuration& logger_config = config_.sub("logging");
     int log_flags = Stuff::Common::LOG_CONSOLE;
     debug_logging_ = logger_config.get< bool >("debug", false);
     if (logger_config.get< bool >("info"))
@@ -657,7 +657,7 @@ public:
     return filename_;
   }
 
-  const Stuff::Common::ConfigTree& config() const
+  const Stuff::Common::Configuration& config() const
   {
     return config_;
   }
@@ -677,7 +677,7 @@ public:
     return *grid_provider_;
   }
 
-  const Stuff::Common::ConfigTree& boundary_info() const
+  const Stuff::Common::Configuration& boundary_info() const
   {
     return boundary_info_;
   }
@@ -689,10 +689,10 @@ public:
 
 private:
   std::string filename_;
-  Stuff::Common::ConfigTree config_;
+  Stuff::Common::Configuration config_;
   bool debug_logging_;
   std::unique_ptr< GridProviderType > grid_provider_;
-  Stuff::Common::ConfigTree boundary_info_;
+  Stuff::Common::Configuration boundary_info_;
   std::unique_ptr< const ProblemType > problem_;
 }; // class LocalThermalblockMultiScale
 

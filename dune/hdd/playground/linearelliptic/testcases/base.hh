@@ -96,7 +96,7 @@ public:
   typedef Stuff::Grid::Providers::Cube< GridType >      GridProviderType;
   typedef grid::Multiscale::Providers::Cube< GridType > MsGridProviderType;
 
-  MultiscaleCubeBase(const Stuff::Common::ConfigTree& grid_cfg,
+  MultiscaleCubeBase(const Stuff::Common::Configuration& grid_cfg,
                      const int initial_refinements,
                      const size_t num_refinements)
     : partitions_(grid_cfg.get< std::string >("num_partitions"))

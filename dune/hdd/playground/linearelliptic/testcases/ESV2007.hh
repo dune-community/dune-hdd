@@ -12,7 +12,7 @@
 
 #include <dune/stuff/functions/ESV2007.hh>
 #include <dune/stuff/grid/provider/cube.hh>
-#include <dune/stuff/common/configtree.hh>
+#include <dune/stuff/common/configuration.hh>
 
 #include <dune/hdd/linearelliptic/problems/ESV2007.hh>
 #include "base.hh"
@@ -66,7 +66,7 @@ public:
         << "+==================================================================+" << std::endl;
   } // ... print_header(...)
 
-  const Stuff::Common::ConfigTree& boundary_info() const
+  const Stuff::Common::Configuration& boundary_info() const
   {
     return boundary_info_cfg_;
   }
@@ -100,7 +100,7 @@ private:
     return grid;
   } // ... create_initial_grid(...)
 
-  const Stuff::Common::ConfigTree boundary_info_cfg_;
+  const Stuff::Common::Configuration boundary_info_cfg_;
   const ProblemType problem_;
   const ExactSolutionType exact_solution_;
 }; // class ESV2007
@@ -152,7 +152,7 @@ public:
         << "+==================================================================+" << std::endl;
   } // ... print_header(...)
 
-  const Stuff::Common::ConfigTree& boundary_info() const
+  const Stuff::Common::Configuration& boundary_info() const
   {
     return boundary_info_cfg_;
   }
@@ -173,9 +173,9 @@ public:
   }
 
 private:
-  static Stuff::Common::ConfigTree initial_grid_cfg(const std::string num_partitions)
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
   {
-    Stuff::Common::ConfigTree grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
+    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
     grid_cfg["lower_left"] = "-1";
     grid_cfg["upper_right"] = "1";
     grid_cfg["num_elements"] = "4";
@@ -194,7 +194,7 @@ private:
     return ret;
   } // ... initial_refinements()
 
-  const Stuff::Common::ConfigTree boundary_info_cfg_;
+  const Stuff::Common::Configuration boundary_info_cfg_;
   const ProblemType problem_;
   const ExactSolutionType exact_solution_;
 }; // class ESV2007Multiscale
