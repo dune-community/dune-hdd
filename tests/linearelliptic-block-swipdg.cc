@@ -80,4 +80,4 @@ TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_64_sub
 }
 
 
-#include <dune/stuff/test/test_main.hh>
+#include <dune/stuff/test/test_main.cxx>

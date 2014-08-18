@@ -108,4 +108,4 @@ TEST_F(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {
 }
 
 
-#include <dune/stuff/test/test_main.hh>
+#include <dune/stuff/test/test_main.cxx>
