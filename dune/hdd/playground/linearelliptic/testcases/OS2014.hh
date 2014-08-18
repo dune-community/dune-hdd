@@ -171,7 +171,7 @@ class OS2014
   static std::shared_ptr< GridType > create_initial_grid(const int refinements)
   {
     Stuff::Grid::Providers::Cube< GridType > grid_provider(-1, 1, 4);
-    auto grid = grid_provider.grid();
+    auto grid = grid_provider.grid_ptr();
     grid->globalRefine(refinements);
     return grid;
   } // ... create_initial_grid(...)

@@ -90,7 +90,7 @@ private:
   static std::shared_ptr< GridType > create_initial_grid()
   {
     Dune::Stuff::Grid::Providers::Cube< GridType > grid_provider(-1, 1, 4);
-    auto grid = grid_provider.grid();
+    auto grid = grid_provider.grid_ptr();
 #if HAVE_ALUGRID
     if (std::is_same< GridType, Dune::ALUConformGrid< 2, 2 > >::value
         || std::is_same< GridType, Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >::value)
