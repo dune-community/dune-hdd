@@ -35,20 +35,6 @@ std::ostream& test_out = std::cout;
 //std::ostream& test_out = DSC_LOG.devnull();
 
 
-std::vector< double > truncate_vector(const std::vector< double >& in, const size_t size)
-{
-  assert(size <= in.size());
-  if (size == in.size())
-    return in;
-  else {
-    std::vector< double > ret(size);
-    for (size_t ii = 0; ii < size; ++ii)
-      ret[ii] = in[ii];
-    return ret;
-  }
-} // ... truncate_vector(...)
-
-
 typedef Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > AluConform2dGridType;
 
 typedef testing::Types< LinearElliptic::TestCases::ESV2007< AluConform2dGridType >
@@ -114,19 +100,4 @@ TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_s
 //}
 
 
-int main(int argc, char** argv)
-{
-  try {
-    test_init(argc, argv);
-    return RUN_ALL_TESTS();
-  } catch (Dune::Exception& e) {
-    std::cerr << "\nDune reported error: " << e.what() << std::endl;
-    std::abort();
-  } catch (std::exception& e) {
-    std::cerr << "\n" << e.what() << std::endl;
-    std::abort();
-  } catch (...) {
-    std::cerr << "Unknown exception thrown!" << std::endl;
-    std::abort();
-  } // try
-}
+#include <dune/stuff/test/test_main.hh>
