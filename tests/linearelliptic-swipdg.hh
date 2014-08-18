@@ -18,6 +18,7 @@
 
 #include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic.hh"
 
