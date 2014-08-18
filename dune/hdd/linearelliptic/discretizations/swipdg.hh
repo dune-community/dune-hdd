@@ -167,9 +167,9 @@ public:
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
     if (this->problem_.diffusion_tensor()->parametric())
-      DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
+      DUNE_THROW(NotImplemented, "The diffusion tensor must not be parametric!");
     if (!this->problem_.diffusion_tensor()->has_affine_part())
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // SWIPDG(...)
 
 #if HAVE_DUNE_GRID_MULTISCALE
@@ -186,9 +186,9 @@ public:
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
     if (this->problem_.diffusion_tensor()->parametric())
-      DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
+      DUNE_THROW(NotImplemented, "The diffusion tensor must not be parametric!");
     if (!this->problem_.diffusion_tensor()->has_affine_part())
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // SWIPDG(...)
 #endif // HAVE_DUNE_GRID_MULTISCALE
 

@@ -294,8 +294,8 @@ public:
     // configuration
     config_ = Stuff::Common::Configuration(argc, argv, id + ".cfg");
     if (!config_.has_sub(id))
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::configuration_error,
-                            "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
+      DUNE_THROW(Stuff::Exceptions::configuration_error,
+                 "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
     filename_ = config_.get(id + ".filename", id);
 
     // logger
@@ -445,8 +445,8 @@ public:
     // configuration
     config_ = Stuff::Common::Configuration(argc, argv, id + ".cfg");
     if (!config_.has_sub(id))
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::configuration_error,
-                            "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
+      DUNE_THROW(Stuff::Exceptions::configuration_error,
+                 "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
     filename_ = config_.get(id + ".filename", id);
 
     // logger
@@ -603,8 +603,8 @@ public:
     // configuration
     config_ = Stuff::Common::Configuration(argc, argv, id + ".cfg");
     if (!config_.has_sub(id))
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::configuration_error,
-                            "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
+      DUNE_THROW(Stuff::Exceptions::configuration_error,
+                 "Missing sub '" << id << "' in the following Configuration:\n\n" << config_);
     filename_ = config_.get(id + ".filename", id);
 
     // logger

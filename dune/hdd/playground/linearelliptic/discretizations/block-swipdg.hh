@@ -815,9 +815,9 @@ public:
   {
     // in case of parametric diffusion tensor everything is too complicated
     if (this->problem_.diffusion_tensor()->parametric())
-      DUNE_THROW_COLORFULLY(NotImplemented, "The diffusion tensor must not be parametric!");
+      DUNE_THROW(NotImplemented, "The diffusion tensor must not be parametric!");
     if (!this->problem_.diffusion_tensor()->has_affine_part())
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // BlockSWIPDG(...)
 
   const std::vector< std::shared_ptr< LocalDiscretizationType > >& local_discretizations() const
@@ -850,9 +850,9 @@ public:
           local_matrices_[ss]->register_affine_part(new MatrixType(*(local_operator.affine_part().container())));
         }
         if (local_operator.num_components() < this->problem().diffusion_factor()->num_components())
-          DUNE_PYMOR_THROW(Pymor::Exception::requirements_not_met,
-                           "The local operator should have " << this->problem().diffusion_factor()->num_components()
-                           << " components (but has only " << local_operator.num_components() << ")!");
+          DUNE_THROW(Stuff::Exceptions::requirements_not_met,
+                     "The local operator should have " << this->problem().diffusion_factor()->num_components()
+                     << " components (but has only " << local_operator.num_components() << ")!");
         for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq)
           local_matrices_[ss]->register_component(new MatrixType(
               local_operator.component(qq).container()->backend()),
@@ -1081,7 +1081,7 @@ public:
   {
     if (ss >= num_subdomains())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
-                       "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+                 "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     const auto neighbours = ms_grid_->neighborsOf(ss);
     if (neighbours.count(nn) == 0)
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
@@ -1092,7 +1092,7 @@ public:
       const auto result_inside_outside_matrix = inside_outside_matrices_[ss].find(nn);
       if (result_inside_outside_matrix == inside_outside_matrices_[ss].end())
         DUNE_THROW(Stuff::Exceptions::internal_error,
-                         "The coupling matrix for subdomain " << ss << " and neighbour " << nn << " is missing!");
+                   "The coupling matrix for subdomain " << ss << " and neighbour " << nn << " is missing!");
       const auto inside_outside_matrix = result_inside_outside_matrix->second;
       return OperatorType(*inside_outside_matrix);
     } else if (nn < ss) {
@@ -1122,8 +1122,8 @@ public:
   FunctionalType get_local_functional(const size_t ss) const
   {
     if (ss >= num_subdomains())
-      DUNE_PYMOR_THROW(Pymor::Exception::index_out_of_range,
-                       "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     assert(ss < local_vectors_.size());
     return FunctionalType(*(local_vectors_[ss]));
   }
@@ -2298,23 +2298,23 @@ private:
           const auto result_inside_outside_pattern = inside_outside_patterns_[ss].find(nn);
           if (result_inside_outside_pattern == inside_outside_patterns_[ss].end())
             DUNE_THROW(Stuff::Exceptions::internal_error,
-                             "The coupling pattern for subdomain " << ss << " and neighbour " << nn << "is missing!");
+                       "The coupling pattern for subdomain " << ss << " and neighbour " << nn << "is missing!");
           const auto& inside_outside_pattern = *(result_inside_outside_pattern->second);
           const auto result_outside_inside_pattern = outside_inside_patterns_[nn].find(ss);
           if (result_outside_inside_pattern == outside_inside_patterns_[nn].end())
             DUNE_THROW(Stuff::Exceptions::internal_error,
-                             "The coupling pattern for neighbour " << nn << " and subdomain " << ss << "is missing!");
+                       "The coupling pattern for neighbour " << nn << " and subdomain " << ss << "is missing!");
           const auto& outside_inside_pattern = *(result_outside_inside_pattern->second);
           // and the coupling matrices
           auto result_inside_outside_matrix = inside_outside_matrices_[ss].find(nn);
           if (result_inside_outside_matrix == inside_outside_matrices_[ss].end())
             DUNE_THROW(Stuff::Exceptions::internal_error,
-                             "The coupling matrix for subdomain " << ss << " and neighbour " << nn << "is missing!");
+                       "The coupling matrix for subdomain " << ss << " and neighbour " << nn << "is missing!");
           auto& inside_outside_matrix = *(result_inside_outside_matrix->second);
           auto result_outside_inside_matrix = outside_inside_matrices_[nn].find(ss);
           if (result_outside_inside_matrix == outside_inside_matrices_[nn].end())
             DUNE_THROW(Stuff::Exceptions::internal_error,
-                             "The coupling matrix for neighbour " << nn << " and subdomain " << ss << "is missing!");
+                       "The coupling matrix for neighbour " << nn << " and subdomain " << ss << "is missing!");
           auto& outside_inside_matrix = *(result_outside_inside_matrix->second);
           // and copy them into the global matrix
           copy_local_to_global_matrix(inside_outside_matrix,

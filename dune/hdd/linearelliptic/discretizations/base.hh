@@ -132,8 +132,8 @@ public:
       if (dirichlet_vector.parametric()) {
         const Pymor::Parameter mu_dirichlet = this->map_parameter(mu, "dirichlet");
         if (mu_dirichlet.type() != dirichlet_vector.parameter_type())
-          DUNE_THROW_COLORFULLY(Pymor::Exceptions::wrong_parameter_type,
-                                mu_dirichlet.type() << " vs. " << dirichlet_vector.parameter_type());
+          DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                     mu_dirichlet.type() << " vs. " << dirichlet_vector.parameter_type());
         tmp = dirichlet_vector.freeze_parameter(mu);
       } else
         tmp = *(dirichlet_vector.affine_part());
@@ -256,11 +256,11 @@ public:
   ProductType get_product(const std::string id) const
   {
     if (products_.size() == 0)
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrong,
-                            "Do not call get_product() if available_products() is empty!");
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "Do not call get_product() if available_products() is empty!");
     const auto result = products_.find(id);
     if (result == products_.end())
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, id);
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, id);
     return ProductType(*(result->second));
   } // ... get_product(...)
 
@@ -277,11 +277,11 @@ public:
   AffinelyDecomposedVectorType get_vector(const std::string id) const
   {
     if (vectors_.size() == 0)
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrong,
-                            "Do not call get_vector() if available_vectors() is empty!");
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "Do not call get_vector() if available_vectors() is empty!");
     const auto result = vectors_.find(id);
     if (result == vectors_.end())
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given, id);
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, id);
     return *(result->second);
   } // ... get_vector(...)
 
@@ -329,10 +329,10 @@ protected:
   void assert_everything_is_ready() const
   {
     if (!container_based_initialized_)
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::you_are_using_this_wrong,
-                            "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and set "
-                            << "container_based_initialized_ to true!\n"
-                            << "The user has to call init() before calling any other method!");
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and set "
+                 << "container_based_initialized_ to true!\n"
+                 << "The user has to call init() before calling any other method!");
   } // ... assert_everything_is_ready()
 
   bool container_based_initialized_;

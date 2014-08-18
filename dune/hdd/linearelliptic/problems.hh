@@ -73,8 +73,8 @@ public:
   else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
     return Problems::Thermalblock< E, D, d, R, r >::default_config(sub_name);
   else
-    DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
-                          "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
+    DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+               "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
   } // ... default_config(...)
 
   static std::unique_ptr< InterfaceType > create(const std::string type = available()[0],
@@ -87,8 +87,8 @@ public:
     else if (type == Problems::Thermalblock< E, D, d, R, r >::static_id())
       return call_create< Problems::Thermalblock< E, D, d, R, r > >(config);
     else
-      DUNE_THROW_COLORFULLY(Stuff::Exceptions::wrong_input_given,
-                            "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "'" << type << "' is not a valid " << InterfaceType::static_id() << "!");
   } // ... create(...)
 }; // clas ProblemProviderBase
 
