@@ -40,36 +40,18 @@ using namespace HDD;
 class OS2014_nonparametric_convergence_study
   : public ::testing::Test
 {
-  static std::vector< double > truncate_vector_(const std::vector< double >& in, const size_t size)
-  {
-    assert(size <= in.size());
-    if (size == in.size())
-      return in;
-    else {
-      std::vector< double > ret(size);
-      for (size_t ii = 0; ii < size; ++ii)
-        ret[ii] = in[ii];
-      return ret;
-    }
-  } // ... truncate_vector(...)
-
   template< class StudyType >
-  static bool check_for_success_(const StudyType& study, std::map< std::string, std::vector< double > >& errors)
+  static void check_for_success(const StudyType& study, std::map< std::string, std::vector< double > >& errors_map)
   {
-    size_t failures = 0;
-    std::stringstream ss;
-    ss << "\n";
     for (const auto& norm : study.provided_norms())
-      if (!Dune::Stuff::Common::FloatCmp::lt(errors[norm],
-                                             truncate_vector_(study.expected_results(norm), errors[norm].size()))) {
-        ++failures;
-        Dune::Stuff::Common::print(errors[norm],                 "errors           (" + norm + ")", ss);
-        Dune::Stuff::Common::print(study.expected_results(norm), "expected results (" + norm + ")", ss);
-      }
-    if (failures)
-      DUNE_THROW(errors_are_not_as_expected, ss.str());
-    return true;
-  } // ... check_for_success_(...)
+    {
+      const auto errors = errors_map[norm];
+      const auto expected_results = study.expected_results(norm);
+      assert(expected_results.size() <= errors.size());
+      for (size_t ii = 0; ii < errors.size(); ++ii)
+        EXPECT_LE(errors[ii], expected_results[ii]) << "          'norm' = " << norm << ", level = " << ii;
+    }
+  } // ... check_for_success(...)
 
   static const GDT::ChooseSpaceBackend  space_backend = GDT::ChooseSpaceBackend::fem;
   static const Stuff::LA::ChooseBackend la_backend    = Stuff::LA::ChooseBackend::eigen_sparse;
@@ -83,14 +65,14 @@ class OS2014_nonparametric_convergence_study
 //  typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< BlockTestCaseType, 1, la_backend >      BlockEocStudyType;
 
 protected:
-  bool SWIPDG_fine_triangulation() const
+  void SWIPDG_fine_triangulation() const
   {
     const TestCaseType test_case;
     test_case.print_header(test_out);
     test_out << std::endl;
     EocStudyType eoc_study(test_case);
     auto errors = eoc_study.run(false, test_out);
-    return check_for_success_(eoc_study, errors);
+    check_for_success(eoc_study, errors);
   } // ... SWIPDG_fine_triangulation(...)
 
 //  bool BlockSWIPDG_coarse_triangulation(const std::string partitioning) const
@@ -98,13 +80,13 @@ protected:
 //    const BlockTestCaseType test_case(partitioning);
 //    BlockEocStudyType eoc_study(test_case);
 //    auto errors = eoc_study.run(false, test_out);
-//    return check_for_success_(eoc_study, errors);
+//    return check_for_success(eoc_study, errors);
 //  } // ... BlockSWIPDG_coarse_triangulation(...)
 }; // class OS2014_nonparametric_convergence_study
 
 
 TEST_F(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {
-  EXPECT_TRUE(SWIPDG_fine_triangulation());
+  SWIPDG_fine_triangulation();
 }
 
 
