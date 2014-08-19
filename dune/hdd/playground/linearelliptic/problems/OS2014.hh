@@ -50,6 +50,29 @@ class OS2014< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
 
   typedef typename ConstantMatrixFunctionType::RangeType MatrixType;
 
+  static MatrixType unit_matrix()
+  {
+    MatrixType matrix(RangeFieldImp(0));
+    matrix[0][0] = RangeFieldImp(1);
+    matrix[1][1] = RangeFieldImp(1);
+    return matrix;
+  } // ... unit_matrix(...)
+
+  static std::shared_ptr< DefaultParametricFunctionType > create_diffusion_factor(const size_t integration_order)
+  {
+    auto ret = std::make_shared< DefaultParametricFunctionType >(new ExpressionFunctionType(
+                                                                   "x",
+                                                                   "1+0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
+                                                                   integration_order,
+                                                                   "affine_part"));
+    ret->register_component(new ExpressionFunctionType("x",
+                                                       "-0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
+                                                       integration_order,
+                                                       "component_0"),
+                            new Pymor::ParameterFunctional("mu", 1, "mu"));
+    return ret;
+  } // ... create_diffusion_factor(...)
+
 public:
   static std::string static_id()
   {
@@ -77,8 +100,8 @@ public:
   } // ... create(...)
 
   OS2014(const size_t integration_order = default_config().get< size_t >("integration_order"))
-    : BaseType(create_diffusion_factor_(integration_order),
-               std::make_shared< ParametricMatrixFunctionType >(new ConstantMatrixFunctionType(unit_matrix_(),
+    : BaseType(create_diffusion_factor(integration_order),
+               std::make_shared< ParametricMatrixFunctionType >(new ConstantMatrixFunctionType(unit_matrix(),
                                                                                                   "diffusion_tensor")),
                std::make_shared< ParametricScalarFunctionType >(new ForceType(integration_order,  "force")),
                std::make_shared< ParametricScalarFunctionType >(new ConstantScalarFunctionType(0, "dirichlet")),
@@ -89,30 +112,6 @@ public:
   {
     return BaseType::BaseType::static_id() + ".OS2014";
   }
-
-private:
-  static MatrixType unit_matrix_()
-  {
-    MatrixType matrix(RangeFieldImp(0));
-    matrix[0][0] = RangeFieldImp(1);
-    matrix[1][1] = RangeFieldImp(1);
-    return matrix;
-  }
-
-  static std::shared_ptr< DefaultParametricFunctionType > create_diffusion_factor_(const size_t integration_order)
-  {
-    auto ret = std::make_shared< DefaultParametricFunctionType >(new ExpressionFunctionType(
-                                                                   "x",
-                                                                   "1+0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
-                                                                   integration_order,
-                                                                   "affine_part"));
-    ret->register_component(new ExpressionFunctionType("x",
-                                                       "-0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
-                                                       integration_order,
-                                                       "component_0"),
-                            new Pymor::ParameterFunctional("mu", 1, "mu"));
-    return ret;
-  } // ... create_diffusion_factor_(...)
 }; // class OS2014< ..., 2, ..., 1 >
 
 
