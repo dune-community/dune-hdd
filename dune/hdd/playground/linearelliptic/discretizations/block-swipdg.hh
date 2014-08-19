@@ -252,7 +252,8 @@ public:
 
   static RangeFieldType estimate(const DiscretizationType& /*disc*/,
                                  const VectorType& /*vector*/,
-                                 const std::string type)
+                                 const std::string type,
+                                 const ParametersType& /*parameters*/)
   {
     DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                "type '" << type << "' is not one of available_estimators()!");
@@ -674,7 +675,9 @@ class Estimator
   : public EstimatorBase< D, G, r >
 {}; // class Estimator
 
+
 //#if HAVE_ALUGRID
+
 
 template< class DiscretizationType >
 class Estimator< DiscretizationType, ALUGrid< 2, 2, simplex, conforming >, 1 >
