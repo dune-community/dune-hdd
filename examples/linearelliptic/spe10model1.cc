@@ -179,19 +179,19 @@ int main(int argc, char** argv)
 
     typedef Stuff::Grid::Providers::Cube< GridType > GridProvider;
     auto level_grid_provider = GridProvider::create(config);
-    level_grid_provider->grid()->globalRefine(1);
+    level_grid_provider->grid().globalRefine(1);
 
     typedef grid::Multiscale::Providers::Cube< GridType > MsGridProviderType;
-    MsGridProviderType level_provider(level_grid_provider->grid(),
+    MsGridProviderType level_provider(level_grid_provider->grid_ptr(),
                                       config.get< DomainType >("lower_left"),
                                       config.get< DomainType >("upper_right"),
                                       config.get< std::vector< size_t >  >("num_partitions", dimDomain));
 
     typedef Stuff::Grid::Providers::Cube< GridType > GridProvider;
     auto reference_grid_provider = GridProvider::create(config);
-    reference_grid_provider->grid()->globalRefine(1);
-    reference_grid_provider->grid()->globalRefine(2 * DGFGridInfo< GridType >::refineStepsForHalf());
-    MsGridProviderType reference_level_provider(reference_grid_provider->grid(),
+    reference_grid_provider->grid().globalRefine(1);
+    reference_grid_provider->grid().globalRefine(2 * DGFGridInfo< GridType >::refineStepsForHalf());
+    MsGridProviderType reference_level_provider(reference_grid_provider->grid_ptr(),
                                                 config.get< DomainType >("lower_left"),
                                                 config.get< DomainType >("upper_right"),
                                                 config.get< std::vector< size_t >  >("num_partitions", dimDomain));
