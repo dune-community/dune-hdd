@@ -50,14 +50,14 @@ public:
   typedef Stuff::Common::FixedMap< std::string, Pymor::Parameter, 3 > ParametersType;
 
 protected:
-  static ParametersType default_parameters_()
+  static ParametersType default_parameters()
   {
     return ParametersType({{"current", Pymor::Parameter("mu", 0.5)},
                            {"fixed", Pymor::Parameter("mu", 1)},
                            {"minimizing", Pymor::Parameter("mu", 0.1)}});
   }
 
-  static int initial_refinements_()
+  static int initial_refinements()
   {
     int ret = 1;
 #if HAVE_ALUGRID
@@ -69,7 +69,7 @@ protected:
   } // ... initial_refinements()
 
 public:
-  OS2014Base(ParametersType parameters = default_parameters_())
+  OS2014Base(ParametersType parameters = default_parameters())
     : parameters_(parameters)
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , parametric_problem_(3)
@@ -102,9 +102,8 @@ public:
         << "||  parameter: mu in [0.1, 1]                                     ||\n"
         << "|+================================================================+|\n"
         << "+==================================================================+\n"
-        << "    parameter type: " << parametric_problem_.parameter_type() << "\n"
-        << "    fixed mu:       " << parameters_["fixed"] << "\n"
         << "    solving for mu: " << parameters_["current"] << "\n"
+        << "    fixed mu:       " << parameters_["fixed"] << "\n"
         << "    sqrt(alpha(mu, mu_fixed))^-1:    "
             << std::setprecision(2) << std::scientific << 1.0/std::sqrt(alpha_) << "\n"
         << "    sqrt(gamma(mu, mu_fixed)):       "
@@ -179,9 +178,9 @@ class OS2014
 public:
   typedef typename OS2014BaseType::ParametersType ParametersType;
 
-  OS2014(ParametersType parameters = OS2014BaseType::default_parameters_(), const size_t num_refinements = 3)
+  OS2014(ParametersType parameters = OS2014BaseType::default_parameters(), const size_t num_refinements = 3)
     : OS2014BaseType(parameters)
-    , TestCaseBaseType(create_initial_grid(OS2014BaseType::initial_refinements_()), num_refinements)
+    , TestCaseBaseType(create_initial_grid(OS2014BaseType::initial_refinements()), num_refinements)
   {}
 }; // class OS2014
 
