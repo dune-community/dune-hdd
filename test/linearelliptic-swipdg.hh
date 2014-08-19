@@ -46,11 +46,18 @@ public:
 
 template< class TestCaseType, int polOrder, GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
 class EocStudySWIPDG
-  : public EocStudyBase< TestCaseType, typename internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type >
+  : public EocStudyBase< TestCaseType,
+                         typename internal::DiscretizationSWIPDG< TestCaseType,
+                                                                  polOrder,
+                                                                  space_backend,
+                                                                  la_backend >::Type >
 {
-  typedef EocStudyBase
-      < TestCaseType, typename internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type >
-    BaseType;
+  typedef EocStudyBase< TestCaseType,
+                        typename internal::DiscretizationSWIPDG< TestCaseType,
+                                                                 polOrder,
+                                                                 space_backend,
+                                                                 la_backend >::Type > BaseType;
+  typedef EocStudySWIPDG< TestCaseType, polOrder, space_backend, la_backend > ThisType;
 
   typedef typename BaseType::DiscretizationType DiscretizationType;
   typedef typename BaseType::GridViewType GridViewType;
