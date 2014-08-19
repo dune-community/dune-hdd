@@ -39,11 +39,6 @@ include(PymorUtils)
 include(${dune-hdd_SOURCE_DIR})
 include(${dune-hdd_BINARY_DIR})
 
-# we need eigen
-if( NOT EIGEN3_FOUND )
-  message( FATAL_ERROR "eigen3 not found, set PKG_CONFIGK_PATH to include eigen3.pc!" )
-endif( NOT EIGEN3_FOUND )
-
 add_dune_modules(
   hdd
   pymor
