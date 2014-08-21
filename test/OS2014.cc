@@ -86,10 +86,11 @@ protected:
 
 TEST_F(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation)
 {
-  TestCaseType test_case;
+  const TestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
   DSC_LOG_INFO << std::endl;
-  EocStudyType eoc_study(test_case/*, {"energy"}*/);
+  EocStudyType eoc_study(test_case,
+                         {"energy", "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007", "effectivity_ESV2007"});
   check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
 }
 //TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
