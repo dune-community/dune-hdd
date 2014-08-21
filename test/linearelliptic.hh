@@ -63,8 +63,9 @@ protected:
   typedef typename TestCaseType::FunctionType FunctionType;
 
 public:
-  EocStudyBase(const TestCaseType& test_case)
-    : test_case_(test_case)
+  EocStudyBase(const TestCaseType& test_case, const std::vector< std::string > only_these_norms = {})
+    : BaseType(only_these_norms)
+    , test_case_(test_case)
     , current_refinement_(0)
     , last_computed_refinement_(std::numeric_limits< size_t >::max())
     , time_to_solution_(0)

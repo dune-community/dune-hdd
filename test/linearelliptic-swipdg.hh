@@ -65,8 +65,8 @@ class EocStudySWIPDG
   typedef typename BaseType::VectorType   VectorType;
 
 public:
-  EocStudySWIPDG(const TestCaseType& test_case)
-    : BaseType(test_case)
+  EocStudySWIPDG(const TestCaseType& test_case, const std::vector< std::string > only_these_norms = {})
+    : BaseType(test_case, only_these_norms)
   {}
 
   virtual ~EocStudySWIPDG() {}
@@ -153,9 +153,9 @@ private:
   virtual std::vector< std::string > available_norms_() const DS_OVERRIDE DS_FINAL
   {
     return {
-//        "L2"
-//      , "H1_semi"
-      /*,*/ "energy"
+        "L2"
+      , "H1_semi"
+      , "energy"
     };
   }
 
