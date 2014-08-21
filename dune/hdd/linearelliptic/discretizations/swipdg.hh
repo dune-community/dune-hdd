@@ -412,10 +412,10 @@ private:
   template< class DiscImp >
   class ComputeEstimator< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 >
   {
-    static std::string nonconformity_estimator_id() {  return "eta_NC"; }
-    static std::string residual_estimator_id() {       return "eta_R"; }
-    static std::string diffusive_flux_estimator_id() { return "eta_DF"; }
-    static std::string estimator_id() {                return "eta"; }
+    static std::string nonconformity_estimator_id() {  return "eta_NC_ESV2007"; }
+    static std::string residual_estimator_id() {       return "eta_R_ESV2007"; }
+    static std::string diffusive_flux_estimator_id() { return "eta_DF_ESV2007"; }
+    static std::string estimator_id() {                return "eta_ESV2007"; }
 
     static const size_t over_integrate = 2;
   public:
