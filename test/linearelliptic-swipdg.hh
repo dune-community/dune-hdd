@@ -94,7 +94,11 @@ public:
       return polOrder;
     else if (type == "eta_ESV2007")
       return polOrder;
-    else if (type == "effectivity_ESV2007")
+    else if (type == "eff_ESV2007")
+      return 0;
+    else if (type == "eta_ESV2007_alt")
+      return polOrder;
+    else if (type == "eff_ESV2007_alt")
       return 0;
     else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
@@ -123,12 +127,16 @@ public:
           return {3.56e-1, 1.77e-1, 8.74e-2, 4.36e-2};
         } else if (type == "eta_ESV2007")
           return {4.50e-01, 2.08e-01,  9.92e-02, 4.86e-02};
-        else if (type == "effectivity_ESV2007") {
+        else if (type == "eff_ESV2007") {
           // these are the values reported in the ESV2007 preprint:
 //          return {1.21, 1.21, 1.21, 1.21};
           // but we do not want the test to fail each time, so we expect these:
           return {1.38, 1.29, 1.24, 1.22};
-        } else
+        } else if (type == "eta_ESV2007_alt")
+          return {5.94e-01, 2.74e-01, 1.32e-01, 6.43e-02};
+        else if (type == "eff_ESV2007_alt")
+          return {1.82, 1.70, 1.64, 1.61};
+        else
           DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
       } else
         DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
@@ -192,9 +200,9 @@ private:
   virtual std::vector< std::string > available_estimators_() const DS_OVERRIDE DS_FINAL
   {
     auto ret = DiscretizationType::available_estimators();
-    if (std::find(ret.begin(), ret.end(), "ESV2007") != ret.end())
+    if (std::find(ret.begin(), ret.end(), "eta_ESV2007") != ret.end())
       ret.push_back("eff_ESV2007");
-    if (std::find(ret.begin(), ret.end(), "ESV2007_alt") != ret.end())
+    if (std::find(ret.begin(), ret.end(), "eta_ESV2007_alt") != ret.end())
       ret.push_back("eff_ESV2007_alt");
     return ret;
   }
