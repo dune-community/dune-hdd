@@ -229,7 +229,7 @@ static typename FunctionType::RangeFieldType compute_minimum(const FunctionType&
 
 
 template< class DiscretizationType, class G, int r >
-class EstimatorBase
+class BlockSWIPDGEstimatorBase
 {
 protected:
   static std::string nonconformity_estimator_id() {  return "eta_NC"; }
@@ -667,23 +667,23 @@ protected:
                                 + std::sqrt(eta_r_squared)
                                 + (1.0/sqrt_gamma_tilde)*std::sqrt(eta_df_squared));
   } // ... compute_estimator(...)
-}; // class EstimatorBase
+}; // class BlockSWIPDGEstimatorBase
 
 
 template< class D, class G, int r >
-class Estimator
-  : public EstimatorBase< D, G, r >
-{}; // class Estimator
+class BlockSWIPDGEstimator
+  : public BlockSWIPDGEstimatorBase< D, G, r >
+{}; // class BlockSWIPDGEstimator
 
 
 //#if HAVE_ALUGRID
 
 
 template< class DiscretizationType >
-class Estimator< DiscretizationType, ALUGrid< 2, 2, simplex, conforming >, 1 >
-  : public EstimatorBase< DiscretizationType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+class BlockSWIPDGEstimator< DiscretizationType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public BlockSWIPDGEstimatorBase< DiscretizationType, ALUGrid< 2, 2, simplex, conforming >, 1 >
 {
-  typedef EstimatorBase< DiscretizationType, ALUGrid< 2, 2, simplex, conforming >, 1 > BaseType;
+  typedef BlockSWIPDGEstimatorBase< DiscretizationType, ALUGrid< 2, 2, simplex, conforming >, 1 > BaseType;
 public:
   typedef typename BaseType::VectorType     VectorType;
   typedef typename BaseType::RangeFieldType RangeFieldType;
@@ -717,7 +717,7 @@ public:
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "type '" << type << "' is not one of available_estimators()!");
   } // ... estimate(...)
-}; // class Estimator< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+}; // class BlockSWIPDGEstimator< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
 
 //#endif // HAVE_ALUGRID
 
@@ -771,8 +771,8 @@ private:
   typedef Pymor::LA::AffinelyDecomposedConstContainer< MatrixType > AffinelyDecomposedConstMatrixType;
   typedef Pymor::LA::AffinelyDecomposedConstContainer< VectorType > AffinelyDecomposedConstVectorType;
 
-  typedef internal::Estimator< ThisType, GridImp, dimRange > Estimator;
-  friend class internal::EstimatorBase< ThisType, GridImp, dimRange >;
+  typedef internal::BlockSWIPDGEstimator< ThisType, GridImp, dimRange > Estimator;
+  friend class internal::BlockSWIPDGEstimatorBase< ThisType, GridImp, dimRange >;
 
 public:
   typedef typename LocalDiscretizationType::ProblemType LocalProblemType;
