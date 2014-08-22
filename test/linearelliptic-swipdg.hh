@@ -6,6 +6,8 @@
 #ifndef DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 #define DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 
+#include <algorithm>
+
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
 #endif
@@ -190,15 +192,18 @@ private:
   virtual std::vector< std::string > available_estimators_() const DS_OVERRIDE DS_FINAL
   {
     auto ret = DiscretizationType::available_estimators();
-    ret.push_back("effectivity_ESV2007");
+    if (std::find(ret.begin(), ret.end(), "ESV2007") != ret.end())
+      ret.push_back("eff_ESV2007");
+    if (std::find(ret.begin(), ret.end(), "ESV2007_alt") != ret.end())
+      ret.push_back("eff_ESV2007_alt");
     return ret;
   }
 
   virtual double estimate_(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
   {
-    if (type == "effectivity_ESV2007")
+    if (type == "eff_ESV2007")
       return estimate_(vector, "eta_ESV2007") / const_cast< ThisType& >(*this).current_error_norm("energy");
-    else if (type == "effectivity_ESV2007_alt")
+    else if (type == "eff_ESV2007_alt")
       return estimate_(vector, "eta_ESV2007_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
     else {
       assert(this->current_discretization_);
