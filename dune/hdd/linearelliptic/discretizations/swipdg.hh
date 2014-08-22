@@ -514,18 +514,77 @@ public:
     eta_r.prepare();
     eta_df.prepare();
 
-    RangeFieldType eta(0.0);
+    RangeFieldType eta_squared(0.0);
 
     const auto grid_view = *disc.grid_view();
     const auto entity_it_end = grid_view.template end< 0 >();
     for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
       const auto& entity = *entity_it;
-      eta += eta_nc.compute_locally(entity)
-             + std::pow(std::sqrt(eta_r.compute_locally(entity)) + std::sqrt(eta_df.compute_locally(entity)), 2);
+      eta_squared += eta_nc.compute_locally(entity)
+                   + std::pow(std::sqrt(eta_r.compute_locally(entity)) + std::sqrt(eta_df.compute_locally(entity)), 2);
     }
-    return std::sqrt(eta);
+    return std::sqrt(eta_squared);
   } // ... estimate(...)
 }; // class ESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+
+//#endif // HAVE_ALUGRID
+
+
+class ESV2007AlternativeSummationBase
+{
+public:
+  static std::string id()
+  {
+    return "eta_ESV2007_alt";
+  }
+};
+
+
+template< class DiscType, class GridType, int dimRange >
+class ESV2007AlternativeSummation
+  : public ESV2007AlternativeSummationBase
+{
+public:
+  static const bool available = false;
+};
+
+
+//#if HAVE_ALUGRID
+
+template< class DiscType >
+class ESV2007AlternativeSummation< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public ESV2007AlternativeSummationBase
+{
+public:
+  static const bool available = true;
+
+  typedef typename DiscType::RangeFieldType RangeFieldType;
+  typedef typename DiscType::VectorType     VectorType;
+
+  static RangeFieldType estimate(const DiscType& disc, const VectorType& vector)
+  {
+    LocalNonconformityESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_nc(disc, vector);
+    LocalResidualESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >      eta_r(disc);
+    LocalDiffusiveFluxESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_df(disc, vector);
+    eta_nc.prepare();
+    eta_r.prepare();
+    eta_df.prepare();
+
+    RangeFieldType eta_nc_squared(0.0);
+    RangeFieldType eta_r_squared(0.0);
+    RangeFieldType eta_df_squared(0.0);
+
+    const auto grid_view = *disc.grid_view();
+    const auto entity_it_end = grid_view.template end< 0 >();
+    for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+      const auto& entity = *entity_it;
+      eta_nc_squared += eta_nc.compute_locally(entity);
+      eta_r_squared += eta_r.compute_locally(entity);
+      eta_df_squared += eta_df.compute_locally(entity);
+    }
+    return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
+  } // ... estimate(...)
+}; // class ESV2007AlternativeSummation< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
 
 //#endif // HAVE_ALUGRID
 
@@ -601,10 +660,11 @@ private:
     return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(disc, vector);
   }
 
-  typedef Estimators::LocalNonconformityESV2007< D, G, r > LocalNonconformityESV2007Type;
-  typedef Estimators::LocalResidualESV2007< D, G, r >      LocalResidualESV2007Type;
-  typedef Estimators::LocalDiffusiveFluxESV2007< D, G, r > LocalDiffusiveFluxESV2007Type;
-  typedef Estimators::ESV2007< D, G, r >                   ESV2007Type;
+  typedef Estimators::LocalNonconformityESV2007< D, G, r >   LocalNonconformityESV2007Type;
+  typedef Estimators::LocalResidualESV2007< D, G, r >        LocalResidualESV2007Type;
+  typedef Estimators::LocalDiffusiveFluxESV2007< D, G, r >   LocalDiffusiveFluxESV2007Type;
+  typedef Estimators::ESV2007< D, G, r >                     ESV2007Type;
+  typedef Estimators::ESV2007AlternativeSummation< D, G, r > ESV2007AlternativeSummationType;
 
 public:
   static std::vector< std::string > available()
@@ -614,6 +674,7 @@ public:
     tmp = append< LocalResidualESV2007Type >(tmp);
     tmp = append< LocalDiffusiveFluxESV2007Type >(tmp);
     tmp = append< ESV2007Type >(tmp);
+    tmp = append< ESV2007AlternativeSummationType >(tmp);
     return tmp;
   } // ... available(...)
 
@@ -627,6 +688,8 @@ public:
       return compute_estimator< LocalDiffusiveFluxESV2007Type >(disc, vector);
     else if (equals< ESV2007Type >(type))
       return compute_estimator< ESV2007Type >(disc, vector);
+    else if (equals< ESV2007AlternativeSummationType >(type))
+      return compute_estimator< ESV2007AlternativeSummationType >(disc, vector);
     else
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available()!");
