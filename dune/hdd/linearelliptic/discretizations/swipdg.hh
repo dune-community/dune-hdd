@@ -101,17 +101,16 @@ public:
 static const size_t estimator_over_integrate = 2;
 
 
-template< class DiscType, class GridType, int dimRange >
 class LocalNonconformityEstimatorESV2007Base
 {
 public:
-  static std::string id() {  return "eta_NC_ESV2007"; }
+  static std::string id() { return "eta_NC_ESV2007"; }
 };
 
 
 template< class DiscType, class GridType, int dimRange >
 class LocalNonconformityEstimatorESV2007
-  : public LocalNonconformityEstimatorESV2007Base< DiscType, GridType, dimRange >
+  : public LocalNonconformityEstimatorESV2007Base
 {
   static_assert(AlwaysFalse< DiscType >::value, "Not implemented for this GridType/dimRange combination");
 };
@@ -123,7 +122,7 @@ class LocalNonconformityEstimatorESV2007
  */
 template< class DiscType >
 class LocalNonconformityEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
-  : public LocalNonconformityEstimatorESV2007Base< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public LocalNonconformityEstimatorESV2007Base
   , public GDT::Functor::Codim0< typename DiscType::GridViewType >
 {
   typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
@@ -210,6 +209,113 @@ public:
 //#endif // HAVE_ALUGRID
 
 
+class LocalResidualEstimatorESV2007Base
+{
+public:
+  static std::string id() { return "eta_R_ESV2007"; }
+};
+
+
+template< class DiscType, class GridType, int dimRange >
+class LocalResidualEstimatorESV2007
+  : public LocalResidualEstimatorESV2007Base
+{
+  static_assert(AlwaysFalse< DiscType >::value, "Not implemented for this GridType/dimRange combination");
+};
+
+//#if HAVE_ALUGRID
+
+/**
+ *  \brief computes the local nonconformity estimator as defined in ESV2007
+ */
+template< class DiscType >
+class LocalResidualEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public LocalResidualEstimatorESV2007Base
+  , public GDT::Functor::Codim0< typename DiscType::GridViewType >
+{
+  typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
+public:
+  typedef typename FunctorBaseType::GridViewType GridViewType;
+  typedef typename FunctorBaseType::EntityType   EntityType;
+
+  typedef typename DiscType::RangeFieldType RangeFieldType;
+  typedef typename DiscType::VectorType     VectorType;
+
+private:
+  typedef GDT::Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+  typedef GDT::DiscreteFunction< P0SpaceType, VectorType > DiscreteFunctionType;
+  typedef typename DiscreteFunctionType::DifferenceType DifferenceType;
+
+  typedef typename DiscType::ProblemType ProblemType;
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+
+  typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
+  typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< CutoffFunctionType > > LocalOperatorType;
+  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+
+  static const DiscType& assert_disc(const DiscType& disc)
+  {
+    if (disc.parametric())
+      DUNE_THROW(NotImplemented, "Not implemented yet for parametric discretizations!");
+    assert(disc.problem().force()->has_affine_part());
+    return disc;
+  } // ... assert_disc(...)
+
+public:
+  LocalResidualEstimatorESV2007(const DiscType& disc)
+    : disc_(assert_disc(disc))
+    , p0_space_(disc_.grid_view())
+    , p0_force_(p0_space_)
+    , difference_(Stuff::Common::make_unique< DifferenceType >(*disc_.problem().force()->affine_part() - p0_force_))
+    , cutoff_function_(*disc.problem().diffusion_factor()->affine_part(),
+                       *disc.problem().diffusion_tensor()->affine_part())
+    , local_operator_(estimator_over_integrate, cutoff_function_)
+    , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , result_(0.0)
+  {}
+
+  virtual void prepare()
+  {
+    const GDT::Operators::Projection< GridViewType > projection_operator(*disc_.grid_view());
+    projection_operator.apply(*disc_.problem().force()->affine_part(), p0_force_);
+    result_ = 0.0;
+  } // ... prepare(...)
+
+  RangeFieldType compute_locally(const EntityType& entity)
+  {
+    const auto local_difference = difference_->local_function(entity);
+    local_operator_.apply(*local_difference,
+                          *local_difference,
+                          tmp_local_matrices_.matrices()[0][0],
+                          tmp_local_matrices_.matrices()[1]);
+    assert(tmp_local_matrices_.matrices()[0][0].rows() >= 1);
+    assert(tmp_local_matrices_.matrices()[0][0].cols() >= 1);
+    return tmp_local_matrices_.matrices()[0][0][0][0];
+  } // ... compute_locally(...)
+
+  virtual void apply_local(const EntityType &entity)
+  {
+    result_ += compute_locally(entity);
+  }
+
+private:
+  const DiscType& disc_;
+  const P0SpaceType p0_space_;
+  DiscreteFunctionType p0_force_;
+  std::unique_ptr< const DifferenceType > difference_;
+  const CutoffFunctionType cutoff_function_;
+  const LocalOperatorType local_operator_;
+  TmpStorageProviderType tmp_local_matrices_;
+public:
+  RangeFieldType result_;
+}; // class LocalResidualEstimatorESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+
+//#endif // HAVE_ALUGRID
+
+
+
+
 template< class DiscImp, class G, int r >
 class ComputeEstimator
 {
@@ -288,35 +394,11 @@ private:
 
   static RangeFieldType compute_residual_estimator(const DiscImp& disc)
   {
-    using namespace Dune;
-    using namespace GDT;
-    const auto grid_view = disc.grid_view();
-
-    typedef Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
-    const P0SpaceType p0_space(grid_view);
-    VectorType p0_force_vector(p0_space.mapper().size());
-    DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
-
-    const auto& force = *(disc.problem().force());
-    assert(!force.parametric());
-    assert(force.has_affine_part());
-    Operators::Projection< GridViewType > projection_operator(*grid_view);
-    projection_operator.apply(*force.affine_part(), p0_force);
-
-    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-    const auto& diffusion_factor = *(disc.problem().diffusion_factor());
-    assert(!diffusion_factor.parametric());
-    assert(diffusion_factor.has_affine_part());
-    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
-    assert(!diffusion_tensor.parametric());
-    assert(diffusion_tensor.has_affine_part());
-    typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
-    const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-
-    const Products::WeightedL2< GridViewType, CutoffFunctionType >
-        weighted_l2_product(*grid_view, cutoff_function, over_integrate);
-    return weighted_l2_product.induced_norm(*force.affine_part() - p0_force);
+    LocalResidualEstimatorESV2007< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_r(disc);
+    GDT::GridWalker< typename DiscImp::GridViewType > grid_walker(*disc.grid_view());
+    grid_walker.add(eta_r);
+    grid_walker.walk();
+    return std::sqrt(eta_r.result_);
   } // ... compute_residual_estimator(...)
 
   static RangeFieldType compute_diffusive_flux_estimator(const DiscImp& disc, const VectorType& vector)
@@ -411,7 +493,7 @@ private:
 
     typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
     const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-    const  LocalOperator::Codim0Integral< LocalEvaluation::Product< CutoffFunctionType > >
+    const LocalOperator::Codim0Integral< LocalEvaluation::Product< CutoffFunctionType > >
       local_eta_r_product(1, cutoff_function);
     const auto eta_r_difference = *force.affine_part() - p0_force;
 
@@ -481,6 +563,7 @@ private:
 # endif
   } // ... compute_estimator(...)
 }; // class ComputeEstimator
+
 //#endif // HAVE_ALUGRID
 
 
