@@ -102,15 +102,27 @@ TEST_F(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alterna
                           "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
   check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
 }
-//TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
-//  run_study< BlockEocStudyType >(BlockTestCaseType("[1 1 1]"));
-//}
-//TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {
-//  run_study< BlockEocStudyType >(BlockTestCaseType("[2 2 1]"));
-//}
-//TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {
-//  run_study< BlockEocStudyType >(BlockTestCaseType("[4 4 1]"));
-//}
-//TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
-//  run_study< BlockEocStudyType >(BlockTestCaseType("[8 8 1]"));
-//}
+TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
+  const BlockTestCaseType test_case("[1 1 1]");
+  BlockEocStudyType eoc_study(test_case,
+                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
+  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+}
+TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {
+  const BlockTestCaseType test_case("[2 2 1]");
+  BlockEocStudyType eoc_study(test_case,
+                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
+  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+}
+TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {
+  const BlockTestCaseType test_case("[4 4 1]");
+  BlockEocStudyType eoc_study(test_case,
+                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
+  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+}
+TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
+  const BlockTestCaseType test_case("[8 8 1]");
+  BlockEocStudyType eoc_study(test_case,
+                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
+  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+}
