@@ -165,12 +165,8 @@ public:
 private:
   virtual std::vector< std::string > available_norms_() const DS_OVERRIDE DS_FINAL
   {
-    return {
-        "L2"
-      , "H1_semi"
-      , "energy"
-    };
-  } // ... available_norms_(...)
+    return {"L2", "H1_semi", "energy"};
+  }
 
   virtual double compute_norm_(const GridViewType& grid_view,
                                const FunctionType& function,
