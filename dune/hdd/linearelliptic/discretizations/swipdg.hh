@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <dune/common/timer.hh>
+#include <dune/common/static_assert.hh>
 
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
@@ -45,6 +46,7 @@
 #include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
 #include <dune/gdt/playground/products/ESV2007.hh>
+#include <dune/gdt/assembler/tmp-storage.hh>
 
 #include "base.hh"
 
@@ -94,6 +96,392 @@ public:
   typedef TestSpaceType AnsatzSpaceType;
   typedef typename TestSpaceType::GridViewType GridViewType;
 }; // class SWIPDGTraits
+
+
+static const size_t estimator_over_integrate = 2;
+
+
+template< class DiscType, class GridType, int dimRange >
+class LocalNonconformityEstimatorESV2007Base
+{
+public:
+  static std::string id() {  return "eta_NC_ESV2007"; }
+};
+
+
+template< class DiscType, class GridType, int dimRange >
+class LocalNonconformityEstimatorESV2007
+  : public LocalNonconformityEstimatorESV2007Base< DiscType, GridType, dimRange >
+{
+  static_assert(AlwaysFalse< DiscType >::value, "Not implemented for this GridType/dimRange combination");
+};
+
+//#if HAVE_ALUGRID
+
+/**
+ *  \brief computes the local nonconformity estimator as defined in ESV2007
+ */
+template< class DiscType >
+class LocalNonconformityEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public LocalNonconformityEstimatorESV2007Base< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  , public GDT::Functor::Codim0< typename DiscType::GridViewType >
+{
+  typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
+public:
+  typedef typename FunctorBaseType::GridViewType GridViewType;
+  typedef typename FunctorBaseType::EntityType   EntityType;
+
+  typedef typename DiscType::RangeFieldType RangeFieldType;
+  typedef typename DiscType::VectorType     VectorType;
+
+private:
+  typedef typename DiscType::AnsatzSpaceType AnsatzSpaceType;
+  typedef GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
+  typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
+  typedef typename ConstDiscreteFunctionType::DifferenceType DifferenceType;
+
+  typedef typename DiscType::ProblemType ProblemType;
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+
+  typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Elliptic< DiffusionFactorType,
+                                                                              DiffusionTensorType > > LocalOperatorType;
+  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+
+  static const DiscType& assert_disc(const DiscType& disc)
+  {
+    if (disc.parametric())
+      DUNE_THROW(NotImplemented, "Not implemented yet for parametric discretizations!");
+    assert(disc.problem().diffusion_factor()->has_affine_part());
+    assert(disc.problem().diffusion_tensor()->has_affine_part());
+    return disc;
+  } // ... assert_disc(...)
+
+public:
+  LocalNonconformityEstimatorESV2007(const DiscType& disc, const VectorType& vector)
+    : disc_(assert_disc(disc))
+    , vector_(vector)
+    , discrete_solution_(*disc_.ansatz_space(), vector_)
+    , oswald_interpolation_(*disc.ansatz_space())
+    , difference_(Stuff::Common::make_unique< DifferenceType >(discrete_solution_ - oswald_interpolation_))
+    , local_operator_(estimator_over_integrate,
+                      *disc.problem().diffusion_factor()->affine_part(),
+                      *disc.problem().diffusion_tensor()->affine_part())
+    , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , result_(0.0)
+  {}
+
+  virtual void prepare()
+  {
+    const GDT::Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*disc_.grid_view());
+    oswald_interpolation_operator.apply(discrete_solution_, oswald_interpolation_);
+    result_ = 0.0;
+  } // ... prepare(...)
+
+  RangeFieldType compute_locally(const EntityType& entity)
+  {
+    const auto local_difference = difference_->local_function(entity);
+    local_operator_.apply(*local_difference,
+                          *local_difference,
+                          tmp_local_matrices_.matrices()[0][0],
+                          tmp_local_matrices_.matrices()[1]);
+    assert(tmp_local_matrices_.matrices()[0][0].rows() >= 1);
+    assert(tmp_local_matrices_.matrices()[0][0].cols() >= 1);
+    return tmp_local_matrices_.matrices()[0][0][0][0];
+  } // ... compute_locally(...)
+
+  virtual void apply_local(const EntityType &entity)
+  {
+    result_ += compute_locally(entity);
+  }
+
+private:
+  const DiscType& disc_;
+  const VectorType& vector_;
+  const ConstDiscreteFunctionType discrete_solution_;
+  DiscreteFunctionType oswald_interpolation_;
+  std::unique_ptr< const DifferenceType > difference_;
+  const LocalOperatorType local_operator_;
+  TmpStorageProviderType tmp_local_matrices_;
+public:
+  RangeFieldType result_;
+}; // class LocalNonconformityEstimatorESV2007Functor< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+
+//#endif // HAVE_ALUGRID
+
+
+template< class DiscImp, class G, int r >
+class ComputeEstimator
+{
+public:
+  typedef typename DiscImp::RangeFieldType RangeFieldType;
+  typedef typename DiscImp::VectorType VectorType;
+
+  static std::vector< std::string > available()
+  {
+    return {};
+  }
+
+  static RangeFieldType estimate(const DiscImp& /*disc*/, const VectorType& /*vector*/, const std::string type)
+  {
+    DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+               "type '" << type << "' is not one of available_estimators()!");
+  }
+}; // class ComputeEstimator
+
+//#if HAVE_ALUGRID
+
+template< class DiscImp >
+class ComputeEstimator< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 >
+{
+  static std::string nonconformity_estimator_id() {  return "eta_NC_ESV2007"; }
+  static std::string residual_estimator_id() {       return "eta_R_ESV2007"; }
+  static std::string diffusive_flux_estimator_id() { return "eta_DF_ESV2007"; }
+  static std::string estimator_id() {                return "eta_ESV2007"; }
+
+  static const size_t over_integrate = 2;
+
+  typedef typename DiscImp::AnsatzSpaceType AnsatzSpaceType;
+  typedef typename DiscImp::GridViewType GridViewType;
+  typedef typename DiscImp::ProblemType ProblemType;
+
+  static const unsigned int dimDomain = DiscImp::dimDomain;
+
+public:
+  typedef typename DiscImp::RangeFieldType RangeFieldType;
+  typedef typename DiscImp::VectorType VectorType;
+
+  static std::vector< std::string > available()
+  {
+    return {
+        nonconformity_estimator_id()
+      , residual_estimator_id()
+      , diffusive_flux_estimator_id()
+      , estimator_id()
+    };
+  } // ... available()
+
+  static RangeFieldType estimate(const DiscImp& disc, const VectorType& vector, const std::string type)
+  {
+    if (type == nonconformity_estimator_id())
+      return compute_nonconformity_estimator(disc, vector);
+    else if (type == residual_estimator_id())
+      return compute_residual_estimator(disc);
+    else if (type == diffusive_flux_estimator_id())
+      return compute_diffusive_flux_estimator(disc, vector);
+    else if (type == estimator_id())
+      return compute_estimator(disc, vector);
+    else
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "type '" << type << "' is not one of available_estimators()!");
+  } // ... estimate(...)
+
+private:
+  static RangeFieldType compute_nonconformity_estimator(const DiscImp& disc, const VectorType& vector)
+  {
+    LocalNonconformityEstimatorESV2007< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_nc(disc, vector);
+    GDT::GridWalker< typename DiscImp::GridViewType > grid_walker(*disc.grid_view());
+    grid_walker.add(eta_nc);
+    grid_walker.walk();
+    return std::sqrt(eta_nc.result_);
+  } // ... compute_nonconformity_estimator(...)
+
+  static RangeFieldType compute_residual_estimator(const DiscImp& disc)
+  {
+    using namespace Dune;
+    using namespace GDT;
+    const auto grid_view = disc.grid_view();
+
+    typedef Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+    const P0SpaceType p0_space(grid_view);
+    VectorType p0_force_vector(p0_space.mapper().size());
+    DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
+
+    const auto& force = *(disc.problem().force());
+    assert(!force.parametric());
+    assert(force.has_affine_part());
+    Operators::Projection< GridViewType > projection_operator(*grid_view);
+    projection_operator.apply(*force.affine_part(), p0_force);
+
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = *(disc.problem().diffusion_factor());
+    assert(!diffusion_factor.parametric());
+    assert(diffusion_factor.has_affine_part());
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
+    const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+
+    const Products::WeightedL2< GridViewType, CutoffFunctionType >
+        weighted_l2_product(*grid_view, cutoff_function, over_integrate);
+    return weighted_l2_product.induced_norm(*force.affine_part() - p0_force);
+  } // ... compute_residual_estimator(...)
+
+  static RangeFieldType compute_diffusive_flux_estimator(const DiscImp& disc, const VectorType& vector)
+  {
+    using namespace Dune;
+    using namespace Dune::GDT;
+
+    const auto grid_view = disc.grid_view();
+    typedef ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
+    const ConstDiscreteFunctionType discrete_solution(*disc.ansatz_space(), vector);
+
+    typedef Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+    const RTN0SpaceType rtn0_space(grid_view);
+    VectorType diffusive_flux_vector(rtn0_space.mapper().size());
+    typedef DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
+    RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
+
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = *(disc.problem().diffusion_factor());
+    assert(!diffusion_factor.parametric());
+    assert(diffusion_factor.has_affine_part());
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
+      diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+    diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
+
+    Products::ESV2007::DiffusiveFluxEstimate< GridViewType,
+                                              DiffusionFactorType,
+                                              RTN0DiscreteFunctionType,
+                                              ConstDiscreteFunctionType,
+                                              ConstDiscreteFunctionType,
+                                              RangeFieldType,
+                                              DiffusionTensorType >
+      diffusive_flux_estimator_product(*grid_view, discrete_solution, discrete_solution,
+                                       *diffusion_factor.affine_part(),
+                                       *diffusion_tensor.affine_part(),
+                                       diffusive_flux,
+                                       1);
+    return std::sqrt(diffusive_flux_estimator_product.apply2());
+  } // ... compute_diffusive_flux_estimator(...)
+
+  static RangeFieldType compute_estimator(const DiscImp& disc, const VectorType& vector)
+  {
+    using namespace Dune;
+    using namespace Dune::GDT;
+
+    const auto grid_view = disc.grid_view();
+    typedef ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
+    const ConstDiscreteFunctionType discrete_solution(*disc.ansatz_space(), vector);
+
+    VectorType oswald_interpolation_vector(disc.ansatz_space()->mapper().size());
+    typedef DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
+    DiscreteFunctionType oswald_interpolation(*disc.ansatz_space(), oswald_interpolation_vector);
+    const Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*grid_view);
+    oswald_interpolation_operator.apply(discrete_solution, oswald_interpolation);
+
+    typedef Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+    const P0SpaceType p0_space(grid_view);
+    VectorType p0_force_vector(p0_space.mapper().size());
+    typedef DiscreteFunction< P0SpaceType, VectorType > P0DiscreteFunctionType;
+    P0DiscreteFunctionType p0_force(p0_space, p0_force_vector);
+    Operators::Projection< GridViewType > projection_operator(*grid_view);
+    const auto& force = *(disc.problem().force());
+    assert(!force.parametric());
+    assert(force.has_affine_part());
+    projection_operator.apply(*force.affine_part(), p0_force);
+
+    typedef Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+    const RTN0SpaceType rtn0_space(grid_view);
+    VectorType diffusive_flux_vector(rtn0_space.mapper().size());
+    typedef DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
+    RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
+
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    const auto& diffusion_factor = *(disc.problem().diffusion_factor());
+    assert(!diffusion_factor.parametric());
+    assert(diffusion_factor.has_affine_part());
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
+      diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+    diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
+
+    const LocalOperator::Codim0Integral< LocalEvaluation::Elliptic< DiffusionFactorType, DiffusionTensorType > >
+      local_eta_nc_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+    const auto eta_nc_difference = discrete_solution - oswald_interpolation;
+
+    typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
+    const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
+    const  LocalOperator::Codim0Integral< LocalEvaluation::Product< CutoffFunctionType > >
+      local_eta_r_product(1, cutoff_function);
+    const auto eta_r_difference = *force.affine_part() - p0_force;
+
+    const LocalOperator::Codim0Integral< LocalEvaluation::ESV2007::DiffusiveFluxEstimate< DiffusionFactorType
+                                                                                        , RTN0DiscreteFunctionType
+                                                                                        , DiffusionTensorType > >
+      local_eta_df_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), diffusive_flux);
+
+    // walk the grid
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
+    double eta = 0.0;
+# else
+    double eta_nc_squared = 0.0;
+    double eta_r_squared = 0.0;
+    double eta_df_squared = 0.0;
+# endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
+    std::vector< DynamicMatrix< RangeFieldType > > tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
+                                                                                  local_eta_r_product.numTmpObjectsRequired()),
+                                                                         local_eta_df_product.numTmpObjectsRequired()),
+                                                                DynamicMatrix< RangeFieldType >(1, 1, 0.0));
+    DynamicMatrix< RangeFieldType > local_result_matrix(1, 1, 0.0);
+    const auto entity_it_end = grid_view->template end< 0 >();
+    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+      const auto& entity = *entity_it;
+
+      local_result_matrix *= 0.0;
+      const auto local_eta_nc_difference = eta_nc_difference.local_function(entity);
+      local_eta_nc_product.apply(*local_eta_nc_difference, *local_eta_nc_difference, local_result_matrix, tmp_matrices);
+      assert(local_result_matrix.rows() >= 1);
+      assert(local_result_matrix.cols() >= 1);
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
+      const double eta_nc_squared = local_result_matrix[0][0];
+# else
+      eta_nc_squared += local_result_matrix[0][0];
+# endif
+
+      local_result_matrix *= 0.0;
+      const auto local_eta_r_difference = eta_r_difference.local_function(entity);
+      local_eta_r_product.apply(*local_eta_r_difference, *local_eta_r_difference, local_result_matrix, tmp_matrices);
+      assert(local_result_matrix.rows() >= 1);
+      assert(local_result_matrix.cols() >= 1);
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
+      const double eta_r = std::sqrt(local_result_matrix[0][0]);
+# else
+      eta_r_squared += local_result_matrix[0][0];
+# endif
+
+      local_result_matrix *= 0.0;
+      const auto local_discrete_solution = discrete_solution.local_function(entity);
+      local_eta_df_product.apply(*local_discrete_solution, *local_discrete_solution, local_result_matrix, tmp_matrices);
+      assert(local_result_matrix.rows() >= 1);
+      assert(local_result_matrix.cols() >= 1);
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
+      const double eta_df = std::sqrt(local_result_matrix[0][0]);
+# else
+      eta_df_squared += local_result_matrix[0][0];
+# endif
+
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
+      eta += eta_nc_squared + std::pow(eta_r + eta_df, 2);
+# endif
+    } // walk the grid
+# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
+    return std::sqrt(eta);
+# else
+    return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
+# endif
+  } // ... compute_estimator(...)
+}; // class ComputeEstimator
+//#endif // HAVE_ALUGRID
 
 
 } // namespace internal
@@ -151,7 +539,7 @@ public:
 
   static std::vector< std::string > available_estimators()
   {
-    return ComputeEstimator< ThisType, GridType, dimRange >::available();
+    return internal::ComputeEstimator< ThisType, GridType, dimRange >::available();
   }
 
   SWIPDG(const GridProviderType& grid_provider,
@@ -388,288 +776,8 @@ public:
 
   RangeFieldType estimate(const VectorType& vector, const std::string type) const
   {
-    return ComputeEstimator< ThisType, GridType, dimRange >::estimate(*this, vector, type);
+    return internal::ComputeEstimator< ThisType, GridType, dimRange >::estimate(*this, vector, type);
   }
-
-private:
-  template< class DiscImp, class G, int r >
-  class ComputeEstimator
-  {
-  public:
-    static std::vector< std::string > available()
-    {
-      return {};
-    }
-
-    static RangeFieldType estimate(const DiscImp& /*disc*/, const VectorType& /*vector*/, const std::string type)
-    {
-      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-                 "type '" << type << "' is not one of available_estimators()!");
-    }
-  }; // class ComputeEstimator
-
-#if HAVE_ALUGRID
-  template< class DiscImp >
-  class ComputeEstimator< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 >
-  {
-    static std::string nonconformity_estimator_id() {  return "eta_NC_ESV2007"; }
-    static std::string residual_estimator_id() {       return "eta_R_ESV2007"; }
-    static std::string diffusive_flux_estimator_id() { return "eta_DF_ESV2007"; }
-    static std::string estimator_id() {                return "eta_ESV2007"; }
-
-    static const size_t over_integrate = 2;
-  public:
-    static std::vector< std::string > available()
-    {
-      return {
-          nonconformity_estimator_id()
-        , residual_estimator_id()
-        , diffusive_flux_estimator_id()
-        , estimator_id()
-      };
-    } // ... available()
-
-    static RangeFieldType estimate(const DiscImp& disc, const VectorType& vector, const std::string type)
-    {
-      if (type == nonconformity_estimator_id())
-        return compute_nonconformity_estimator(disc, vector);
-      else if (type == residual_estimator_id())
-        return compute_residual_estimator(disc);
-      else if (type == diffusive_flux_estimator_id())
-        return compute_diffusive_flux_estimator(disc, vector);
-      else if (type == estimator_id())
-        return compute_estimator(disc, vector);
-      else
-        DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-                   "type '" << type << "' is not one of available_estimators()!");
-    } // ... estimate(...)
-
-  private:
-    static RangeFieldType compute_nonconformity_estimator(const DiscImp& disc, const VectorType& vector)
-    {
-      using namespace Dune;
-      using namespace Dune::GDT;
-
-      const ConstDiscreteFunction< AnsatzSpaceType, VectorType > discrete_solution(*(disc.ansatz_space()), vector);
-
-      VectorType oswald_interpolation_vector(disc.ansatz_space()->mapper().size());
-      DiscreteFunction< AnsatzSpaceType, VectorType > oswald_interpolation(*(disc.ansatz_space()),
-                                                                           oswald_interpolation_vector);
-
-      const Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*(disc.grid_view()));
-      oswald_interpolation_operator.apply(discrete_solution, oswald_interpolation);
-
-      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
-      assert(!diffusion_factor.parametric());
-      assert(diffusion_factor.has_affine_part());
-      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
-      assert(!diffusion_tensor.parametric());
-      assert(diffusion_tensor.has_affine_part());
-      const Products::Elliptic< DiffusionFactorType, GridViewType, RangeFieldType, DiffusionTensorType >
-          elliptic_product(*(diffusion_factor.affine_part()), *(diffusion_tensor.affine_part()), *(disc.grid_view()));
-      return std::sqrt(elliptic_product.apply2(discrete_solution - oswald_interpolation,
-                                               discrete_solution - oswald_interpolation,
-                                               over_integrate));
-    } // ... compute_nonconformity_estimator(...)
-
-    static RangeFieldType compute_residual_estimator(const DiscImp& disc)
-    {
-      using namespace Dune;
-      using namespace GDT;
-      const auto grid_view = disc.grid_view();
-
-      typedef Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
-      const P0SpaceType p0_space(grid_view);
-      VectorType p0_force_vector(p0_space.mapper().size());
-      DiscreteFunction< P0SpaceType, VectorType > p0_force(p0_space, p0_force_vector);
-
-      const auto& force = *(disc.problem().force());
-      assert(!force.parametric());
-      assert(force.has_affine_part());
-      Operators::Projection< GridViewType > projection_operator(*grid_view);
-      projection_operator.apply(*force.affine_part(), p0_force);
-
-      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
-      assert(!diffusion_factor.parametric());
-      assert(diffusion_factor.has_affine_part());
-      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
-      assert(!diffusion_tensor.parametric());
-      assert(diffusion_tensor.has_affine_part());
-      typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
-      const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-
-      const Products::WeightedL2< GridViewType, CutoffFunctionType >
-          weighted_l2_product(*grid_view, cutoff_function, over_integrate);
-      return weighted_l2_product.induced_norm(*force.affine_part() - p0_force);
-    } // ... compute_residual_estimator(...)
-
-    static RangeFieldType compute_diffusive_flux_estimator(const DiscImp& disc, const VectorType& vector)
-    {
-      using namespace Dune;
-      using namespace Dune::GDT;
-
-      const auto grid_view = disc.grid_view();
-      typedef ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
-      const ConstDiscreteFunctionType discrete_solution(*disc.ansatz_space(), vector);
-
-      typedef Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
-      const RTN0SpaceType rtn0_space(grid_view);
-      VectorType diffusive_flux_vector(rtn0_space.mapper().size());
-      typedef DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
-      RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
-
-      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
-      assert(!diffusion_factor.parametric());
-      assert(diffusion_factor.has_affine_part());
-      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
-      assert(!diffusion_tensor.parametric());
-      assert(diffusion_tensor.has_affine_part());
-      const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
-        diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-      diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
-
-      Products::ESV2007::DiffusiveFluxEstimate< GridViewType,
-                                                DiffusionFactorType,
-                                                RTN0DiscreteFunctionType,
-                                                ConstDiscreteFunctionType,
-                                                ConstDiscreteFunctionType,
-                                                RangeFieldType,
-                                                DiffusionTensorType >
-        diffusive_flux_estimator_product(*grid_view, discrete_solution, discrete_solution,
-                                         *diffusion_factor.affine_part(),
-                                         *diffusion_tensor.affine_part(),
-                                         diffusive_flux,
-                                         1);
-      return std::sqrt(diffusive_flux_estimator_product.apply2());
-    } // ... compute_diffusive_flux_estimator(...)
-
-    static RangeFieldType compute_estimator(const DiscImp& disc, const VectorType& vector)
-    {
-      using namespace Dune;
-      using namespace Dune::GDT;
-
-      const auto grid_view = disc.grid_view();
-      typedef ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
-      const ConstDiscreteFunctionType discrete_solution(*disc.ansatz_space(), vector);
-
-      VectorType oswald_interpolation_vector(disc.ansatz_space()->mapper().size());
-      typedef DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
-      DiscreteFunctionType oswald_interpolation(*disc.ansatz_space(), oswald_interpolation_vector);
-      const Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*grid_view);
-      oswald_interpolation_operator.apply(discrete_solution, oswald_interpolation);
-
-      typedef Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
-      const P0SpaceType p0_space(grid_view);
-      VectorType p0_force_vector(p0_space.mapper().size());
-      typedef DiscreteFunction< P0SpaceType, VectorType > P0DiscreteFunctionType;
-      P0DiscreteFunctionType p0_force(p0_space, p0_force_vector);
-      Operators::Projection< GridViewType > projection_operator(*grid_view);
-      const auto& force = *(disc.problem().force());
-      assert(!force.parametric());
-      assert(force.has_affine_part());
-      projection_operator.apply(*force.affine_part(), p0_force);
-
-      typedef Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
-      const RTN0SpaceType rtn0_space(grid_view);
-      VectorType diffusive_flux_vector(rtn0_space.mapper().size());
-      typedef DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
-      RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
-
-      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      const auto& diffusion_factor = *(disc.problem().diffusion_factor());
-      assert(!diffusion_factor.parametric());
-      assert(diffusion_factor.has_affine_part());
-      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
-      assert(!diffusion_tensor.parametric());
-      assert(diffusion_tensor.has_affine_part());
-      const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
-        diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-      diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
-
-      const LocalOperator::Codim0Integral< LocalEvaluation::Elliptic< DiffusionFactorType, DiffusionTensorType > >
-        local_eta_nc_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-      const auto eta_nc_difference = discrete_solution - oswald_interpolation;
-
-      typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
-      const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-      const  LocalOperator::Codim0Integral< LocalEvaluation::Product< CutoffFunctionType > >
-        local_eta_r_product(1, cutoff_function);
-      const auto eta_r_difference = *force.affine_part() - p0_force;
-
-      const LocalOperator::Codim0Integral< LocalEvaluation::ESV2007::DiffusiveFluxEstimate< DiffusionFactorType
-                                                                                          , RTN0DiscreteFunctionType
-                                                                                          , DiffusionTensorType > >
-        local_eta_df_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), diffusive_flux);
-
-      // walk the grid
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-      double eta = 0.0;
-# else
-      double eta_nc_squared = 0.0;
-      double eta_r_squared = 0.0;
-      double eta_df_squared = 0.0;
-# endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-      std::vector< DynamicMatrix< RangeFieldType > > tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
-                                                                                    local_eta_r_product.numTmpObjectsRequired()),
-                                                                           local_eta_df_product.numTmpObjectsRequired()),
-                                                                  DynamicMatrix< RangeFieldType >(1, 1, 0.0));
-      DynamicMatrix< RangeFieldType > local_result_matrix(1, 1, 0.0);
-      const auto entity_it_end = grid_view->template end< 0 >();
-      for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
-        const auto& entity = *entity_it;
-
-        local_result_matrix *= 0.0;
-        const auto local_eta_nc_difference = eta_nc_difference.local_function(entity);
-        local_eta_nc_product.apply(*local_eta_nc_difference, *local_eta_nc_difference, local_result_matrix, tmp_matrices);
-        assert(local_result_matrix.rows() >= 1);
-        assert(local_result_matrix.cols() >= 1);
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-        const double eta_nc_squared = local_result_matrix[0][0];
-# else
-        eta_nc_squared += local_result_matrix[0][0];
-# endif
-
-        local_result_matrix *= 0.0;
-        const auto local_eta_r_difference = eta_r_difference.local_function(entity);
-        local_eta_r_product.apply(*local_eta_r_difference, *local_eta_r_difference, local_result_matrix, tmp_matrices);
-        assert(local_result_matrix.rows() >= 1);
-        assert(local_result_matrix.cols() >= 1);
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-        const double eta_r = std::sqrt(local_result_matrix[0][0]);
-# else
-        eta_r_squared += local_result_matrix[0][0];
-# endif
-
-        local_result_matrix *= 0.0;
-        const auto local_discrete_solution = discrete_solution.local_function(entity);
-        local_eta_df_product.apply(*local_discrete_solution, *local_discrete_solution, local_result_matrix, tmp_matrices);
-        assert(local_result_matrix.rows() >= 1);
-        assert(local_result_matrix.cols() >= 1);
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-        const double eta_df = std::sqrt(local_result_matrix[0][0]);
-# else
-        eta_df_squared += local_result_matrix[0][0];
-# endif
-
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-        eta += eta_nc_squared + std::pow(eta_r + eta_df, 2);
-# endif
-      } // walk the grid
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-      return std::sqrt(eta);
-# else
-      return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
-# endif
-    } // ... compute_estimator(...)
-  }; // class ComputeEstimator
-#endif // HAVE_ALUGRID
 
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
 
