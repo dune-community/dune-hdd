@@ -285,8 +285,10 @@ protected:
   typedef typename MultiscaleTestCaseType::FunctionType FunctionType;
 
 public:
-  MultiscaleEocStudyBase(const MultiscaleTestCaseType& test_case)
-    : test_case_(test_case)
+  MultiscaleEocStudyBase(const MultiscaleTestCaseType& test_case,
+                         const std::vector< std::string > only_these_norms = std::vector< std::string >())
+    : BaseType(only_these_norms)
+    , test_case_(test_case)
     , current_refinement_(0)
     , last_computed_refinement_(std::numeric_limits< size_t >::max())
     , time_to_solution_(0)

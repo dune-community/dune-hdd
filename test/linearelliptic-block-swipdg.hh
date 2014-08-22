@@ -51,8 +51,9 @@ class EocStudyBlockSWIPDG
   typedef typename BaseType::VectorType   VectorType;
 
 public:
-  EocStudyBlockSWIPDG(const TestCaseType& test_case)
-    : BaseType(test_case)
+  EocStudyBlockSWIPDG(const TestCaseType& test_case,
+                      const std::vector< std::string > only_these_norms = std::vector< std::string >())
+    : BaseType(test_case, only_these_norms)
   {}
 
   virtual ~EocStudyBlockSWIPDG() {}
