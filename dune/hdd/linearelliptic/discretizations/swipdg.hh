@@ -112,7 +112,8 @@ template< class DiscType, class GridType, int dimRange >
 class LocalNonconformityEstimatorESV2007
   : public LocalNonconformityEstimatorESV2007Base
 {
-  static_assert(AlwaysFalse< DiscType >::value, "Not implemented for this GridType/dimRange combination");
+public:
+  static const bool available = false;
 };
 
 //#if HAVE_ALUGRID
@@ -125,8 +126,11 @@ class LocalNonconformityEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conf
   : public LocalNonconformityEstimatorESV2007Base
   , public GDT::Functor::Codim0< typename DiscType::GridViewType >
 {
+  typedef LocalNonconformityEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
   typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
 public:
+  static const bool available = true;
+
   typedef typename FunctorBaseType::GridViewType GridViewType;
   typedef typename FunctorBaseType::EntityType   EntityType;
 
@@ -157,6 +161,15 @@ private:
   } // ... assert_disc(...)
 
 public:
+  static RangeFieldType estimate(const DiscType& disc, const VectorType& vector)
+  {
+    ThisType estimator(disc, vector);
+    GDT::GridWalker< GridViewType > grid_walker(*disc.grid_view());
+    grid_walker.add(estimator);
+    grid_walker.walk();
+    return std::sqrt(estimator.result_);
+  } // ... estimate(...)
+
   LocalNonconformityEstimatorESV2007(const DiscType& disc, const VectorType& vector)
     : disc_(assert_disc(disc))
     , vector_(vector)
@@ -220,7 +233,8 @@ template< class DiscType, class GridType, int dimRange >
 class LocalResidualEstimatorESV2007
   : public LocalResidualEstimatorESV2007Base
 {
-  static_assert(AlwaysFalse< DiscType >::value, "Not implemented for this GridType/dimRange combination");
+public:
+  static const bool available = false;
 };
 
 //#if HAVE_ALUGRID
@@ -233,8 +247,11 @@ class LocalResidualEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conformin
   : public LocalResidualEstimatorESV2007Base
   , public GDT::Functor::Codim0< typename DiscType::GridViewType >
 {
+  typedef LocalResidualEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
   typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
 public:
+  static const bool available = true;
+
   typedef typename FunctorBaseType::GridViewType GridViewType;
   typedef typename FunctorBaseType::EntityType   EntityType;
 
@@ -265,6 +282,15 @@ private:
   } // ... assert_disc(...)
 
 public:
+  static RangeFieldType estimate(const DiscType& disc, const VectorType& /*vector*/)
+  {
+    ThisType estimator(disc);
+    GDT::GridWalker< GridViewType > grid_walker(*disc.grid_view());
+    grid_walker.add(estimator);
+    grid_walker.walk();
+    return std::sqrt(estimator.result_);
+  } // ... estimate(...)
+
   LocalResidualEstimatorESV2007(const DiscType& disc)
     : disc_(assert_disc(disc))
     , p0_space_(disc_.grid_view())
@@ -327,7 +353,8 @@ template< class DiscType, class GridType, int dimRange >
 class LocalDiffusiveFluxEstimatorESV2007
   : public LocalDiffusiveFluxEstimatorESV2007Base
 {
-  static_assert(AlwaysFalse< DiscType >::value, "Not implemented for this GridType/dimRange combination");
+public:
+  static const bool available = false;
 };
 
 //#if HAVE_ALUGRID
@@ -340,8 +367,11 @@ class LocalDiffusiveFluxEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conf
   : public LocalDiffusiveFluxEstimatorESV2007Base
   , public GDT::Functor::Codim0< typename DiscType::GridViewType >
 {
+  typedef LocalDiffusiveFluxEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
   typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
 public:
+  static const bool available = true;
+
   typedef typename FunctorBaseType::GridViewType GridViewType;
   typedef typename FunctorBaseType::EntityType   EntityType;
 
@@ -376,6 +406,15 @@ private:
   } // ... assert_disc(...)
 
 public:
+  static RangeFieldType estimate(const DiscType& disc, const VectorType& vector)
+  {
+    ThisType estimator(disc, vector);
+    GDT::GridWalker< GridViewType > grid_walker(*disc.grid_view());
+    grid_walker.add(estimator);
+    grid_walker.walk();
+    return std::sqrt(estimator.result_);
+  } // ... estimate(...)
+
   LocalDiffusiveFluxEstimatorESV2007(const DiscType& disc, const VectorType& vector)
     : disc_(assert_disc(disc))
     , vector_(vector)
@@ -430,6 +469,103 @@ public:
 }; // class LocalDiffusiveFluxEstimatorESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
 
 //#endif // HAVE_ALUGRID
+
+
+template< class D, class G, int r >
+class SWIPDGEstimator
+{
+public:
+  typedef typename D::RangeFieldType RangeFieldType;
+  typedef typename D::VectorType     VectorType;
+
+private:
+  template< class IndividualEstimator, bool available = false >
+  class Caller
+  {
+  public:
+    static std::vector< std::string > append(std::vector< std::string > in)
+    {
+      return in;
+    }
+
+    static bool equals(const std::string& /*type*/)
+    {
+      return false;
+    }
+
+    static RangeFieldType estimate(const D& /*disc*/, const VectorType& /*vector*/)
+    {
+      DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
+      return RangeFieldType(0);
+    }
+  }; // class Caller
+
+  template< class IndividualEstimator >
+  class Caller< IndividualEstimator, true >
+  {
+  public:
+    static std::vector< std::string > append(std::vector< std::string > in)
+    {
+      in.push_back(IndividualEstimator::id());
+      return in;
+    }
+
+    static bool equals(const std::string& type)
+    {
+      return IndividualEstimator::id() == type;
+    }
+
+    static RangeFieldType estimate(const D& disc, const VectorType& vector)
+    {
+      return IndividualEstimator::estimate(disc, vector);
+    }
+  }; // class Caller< ..., true >
+
+  template< class IndividualEstimator >
+  static std::vector< std::string > append(std::vector< std::string > in)
+  {
+    return Caller< IndividualEstimator, IndividualEstimator::available >::append(in);
+  }
+
+  template< class IndividualEstimator >
+  static bool equals(const std::string& type)
+  {
+    return Caller< IndividualEstimator, IndividualEstimator::available >::equals(type);
+  }
+
+  template< class IndividualEstimator >
+  static RangeFieldType compute_estimator(const D& disc, const VectorType& vector)
+  {
+    return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(disc, vector);
+  }
+
+  typedef LocalNonconformityEstimatorESV2007< D, G, r > LocalNonconformityEstimatorESV2007;
+  typedef LocalResidualEstimatorESV2007< D, G, r >      LocalResidualEstimatorESV2007Type;
+  typedef LocalDiffusiveFluxEstimatorESV2007< D, G, r > LocalDiffusiveFluxEstimatorESV2007Type;
+
+public:
+  static std::vector< std::string > available()
+  {
+    std::vector< std::string > tmp;
+    tmp = append< LocalNonconformityEstimatorESV2007 >(tmp);
+    tmp = append< LocalResidualEstimatorESV2007Type >(tmp);
+    tmp = append< LocalDiffusiveFluxEstimatorESV2007Type >(tmp);
+    return tmp;
+  } // ... available(...)
+
+  static RangeFieldType estimate(const D& disc, const VectorType& vector, const std::string type)
+  {
+    if (equals< LocalNonconformityEstimatorESV2007 >(type))
+      return compute_estimator< LocalNonconformityEstimatorESV2007 >(disc, vector);
+    else if (equals< LocalResidualEstimatorESV2007Type >(type))
+      return compute_estimator< LocalResidualEstimatorESV2007Type >(disc, vector);
+    else if (equals< LocalDiffusiveFluxEstimatorESV2007Type >(type))
+      return compute_estimator< LocalDiffusiveFluxEstimatorESV2007Type >(disc, vector);
+    else
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "Requested type '" << type << "' is not one of available()!");
+  } // ... estimate(...)
+}; // class SWIPDGEstimator
 
 
 template< class DiscImp, class G, int r >
