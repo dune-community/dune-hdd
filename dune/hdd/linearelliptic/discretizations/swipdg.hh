@@ -98,10 +98,13 @@ public:
 }; // class SWIPDGTraits
 
 
-static const size_t estimator_over_integrate = 2;
+namespace Estimators {
 
 
-class LocalNonconformityEstimatorESV2007Base
+static const size_t over_integrate = 2;
+
+
+class LocalNonconformityESV2007Base
 {
 public:
   static std::string id() { return "eta_NC_ESV2007"; }
@@ -109,8 +112,8 @@ public:
 
 
 template< class DiscType, class GridType, int dimRange >
-class LocalNonconformityEstimatorESV2007
-  : public LocalNonconformityEstimatorESV2007Base
+class LocalNonconformityESV2007
+  : public LocalNonconformityESV2007Base
 {
 public:
   static const bool available = false;
@@ -122,11 +125,11 @@ public:
  *  \brief computes the local nonconformity estimator as defined in ESV2007
  */
 template< class DiscType >
-class LocalNonconformityEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
-  : public LocalNonconformityEstimatorESV2007Base
+class LocalNonconformityESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public LocalNonconformityESV2007Base
   , public GDT::Functor::Codim0< typename DiscType::GridViewType >
 {
-  typedef LocalNonconformityEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
+  typedef LocalNonconformityESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
   typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
@@ -170,13 +173,13 @@ public:
     return std::sqrt(estimator.result_);
   } // ... estimate(...)
 
-  LocalNonconformityEstimatorESV2007(const DiscType& disc, const VectorType& vector)
+  LocalNonconformityESV2007(const DiscType& disc, const VectorType& vector)
     : disc_(assert_disc(disc))
     , vector_(vector)
     , discrete_solution_(*disc_.ansatz_space(), vector_)
     , oswald_interpolation_(*disc.ansatz_space())
     , difference_(Stuff::Common::make_unique< DifferenceType >(discrete_solution_ - oswald_interpolation_))
-    , local_operator_(estimator_over_integrate,
+    , local_operator_(Estimators::over_integrate,
                       *disc.problem().diffusion_factor()->affine_part(),
                       *disc.problem().diffusion_tensor()->affine_part())
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
@@ -217,12 +220,12 @@ private:
   TmpStorageProviderType tmp_local_matrices_;
 public:
   RangeFieldType result_;
-}; // class LocalNonconformityEstimatorESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+}; // class LocalNonconformityESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
 
 //#endif // HAVE_ALUGRID
 
 
-class LocalResidualEstimatorESV2007Base
+class LocalResidualESV2007Base
 {
 public:
   static std::string id() { return "eta_R_ESV2007"; }
@@ -230,8 +233,8 @@ public:
 
 
 template< class DiscType, class GridType, int dimRange >
-class LocalResidualEstimatorESV2007
-  : public LocalResidualEstimatorESV2007Base
+class LocalResidualESV2007
+  : public LocalResidualESV2007Base
 {
 public:
   static const bool available = false;
@@ -243,11 +246,11 @@ public:
  *  \brief computes the local residual estimator as defined in ESV2007
  */
 template< class DiscType >
-class LocalResidualEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
-  : public LocalResidualEstimatorESV2007Base
+class LocalResidualESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public LocalResidualESV2007Base
   , public GDT::Functor::Codim0< typename DiscType::GridViewType >
 {
-  typedef LocalResidualEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
+  typedef LocalResidualESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
   typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
@@ -291,14 +294,14 @@ public:
     return std::sqrt(estimator.result_);
   } // ... estimate(...)
 
-  LocalResidualEstimatorESV2007(const DiscType& disc)
+  LocalResidualESV2007(const DiscType& disc)
     : disc_(assert_disc(disc))
     , p0_space_(disc_.grid_view())
     , p0_force_(p0_space_)
     , difference_(Stuff::Common::make_unique< DifferenceType >(*disc_.problem().force()->affine_part() - p0_force_))
     , cutoff_function_(*disc.problem().diffusion_factor()->affine_part(),
                        *disc.problem().diffusion_tensor()->affine_part())
-    , local_operator_(estimator_over_integrate, cutoff_function_)
+    , local_operator_(Estimators::over_integrate, cutoff_function_)
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
     , result_(0.0)
   {}
@@ -337,12 +340,12 @@ private:
   TmpStorageProviderType tmp_local_matrices_;
 public:
   RangeFieldType result_;
-}; // class LocalResidualEstimatorESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+}; // class LocalResidualESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
 
 //#endif // HAVE_ALUGRID
 
 
-class LocalDiffusiveFluxEstimatorESV2007Base
+class LocalDiffusiveFluxESV2007Base
 {
 public:
   static std::string id() { return "eta_DF_ESV2007"; }
@@ -350,8 +353,8 @@ public:
 
 
 template< class DiscType, class GridType, int dimRange >
-class LocalDiffusiveFluxEstimatorESV2007
-  : public LocalDiffusiveFluxEstimatorESV2007Base
+class LocalDiffusiveFluxESV2007
+  : public LocalDiffusiveFluxESV2007Base
 {
 public:
   static const bool available = false;
@@ -360,14 +363,14 @@ public:
 //#if HAVE_ALUGRID
 
 /**
- *  \brief computes the local nonconformity estimator as defined in ESV2007
+ *  \brief computes the local diffusive flux estimator as defined in ESV2007
  */
 template< class DiscType >
-class LocalDiffusiveFluxEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
-  : public LocalDiffusiveFluxEstimatorESV2007Base
+class LocalDiffusiveFluxESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public LocalDiffusiveFluxESV2007Base
   , public GDT::Functor::Codim0< typename DiscType::GridViewType >
 {
-  typedef LocalDiffusiveFluxEstimatorESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
+  typedef LocalDiffusiveFluxESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > ThisType;
   typedef GDT::Functor::Codim0< typename DiscType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
@@ -415,13 +418,13 @@ public:
     return std::sqrt(estimator.result_);
   } // ... estimate(...)
 
-  LocalDiffusiveFluxEstimatorESV2007(const DiscType& disc, const VectorType& vector)
+  LocalDiffusiveFluxESV2007(const DiscType& disc, const VectorType& vector)
     : disc_(assert_disc(disc))
     , vector_(vector)
     , discrete_solution_(*disc_.ansatz_space(), vector_)
     , rtn0_space_(disc.grid_view())
     , diffusive_flux_(rtn0_space_)
-    , local_operator_(estimator_over_integrate,
+    , local_operator_(Estimators::over_integrate,
                       *disc.problem().diffusion_factor()->affine_part(),
                       *disc.problem().diffusion_tensor()->affine_part(),
                       diffusive_flux_)
@@ -466,9 +469,68 @@ private:
   TmpStorageProviderType tmp_local_matrices_;
 public:
   RangeFieldType result_;
-}; // class LocalDiffusiveFluxEstimatorESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+}; // class LocalDiffusiveFluxESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
 
 //#endif // HAVE_ALUGRID
+
+
+class ESV2007Base
+{
+public:
+  static std::string id()
+  {
+    return "eta_ESV2007";
+  }
+};
+
+
+template< class DiscType, class GridType, int dimRange >
+class ESV2007
+  : public ESV2007Base
+{
+public:
+  static const bool available = false;
+};
+
+
+//#if HAVE_ALUGRID
+
+template< class DiscType >
+class ESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >
+  : public ESV2007Base
+{
+public:
+  static const bool available = true;
+
+  typedef typename DiscType::RangeFieldType RangeFieldType;
+  typedef typename DiscType::VectorType     VectorType;
+
+  static RangeFieldType estimate(const DiscType& disc, const VectorType& vector)
+  {
+    LocalNonconformityESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_nc(disc, vector);
+    LocalResidualESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 >      eta_r(disc);
+    LocalDiffusiveFluxESV2007< DiscType, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_df(disc, vector);
+    eta_nc.prepare();
+    eta_r.prepare();
+    eta_df.prepare();
+
+    RangeFieldType eta(0.0);
+
+    const auto grid_view = *disc.grid_view();
+    const auto entity_it_end = grid_view.template end< 0 >();
+    for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+      const auto& entity = *entity_it;
+      eta += eta_nc.compute_locally(entity)
+             + std::pow(std::sqrt(eta_r.compute_locally(entity)) + std::sqrt(eta_df.compute_locally(entity)), 2);
+    }
+    return std::sqrt(eta);
+  } // ... estimate(...)
+}; // class ESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, 1 >
+
+//#endif // HAVE_ALUGRID
+
+
+} // namespace Estimators
 
 
 template< class D, class G, int r >
@@ -539,252 +601,37 @@ private:
     return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(disc, vector);
   }
 
-  typedef LocalNonconformityEstimatorESV2007< D, G, r > LocalNonconformityEstimatorESV2007;
-  typedef LocalResidualEstimatorESV2007< D, G, r >      LocalResidualEstimatorESV2007Type;
-  typedef LocalDiffusiveFluxEstimatorESV2007< D, G, r > LocalDiffusiveFluxEstimatorESV2007Type;
+  typedef Estimators::LocalNonconformityESV2007< D, G, r > LocalNonconformityESV2007Type;
+  typedef Estimators::LocalResidualESV2007< D, G, r >      LocalResidualESV2007Type;
+  typedef Estimators::LocalDiffusiveFluxESV2007< D, G, r > LocalDiffusiveFluxESV2007Type;
+  typedef Estimators::ESV2007< D, G, r >                   ESV2007Type;
 
 public:
   static std::vector< std::string > available()
   {
     std::vector< std::string > tmp;
-    tmp = append< LocalNonconformityEstimatorESV2007 >(tmp);
-    tmp = append< LocalResidualEstimatorESV2007Type >(tmp);
-    tmp = append< LocalDiffusiveFluxEstimatorESV2007Type >(tmp);
+    tmp = append< LocalNonconformityESV2007Type >(tmp);
+    tmp = append< LocalResidualESV2007Type >(tmp);
+    tmp = append< LocalDiffusiveFluxESV2007Type >(tmp);
+    tmp = append< ESV2007Type >(tmp);
     return tmp;
   } // ... available(...)
 
   static RangeFieldType estimate(const D& disc, const VectorType& vector, const std::string type)
   {
-    if (equals< LocalNonconformityEstimatorESV2007 >(type))
-      return compute_estimator< LocalNonconformityEstimatorESV2007 >(disc, vector);
-    else if (equals< LocalResidualEstimatorESV2007Type >(type))
-      return compute_estimator< LocalResidualEstimatorESV2007Type >(disc, vector);
-    else if (equals< LocalDiffusiveFluxEstimatorESV2007Type >(type))
-      return compute_estimator< LocalDiffusiveFluxEstimatorESV2007Type >(disc, vector);
+    if (equals< LocalNonconformityESV2007Type >(type))
+      return compute_estimator< LocalNonconformityESV2007Type >(disc, vector);
+    else if (equals< LocalResidualESV2007Type >(type))
+      return compute_estimator< LocalResidualESV2007Type >(disc, vector);
+    else if (equals< LocalDiffusiveFluxESV2007Type >(type))
+      return compute_estimator< LocalDiffusiveFluxESV2007Type >(disc, vector);
+    else if (equals< ESV2007Type >(type))
+      return compute_estimator< ESV2007Type >(disc, vector);
     else
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available()!");
   } // ... estimate(...)
 }; // class SWIPDGEstimator
-
-
-template< class DiscImp, class G, int r >
-class ComputeEstimator
-{
-public:
-  typedef typename DiscImp::RangeFieldType RangeFieldType;
-  typedef typename DiscImp::VectorType VectorType;
-
-  static std::vector< std::string > available()
-  {
-    return {};
-  }
-
-  static RangeFieldType estimate(const DiscImp& /*disc*/, const VectorType& /*vector*/, const std::string type)
-  {
-    DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-               "type '" << type << "' is not one of available_estimators()!");
-  }
-}; // class ComputeEstimator
-
-//#if HAVE_ALUGRID
-
-template< class DiscImp >
-class ComputeEstimator< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 >
-{
-  static std::string nonconformity_estimator_id() {  return "eta_NC_ESV2007"; }
-  static std::string residual_estimator_id() {       return "eta_R_ESV2007"; }
-  static std::string diffusive_flux_estimator_id() { return "eta_DF_ESV2007"; }
-  static std::string estimator_id() {                return "eta_ESV2007"; }
-
-  static const size_t over_integrate = 2;
-
-  typedef typename DiscImp::AnsatzSpaceType AnsatzSpaceType;
-  typedef typename DiscImp::GridViewType GridViewType;
-  typedef typename DiscImp::ProblemType ProblemType;
-
-  static const unsigned int dimDomain = DiscImp::dimDomain;
-
-public:
-  typedef typename DiscImp::RangeFieldType RangeFieldType;
-  typedef typename DiscImp::VectorType VectorType;
-
-  static std::vector< std::string > available()
-  {
-    return {
-        nonconformity_estimator_id()
-      , residual_estimator_id()
-      , diffusive_flux_estimator_id()
-      , estimator_id()
-    };
-  } // ... available()
-
-  static RangeFieldType estimate(const DiscImp& disc, const VectorType& vector, const std::string type)
-  {
-    if (type == nonconformity_estimator_id())
-      return compute_nonconformity_estimator(disc, vector);
-    else if (type == residual_estimator_id())
-      return compute_residual_estimator(disc);
-    else if (type == diffusive_flux_estimator_id())
-      return compute_diffusive_flux_estimator(disc, vector);
-    else if (type == estimator_id())
-      return compute_estimator(disc, vector);
-    else
-      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-                 "type '" << type << "' is not one of available_estimators()!");
-  } // ... estimate(...)
-
-private:
-  static RangeFieldType compute_nonconformity_estimator(const DiscImp& disc, const VectorType& vector)
-  {
-    LocalNonconformityEstimatorESV2007< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_nc(disc, vector);
-    GDT::GridWalker< typename DiscImp::GridViewType > grid_walker(*disc.grid_view());
-    grid_walker.add(eta_nc);
-    grid_walker.walk();
-    return std::sqrt(eta_nc.result_);
-  } // ... compute_nonconformity_estimator(...)
-
-  static RangeFieldType compute_residual_estimator(const DiscImp& disc)
-  {
-    LocalResidualEstimatorESV2007< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_r(disc);
-    GDT::GridWalker< typename DiscImp::GridViewType > grid_walker(*disc.grid_view());
-    grid_walker.add(eta_r);
-    grid_walker.walk();
-    return std::sqrt(eta_r.result_);
-  } // ... compute_residual_estimator(...)
-
-  static RangeFieldType compute_diffusive_flux_estimator(const DiscImp& disc, const VectorType& vector)
-  {
-    LocalDiffusiveFluxEstimatorESV2007< DiscImp, ALUGrid< 2, 2, simplex, conforming >, 1 > eta_df(disc, vector);
-    GDT::GridWalker< typename DiscImp::GridViewType > grid_walker(*disc.grid_view());
-    grid_walker.add(eta_df);
-    grid_walker.walk();
-    return std::sqrt(eta_df.result_);
-
-  } // ... compute_diffusive_flux_estimator(...)
-
-  static RangeFieldType compute_estimator(const DiscImp& disc, const VectorType& vector)
-  {
-    using namespace Dune;
-    using namespace Dune::GDT;
-
-    const auto grid_view = disc.grid_view();
-    typedef ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
-    const ConstDiscreteFunctionType discrete_solution(*disc.ansatz_space(), vector);
-
-    VectorType oswald_interpolation_vector(disc.ansatz_space()->mapper().size());
-    typedef DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
-    DiscreteFunctionType oswald_interpolation(*disc.ansatz_space(), oswald_interpolation_vector);
-    const Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*grid_view);
-    oswald_interpolation_operator.apply(discrete_solution, oswald_interpolation);
-
-    typedef Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
-    const P0SpaceType p0_space(grid_view);
-    VectorType p0_force_vector(p0_space.mapper().size());
-    typedef DiscreteFunction< P0SpaceType, VectorType > P0DiscreteFunctionType;
-    P0DiscreteFunctionType p0_force(p0_space, p0_force_vector);
-    Operators::Projection< GridViewType > projection_operator(*grid_view);
-    const auto& force = *(disc.problem().force());
-    assert(!force.parametric());
-    assert(force.has_affine_part());
-    projection_operator.apply(*force.affine_part(), p0_force);
-
-    typedef Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
-    const RTN0SpaceType rtn0_space(grid_view);
-    VectorType diffusive_flux_vector(rtn0_space.mapper().size());
-    typedef DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
-    RTN0DiscreteFunctionType diffusive_flux(rtn0_space, diffusive_flux_vector);
-
-    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-    const auto& diffusion_factor = *(disc.problem().diffusion_factor());
-    assert(!diffusion_factor.parametric());
-    assert(diffusion_factor.has_affine_part());
-    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto& diffusion_tensor = *(disc.problem().diffusion_tensor());
-    assert(!diffusion_tensor.parametric());
-    assert(diffusion_tensor.has_affine_part());
-    const Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
-      diffusive_flux_reconstruction(*grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-    diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
-
-    const LocalOperator::Codim0Integral< LocalEvaluation::Elliptic< DiffusionFactorType, DiffusionTensorType > >
-      local_eta_nc_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-    const auto eta_nc_difference = discrete_solution - oswald_interpolation;
-
-    typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
-    const CutoffFunctionType cutoff_function(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
-    const LocalOperator::Codim0Integral< LocalEvaluation::Product< CutoffFunctionType > >
-      local_eta_r_product(1, cutoff_function);
-    const auto eta_r_difference = *force.affine_part() - p0_force;
-
-    const LocalOperator::Codim0Integral< LocalEvaluation::ESV2007::DiffusiveFluxEstimate< DiffusionFactorType
-                                                                                        , RTN0DiscreteFunctionType
-                                                                                        , DiffusionTensorType > >
-      local_eta_df_product(1, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), diffusive_flux);
-
-    // walk the grid
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-    double eta = 0.0;
-# else
-    double eta_nc_squared = 0.0;
-    double eta_r_squared = 0.0;
-    double eta_df_squared = 0.0;
-# endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-    std::vector< DynamicMatrix< RangeFieldType > > tmp_matrices(std::max(std::max(local_eta_nc_product.numTmpObjectsRequired(),
-                                                                                  local_eta_r_product.numTmpObjectsRequired()),
-                                                                         local_eta_df_product.numTmpObjectsRequired()),
-                                                                DynamicMatrix< RangeFieldType >(1, 1, 0.0));
-    DynamicMatrix< RangeFieldType > local_result_matrix(1, 1, 0.0);
-    const auto entity_it_end = grid_view->template end< 0 >();
-    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
-      const auto& entity = *entity_it;
-
-      local_result_matrix *= 0.0;
-      const auto local_eta_nc_difference = eta_nc_difference.local_function(entity);
-      local_eta_nc_product.apply(*local_eta_nc_difference, *local_eta_nc_difference, local_result_matrix, tmp_matrices);
-      assert(local_result_matrix.rows() >= 1);
-      assert(local_result_matrix.cols() >= 1);
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-      const double eta_nc_squared = local_result_matrix[0][0];
-# else
-      eta_nc_squared += local_result_matrix[0][0];
-# endif
-
-      local_result_matrix *= 0.0;
-      const auto local_eta_r_difference = eta_r_difference.local_function(entity);
-      local_eta_r_product.apply(*local_eta_r_difference, *local_eta_r_difference, local_result_matrix, tmp_matrices);
-      assert(local_result_matrix.rows() >= 1);
-      assert(local_result_matrix.cols() >= 1);
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-      const double eta_r = std::sqrt(local_result_matrix[0][0]);
-# else
-      eta_r_squared += local_result_matrix[0][0];
-# endif
-
-      local_result_matrix *= 0.0;
-      const auto local_discrete_solution = discrete_solution.local_function(entity);
-      local_eta_df_product.apply(*local_discrete_solution, *local_discrete_solution, local_result_matrix, tmp_matrices);
-      assert(local_result_matrix.rows() >= 1);
-      assert(local_result_matrix.cols() >= 1);
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-      const double eta_df = std::sqrt(local_result_matrix[0][0]);
-# else
-      eta_df_squared += local_result_matrix[0][0];
-# endif
-
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-      eta += eta_nc_squared + std::pow(eta_r + eta_df, 2);
-# endif
-    } // walk the grid
-# ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION
-    return std::sqrt(eta);
-# else
-    return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
-# endif
-  } // ... compute_estimator(...)
-}; // class ComputeEstimator
-
-//#endif // HAVE_ALUGRID
 
 
 } // namespace internal
@@ -842,7 +689,7 @@ public:
 
   static std::vector< std::string > available_estimators()
   {
-    return internal::ComputeEstimator< ThisType, GridType, dimRange >::available();
+    return internal::SWIPDGEstimator< ThisType, GridType, dimRange >::available();
   }
 
   SWIPDG(const GridProviderType& grid_provider,
@@ -1079,7 +926,7 @@ public:
 
   RangeFieldType estimate(const VectorType& vector, const std::string type) const
   {
-    return internal::ComputeEstimator< ThisType, GridType, dimRange >::estimate(*this, vector, type);
+    return internal::SWIPDGEstimator< ThisType, GridType, dimRange >::estimate(*this, vector, type);
   }
 
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
