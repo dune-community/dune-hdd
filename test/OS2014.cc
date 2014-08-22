@@ -16,19 +16,9 @@
 // This one has to come first (includes the config.h)!
 #include <dune/stuff/test/main.hh>
 
-#include <sstream>
+#if HAVE_ALUGRID
 
-#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
-# define ENABLE_ALUGRID 1
-# include <dune/grid/alugrid.hh>
-#else
-# error This test requires ALUGrid!
-#endif
-
-#include <dune/stuff/common/exceptions.hh>
-
-#include <dune/stuff/common/print.hh>
-#include <dune/stuff/common/float_cmp.hh>
+#include <dune/grid/alugrid.hh>
 
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
@@ -39,90 +29,81 @@ using namespace Dune;
 using namespace HDD;
 
 
-class OS2014_nonparametric_convergence_study
-  : public ::testing::Test
-{
-protected:
-  static const GDT::ChooseSpaceBackend  space_backend =
+static const GDT::ChooseSpaceBackend  space_backend =
 #if HAVE_DUNE_FEM
-                                                        GDT::ChooseSpaceBackend::fem;
+                                                      GDT::ChooseSpaceBackend::fem;
 #else
 # error This test requires dune-fem!
 #endif
-  static const Stuff::LA::ChooseBackend la_backend    =
+
+static const Stuff::LA::ChooseBackend la_backend    =
 #if HAVE_EIGEN
-                                                        Stuff::LA::ChooseBackend::eigen_sparse;
+                                                      Stuff::LA::ChooseBackend::eigen_sparse;
 #else
-                                                        Stuff::LA::default_sparse_backend;
+                                                      Stuff::LA::default_sparse_backend;
 #endif
 
-  typedef ALUGrid< 2, 2, simplex, conforming > GridType;
+typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 
-  typedef LinearElliptic::TestCases::ESV2007< GridType >           TestCaseType;
-  typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > BlockTestCaseType;
+typedef LinearElliptic::TestCases::ESV2007< GridType >           NonparametricTestCaseType;
+typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > NonparametricBlockTestCaseType;
 
-  typedef LinearElliptic::Tests::EocStudySWIPDG< TestCaseType, 1, space_backend, la_backend > EocStudyType;
-  typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< BlockTestCaseType, 1, la_backend >      BlockEocStudyType;
-
-  template< class StudyType >
-  static void check_for_success(const StudyType& study,
-                                const std::map< std::string, std::vector< double > >& errors_map)
-  {
-    for (const auto& norm : study.used_norms()) {
-      const auto expected_results = study.expected_results(norm);
-      const auto errors_search = errors_map.find(norm);
-      EXPECT_NE(errors_search, errors_map.end())
-          << "          norm = " << norm;
-      const auto& errors = errors_search->second;
-      EXPECT_LE(errors.size(), expected_results.size())
-          << "          norm = " << norm;
-      for (size_t ii = 0; ii < errors.size(); ++ii)
-        EXPECT_LE(errors[ii], expected_results[ii])
-            << "          norm = " << norm << ", level = " << ii;
-    }
-  } // ... check_for_success(...)
-}; // class OS2014_nonparametric_convergence_study
+typedef LinearElliptic::Tests::EocStudySWIPDG< NonparametricTestCaseType, 1, space_backend, la_backend >
+                                                                 NonparametricEocStudyType;
+typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< NonparametricBlockTestCaseType, 1, la_backend >
+                                                                 NonparametricBlockEocStudyType;
 
 
-TEST_F(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation)
+void nonparametric_block_convergence_study(const std::string& partitioning)
 {
-  const TestCaseType test_case;
+  const NonparametricBlockTestCaseType test_case(partitioning);
+  NonparametricBlockEocStudyType eoc_study(test_case,
+                                           {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
+                                            "eff_OS2014"});
+  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+} // ... nonparametric_block_convergence_study(...)
+
+
+TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation)
+{
+  const NonparametricTestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
   DSC_LOG_INFO << std::endl;
-  EocStudyType eoc_study(test_case,
-                         {"energy",
-                          "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007", "eff_ESV2007"});
+  NonparametricEocStudyType eoc_study(test_case,
+                                      {"energy", "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007",
+                                       "eff_ESV2007"});
   check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
 }
-TEST_F(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alternate_summation)
+TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alternative_summation)
 {
-  const TestCaseType test_case;
-  EocStudyType eoc_study(test_case,
-                         {"energy",
-                          "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
+  const NonparametricTestCaseType test_case;
+  NonparametricEocStudyType eoc_study(test_case,
+                                      {"energy", "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
   check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
 }
-TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
-  const BlockTestCaseType test_case("[1 1 1]");
-  BlockEocStudyType eoc_study(test_case,
-                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
-  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
+  nonparametric_block_convergence_study("[1 1 1]");
 }
-TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {
-  const BlockTestCaseType test_case("[2 2 1]");
-  BlockEocStudyType eoc_study(test_case,
-                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
-  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {
+  nonparametric_block_convergence_study("[2 2 1]");
 }
-TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {
-  const BlockTestCaseType test_case("[4 4 1]");
-  BlockEocStudyType eoc_study(test_case,
-                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
-  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {
+  nonparametric_block_convergence_study("[4 4 1]");
 }
-TEST_F(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
-  const BlockTestCaseType test_case("[8 8 1]");
-  BlockEocStudyType eoc_study(test_case,
-                              {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014", "eff_OS2014"});
-  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
+  nonparametric_block_convergence_study("[8 8 1]");
 }
+
+
+#else // HAVE_ALUGRID
+
+
+TEST(DISABLED_OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alternative_summation) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {}
+
+
+#endif // HAVE_ALUGRID
