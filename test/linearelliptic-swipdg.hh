@@ -196,9 +196,10 @@ private:
 
   virtual double estimate_(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
   {
-    if (type == "effectivity_ESV2007") {
+    if (type == "effectivity_ESV2007")
       return estimate_(vector, "eta_ESV2007") / const_cast< ThisType& >(*this).current_error_norm("energy");
-    }
+    else if (type == "effectivity_ESV2007_alt")
+      return estimate_(vector, "eta_ESV2007_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
     else {
       assert(this->current_discretization_);
       return this->current_discretization_->estimate(vector, type);
