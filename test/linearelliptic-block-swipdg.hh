@@ -176,14 +176,14 @@ public:
   } // ... expected_results(...)
 
 private:
-  virtual std::vector< std::string > available_norms_() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
   {
     return {"L2", "H1_semi", "energy"};
   }
 
-  virtual double compute_norm_(const GridViewType& grid_view,
-                               const FunctionType& function,
-                               const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual double compute_norm(const GridViewType& grid_view,
+                              const FunctionType& function,
+                              const std::string type) const DS_OVERRIDE DS_FINAL
   {
     using namespace GDT;
     typedef typename TestCaseType::ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -204,9 +204,9 @@ private:
       return elliptic_product.induced_norm(function);
     } else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
-  } // ... compute_norm_(...)
+  }
 
-  virtual std::vector< std::string > available_estimators_() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
   {
     auto ret = DiscretizationType::available_estimators();
     if (std::find(ret.begin(), ret.end(), "eta_OS2014") != ret.end())
@@ -214,19 +214,19 @@ private:
     if (std::find(ret.begin(), ret.end(), "eta_OS2014_alt") != ret.end())
       ret.push_back("eff_OS2014_alt");
     return ret;
-  } // ... available_estimators_(..)
+  } // ... available_estimators(..)
 
-  virtual double estimate_(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual double estimate(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
   {
     if (type == "eff_OS2014")
-      return estimate_(vector, "eta_OS2014") / const_cast< ThisType& >(*this).current_error_norm("energy");
+      return estimate(vector, "eta_OS2014") / const_cast< ThisType& >(*this).current_error_norm("energy");
     else if (type == "eff_OS2014_alt")
-      return estimate_(vector, "eta_OS2014_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
+      return estimate(vector, "eta_OS2014_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
     else {
       assert(this->current_discretization_);
       return this->current_discretization_->estimate(vector, type);
     }
-  } // ... estimate_(...)
+  } // ... estimate(...)
 }; // class EocStudyBlockSWIPDG
 
 

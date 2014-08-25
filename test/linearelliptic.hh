@@ -42,7 +42,7 @@ namespace Tests {
  *  * const ExactSolutionType& exact_solution() const
  *  and the appropriate types.
  *
- *  Any derived class only has to provide identifier(), provided_norms(), expected_rate(), compute_norm_() and
+ *  Any derived class only has to provide identifier(), provided_norms(), expected_rate(), compute_norm() and
  *  expected_results().
  */
 template< class TestCaseType, class DiscretizationImp >
@@ -89,8 +89,8 @@ public:
 
   virtual std::vector< std::string > provided_norms() const DS_OVERRIDE DS_FINAL
   {
-    std::vector< std::string > ret = available_norms_();
-    for (auto estimator : available_estimators_()) {
+    std::vector< std::string > ret = available_norms();
+    for (auto estimator : available_estimators()) {
       if (is_norm(estimator))
         DUNE_THROW(Stuff::Exceptions::internal_error,
                    "We do not want to handle the case that norms and estimators have the same name!");
@@ -103,7 +103,7 @@ public:
   {
     if (is_norm(type)) {
       if (test_case_.provides_exact_solution()) {
-        return compute_norm_(*(test_case_.reference_grid_view()), test_case_.exact_solution(), type);
+        return compute_norm(*(test_case_.reference_grid_view()), test_case_.exact_solution(), type);
       } else {
         compute_reference_solution();
         assert(reference_discretization_);
@@ -111,7 +111,7 @@ public:
         const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm_(*(test_case_.reference_grid_view()), reference_solution, type);
+        return compute_norm(*(test_case_.reference_grid_view()), reference_solution, type);
       }
     } else
       return 1.0;
@@ -188,7 +188,7 @@ public:
                                                        "current solution");
       // compute error
       if (test_case_.provides_exact_solution()) {
-        return compute_norm_(*(test_case_.reference_grid_view()), test_case_.exact_solution() - current_solution, type);
+        return compute_norm(*(test_case_.reference_grid_view()), test_case_.exact_solution() - current_solution, type);
       } else {
         // get reference solution
         compute_reference_solution();
@@ -197,11 +197,11 @@ public:
         const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm_(*(test_case_.reference_grid_view()), reference_solution- current_solution, type);
+        return compute_norm(*(test_case_.reference_grid_view()), reference_solution- current_solution, type);
       }
     } else {
       assert(current_solution_vector_on_level_);
-      return estimate_(*current_solution_vector_on_level_, type);
+      return estimate(*current_solution_vector_on_level_, type);
     }
   } // ... current_error_norm(...)
 
@@ -232,20 +232,20 @@ private:
 protected:
   bool is_norm(const std::string type) const
   {
-    const auto available_norms = available_norms_();
-    return std::find(available_norms.begin(), available_norms.end(), type) != available_norms.end();
+    const auto norms = available_norms();
+    return std::find(norms.begin(), norms.end(), type) != norms.end();
   } // ... is_norm(...)
 
 private:
-  virtual std::vector< std::string > available_norms_() const = 0;
+  virtual std::vector< std::string > available_norms() const = 0;
 
-  virtual std::vector< std::string > available_estimators_() const = 0;
+  virtual std::vector< std::string > available_estimators() const = 0;
 
-  virtual double estimate_(const VectorType& vector, const std::string type) const = 0;
+  virtual double estimate(const VectorType& vector, const std::string type) const = 0;
 
-  virtual double compute_norm_(const GridViewType& grid_view,
-                               const FunctionType& function,
-                               const std::string type) const = 0;
+  virtual double compute_norm(const GridViewType& grid_view,
+                              const FunctionType& function,
+                              const std::string type) const = 0;
 
 protected:
   const TestCaseType& test_case_;
@@ -312,8 +312,8 @@ public:
 
   virtual std::vector< std::string > provided_norms() const DS_OVERRIDE DS_FINAL
   {
-    std::vector< std::string > ret = available_norms_();
-    for (auto estimator : available_estimators_()) {
+    std::vector< std::string > ret = available_norms();
+    for (auto estimator : available_estimators()) {
       if (is_norm(estimator))
         DUNE_THROW(Stuff::Exceptions::internal_error,
                    "We do not want to handle the case that norms and estimators have the same name!");
@@ -325,9 +325,10 @@ public:
   virtual double norm_reference_solution(const std::string type) DS_OVERRIDE DS_FINAL
   {
     if (is_norm(type)) {
-      const auto reference_grid_view = test_case_.reference_provider()->template global< Stuff::Grid::ChoosePartView::view >();
+      const auto reference_grid_view
+          = test_case_.reference_provider()->template global< Stuff::Grid::ChoosePartView::view >();
       if (test_case_.provides_exact_solution())
-        return compute_norm_(*reference_grid_view, test_case_.exact_solution(), type);
+        return compute_norm(*reference_grid_view, test_case_.exact_solution(), type);
       else {
         compute_reference_solution();
         assert(reference_discretization_);
@@ -335,7 +336,7 @@ public:
         const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm_(*reference_grid_view, reference_solution, type);
+        return compute_norm(*reference_grid_view, reference_solution, type);
       }
     } else
       return 1.0;
@@ -414,7 +415,7 @@ public:
       const auto reference_grid_view
           = test_case_.reference_provider()-> template global< Stuff::Grid::ChoosePartView::view >();
       if (test_case_.provides_exact_solution()) {
-        return compute_norm_(*reference_grid_view, test_case_.exact_solution() - current_solution, type);
+        return compute_norm(*reference_grid_view, test_case_.exact_solution() - current_solution, type);
       } else {
         // get reference solution
         compute_reference_solution();
@@ -423,11 +424,11 @@ public:
         const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm_(*reference_grid_view, reference_solution- current_solution, type);
+        return compute_norm(*reference_grid_view, reference_solution- current_solution, type);
       }
     } else {
       assert(current_solution_vector_on_level_);
-      return estimate_(*current_solution_vector_on_level_, type);
+      return estimate(*current_solution_vector_on_level_, type);
     }
   } // ... current_error_norm(...)
 
@@ -456,20 +457,20 @@ protected:
 
   bool is_norm(const std::string type) const
   {
-    const auto available_norms = available_norms_();
-    return std::find(available_norms.begin(), available_norms.end(), type) != available_norms.end();
+    const auto norms = available_norms();
+    return std::find(norms.begin(), norms.end(), type) != norms.end();
   } // ... is_norm(...)
 
 private:
-  virtual std::vector< std::string > available_norms_() const = 0;
+  virtual std::vector< std::string > available_norms() const = 0;
 
-  virtual std::vector< std::string > available_estimators_() const = 0;
+  virtual std::vector< std::string > available_estimators() const = 0;
 
-  virtual double estimate_(const VectorType& vector, const std::string type) const = 0;
+  virtual double estimate(const VectorType& vector, const std::string type) const = 0;
 
-  virtual double compute_norm_(const GridViewType& grid_view,
-                               const FunctionType& function,
-                               const std::string type) const = 0;
+  virtual double compute_norm(const GridViewType& grid_view,
+                              const FunctionType& function,
+                              const std::string type) const = 0;
 
 protected:
   const MultiscaleTestCaseType& test_case_;
