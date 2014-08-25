@@ -48,6 +48,8 @@ public:
   typedef RangeFieldImp     RangeFieldType;
   static const unsigned int dimRange = rangeDim;
 
+  typedef ThisType NonparametricType;
+
   ProblemInterface(const Pymor::ParameterType tt = Pymor::ParameterType())
     : Pymor::Parametric(tt)
   {}
@@ -118,7 +120,7 @@ public:
     neumann()->report(out, prefix + "    ");
   } // ... report(...)
 
-  std::shared_ptr< ThisType > with_mu(const Pymor::Parameter mu = Pymor::Parameter()) const
+  std::shared_ptr< NonparametricType > with_mu(const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     if (mu.type() != this->parameter_type())
       DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
