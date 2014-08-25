@@ -31,3 +31,4 @@ demos-*
 *.la
 .dirstamp
 *.swp
+build-*
