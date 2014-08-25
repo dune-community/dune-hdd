@@ -25,9 +25,6 @@ AC_DEFINE([HAVE_DUNE_HDD], [1], [We are always here.])
 
 AC_CONFIG_FILES([
   Makefile
-  doc/Makefile
-  doc/doxygen/Makefile
-  doc/doxygen/Doxyfile
   m4/Makefile
   dune-hdd.pc
 ])
