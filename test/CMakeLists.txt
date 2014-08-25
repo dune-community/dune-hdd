@@ -5,6 +5,9 @@
 
 enable_testing()
 
-BEGIN_TESTCASES()
+DEPENDENCYCHECK(${hdd})
 
+BEGIN_TESTCASES()
 END_TESTCASES()
+
+add_dune_alugrid_flags(test_OS2014)

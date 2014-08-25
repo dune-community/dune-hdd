@@ -54,3 +54,12 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_spe10model1 ${COMMON_LIBS})
 
 add_python_bindings(linearellipticexamplecg cg_bindings_generator.py cg.hh dunehdd-linearelliptic-cg)
 add_python_bindings(linearellipticexamplethermalblock thermalblock_bindings_generator.py thermalblock.hh dunehdd-linearelliptic-thermalblock)
+
+if(NOT CMAKE_WITH_AUTOTOOLS)
+  add_dune_alugrid_flags(example_linearelliptic_block_swipdg)
+  add_dune_alugrid_flags(example_linearelliptic_cg)
+  add_dune_alugrid_flags(example_linearelliptic_swipdg)
+  add_dune_alugrid_flags(example_linearelliptic_thermalblock)
+  add_dune_alugrid_flags(example_linearelliptic_online_enrichment)
+  add_dune_alugrid_flags(example_linearelliptic_spe10model1)
+endif(NOT CMAKE_WITH_AUTOTOOLS)
