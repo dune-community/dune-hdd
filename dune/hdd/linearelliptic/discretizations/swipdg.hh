@@ -9,6 +9,8 @@
 #include <memory>
 #include <vector>
 
+#include <boost/numeric/conversion/cast.hpp>
+
 #include <dune/common/timer.hh>
 #include <dune/common/static_assert.hh>
 
@@ -830,7 +832,7 @@ public:
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
-      for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+      for (size_t qq = 0; qq < boost::numeric_cast< size_t >(diffusion_factor.num_components()); ++qq) {
         const size_t id = matrix.register_component(diffusion_factor.coefficient(qq),
                                                     space.mapper().size(), space.mapper().size(), pattern_);
         elliptic_operators.emplace_back(new EllipticOperatorType(
@@ -859,7 +861,7 @@ public:
       const auto& force = *(this->problem_.force());
       typedef Functionals::L2Volume< FunctionType, VectorType, TestSpaceType > L2VolumeFunctionalType;
       std::vector< std::unique_ptr< L2VolumeFunctionalType > > force_functionals;
-      for (size_t qq = 0; qq < force.num_components(); ++qq) {
+      for (size_t qq = 0; qq < boost::numeric_cast< size_t >(force.num_components()); ++qq) {
         const size_t id = rhs.register_component(force.coefficient(qq), space.mapper().size());
         force_functionals.emplace_back(new L2VolumeFunctionalType(*(force.component(qq)),
                                                                   *(rhs.component(id)),
@@ -891,7 +893,7 @@ public:
             space));
       }
       if (diffusion_factor.has_affine_part()) {
-        for (size_t qq = 0; qq < dirichlet.num_components(); ++qq) {
+        for (size_t qq = 0; qq < boost::numeric_cast< size_t >(dirichlet.num_components()); ++qq) {
           const size_t id = rhs.register_component(dirichlet.coefficient(qq), space.mapper().size());
           dirichlet_boundary_functionals.emplace_back(new DirichletBoundaryFunctionalType(
               *(diffusion_factor.affine_part()),
@@ -903,7 +905,7 @@ public:
         }
       }
       if (dirichlet.has_affine_part()) {
-        for (size_t qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+        for (size_t qq = 0; qq < boost::numeric_cast< size_t >(diffusion_factor.num_components()); ++qq) {
           const size_t id = rhs.register_component(diffusion_factor.coefficient(qq), space.mapper().size());
           dirichlet_boundary_functionals.emplace_back(new DirichletBoundaryFunctionalType(
               *(diffusion_factor.component(qq)),
@@ -919,8 +921,8 @@ public:
         param.set(key, diffusion_factor.parameter_type().get(key));
       for (const auto& key : dirichlet.parameter_type().keys())
         param.set(key, dirichlet.parameter_type().get(key));
-      for (size_t pp = 0; pp < diffusion_factor.num_components(); ++ pp) {
-        for (size_t qq = 0; qq < dirichlet.num_components(); ++qq) {
+      for (size_t pp = 0; pp < boost::numeric_cast< size_t >(diffusion_factor.num_components()); ++ pp) {
+        for (size_t qq = 0; qq < boost::numeric_cast< size_t >(dirichlet.num_components()); ++qq) {
           const std::string expression = "(" + diffusion_factor.coefficient(pp)->expression()
                                              + ")*(" + dirichlet.coefficient(qq)->expression() + ")";
           const size_t id = rhs.register_component(param, expression, space.mapper().size());
@@ -940,7 +942,7 @@ public:
       const auto& neumann = *(this->problem_.neumann());
       typedef Functionals::L2Face< FunctionType, VectorType, TestSpaceType > L2FaceFunctionalType;
       std::vector< std::unique_ptr< L2FaceFunctionalType > > neumann_boundary_functionals;
-      for (size_t qq = 0; qq < neumann.num_components(); ++qq) {
+      for (size_t qq = 0; qq < boost::numeric_cast< size_t >(neumann.num_components()); ++qq) {
         const size_t id = rhs.register_component(neumann.coefficient(qq), space.mapper().size());
         neumann_boundary_functionals.emplace_back(new L2FaceFunctionalType(
             *(neumann.component(qq)),
