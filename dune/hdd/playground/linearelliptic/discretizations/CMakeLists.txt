@@ -3,6 +3,6 @@
 # Copyright holders: Felix Albrecht
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-# add_library(linearelliptic_discretization_swipdg_leaf_fem_eigensparse_2daluconform
-#             OBJECT EXCLUDE_FROM_ALL
-#             swipdg_leaf_fem_eigensparse_2daluconform.cc)
+add_library(linearelliptic_discretization_blockswipdg_fem_eigensparse_2daluconform
+            OBJECT EXCLUDE_FROM_ALL
+            block-swipdg_fem_eigensparse_2daluconform.cc)
