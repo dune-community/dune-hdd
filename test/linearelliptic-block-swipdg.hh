@@ -85,7 +85,7 @@ public:
       return polOrder + 1;
     else if (type == "H1_semi")
       return polOrder;
-    else if (type == "energy")
+    else if (type.substr(0, 6) == "energy")
       return polOrder;
     else if (type == "eta_NC_OS2014")
       return polOrder;
@@ -186,8 +186,14 @@ public:
 private:
   virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
   {
-    return {"L2", "H1_semi", "energy"};
-  }
+    std::vector< std::string > norms = {"L2", "H1_semi"};
+    if (this->test_case_.parametric()) {
+      for (auto parameter : this->test_case_.parameters())
+        norms.push_back("energy_" + parameter.first);
+    } else
+      norms.push_back("energy");
+    return norms;
+  } // ... available_norms(...)
 
   virtual double compute_norm(const GridViewType& grid_view,
                               const FunctionType& function,
@@ -210,9 +216,18 @@ private:
       Products::Elliptic< DiffusionFactorType, GridViewType, double, DiffusionTensorType >
           elliptic_product(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), grid_view);
       return elliptic_product.induced_norm(function);
+    } else if (type.substr(0, 7) == "energy_" && type.size() > 7) {
+      const auto parameter_id = type.substr(7);
+      assert(this->test_case_.parametric());
+      const auto mu = this->test_case_.parameters().at(parameter_id);
+      const auto nonparametric_problem = this->test_case_.problem().with_mu(mu);
+      Products::Elliptic< DiffusionFactorType, GridViewType, double, DiffusionTensorType >
+          elliptic_product(*nonparametric_problem->diffusion_factor()->affine_part(),
+                           *nonparametric_problem->diffusion_tensor()->affine_part(), grid_view);
+      return elliptic_product.induced_norm(function);
     } else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
-  }
+  } // ... compute_norm(...)
 
   virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
   {
