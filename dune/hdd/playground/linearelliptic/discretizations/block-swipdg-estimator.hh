@@ -360,17 +360,22 @@ class OS2014< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, c
 public:
   static const bool available = true;
 
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
   typedef typename ProblemType::RangeFieldType RangeFieldType;
 
-  static RangeFieldType estimate(const BlockSpaceType& space, const VectorType& vector, const ProblemType& problem)
+  static RangeFieldType estimate(const BlockSpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
   {
     typedef LocalNonconformityOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalNonconformityOS2014Type;
     typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType >      LocalResidualOS2014Type;
     typedef LocalDiffusiveFluxOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalDiffusiveFluxOS2014Type;
 
-    return LocalNonconformityOS2014Type::estimate(space, vector, problem)
-        + LocalResidualOS2014Type::estimate(space, vector, problem)
-        + LocalDiffusiveFluxOS2014Type::estimate(space, vector, problem);
+    return LocalNonconformityOS2014Type::estimate(space, vector, problem, parameters)
+        + LocalResidualOS2014Type::estimate(space, vector, problem, parameters)
+        + LocalDiffusiveFluxOS2014Type::estimate(space, vector, problem, parameters);
   } // ... estimate(...)
 }; // class OS2014
 
