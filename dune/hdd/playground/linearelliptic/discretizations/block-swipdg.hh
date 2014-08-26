@@ -58,6 +58,7 @@
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/assembler/system.hh>
+#include <dune/gdt/assembler/gridwalker.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/playground/linearelliptic/problems/zero-boundary.hh>
@@ -727,7 +728,344 @@ public:
 //#endif // HAVE_ALUGRID
 
 
+namespace BlockSWIPDGEstimators {
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class LocalNonconformityOS2014
+  : public SWIPDGEstimators::LocalNonconformityESV2007< BlockSpaceType, VectorType, ProblemType, GridType >
+{
+public:
+  static std::string id() { return "eta_NC_OS2014"; }
+};
+
+
+class LocalResidualOS2014Base
+{
+public:
+  static std::string id() { return "eta_R_OS2014"; }
+};
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class LocalResidualOS2014
+  : public LocalResidualOS2014Base
+{
+public:
+  static const bool available = false;
+};
+
+//#if HAVE_ALUGRID
+
+template< class BlockSpaceType, class VectorType, class ProblemType >
+class LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+  : public LocalResidualOS2014Base
+  , public GDT::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType >
+{
+  typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+                                                                                        ThisType;
+  typedef GDT::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType > FunctorBaseType;
+public:
+  static const bool available = true;
+
+  typedef typename FunctorBaseType::GridViewType GridViewType;
+  typedef typename FunctorBaseType::EntityType   EntityType;
+
+  typedef typename ProblemType::RangeFieldType RangeFieldType;
+
+private:
+  static const unsigned int dimDomain = GridViewType::dimension;
+
+  typedef typename BlockSpaceType::LocalSpaceType LocalSpaceType;
+
+  typedef GDT::Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+  typedef GDT::DiscreteFunction< P0SpaceType, VectorType > DiscreteFunctionType;
+  typedef typename DiscreteFunctionType::DifferenceType DifferenceType;
+
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+
+  typedef typename ProblemType::DomainFieldType DomainFieldType;
+  typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
+      ConstantFunctionType;
+  typedef typename ConstantFunctionType::DomainType DomainType;
+  typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< ConstantFunctionType > > LocalOperatorType;
+  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+
+  static const ProblemType& assert_problem(const ProblemType& problem)
+  {
+    if (problem.parametric())
+      DUNE_THROW(NotImplemented, "Not implemented yet for parametric problems!");
+    assert(problem.diffusion_factor()->has_affine_part());
+    assert(problem.diffusion_tensor()->has_affine_part());
+    assert(problem.force()->has_affine_part());
+    return problem;
+  } // ... assert_problem(...)
+
+public:
+  static RangeFieldType estimate(const BlockSpaceType& space, const VectorType& /*vector*/, const ProblemType& problem)
+  {
+    // walk the subdomains
+    double eta_r_squared = 0.0;
+    for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
+      const auto local_space = space.local_spaces()[subdomain];
+      ThisType eta_r_T(*local_space, problem);
+      GDT::GridWalker< GridViewType > grid_walker(*local_space->grid_view());
+      grid_walker.add(eta_r_T);
+      grid_walker.walk();
+      eta_r_squared += eta_r_T.result_;
+    } // walk the subdomains
+    return std::sqrt(eta_r_squared);
+  } // ... estimate(...)
+
+  LocalResidualOS2014(const LocalSpaceType& local_space, const ProblemType& problem)
+    : local_space_(local_space)
+    , problem_(assert_problem(problem))
+    , p0_space_(local_space_.grid_view())
+    , p0_force_(p0_space_)
+    , difference_(Stuff::Common::make_unique< DifferenceType >(*problem_.force()->affine_part() - p0_force_))
+    , constant_one_(1)
+    , local_operator_(SWIPDGEstimators::over_integrate, constant_one_)
+    , diffusion_factor_minimizing_(problem_.diffusion_factor()->affine_part())
+    , diffusion_tensor_minimizing_(problem_.diffusion_tensor()->affine_part())
+    , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , vertices_()
+    , min_diffusion_value_(std::numeric_limits< RangeFieldType >::max())
+    , result_(0.0)
+  {}
+
+  virtual void prepare()
+  {
+    const GDT::Operators::Projection< GridViewType > projection_operator(*local_space_.grid_view());
+    projection_operator.apply(*problem_.force()->affine_part(), p0_force_);
+    result_ = 0.0;
+  } // ... prepare(...)
+
+  virtual void apply_local(const EntityType &entity)
+  {
+    // collect all vertices
+    for (int cc = 0; cc < entity.template count< dimDomain >(); ++cc)
+      vertices_.push_back(entity.template subEntity< dimDomain >(cc)->geometry().center());
+    // compute minimum diffusion
+    const RangeFieldType min_diffusion_value_entity
+        =   internal::compute_minimum(*diffusion_factor_minimizing_, entity)
+          * internal::compute_minimum(*diffusion_tensor_minimizing_, entity);
+    min_diffusion_value_ = std::min(min_diffusion_value_, min_diffusion_value_entity);
+    // compute the local product
+    const auto local_difference = difference_->local_function(entity);
+    local_operator_.apply(*local_difference,
+                          *local_difference,
+                          tmp_local_matrices_.matrices()[0][0],
+                          tmp_local_matrices_.matrices()[1]);
+    assert(tmp_local_matrices_.matrices()[0][0].rows() >= 1);
+    assert(tmp_local_matrices_.matrices()[0][0].cols() >= 1);
+    result_ += tmp_local_matrices_.matrices()[0][0][0][0];
+  } // ... apply_local(...)
+
+  virtual void finalize()
+  {
+    // compute diameter
+    DomainFieldType diameter(0);
+    DomainType tmp_diff;
+    for (size_t cc = 0; cc < vertices_.size(); ++cc) {
+      const auto& vertex = vertices_[cc];
+      for (size_t dd = cc + 1; dd < vertices_.size(); ++dd) {
+        const auto& other_vertex = vertices_[dd];
+        tmp_diff = vertex - other_vertex;
+        diameter = std::max(diameter, tmp_diff.two_norm());
+      }
+    }
+    // compute local estimator
+    const RangeFieldType poincare_constant = 1.0 / (M_PIl * M_PIl);
+    assert(min_diffusion_value_ > 0.0);
+    result_ *= ((poincare_constant * diameter * diameter) / min_diffusion_value_);
+  } // ... finalize(...)
+
+private:
+  const LocalSpaceType& local_space_;
+  const ProblemType& problem_;
+  const P0SpaceType p0_space_;
+  DiscreteFunctionType p0_force_;
+  std::unique_ptr< const DifferenceType > difference_;
+  const ConstantFunctionType constant_one_;
+  const LocalOperatorType local_operator_;
+  std::shared_ptr< const DiffusionFactorType > diffusion_factor_minimizing_;
+  std::shared_ptr< const DiffusionTensorType > diffusion_tensor_minimizing_;
+  TmpStorageProviderType tmp_local_matrices_;
+  std::vector< DomainType > vertices_;
+  RangeFieldType min_diffusion_value_;
+public:
+  RangeFieldType result_;
+}; // class LocalResidualOS2014< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
+
+//#endif // HAVE_ALUGRID
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class LocalDiffusiveFluxOS2014
+  : public SWIPDGEstimators::LocalDiffusiveFluxESV2007< BlockSpaceType, VectorType, ProblemType, GridType >
+{
+public:
+  static std::string id() { return "eta_DF_OS2014"; }
+};
+
+
+class OS2014Base
+{
+public:
+  static std::string id() { return "eta_OS2014"; }
+};
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class OS2014
+  : public OS2014Base
+{
+public:
+  static const bool available = false;
+};
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType >
+class OS2014< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+  : public OS2014Base
+{
+  typedef ALUGrid< 2, 2, simplex, conforming > GridType;
+public:
+  static const bool available = true;
+
+  typedef typename ProblemType::RangeFieldType RangeFieldType;
+
+  static RangeFieldType estimate(const BlockSpaceType& space, const VectorType& vector, const ProblemType& problem)
+  {
+    typedef LocalNonconformityOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalNonconformityOS2014Type;
+    typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType >      LocalResidualOS2014Type;
+    typedef LocalDiffusiveFluxOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalDiffusiveFluxOS2014Type;
+
+    return LocalNonconformityOS2014Type::estimate(space, vector, problem)
+        + LocalResidualOS2014Type::estimate(space, vector, problem)
+        + LocalDiffusiveFluxOS2014Type::estimate(space, vector, problem);
+  } // ... estimate(...)
+}; // class OS2014
+
+
+
+
+} // namespace BlockSWIPDGEstimators
 } // namespace internal
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class BlockSWIPDGEstimator
+{
+public:
+  typedef typename ProblemType::RangeFieldType RangeFieldType;
+
+private:
+  template< class IndividualEstimator, bool available = false >
+  class Caller
+  {
+  public:
+    static std::vector< std::string > append(std::vector< std::string > in)
+    {
+      return in;
+    }
+
+    static bool equals(const std::string& /*type*/)
+    {
+      return false;
+    }
+
+    static RangeFieldType estimate(const BlockSpaceType& /*space*/,
+                                   const VectorType& /*vector*/,
+                                   const ProblemType& /*problem*/)
+    {
+      DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
+      return RangeFieldType(0);
+    }
+  }; // class Caller
+
+  template< class IndividualEstimator >
+  class Caller< IndividualEstimator, true >
+  {
+  public:
+    static std::vector< std::string > append(std::vector< std::string > in)
+    {
+      in.push_back(IndividualEstimator::id());
+      return in;
+    }
+
+    static bool equals(const std::string& type)
+    {
+      return IndividualEstimator::id() == type;
+    }
+
+    static RangeFieldType estimate(const BlockSpaceType& space,
+                                   const VectorType& vector,
+                                   const ProblemType& problem)
+    {
+      return IndividualEstimator::estimate(space, vector, problem);
+    }
+  }; // class Caller< ..., true >
+
+  template< class IndividualEstimator >
+  static std::vector< std::string > call_append(std::vector< std::string > in)
+  {
+    return Caller< IndividualEstimator, IndividualEstimator::available >::append(in);
+  }
+
+  template< class IndividualEstimator >
+  static bool call_equals(const std::string& type)
+  {
+    return Caller< IndividualEstimator, IndividualEstimator::available >::equals(type);
+  }
+
+  template< class IndividualEstimator >
+  static RangeFieldType call_estimate(const BlockSpaceType& space,
+                                      const VectorType& vector,
+                                      const ProblemType& problem)
+  {
+    return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(space, vector, problem);
+  }
+
+  typedef internal::BlockSWIPDGEstimators::LocalNonconformityOS2014
+      < BlockSpaceType, VectorType, ProblemType, GridType >         LocalNonconformityOS2014Type;
+  typedef internal::BlockSWIPDGEstimators::LocalResidualOS2014
+      < BlockSpaceType, VectorType, ProblemType, GridType >         LocalResidualOS2014Type;
+  typedef internal::BlockSWIPDGEstimators::LocalDiffusiveFluxOS2014
+      < BlockSpaceType, VectorType, ProblemType, GridType >         LocalDiffusiveFluxOS2014Type;
+  typedef internal::BlockSWIPDGEstimators::OS2014
+      < BlockSpaceType, VectorType, ProblemType, GridType >         OS2014Type;
+
+public:
+  static std::vector< std::string > available()
+  {
+    std::vector< std::string > tmp;
+    tmp = call_append< LocalNonconformityOS2014Type >(tmp);
+    tmp = call_append< LocalResidualOS2014Type >(tmp);
+    tmp = call_append< LocalDiffusiveFluxOS2014Type >(tmp);
+    tmp = call_append< OS2014Type >(tmp);
+    return tmp;
+  } // ... available(...)
+
+  static RangeFieldType estimate(const BlockSpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const std::string type)
+  {
+    if (call_equals< LocalNonconformityOS2014Type >(type))
+      return call_estimate< LocalNonconformityOS2014Type >(space, vector, problem);
+    else if (call_equals< LocalResidualOS2014Type >(type))
+      return call_estimate< LocalResidualOS2014Type >(space, vector, problem);
+    else if (call_equals< LocalDiffusiveFluxOS2014Type >(type))
+      return call_estimate< LocalDiffusiveFluxOS2014Type >(space, vector, problem);
+    else if (call_equals< OS2014Type >(type))
+      return call_estimate< OS2014Type >(space, vector, problem);
+    else
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "Requested type '" << type << "' is not one of available()!");
+  } // ... estimate(...)
+}; // class BlockSWIPDGEstimator
 
 
 /**
