@@ -51,7 +51,8 @@ class EocStudyBlockSWIPDG
       < TestCaseType,
         typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type > BaseType;
 
-  typedef typename BaseType::DiscretizationType DiscretizationType;
+  typedef typename BaseType::DiscretizationType      DiscretizationType;
+  typedef typename DiscretizationType::EstimatorType EstimatorType;
   typedef typename DiscretizationType::GridViewType GridViewType;
   typedef typename BaseType::FunctionType FunctionType;
   typedef typename BaseType::VectorType   VectorType;
@@ -208,7 +209,7 @@ private:
 
   virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
   {
-    auto ret = DiscretizationType::available_estimators();
+    auto ret = EstimatorType::available();
     if (std::find(ret.begin(), ret.end(), "eta_OS2014") != ret.end())
       ret.push_back("eff_OS2014");
     if (std::find(ret.begin(), ret.end(), "eta_OS2014_alt") != ret.end())
@@ -224,7 +225,10 @@ private:
       return estimate(vector, "eta_OS2014_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
     else {
       assert(this->current_discretization_);
-      return this->current_discretization_->estimate(vector, type);
+      return EstimatorType::estimate(*this->current_discretization_->ansatz_space(),
+                                     vector,
+                                     this->test_case_.problem(),
+                                     type);
     }
   } // ... estimate(...)
 }; // class EocStudyBlockSWIPDG
