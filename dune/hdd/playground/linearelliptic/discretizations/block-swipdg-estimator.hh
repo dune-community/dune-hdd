@@ -384,6 +384,7 @@ class BlockSWIPDGEstimator
 {
 public:
   typedef typename ProblemType::RangeFieldType RangeFieldType;
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
 
 private:
   template< class IndividualEstimator, bool available = false >
@@ -402,7 +403,8 @@ private:
 
     static RangeFieldType estimate(const BlockSpaceType& /*space*/,
                                    const VectorType& /*vector*/,
-                                   const ProblemType& /*problem*/)
+                                   const ProblemType& /*problem*/,
+                                   const ParametersMapType& /*parameters*/)
     {
       DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
       return RangeFieldType(0);
@@ -426,9 +428,10 @@ private:
 
     static RangeFieldType estimate(const BlockSpaceType& space,
                                    const VectorType& vector,
-                                   const ProblemType& problem)
+                                   const ProblemType& problem,
+                                   const ParametersMapType& parameters)
     {
-      return IndividualEstimator::estimate(space, vector, problem);
+      return IndividualEstimator::estimate(space, vector, problem, parameters);
     }
   }; // class Caller< ..., true >
 
@@ -447,9 +450,10 @@ private:
   template< class IndividualEstimator >
   static RangeFieldType call_estimate(const BlockSpaceType& space,
                                       const VectorType& vector,
-                                      const ProblemType& problem)
+                                      const ProblemType& problem,
+                                      const ParametersMapType& parameters = ParametersMapType())
   {
-    return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(space, vector, problem);
+    return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(space, vector, problem, parameters);
   }
 
   typedef internal::BlockSWIPDGEstimators::LocalNonconformityOS2014
@@ -475,16 +479,17 @@ public:
   static RangeFieldType estimate(const BlockSpaceType& space,
                                  const VectorType& vector,
                                  const ProblemType& problem,
-                                 const std::string type)
+                                 const std::string type,
+                                 const ParametersMapType parameters = ParametersMapType())
   {
     if (call_equals< LocalNonconformityOS2014Type >(type))
-      return call_estimate< LocalNonconformityOS2014Type >(space, vector, problem);
+      return call_estimate< LocalNonconformityOS2014Type >(space, vector, problem, parameters);
     else if (call_equals< LocalResidualOS2014Type >(type))
-      return call_estimate< LocalResidualOS2014Type >(space, vector, problem);
+      return call_estimate< LocalResidualOS2014Type >(space, vector, problem, parameters);
     else if (call_equals< LocalDiffusiveFluxOS2014Type >(type))
-      return call_estimate< LocalDiffusiveFluxOS2014Type >(space, vector, problem);
+      return call_estimate< LocalDiffusiveFluxOS2014Type >(space, vector, problem, parameters);
     else if (call_equals< OS2014Type >(type))
-      return call_estimate< OS2014Type >(space, vector, problem);
+      return call_estimate< OS2014Type >(space, vector, problem, parameters);
     else
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available()!");
