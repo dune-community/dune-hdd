@@ -283,25 +283,40 @@ protected:
   typedef typename MultiscaleTestCaseType::ExactSolutionType ExactSolutionType;
   typedef typename DiscretizationType::GridViewType GridViewType;
   typedef typename MultiscaleTestCaseType::FunctionType FunctionType;
+  typedef typename MultiscaleTestCaseType::ProblemType::NonparametricType NonparametricProblemType;
+
+  static const MultiscaleTestCaseType& check_test_case(const MultiscaleTestCaseType& test_case)
+  {
+    if (test_case.parametric() && test_case.parameters().find("mu") == test_case.parameters().end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "The parameter mu has to be provided for a parametric testcase!");
+    return test_case;
+  } // ... check_test_case(...)
+
+  static Pymor::Parameter get_mu(const MultiscaleTestCaseType& test_case)
+  {
+    if (test_case.parametric())
+      return test_case.parameters().at("mu");
+    else
+      return Pymor::Parameter();
+  } // ... get_mu(...)
 
 public:
   MultiscaleEocStudyBase(const MultiscaleTestCaseType& test_case,
                          const std::vector< std::string > only_these_norms = std::vector< std::string >())
     : BaseType(only_these_norms)
-    , test_case_(test_case)
+    , test_case_(check_test_case(test_case))
     , current_refinement_(0)
     , last_computed_refinement_(std::numeric_limits< size_t >::max())
     , time_to_solution_(0)
+    , nonparametric_problem_(test_case_.problem().with_mu(get_mu(test_case_)))
     , reference_solution_computed_(false)
     , current_discretization_(nullptr)
     , current_solution_vector_on_level_(nullptr)
     , reference_discretization_(nullptr)
     , reference_solution_vector_(nullptr)
     , current_solution_vector_(nullptr)
-  {
-    if (test_case_.problem().parametric())
-      DUNE_THROW(NotImplemented, "Parametric problems are not implemented yet!");
-  }
+  {}
 
   virtual ~MultiscaleEocStudyBase() {}
 
@@ -369,7 +384,7 @@ public:
       current_discretization_
           = Stuff::Common::make_unique< DiscretizationType >(*(test_case_.level_provider(current_refinement_)),
                                                              test_case_.boundary_info(),
-                                                             test_case_.problem());
+                                                             *nonparametric_problem_);
       current_discretization_->init();
       current_solution_vector_on_level_
           = Stuff::Common::make_unique< VectorType >(current_discretization_->create_vector());
@@ -447,7 +462,7 @@ protected:
       reference_discretization_
           = Stuff::Common::make_unique< DiscretizationType >(*(test_case_.reference_provider()),
                                                              test_case_.boundary_info(),
-                                                             test_case_.problem());
+                                                             *nonparametric_problem_);
       reference_discretization_->init();
       reference_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
       reference_discretization_->solve(*reference_solution_vector_);
@@ -478,6 +493,7 @@ private:
   size_t current_refinement_;
   size_t last_computed_refinement_;
   double time_to_solution_;
+  std::shared_ptr< NonparametricProblemType > nonparametric_problem_;
   bool reference_solution_computed_;
 protected:
   std::unique_ptr< DiscretizationType > current_discretization_;
