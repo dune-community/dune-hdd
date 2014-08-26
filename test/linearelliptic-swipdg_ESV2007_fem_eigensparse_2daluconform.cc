@@ -5,8 +5,6 @@
 
 #include "config.h"
 
-#include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
-
 #include "linearelliptic-swipdg.hh"
 
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
