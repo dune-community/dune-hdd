@@ -14,16 +14,8 @@ namespace HDD {
 namespace LinearElliptic {
 namespace TestCases {
 
+
 template class ESV2007< ALUGrid< 2, 2, simplex, conforming > >;
-
-
-#if HAVE_DUNE_GRID_MULTISCALE
-
-
-template class ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >;
-
-
-#endif // HAVE_DUNE_GRID_MULTISCALE
 
 
 } // namespace TestCases
