@@ -16,6 +16,7 @@
 #include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
 #include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg-estimator.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic.hh"
 
@@ -261,6 +262,10 @@ private:
 
 
 extern template class EocStudyBlockSWIPDG< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
+                                           1,
+                                           Stuff::LA::ChooseBackend::eigen_sparse >;
+
+extern template class EocStudyBlockSWIPDG< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
                                            1,
                                            Stuff::LA::ChooseBackend::eigen_sparse >;
 

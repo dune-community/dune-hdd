@@ -11,6 +11,10 @@ add_library(test_linearelliptic_blockswipg_ESV2007_fem_eigensparse_2daluconform
             OBJECT
             EXCLUDE_FROM_ALL
             linearelliptic-block-swipdg_ESV2007_fem_eigensparse_2daluconform.cc)
+add_library(test_linearelliptic_blockswipg_os2014_fem_eigensparse_2daluconform
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-block-swipdg_OS2014_fem_eigensparse_2daluconform.cc)
 
 add_library(test_linearelliptic_swipg
             STATIC
