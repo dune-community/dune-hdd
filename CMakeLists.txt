@@ -127,8 +127,12 @@ else(CMAKE_WITH_AUTOTOOLS)
   set(GRIDDIM "2" CACHE STRING "GRIDDIM")
   set(GRIDTYPE "ALUGRID_CONFORM" CACHE STRING "GRIDTYPE")
   add_definitions("-DGRIDDIM=${GRIDDIM}" "-DGRIDTYPE=${GRIDTYPE}")
+  if (ALUGRID_FOUND)
+    add_definitions("-DENABLE_ALUGRID=1")
+    include_directories(${ALUGRID_INCLUDES})
+  endif (ALUGRID_FOUND)
   
-  #add_subdirectory(dune)
+  add_subdirectory(dune)
 
   # libs
   set(COMMON_LIBS ${DUNE_DEFAULT_LIBS})
