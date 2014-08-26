@@ -23,7 +23,7 @@ add_library(test_linearelliptic_swipg
             $<TARGET_OBJECTS:linearelliptic_testcase_esv2007_multiscale_2daluconform>
             $<TARGET_OBJECTS:linearelliptic_discretization_swipdg_level_fem_eigensparse_2daluconform>
             $<TARGET_OBJECTS:linearelliptic_discretization_blockswipdg_fem_eigensparse_2daluconform>
-            $<TARGET_OBJECTS:linearelliptic_discretization_swipdg__estimator_level_fem_eigensparse_2daluconform>
+            $<TARGET_OBJECTS:linearelliptic_discretization_swipdg_estimator_level_fem_eigensparse_2daluconform>
             $<TARGET_OBJECTS:linearelliptic_discretization_blockswipdg_estimator_fem_eigensparse_2daluconform>)
 add_dune_alugrid_flags(test_linearelliptic_swipg)
 

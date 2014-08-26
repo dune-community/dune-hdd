@@ -10,6 +10,6 @@ add_library(linearelliptic_discretization_swipdg_level_fem_eigensparse_2daluconf
             OBJECT EXCLUDE_FROM_ALL
             swipdg_level_fem_eigensparse_2daluconform.cc)
             
-add_library(linearelliptic_discretization_swipdg__estimator_level_fem_eigensparse_2daluconform
+add_library(linearelliptic_discretization_swipdg_estimator_level_fem_eigensparse_2daluconform
             OBJECT EXCLUDE_FROM_ALL
-            swipdg_estimator_level_fem_eigensparse_2daluconform.cc)
+            swipdg-estimator_level_fem_eigensparse_2daluconform.cc)

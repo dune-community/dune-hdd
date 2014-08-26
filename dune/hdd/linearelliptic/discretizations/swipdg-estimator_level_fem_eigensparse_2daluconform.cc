@@ -5,7 +5,7 @@
 
 #include "config.h"
 
-#include "swipdg.hh"
+#include "swipdg-estimator.hh"
 
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
 
