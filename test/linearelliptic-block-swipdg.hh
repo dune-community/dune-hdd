@@ -250,7 +250,8 @@ private:
       return EstimatorType::estimate(*this->current_discretization_->ansatz_space(),
                                      vector,
                                      this->test_case_.problem(),
-                                     type);
+                                     type,
+                                     this->test_case_.parameters());
     }
   } // ... estimate(...)
 }; // class EocStudyBlockSWIPDG
