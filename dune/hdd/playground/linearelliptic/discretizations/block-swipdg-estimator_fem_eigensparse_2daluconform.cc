@@ -5,7 +5,7 @@
 
 #include "config.h"
 
-#include "block-swipdg.hh"
+#include "block-swipdg-estimator.hh"
 
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN && HAVE_DUNE_GRID_MULTISCALE
 
