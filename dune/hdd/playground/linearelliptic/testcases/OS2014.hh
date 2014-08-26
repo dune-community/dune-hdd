@@ -8,13 +8,15 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
-#endif
+#include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/functions/constant.hh>
-#include <dune/stuff/common/fixed_map.hh>
 
 #include <dune/pymor/functions/default.hh>
 
@@ -39,23 +41,17 @@ public:
   static const unsigned int                              dimDomain = GridType::dimension;
   typedef double            RangeFieldType;
   static const unsigned int dimRange = 1;
-protected:
-  typedef Problems::OS2014< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ParametricProblemType;
 public:
-  typedef ProblemInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef Problems::OS2014< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
   typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
       ExactSolutionType;
   typedef typename ProblemType::FunctionType::NonparametricType FunctionType;
 
-  typedef Stuff::Common::FixedMap< std::string, Pymor::Parameter, 3 > ParametersType;
+  typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
 
 protected:
-  static ParametersType default_parameters()
-  {
-    return ParametersType({{"current", Pymor::Parameter("mu", 0.5)},
-                           {"fixed", Pymor::Parameter("mu", 1)},
-                           {"minimizing", Pymor::Parameter("mu", 0.1)}});
-  }
+  static const size_t default_num_refinements_ = 3;
 
   static int initial_refinements()
   {
@@ -69,23 +65,20 @@ protected:
   } // ... initial_refinements()
 
 public:
-  OS2014Base(ParametersType parameters = default_parameters())
+  static ParameterTypesMapType required_parameters()
+  {
+    return ParameterTypesMapType({{"mu",            Pymor::ParameterType("mu", 1)},
+                                  {"mu_bar",        Pymor::ParameterType("mu", 1)},
+                                  {"mu_hat",        Pymor::ParameterType("mu", 1)},
+                                  {"mu_minimizing", Pymor::ParameterType("mu", 1)}});
+  }
+
+  OS2014Base(const ParametersMapType parameters)
     : parameters_(parameters)
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
-    , parametric_problem_(3)
-    , problem_(parametric_problem_.with_mu(parameters_["current"]))
+    , problem_(3)
     , exact_solution_(0)
-  {
-    assert(parameters_.find("current") != parameters_.end());
-    assert(parameters_.find("fixed") != parameters_.end());
-    assert(parameters_.find("minimizing") != parameters_.end());
-    for (auto parameter : parameters_)
-      assert(parameter.second.type() == parametric_problem_.parameter_type());
-    const auto& diffusion_factor = *parametric_problem_.diffusion_factor();
-    alpha_ = diffusion_factor.alpha(parameters_["current"], parameters_["fixed"]);
-    gamma_ = diffusion_factor.gamma(parameters_["current"], parameters_["fixed"]);
-    gamma_tilde_sqrt_ = std::max(std::sqrt(gamma_), 1.0/std::sqrt(alpha_));
-  }
+  {}
 
   void print_header(std::ostream& out = std::cout) const
   {
@@ -101,16 +94,7 @@ public:
         << "||  reference solution: discrete solution on finest grid          ||\n"
         << "||  parameter: mu in [0.1, 1]                                     ||\n"
         << "|+================================================================+|\n"
-        << "+==================================================================+\n"
-        << "    solving for mu: " << parameters_["current"] << "\n"
-        << "    fixed mu:       " << parameters_["fixed"] << "\n"
-        << "    sqrt(alpha(mu, mu_fixed))^-1:    "
-            << std::setprecision(2) << std::scientific << 1.0/std::sqrt(alpha_) << "\n"
-        << "    sqrt(gamma(mu, mu_fixed)):       "
-            << std::setprecision(2) << std::scientific << std::sqrt(gamma_) << "\n"
-        << "    sqrt(gamma_tilde(mu, mu_fixed)): "
-            << std::setprecision(2) << std::scientific << gamma_tilde_sqrt_ << "\n"
-        << "====================================================================" << std::endl;
+        << "+==================================================================+" << std::endl;
   } // ... print_header(...)
 
   const Stuff::Common::Configuration& boundary_info() const
@@ -118,14 +102,9 @@ public:
     return boundary_info_cfg_;
   }
 
-  const ProblemType& parametric_problem() const
-  {
-    return parametric_problem_;
-  }
-
   const ProblemType& problem() const
   {
-    return *problem_;
+    return problem_;
   }
 
   bool provides_exact_solution() const
@@ -139,20 +118,16 @@ public:
                "Do not call exact_solution() if provides_exact_solution() is false!");
   }
 
-  const ParametersType& parameters() const
+  const ParametersMapType& parameters() const
   {
     return parameters_;
   }
 
 protected:
-  const ParametersType parameters_;
+  const ParametersMapType parameters_;
   const Stuff::Common::Configuration boundary_info_cfg_;
-  const ParametricProblemType parametric_problem_;
-  const std::shared_ptr< ProblemType > problem_;
+  const ProblemType problem_;
   const ExactSolutionType exact_solution_;
-  double alpha_;
-  double gamma_;
-  double gamma_tilde_sqrt_;
 }; // class OS2014Base
 
 
@@ -176,155 +151,62 @@ class OS2014
   } // ... create_initial_grid(...)
 
 public:
-  typedef typename OS2014BaseType::ParametersType ParametersType;
+  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
 
-  OS2014(ParametersType parameters = OS2014BaseType::default_parameters(), const size_t num_refinements = 3)
+  using OS2014BaseType::required_parameters;
+  using OS2014BaseType::parameters;
+
+  OS2014(const ParametersMapType parameters,
+         const size_t num_refinements = OS2014BaseType::default_num_refinements_)
     : OS2014BaseType(parameters)
     , TestCaseBaseType(create_initial_grid(OS2014BaseType::initial_refinements()), num_refinements)
-  {}
+  {
+    this->check_parameters(OS2014BaseType::required_parameters(), parameters);
+    this->inherit_parameter_type(this->problem_, "problem");
+  }
 }; // class OS2014
 
 
-//#if HAVE_DUNE_GRID_MULTISCALE
+#if HAVE_DUNE_GRID_MULTISCALE
 
 
-//template< class GridType >
-//class OS2014Multiscale
-//  : public MultiscaleCubeBase< GridType >
-//{
-//  typedef MultiscaleCubeBase< GridType > BaseType;
-//  static_assert(BaseType::dimDomain == 2, "This test case is only available in 2d!");
-//public:
-//  typedef typename BaseType::EntityType EntityType;
-//  typedef typename BaseType::DomainFieldType DomainFieldType;
-//  static const unsigned int                  dimDomain = BaseType::dimDomain;
-//  typedef double            RangeFieldType;
-//  static const unsigned int dimRange = 1;
+template< class GridType >
+class OS2014Multiscale
+  : public internal::OS2014Base< GridType >
+  , public MultiscaleCubeBase< GridType >
+{
+  typedef internal::OS2014Base< GridType > OS2014BaseType;
+  typedef MultiscaleCubeBase< GridType >   TestCaseBaseType;
 
-//  typedef ProblemInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
-//  typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
-//      ExactSolutionType;
-//  typedef typename ProblemType::FunctionType::NonparametricType FunctionType;
-//  typedef Stuff::Common::FixedMap< std::string, Pymor::Parameter, 3 > ParametersType;
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
+  {
+    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
+    grid_cfg["lower_left"] = "-1";
+    grid_cfg["upper_right"] = "1";
+    grid_cfg["num_elements"] = "4";
+    grid_cfg["num_partitions"] = num_partitions;
+    return grid_cfg;
+  } // ... initial_grid_cfg(...)
 
-//private:
-//  typedef Problems::OS2014< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > RealProblemType;
+public:
+  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
 
-//public:
-//  OS2014Multiscale(ParametersType parameters = ParametersType({{"fixed", Pymor::Parameter("mu", 1)},
-//                                                               {"solve", Pymor::Parameter("mu", 1)},
-//                                                               {"minimizing", Pymor::Parameter("mu", 0.1)}}),
-//                   const std::string num_partitions = "[1 1 1]",
-//                   const size_t num_refinements = 3)
-//    : BaseType(initial_grid_cfg(num_partitions), initial_refinements(), num_refinements)
-//    , parameters_(parameters)
-//    , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
-//    , real_problem_(3)
-//    , problem_(real_problem_.with_mu(parameters_["solve"]))
-//    , exact_solution_(0)
-//  {
-//    for (auto parameter : parameters_)
-//      assert(parameter.second.type() == real_problem_.parameter_type());
-//    assert(parameters_.find("fixed") != parameters_.end());
-//    assert(parameters_.find("solve") != parameters_.end());
-//    assert(parameters_.find("minimizing") != parameters_.end());
-//    const auto& diffusion_factor = *real_problem_.diffusion_factor();
-//    alpha_ = diffusion_factor.alpha(parameters_["solve"], parameters_["fixed"]);
-//    gamma_ = diffusion_factor.gamma(parameters_["solve"], parameters_["fixed"]);
-//    gamma_tilde_sqrt_ = std::max(std::sqrt(gamma_), 1.0/std::sqrt(alpha_));
-//  }
+  using OS2014BaseType::required_parameters;
+  using OS2014BaseType::parameters;
 
-//  void print_header(std::ostream& out = std::cout) const
-//  {
-//    out << "+==================================================================+\n"
-//        << "|+================================================================+|\n"
-//        << "||  Testcase OS2014: (parametric) estimator convergence study     ||\n"
-//        << "||  (see Ohlberger, Schindler, 2014)                              ||\n"
-//        << "|+----------------------------------------------------------------+|\n"
-//        << "||  domain = [-1, 1] x [-1, 1]                                    ||\n"
-//        << "||  diffusion = 1 + (1 - mu) sin(2 pi x) sin(2 pi y)              ||\n"
-//        << "||  force     = 1                                                 ||\n"
-//        << "||  dirichlet = 0                                                 ||\n"
-//        << "||  reference solution: discrete solution on finest grid          ||\n"
-//        << "||  parameter: mu in [0.1, 1]                                     ||\n"
-//        << "|+================================================================+|\n"
-//        << "+==================================================================+\n"
-//        << "    parameter type: " << real_problem_.parameter_type() << "\n"
-//        << "    fixed mu:       " << parameters_["fixed"] << "\n"
-//        << "    solving for mu: " << parameters_["solve"] << "\n"
-//        << "    sqrt(alpha(mu, mu_fixed))^-1:    "
-//            << std::setprecision(2) << std::scientific << 1.0/std::sqrt(alpha_) << "\n"
-//        << "    sqrt(gamma(mu, mu_fixed)):       "
-//            << std::setprecision(2) << std::scientific << std::sqrt(gamma_) << "\n"
-//        << "    sqrt(gamma_tilde(mu, mu_fixed)): "
-//            << std::setprecision(2) << std::scientific << gamma_tilde_sqrt_  << std::endl;
-//  } // ... print_header(...)
-
-//  const Stuff::Common::Configuration& boundary_info() const
-//  {
-//    return boundary_info_cfg_;
-//  }
-
-//  const ProblemType& parametric_problem() const
-//  {
-//    return real_problem_;
-//  }
-
-//  const ProblemType& problem() const
-//  {
-//    return *problem_;
-//  }
-
-//  bool provides_exact_solution() const
-//  {
-//    return false;
-//  }
-
-//  const ExactSolutionType& exact_solution() const
-//  {
-//    DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-//               "Do not call exact_solution() if provides_exact_solution() is false!");
-//  }
-
-//  const ParametersType& parameters() const
-//  {
-//    return parameters_;
-//  }
-
-//private:
-//  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
-//  {
-//    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
-//    grid_cfg["lower_left"] = "-1";
-//    grid_cfg["upper_right"] = "1";
-//    grid_cfg["num_elements"] = "4";
-//    grid_cfg["num_partitions"] = num_partitions;
-//    return grid_cfg;
-//  } // ... initial_grid_cfg(...)
-
-//  static int initial_refinements()
-//  {
-//    int ret = 1;
-//#if HAVE_ALUGRID
-//    if (std::is_same< GridType, ALUConformGrid< 2, 2 > >::value
-//        || std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
-//      ret += 1;
-//#endif // HAVE_ALUGRID
-//    return ret;
-//  } // ... initial_refinements()
-
-//  const ParametersType parameters_;
-//  const Stuff::Common::Configuration boundary_info_cfg_;
-//  const RealProblemType real_problem_;
-//  const std::shared_ptr< ProblemType > problem_;
-//  const ExactSolutionType exact_solution_;
-//  double alpha_;
-//  double gamma_;
-//  double gamma_tilde_sqrt_;
-//}; // class OS2014Multiscale
+  OS2014Multiscale(const ParametersMapType parameters,
+                   const std::string num_partitions = "[1 1 1]",
+                   const size_t num_refinements = OS2014BaseType::default_num_refinements_)
+    : OS2014BaseType(parameters)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions), OS2014BaseType::initial_refinements(), num_refinements)
+  {
+    this->check_parameters(OS2014BaseType::required_parameters(), parameters);
+    this->inherit_parameter_type(this->problem_, "problem");
+  }
+}; // class OS2014Multiscale
 
 
-//#endif // HAVE_DUNE_GRID_MULTISCALE
+#endif // HAVE_DUNE_GRID_MULTISCALE
 
 } // namespace TestCases
 } // namespace LinearElliptic
