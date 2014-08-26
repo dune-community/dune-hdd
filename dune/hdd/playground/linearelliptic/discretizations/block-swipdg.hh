@@ -632,10 +632,12 @@ public:
     return DiscretizationInterface< Traits >::static_id() + ".block-swipdg";
   }
 
+#if 0
   static std::vector< std::string > available_estimators()
   {
-    return Estimator::available();
+    return EstimatorType::available();
   }
+#endif // 0
 
   BlockSWIPDG(const GridProviderType& grid_provider,
               const Stuff::Common::Configuration& /*bound_inf_cfg*/,
@@ -851,6 +853,7 @@ public:
     } // if (!this->container_based_initialized_)
   } // ... init(...)
 
+#if 0
   RangeFieldType estimate(const VectorType& vector,
                           const std::string type,
                           const ParametersType parameters = ParametersType({{"fixed", Pymor::Parameter()},
@@ -859,6 +862,7 @@ public:
   {
     return Estimator::estimate(*this, vector, type, parameters);
   }
+#endif // 0
 
   DUNE_STUFF_SSIZE_T num_subdomains() const
   {
@@ -986,6 +990,7 @@ public:
     return new FunctionalType(get_local_functional(size_t(ss)));
   }
 
+#if 0
   RangeFieldType estimate(const VectorType& vector,
                           const Pymor::Parameter mu = Pymor::Parameter(),
                           const Pymor::Parameter mu_fixed = Pymor::Parameter(),
@@ -1153,7 +1158,9 @@ public:
 
     return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + parameter_factor * std::sqrt(eta_df_squared);
   } // ... estimate(...)
+#endif // 0
 
+#if 0
   /**
    * \return eta_T^2 := eta_nc^T^2 + eta_r^T^2 + eta_df^T^2
    */
@@ -1299,12 +1306,14 @@ public:
 //    } // walk the subdomains
     return eta_nc_squared + eta_r_squared + eta_df_squared;
   } // ... estimate_local(...)
+#endif // 0
 
   VectorType* create_ones() const
   {
     return new VectorType(this->ansatz_space()->mapper().size(), 1.0);
   }
 
+#if 0
   void visualize_information(const std::vector< VectorType >& local_vectors,
                              const std::string& filename,
                              const Pymor::Parameter mu = Pymor::Parameter(),
@@ -1383,7 +1392,9 @@ public:
       element = std::abs(element);
     difference.visualize(filename + ".difference");
   } // ... visualize_information(...)
+#endif // 0
 
+#if 0
   std::vector< double > estimate_local(const std::vector< VectorType >& local_vectors,
                                        const Pymor::Parameter mu = Pymor::Parameter(),
                                        const Pymor::Parameter mu_fixed = Pymor::Parameter()) const
@@ -1579,6 +1590,7 @@ public:
 
     return ret;
   } // ... estimate_local(...)
+#endif // 0
 
   VectorType solve_for_local_correction(const std::vector< VectorType >& local_vectors,
                                         const size_t subdomain,
