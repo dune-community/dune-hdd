@@ -12,6 +12,7 @@
 #include <set>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 
 #include <boost/numeric/conversion/cast.hpp>
 
@@ -868,7 +869,7 @@ public:
         // * and the vectors
         const auto local_functional = this->local_discretizations_[ss]->get_rhs();
         local_vectors_[ss] = std::make_shared< AffinelyDecomposedVectorType >();
-        for (size_t qq = 0; qq < local_functional.num_components(); ++qq)
+        for (size_t qq = 0; qq < boost::numeric_cast< size_t >(local_functional.num_components()); ++qq)
           local_vectors_[ss]->register_component(new VectorType(*(local_functional.component(qq).container())),
                                                  new Pymor::ParameterFunctional(local_functional.coefficient(qq)));
         if (local_functional.has_affine_part())
@@ -1033,7 +1034,7 @@ public:
 
   VectorType localize_vector(const VectorType& global_vector, const size_t ss) const
   {
-    if (ss >= num_subdomains())
+    if ((std::make_signed< size_t >::type)(ss) >= num_subdomains())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     if (global_vector.size() != this->ansatz_space()->mapper().size())
@@ -1050,13 +1051,13 @@ public:
   VectorType* localize_vector_and_return_ptr(const VectorType& global_vector, const DUNE_STUFF_SSIZE_T ss) const
   {
     assert(ss >= 0);
-    assert(ss < std::numeric_limits< size_t >::max());
+    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
     return new VectorType(localize_vector(global_vector, size_t(ss)));
   }
 
   ProductType get_local_product(const size_t ss, const std::string id) const
   {
-    if (ss >= num_subdomains())
+    if ((std::make_signed< size_t >::type)(ss) >= num_subdomains())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     return this->local_discretizations_[ss]->get_product(id);
@@ -1065,29 +1066,29 @@ public:
   ProductType* get_local_product_and_return_ptr(const DUNE_STUFF_SSIZE_T ss, const std::string id) const
   {
     assert(ss >= 0);
-    assert(ss < std::numeric_limits< size_t >::max());
+    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
     return new ProductType(get_local_product(size_t(ss), id));
   }
 
   OperatorType get_local_operator(const size_t ss) const
   {
-    if (ss >= num_subdomains())
+    if ((std::make_signed< size_t >::type)(ss) >= num_subdomains())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
-    assert(ss < int(local_matrices_.size()));
+    assert(ss < local_matrices_.size());
     return OperatorType(*(local_matrices_[ss]));
   }
 
   OperatorType* get_local_operator_and_return_ptr(const DUNE_STUFF_SSIZE_T ss) const
   {
     assert(ss >= 0);
-    assert(ss < std::numeric_limits< size_t >::max());
+    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
     return new OperatorType(get_local_operator(size_t(ss)));
   }
 
   OperatorType get_coupling_operator(const size_t ss, const size_t nn) const
   {
-    if (ss >= num_subdomains())
+    if (ss >= boost::numeric_cast< size_t >(num_subdomains()))
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     const auto neighbours = ms_grid_->neighborsOf(ss);
@@ -1121,15 +1122,15 @@ public:
   OperatorType* get_coupling_operator_and_return_ptr(const DUNE_STUFF_SSIZE_T ss, const DUNE_STUFF_SSIZE_T nn) const
   {
     assert(ss >= 0);
-    assert(ss < std::numeric_limits< size_t >::max());
+    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
     assert(nn >= 0);
-    assert(nn < std::numeric_limits< size_t >::max());
+    assert(nn < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
     return new OperatorType(get_coupling_operator(size_t(ss), size_t(nn)));
   }
 
   FunctionalType get_local_functional(const size_t ss) const
   {
-    if (ss >= num_subdomains())
+    if (ss >= boost::numeric_cast< size_t >(num_subdomains()))
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     assert(ss < local_vectors_.size());
@@ -1139,7 +1140,7 @@ public:
   FunctionalType* get_local_functional_and_return_ptr(const DUNE_STUFF_SSIZE_T ss) const
   {
     assert(ss >= 0);
-    assert(ss < std::numeric_limits< size_t >::max());
+    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
     return new FunctionalType(get_local_functional(size_t(ss)));
   }
 
@@ -2014,7 +2015,7 @@ private:
                                    const size_t neighbor,
                                    AffinelyDecomposedMatrixType& global_matrix) const
   {
-    for (size_t qq = 0; qq < local_matrix.num_components(); ++qq) {
+    for (size_t qq = 0; qq < boost::numeric_cast< size_t >(local_matrix.num_components()); ++qq) {
       const auto coefficient = local_matrix.coefficient(qq);
       ssize_t comp = find_component(global_matrix, *coefficient);
       if (comp < 0)
@@ -2062,7 +2063,7 @@ private:
                                    const size_t subdomain,
                                    AffinelyDecomposedVectorType& global_vector) const
   {
-    for (size_t qq = 0; qq < local_vector.num_components(); ++qq) {
+    for (size_t qq = 0; qq < boost::numeric_cast< size_t >(local_vector.num_components()); ++qq) {
       const auto coefficient = local_vector.coefficient(qq);
       ssize_t comp = find_component(global_vector, *coefficient);
       if (comp < 0)
@@ -2342,7 +2343,7 @@ private:
   ssize_t find_component(const AffinelyDecomposedContainerType& container,
                          const Pymor::ParameterFunctional& coefficient) const
   {
-    for (size_t qq = 0; qq < container.num_components(); ++qq)
+    for (size_t qq = 0; qq < boost::numeric_cast< size_t >(container.num_components()); ++qq)
       if (*(container.coefficient(qq)) == coefficient)
         return qq;
     return -1;
