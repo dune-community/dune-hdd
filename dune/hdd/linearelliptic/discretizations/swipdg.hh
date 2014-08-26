@@ -1009,6 +1009,31 @@ public:
 }; // class SWIPDG
 
 
+#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
+
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double, 1, 1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double, 1, 1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+
+extern template class SWIPDGEstimator< GDT::Spaces::DiscontinuousLagrange::FemBased< Fem::LeafGridPart< ALUGrid< 2, 2, simplex, conforming > >, 1, double, 1, 1 >,
+                                       Dune::Stuff::LA::EigenDenseVector< double > ,
+                                       ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity, double, 2, double, 1 >,
+                                       ALUGrid< 2, 2, simplex, conforming > >;
+
+
+
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
+
 } // namespace Discretizations
 } // namespace LinearElliptic
 } // namespace HDD

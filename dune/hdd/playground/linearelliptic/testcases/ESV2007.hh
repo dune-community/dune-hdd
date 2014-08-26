@@ -133,7 +133,13 @@ public:
 }; // class ESV2007
 
 
-#if HAVE_DUNE_GRID_MULTISCALE
+#if HAVE_ALUGRID
+
+
+extern template class ESV2007< ALUGrid< 2, 2, simplex, conforming > >;
+
+
+# if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
@@ -165,7 +171,11 @@ public:
 }; // class ESV2007Multiscale
 
 
-#endif // HAVE_DUNE_GRID_MULTISCALE
+extern template class ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >;
+
+
+# endif // HAVE_DUNE_GRID_MULTISCALE
+#endif // HAVE_ALUGRID
 
 } // namespace TestCases
 } // namespace LinearElliptic

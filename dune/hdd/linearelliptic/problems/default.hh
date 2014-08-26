@@ -13,6 +13,11 @@
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/expression.hh>
 
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
+
 #include <dune/pymor/functions.hh>
 #include <dune/pymor/functions/default.hh>
 
@@ -239,6 +244,17 @@ protected:
   std::shared_ptr< const FunctionType > dirichlet_;
   std::shared_ptr< const FunctionType > neumann_;
 }; // class Default
+
+
+#if HAVE_ALUGRID
+
+
+extern template class Default< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
+                               double, 2, double, 1 >;
+
+
+#endif // HAVE_ALUGRID
+
 
 } // namespace Problems
 } // namespace LinearElliptic

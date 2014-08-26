@@ -13,6 +13,10 @@
 #include <dune/stuff/common/disable_warnings.hh>
 # include <dune/grid/io/file/vtk.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
+
 
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/string.hh>
@@ -158,6 +162,16 @@ private:
   template< class T >
   friend std::ostream& operator<<(std::ostream& /*out*/, const ThisType& /*problem*/);
 }; // ProblemInterface
+
+
+#if HAVE_ALUGRID
+
+
+extern template class ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
+                                        double, 2, double, 1 >;
+
+
+#endif // HAVE_ALUGRID
 
 
 template< class E, class D, int d, class R, int r >

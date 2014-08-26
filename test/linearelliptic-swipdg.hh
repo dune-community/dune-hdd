@@ -221,6 +221,18 @@ private:
 }; // class EocStudySWIPDG
 
 
+#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
+
+
+extern template class EocStudySWIPDG< TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >,
+                                      1,
+                                      GDT::ChooseSpaceBackend::fem,
+                                      Stuff::LA::ChooseBackend::eigen_sparse >;
+
+
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
+
+
 } // namespace Tests
 } // namespace LinearElliptic
 } // namespace HDD
