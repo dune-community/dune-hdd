@@ -93,6 +93,8 @@ class LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2,
 public:
   static const bool available = true;
 
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
   typedef typename FunctorBaseType::GridViewType GridViewType;
   typedef typename FunctorBaseType::EntityType   EntityType;
 
@@ -110,34 +112,42 @@ private:
                                                                               DiffusionTensorType > > LocalOperatorType;
   typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
 
-  static const ProblemType& assert_problem(const ProblemType& problem)
+  static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_bar)
   {
-    if (problem.parametric())
-      DUNE_THROW(NotImplemented, "Not implemented yet for parametric problems!");
-    assert(problem.diffusion_factor()->has_affine_part());
-    assert(problem.diffusion_tensor()->has_affine_part());
+    if (mu_bar.type() != problem.diffusion_factor()->parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu_bar is " << mu_bar.type() << " and should be " << problem.parameter_type() << "!");
+    assert(!problem.diffusion_tensor()->parametric());
     return problem;
   } // ... assert_problem(...)
 
 public:
-  static RangeFieldType estimate(const SpaceType& space, const VectorType& vector, const ProblemType& problem)
+  static RangeFieldType estimate(const SpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
   {
-    ThisType estimator(space, vector, problem);
+    const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar") : Pymor::Parameter();
+    ThisType estimator(space, vector, problem, mu_bar);
     GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
   } // ... estimate(...)
 
-  LocalNonconformityESV2007(const SpaceType& space, const VectorType& vector, const ProblemType& problem)
+  LocalNonconformityESV2007(const SpaceType& space,
+                            const VectorType& vector,
+                            const ProblemType& problem,
+                            const Pymor::Parameter mu_bar = Pymor::Parameter())
     : space_(space)
     , vector_(vector)
-    , problem_(assert_problem(problem))
+    , problem_(assert_problem(problem, mu_bar))
+    , diffusion_factor_mu_bar_(problem_.diffusion_factor()->with_mu(mu_bar))
     , discrete_solution_(space_, vector_)
     , oswald_interpolation_(space_)
     , difference_(Stuff::Common::make_unique< DifferenceType >(discrete_solution_ - oswald_interpolation_))
     , local_operator_(over_integrate,
-                      *problem_.diffusion_factor()->affine_part(),
+                      *diffusion_factor_mu_bar_,
                       *problem_.diffusion_tensor()->affine_part())
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
     , result_(0.0)
@@ -171,6 +181,7 @@ private:
   const SpaceType& space_;
   const VectorType& vector_;
   const ProblemType& problem_;
+  const std::shared_ptr< const DiffusionFactorType > diffusion_factor_mu_bar_;
   const ConstDiscreteFunctionType discrete_solution_;
   DiscreteFunctionType oswald_interpolation_;
   std::unique_ptr< const DifferenceType > difference_;
