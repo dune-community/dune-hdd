@@ -16,12 +16,13 @@
 // This one has to come first (includes the config.h)!
 #include <dune/stuff/test/main.hh>
 
-#if HAVE_ALUGRID
+#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
 #include <dune/stuff/common/disable_warnings.hh>
 # include <dune/grid/alugrid.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
+#include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic-swipdg.hh"
@@ -97,7 +98,7 @@ TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
 }
 
 
-#else // HAVE_ALUGRID
+#else // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
 
 TEST(DISABLED_OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {}
@@ -108,4 +109,4 @@ TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain)
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {}
 
 
-#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
