@@ -18,7 +18,9 @@
 
 #if HAVE_ALUGRID
 
-#include <dune/grid/alugrid.hh>
+#include <dune/stuff/common/disable_warnings.hh>
+# include <dune/grid/alugrid.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 

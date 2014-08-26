@@ -6,9 +6,11 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_ESV2007_HH
 #define DUNE_HDD_LINEARELLIPTIC_TESTCASES_ESV2007_HH
 
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
-#endif
+#include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/functions/ESV2007.hh>
 #include <dune/stuff/grid/provider/cube.hh>

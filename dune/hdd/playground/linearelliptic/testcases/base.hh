@@ -8,7 +8,9 @@
 
 #include <limits>
 
-#include <dune/grid/io/file/dgfparser.hh>
+#include <dune/stuff/common/disable_warnings.hh>
+# include <dune/grid/io/file/dgfparser.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/provider/default.hh>

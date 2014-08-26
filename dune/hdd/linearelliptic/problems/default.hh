@@ -8,15 +8,16 @@
 
 #include <memory>
 
+#if HAVE_ALUGRID
+# include <dune/stuff/common/disable_warnings.hh>
+#   include <dune/grid/alugrid.hh>
+# include <dune/stuff/common/reenable_warnings.hh>
+#endif
+
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/expression.hh>
-
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
-#endif
-
 
 #include <dune/pymor/functions.hh>
 #include <dune/pymor/functions/default.hh>

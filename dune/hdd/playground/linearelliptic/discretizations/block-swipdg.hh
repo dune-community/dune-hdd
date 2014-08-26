@@ -14,18 +14,21 @@
 #include <limits>
 
 #include <boost/numeric/conversion/cast.hpp>
-#if HAVE_EIGEN
-# include <Eigen/Eigenvalues>
-#endif
 
-#include <dune/common/timer.hh>
-#include <dune/common/dynmatrix.hh>
+#include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_EIGEN
+#   include <Eigen/Eigenvalues>
+# endif
 
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
-#endif
+# include <dune/common/timer.hh>
+# include <dune/common/dynmatrix.hh>
 
-#include <dune/geometry/quadraturerules.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
+
+# include <dune/geometry/quadraturerules.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/grid/multiscale/provider.hh>
 

@@ -9,14 +9,13 @@
 #include <vector>
 #include <ostream>
 
-#include <dune/grid/common/gridview.hh>
 #include <dune/stuff/common/disable_warnings.hh>
+# include <dune/grid/common/gridview.hh>
 # include <dune/grid/io/file/vtk.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
 #include <dune/stuff/common/reenable_warnings.hh>
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
-#endif
-
 
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/string.hh>

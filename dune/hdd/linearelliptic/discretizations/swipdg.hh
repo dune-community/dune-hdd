@@ -14,11 +14,10 @@
 #include <dune/common/timer.hh>
 #include <dune/common/static_assert.hh>
 
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
-#endif
 #include <dune/stuff/common/disable_warnings.hh>
-# include <dune/grid/sgrid.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
 #include <dune/stuff/common/reenable_warnings.hh>
 
 #if HAVE_DUNE_GRID_MULTISCALE
