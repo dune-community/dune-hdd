@@ -6,16 +6,11 @@
 #define DUNE_STUFF_FUNCTIONS_DISABLE_CHECKS
 
 // This one has to come first (includes the config.h)!
-#include <dune/stuff/test/test_common.hh>
+#include <dune/stuff/test/main.hh>
 
-//#define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION 1
+#if HAVE_ALUGRID
 
-#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
-# define ENABLE_ALUGRID 1
-# include <dune/grid/alugrid.hh>
-#else
-# error This test requires ALUGrid!
-#endif
+#include <dune/grid/alugrid.hh>
 
 #include <dune/stuff/common/exceptions.hh>
 
@@ -80,4 +75,13 @@ TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_64_sub
 }
 
 
-#include <dune/stuff/test/test_main.cxx>
+#else // HAVE_ALUGRID
+
+
+TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_1_subdomain);
+TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_4_subdomain);
+TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_16_subdomain);
+TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_64_subdomain);
+
+
+#endif // HAVE_ALUGRID
