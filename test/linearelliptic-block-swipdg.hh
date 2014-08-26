@@ -234,6 +234,17 @@ private:
 }; // class EocStudyBlockSWIPDG
 
 
+#if HAVE_ALUGRID && HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_EIGEN
+
+
+extern template class EocStudyBlockSWIPDG< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
+                                           1,
+                                           Stuff::LA::ChooseBackend::eigen_sparse >;
+
+
+#endif // HAVE_ALUGRID && HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_EIGEN
+
+
 } // namespace Tests
 } // namespace LinearElliptic
 } // namespace HDD
