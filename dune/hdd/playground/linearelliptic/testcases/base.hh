@@ -16,15 +16,60 @@
 #include <dune/stuff/grid/provider/default.hh>
 #include <dune/stuff/grid/provider/cube.hh>
 #include <dune/stuff/common/color.hh>
+#include <dune/stuff/common/exceptions.hh>
 
 #if HAVE_DUNE_GRID_MULTISCALE
 # include <dune/grid/multiscale/provider/cube.hh>
 #endif
 
+#include <dune/pymor/parameters/base.hh>
+#include <dune/pymor/common/exceptions.hh>
+
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace TestCases {
+namespace internal {
+
+
+class ParametricBase
+  : public Pymor::Parametric
+{
+public:
+  typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
+  typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
+
+  static ParameterTypesMapType required_parameters()
+  {
+    return ParameterTypesMapType();
+  }
+
+  const ParametersMapType& parameters() const
+  {
+    return empty_parameters_map_;
+  }
+
+protected:
+  static void check_parameters(const ParameterTypesMapType& required_types, const ParametersMapType& actual_parameters)
+  {
+    for (auto parameter_type : required_types) {
+      const auto search_result = actual_parameters.find(parameter_type.first);
+      if (search_result == actual_parameters.end())
+        DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                   "Missing parameter '" << parameter_type.first << "' in given actual_parameters!");
+      if (search_result->second.type() != parameter_type.second)
+        DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                   "Given parameter '" << search_result->first << "' is a " << search_result->second.type()
+                   << " and should be a " << parameter_type.second << "!");
+    }
+  } // ... check_paramets(...)
+
+private:
+  const ParametersMapType empty_parameters_map_;
+}; // class ParametricBase
+
+
+} // namespace internal
 
 
 /**
@@ -34,6 +79,7 @@ namespace TestCases {
 template< class GridType >
 class Base
   : public Stuff::Grid::Providers::Default< GridType >
+  , public internal::ParametricBase
 {
   typedef Stuff::Grid::Providers::Default< GridType > BaseType;
 public:
@@ -87,6 +133,7 @@ private:
 
 template< class GridImp >
 class MultiscaleCubeBase
+  : public internal::ParametricBase
 {
 public:
   typedef GridImp GridType;
