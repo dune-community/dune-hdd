@@ -21,6 +21,7 @@
 #include <dune/gdt/playground/products/elliptic.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
+#include <dune/hdd/linearelliptic/discretizations/swipdg-estimator.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
@@ -42,6 +43,11 @@ class DiscretizationSWIPDG
 public:
   typedef Discretizations::SWIPDG
       < GridType, Stuff::Grid::ChooseLayer::level, RangeFieldType, dimRange, polOrder, space_backend, la_backend > Type;
+  typedef Discretizations::SWIPDGEstimator< typename Type::AnsatzSpaceType,
+                                            typename Type::VectorType,
+                                            typename Type::ProblemType,
+                                            GridType >
+      EstimatorType;
 }; // class DiscretizationSWIPDG
 
 
@@ -64,7 +70,8 @@ class EocStudySWIPDG
   typedef EocStudySWIPDG< TestCaseType, polOrder, space_backend, la_backend > ThisType;
 
   typedef typename BaseType::DiscretizationType      DiscretizationType;
-  typedef typename DiscretizationType::EstimatorType EstimatorType;
+  typedef typename internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::EstimatorType
+      EstimatorType;
   typedef typename BaseType::GridViewType GridViewType;
   typedef typename BaseType::FunctionType FunctionType;
   typedef typename BaseType::VectorType   VectorType;
