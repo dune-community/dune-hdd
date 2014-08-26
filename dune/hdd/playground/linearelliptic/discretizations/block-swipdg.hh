@@ -2716,10 +2716,13 @@ extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming >,
                               Stuff::LA::ChooseBackend::eigen_sparse >;
 
 
-//extern template class SWIPDGEstimator< GDT::Spaces::DiscontinuousLagrange::FemBased< Fem::LeafGridPart< ALUGrid< 2, 2, simplex, conforming > >, 1, double, 1, 1 >,
-//                                       Dune::Stuff::LA::EigenDenseVector< double > ,
-//                                       ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity, double, 2, double, 1 >,
-//                                       ALUGrid< 2, 2, simplex, conforming > >;
+extern template class BlockSWIPDGEstimator<
+    GDT::Spaces::Block< GDT::Spaces::DiscontinuousLagrange::FemBased<
+        grid::Part::Local::IndexBased::Const< grid::Part::Leaf::Const< ALUGrid< 2, 2, simplex, conforming > > >,
+        1, double, 1, 1 > >,
+    Dune::Stuff::LA::EigenDenseVector< double >,
+    ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity, double, 2, double, 1 >,
+    ALUGrid< 2, 2, simplex, conforming > >;
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN && HAVE_DUNE_GRID_MULTISCALE

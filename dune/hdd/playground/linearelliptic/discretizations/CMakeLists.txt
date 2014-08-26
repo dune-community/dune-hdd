@@ -6,3 +6,7 @@
 add_library(linearelliptic_discretization_blockswipdg_fem_eigensparse_2daluconform
             OBJECT EXCLUDE_FROM_ALL
             block-swipdg_fem_eigensparse_2daluconform.cc)
+
+add_library(linearelliptic_discretization_blockswipdg_estimator_fem_eigensparse_2daluconform
+            OBJECT EXCLUDE_FROM_ALL
+            block-swipdg_estimator_fem_eigensparse_2daluconform.cc)
