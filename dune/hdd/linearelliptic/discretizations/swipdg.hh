@@ -120,7 +120,7 @@ public:
   static const bool available = false;
 };
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID
 
 /**
  *  \brief computes the local nonconformity estimator as defined in ESV2007
@@ -223,7 +223,7 @@ public:
   RangeFieldType result_;
 }; // class LocalNonconformityESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
 
-//#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID
 
 
 class LocalResidualESV2007Base
@@ -241,7 +241,7 @@ public:
   static const bool available = false;
 };
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID
 
 /**
  *  \brief computes the local residual estimator as defined in ESV2007
@@ -344,7 +344,7 @@ public:
   RangeFieldType result_;
 }; // class LocalResidualESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
 
-//#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID
 
 
 class LocalDiffusiveFluxESV2007Base
@@ -362,7 +362,7 @@ public:
   static const bool available = false;
 };
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID
 
 /**
  *  \brief computes the local diffusive flux estimator as defined in ESV2007
@@ -473,7 +473,7 @@ public:
   RangeFieldType result_;
 }; // class LocalDiffusiveFluxESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
 
-//#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID
 
 
 class ESV2007Base
@@ -495,7 +495,7 @@ public:
 };
 
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID
 
 template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
 class ESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
@@ -529,7 +529,7 @@ public:
   } // ... estimate(...)
 }; // class ESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
 
-//#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID
 
 
 class ESV2007AlternativeSummationBase
@@ -551,7 +551,7 @@ public:
 };
 
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID
 
 template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
 class ESV2007AlternativeSummation< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
@@ -588,7 +588,7 @@ public:
   } // ... estimate(...)
 }; // class ESV2007AlternativeSummation< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
 
-//#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID
 
 
 } // namespace SWIPDGEstimators
