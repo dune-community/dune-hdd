@@ -9,3 +9,7 @@ add_library(linearelliptic_testcase_esv2007_2daluconform
 add_library(linearelliptic_testcase_esv2007_multiscale_2daluconform
             OBJECT EXCLUDE_FROM_ALL
             ESV2007_multiscale_2daluconform.cc)
+
+add_library(linearelliptic_testcase_os2014_multiscale_2daluconform
+            OBJECT EXCLUDE_FROM_ALL
+            OS2014_multiscale_2daluconform.cc)
