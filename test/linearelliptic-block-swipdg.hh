@@ -19,6 +19,7 @@
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic.hh"
+#include "linearelliptic-block-swipdg-expectations.hh"
 
 namespace Dune {
 namespace HDD {
@@ -104,108 +105,8 @@ public:
 
   virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
   {
-    if (std::is_same< TestCaseType, TestCases::ESV2007Multiscale< ALUConformGrid< 2, 2 > > >::value
-        || std::is_same< TestCaseType, TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > > >::value) {
-      if (this->test_case_.partitioning() == "[1 1 1]") {
-        if (polOrder == 1) {
-          if (type == "energy")
-            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
-          else if (type == "eta_NC_OS2014")
-            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
-          else if (type == "eta_R_OS2014")
-            return {5.80e-01, 2.91e-01, 1.46e-01, 7.28e-02};
-          else if (type == "eta_DF_OS2014")
-            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
-          else if (type == "eta_OS2014")
-            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
-          else if (type == "eff_OS2014")
-            return {3.36, 3.38, 3.39, 3.40};
-          else
-            DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
-        } else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, polOrder);
-      } else if (this->test_case_.partitioning() == "[2 2 1]") {
-        if (polOrder == 1) {
-          if (type == "energy")
-            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
-          else if (type == "eta_NC_OS2014")
-            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
-          else if (type == "eta_R_OS2014")
-            return {2.90e-01, 1.46e-01, 7.28e-02, 3.64e-02};
-          else if (type == "eta_DF_OS2014")
-            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
-          else if (type == "eta_OS2014")
-            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
-          else if (type == "eff_OS2014")
-            return {2.48, 2.48, 2.49, 2.49};
-          else
-            DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
-        } else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, polOrder);
-      } else if (this->test_case_.partitioning() == "[4 4 1]") {
-        if (polOrder == 1) {
-          if (type == "energy")
-            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
-          else if (type == "eta_NC_OS2014")
-            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
-          else if (type == "eta_R_OS2014")
-            return {1.46e-01, 7.27e-02, 3.64e-02, 1.82e-02};
-          else if (type == "eta_DF_OS2014")
-            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
-          else if (type == "eta_OS2014")
-            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
-          else if (type == "eff_OS2014")
-            return {2.04, 2.03, 2.03, 2.04};
-          else
-            DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
-        } else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, polOrder);
-      } else if (this->test_case_.partitioning() == "[8 8 1]") {
-        if (polOrder == 1) {
-          if (type == "energy")
-            return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
-          else if (type == "eta_NC_OS2014")
-            return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
-          else if (type == "eta_R_OS2014")
-            return {7.24e-02, 3.64e-02, 1.83e-02, 9.10e-03};
-          else if (type == "eta_DF_OS2014")
-            return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
-          else if (type == "eta_OS2014")
-            return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
-          else if (type == "eff_OS2014")
-            return {1.82, 1.81, 1.81, 1.81};
-          else
-            DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
-        } else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, polOrder);
-      } else
-        DUNE_THROW(Stuff::Exceptions::test_results_missing, this->test_case_.partitioning());
-    } else if (std::is_same< TestCaseType, TestCases::OS2014Multiscale< ALUConformGrid< 2, 2 > > >::value
-              || std::is_same< TestCaseType, TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > > >::value) {
-      if (polOrder != 1)
-        DUNE_THROW(Stuff::Exceptions::test_results_missing, polOrder);
-      const auto mu = this->test_case_.parameters().at("mu");
-      const auto mu_bar = this->test_case_.parameters().at("mu_bar");
-      const auto mu_hat = this->test_case_.parameters().at("mu_hat");
-      const auto mu_minimizing = this->test_case_.parameters().at("mu_minimizing");
-      if (this->test_case_.partitioning() == "[1 1 1]") {
-        if (type == "energy_mu") {
-          if (mu == Pymor::Parameter("mu", 1)
-              && mu_bar == Pymor::Parameter("mu", 1)
-              && mu_hat == Pymor::Parameter("mu", 1)
-              && mu_minimizing == Pymor::Parameter("mu", 1))
-            return {3.29e-01, 1.61e-01, 7.79e-02, 3.48e-02};
-          else
-            DUNE_THROW(Stuff::Exceptions::test_results_missing,
-                       "mu = " << mu << "\nmu_bar = " << mu_bar << "\nmu_hat = " << mu_hat
-                       << "\nmu_minimizing = " << mu_minimizing);
-        } else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
-      } else
-        DUNE_THROW(Stuff::Exceptions::test_results_missing, this->test_case_.partitioning());
-    } else
-      DUNE_THROW(Stuff::Exceptions::test_results_missing, Stuff::Common::Typename< TestCaseType >::value());
-  } // ... expected_results(...)
+    return EocStudyBlockSWIPDGExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
+  }
 
 private:
   virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
