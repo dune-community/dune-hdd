@@ -17,8 +17,8 @@ namespace LinearElliptic {
 namespace Tests {
 
 
-template< bool anything >
-class EocStudyBlockSWIPDGExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
+template< bool implemented >
+class EocStudyBlockSWIPDGExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, implemented >
 {
   typedef TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
 

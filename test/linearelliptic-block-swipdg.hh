@@ -105,8 +105,15 @@ public:
 
   virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
   {
+    // If you get an undefined reference here from the linker you are missing the appropriate
+    // specialization of EocStudyBlockSWIPDGExpectations!
+    // For a new TestCaseType you have to add a specialization in a separate object file
+    // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
+    // CMakeLists.txt accordingly. For a new polOrder add
+    //     template class EocStudyBlockSWIPDGExpectations< TestCasesType, polOrder, true >;
+    // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
     return EocStudyBlockSWIPDGExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
-  }
+  } // ... expected_results(...)
 
 private:
   virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL

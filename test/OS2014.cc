@@ -33,6 +33,10 @@ using namespace HDD;
 using Parameter = Pymor::Parameter;
 
 
+extern template class LinearElliptic::Tests::EocStudyBlockSWIPDGExpectations
+    < LinearElliptic::TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+
+
 static const GDT::ChooseSpaceBackend  space_backend =
 #if HAVE_DUNE_FEM
                                                       GDT::ChooseSpaceBackend::fem;

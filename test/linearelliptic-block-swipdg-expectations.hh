@@ -46,7 +46,7 @@ class OS2014Multiscale;
 namespace Tests {
 
 
-template< class TestCaseType, int polOrder, bool anything = true >
+template< class TestCaseType, int polOrder, bool implemented = true >
 class EocStudyBlockSWIPDGExpectations
 {
 public:
@@ -58,22 +58,16 @@ public:
                << "polOrder: " << polOrder << "\n"
                << "type: " << type << "\n"
                << "Please put an appropriate specialiaztion of EocStudyBlockSWIPDGExpectations for this TestCaseType "
-               << "in a separate object file (see examples below) or add a\n"
+               << "in a separate object file (see examples below) or add\n"
                << "  'template class EocStudyBlockSWIPDGExpectations< TestCaseType, " << polOrder << ", true >'\n"
-               << "declaration in the appropriate object file!");
+               << "for this polOrder in the appropriate object file!\n\n"
+               << "Oh: and do not forget to add\n"
+               << "  'template class EocStudyBlockSWIPDGExpectations...'\n"
+               << "to each test source using these results!");
     return {};
   } // ... results(...)
 }; // EocStudyBlockSWIPDGExpectations
 
-
-#if HAVE_ALUGRID
-
-
-extern template class EocStudyBlockSWIPDGExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
-extern template class EocStudyBlockSWIPDGExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
-
-
-#endif // HAVE_ALUGRID
 
 } // namespace Tests
 } // namespace LinearElliptic
