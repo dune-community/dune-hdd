@@ -1206,7 +1206,7 @@ public:
     OversampledDiscretizationType oversampled_discretization(grid_provider_,
                                                              this->multiscale_boundary_config_,
                                                              this->problem(),
-                                                             subdomain);
+                                                             boost::numeric_cast< int >(subdomain));
     oversampled_discretization.init();
 
     DiscreteFunction< typename OversampledDiscretizationType::AnsatzSpaceType, VectorType >
