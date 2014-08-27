@@ -350,6 +350,8 @@ class LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2,
 public:
   static const bool available = true;
 
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
   typedef typename FunctorBaseType::GridViewType GridViewType;
   typedef typename FunctorBaseType::EntityType   EntityType;
 
@@ -371,34 +373,57 @@ private:
                                                             DiffusionTensorType > > LocalOperatorType;
   typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
 
-  static const ProblemType& assert_problem(const ProblemType& problem)
+  static const ProblemType& assert_problem(const ProblemType& problem,
+                                           const Pymor::Parameter& mu,
+                                           const Pymor::Parameter& mu_hat)
   {
-    if (problem.parametric())
-      DUNE_THROW(NotImplemented, "Not implemented yet for parametric problems!");
-    assert(problem.diffusion_factor()->has_affine_part());
-    assert(problem.diffusion_tensor()->has_affine_part());
+    if (mu.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu is of type " << mu.type() << " and should be of type " << problem.parameter_type()
+                 << "!");
+    if (mu_hat.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu_hat is of type " << mu_hat.type() << " and should be of type " << problem.parameter_type()
+                 << "!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
     return problem;
   } // ... assert_problem(...)
 
 public:
-  static RangeFieldType estimate(const SpaceType& space, const VectorType& vector, const ProblemType& problem)
+  static RangeFieldType estimate(const SpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
   {
-    ThisType estimator(space, vector, problem);
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_hat") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
+    const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
+    const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
+    ThisType estimator(space, vector, problem, mu, mu_hat);
     GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
   } // ... estimate(...)
 
-  LocalDiffusiveFluxESV2007(const SpaceType& space, const VectorType& vector, const ProblemType& problem)
+  LocalDiffusiveFluxESV2007(const SpaceType& space,
+                            const VectorType& vector,
+                            const ProblemType& problem,
+                            const Pymor::Parameter mu = Pymor::Parameter(),
+                            const Pymor::Parameter mu_hat = Pymor::Parameter())
     : space_(space)
     , vector_(vector)
-    , problem_(assert_problem(problem))
+    , problem_(assert_problem(problem, mu, mu_hat))
+    , problem_mu_(problem_.with_mu(mu))
+    , problem_mu_hat_(problem.with_mu(mu_hat))
     , discrete_solution_(space_, vector_)
     , rtn0_space_(space.grid_view())
     , diffusive_flux_(rtn0_space_)
     , local_operator_(over_integrate,
-                      *problem_.diffusion_factor()->affine_part(),
+                      *problem_mu_hat_->diffusion_factor()->affine_part(),
                       *problem_.diffusion_tensor()->affine_part(),
                       diffusive_flux_)
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
@@ -409,7 +434,7 @@ public:
   {
     const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
       diffusive_flux_reconstruction(*space_.grid_view(),
-                                    *problem_.diffusion_factor()->affine_part(),
+                                    *problem_mu_->diffusion_factor()->affine_part(),
                                     *problem_.diffusion_tensor()->affine_part());
     diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
     result_ = 0.0;
@@ -436,6 +461,8 @@ private:
   const SpaceType& space_;
   const VectorType& vector_;
   const ProblemType& problem_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_hat_;
   const ConstDiscreteFunctionType discrete_solution_;
   const RTN0SpaceType rtn0_space_;
   RTN0DiscreteFunctionType diffusive_flux_;
