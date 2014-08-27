@@ -92,11 +92,11 @@ public:
       return polOrder;
     else if (type == "eta_R_OS2014")
       return polOrder + 1;
-    else if (type == "eta_DF_OS2014")
+    else if (type.substr(0, 13) == "eta_DF_OS2014")
       return polOrder;
     else if (type == "eta_OS2014")
       return polOrder;
-    else if (type == "eff_OS2014")
+    else if (type.substr(0, 10) == "eff_OS2014")
       return 0;
     else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
@@ -230,30 +230,55 @@ private:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
   } // ... compute_norm(...)
 
+  /**
+   * \attention Have to be returned in the correct order: if one type string is contained in another, the larger one
+   *            has to appear first!
+   */
+  std::vector< std::string > effectivities() const
+  {
+    return { "OS2014_alt", "OS2014" };
+  }
+
   virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
   {
     auto ret = EstimatorType::available();
-    if (std::find(ret.begin(), ret.end(), "eta_OS2014") != ret.end())
-      ret.push_back("eff_OS2014");
-    if (std::find(ret.begin(), ret.end(), "eta_OS2014_alt") != ret.end())
-      ret.push_back("eff_OS2014_alt");
+    for (auto id : effectivities()) {
+      if (std::find(ret.begin(), ret.end(), "eta_" + id) != ret.end()) {
+        if (this->test_case_.parametric()) {
+          for (auto parameter : this->test_case_.parameters())
+            ret.push_back("eff_" + id + "_" + parameter.first);
+        } else
+          ret.push_back("eff_" + id);
+      }
+    }
     return ret;
   } // ... available_estimators(..)
 
   virtual double estimate(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
   {
-    if (type == "eff_OS2014")
-      return estimate(vector, "eta_OS2014") / const_cast< ThisType& >(*this).current_error_norm("energy");
-    else if (type == "eff_OS2014_alt")
-      return estimate(vector, "eta_OS2014_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
-    else {
-      assert(this->current_discretization_);
-      return EstimatorType::estimate(*this->current_discretization_->ansatz_space(),
-                                     vector,
-                                     this->test_case_.problem(),
-                                     type,
-                                     this->test_case_.parameters());
+    // process all efficitvities
+    for (auto id : effectivities()) {
+      if (type.substr(0, ("eff_" + id).size()) == "eff_" + id) {
+        if (this->test_case_.parametric()
+            && type.substr(0, ("eff_" + id + "_").size()) == "eff_" + id + "_"
+            && type.size() > ("eff_" + id + "_").size()) {
+          const auto parameter_id = type.substr(("eff_" + id + "_").size());
+          return estimate(vector, "eta_" + id)
+              / const_cast< ThisType& >(*this).current_error_norm("energy_" + parameter_id);
+        } else {
+          assert(type == "eff_" + id);
+          assert(!this->test_case_.parametric());
+          return estimate(vector, "eta_" + id) / const_cast< ThisType& >(*this).current_error_norm("energy");
+        }
+      }
     }
+    // else we have a normal estimator
+    assert(this->current_discretization_);
+    return EstimatorType::estimate(*this->current_discretization_->ansatz_space(),
+                                   vector,
+                                   this->test_case_.problem(),
+                                   type,
+                                   this->test_case_.parameters());
   } // ... estimate(...)
 }; // class EocStudyBlockSWIPDG
 
