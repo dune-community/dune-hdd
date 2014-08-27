@@ -114,10 +114,12 @@ private:
 
   static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_bar)
   {
-    if (mu_bar.type() != problem.diffusion_factor()->parameter_type())
+    if (mu_bar.type() != problem.parameter_type())
       DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
-                 "Given mu_bar is " << mu_bar.type() << " and should be " << problem.parameter_type() << "!");
-    assert(!problem.diffusion_tensor()->parametric());
+                 "Given mu_bar is of type " << mu_bar.type() << " and should be of type " << problem.parameter_type()
+                 << "!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
     return problem;
   } // ... assert_problem(...)
 
@@ -127,6 +129,8 @@ public:
                                  const ProblemType& problem,
                                  const ParametersMapType parameters = ParametersMapType())
   {
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_bar") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
     const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar") : Pymor::Parameter();
     ThisType estimator(space, vector, problem, mu_bar);
     GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
@@ -142,12 +146,12 @@ public:
     : space_(space)
     , vector_(vector)
     , problem_(assert_problem(problem, mu_bar))
-    , diffusion_factor_mu_bar_(problem_.diffusion_factor()->with_mu(mu_bar))
+    , problem_mu_bar_(problem_.with_mu(mu_bar))
     , discrete_solution_(space_, vector_)
     , oswald_interpolation_(space_)
     , difference_(Stuff::Common::make_unique< DifferenceType >(discrete_solution_ - oswald_interpolation_))
     , local_operator_(over_integrate,
-                      *diffusion_factor_mu_bar_,
+                      *problem_mu_bar_->diffusion_factor()->affine_part(),
                       *problem_.diffusion_tensor()->affine_part())
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
     , result_(0.0)
@@ -181,7 +185,7 @@ private:
   const SpaceType& space_;
   const VectorType& vector_;
   const ProblemType& problem_;
-  const std::shared_ptr< const DiffusionFactorType > diffusion_factor_mu_bar_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_bar_;
   const ConstDiscreteFunctionType discrete_solution_;
   DiscreteFunctionType oswald_interpolation_;
   std::unique_ptr< const DifferenceType > difference_;
