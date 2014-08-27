@@ -8,6 +8,8 @@
 
 #include <limits>
 
+#include <boost/numeric/conversion/cast.hpp>
+
 #include <dune/stuff/common/disable_warnings.hh>
 # include <dune/grid/io/file/dgfparser.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
@@ -165,7 +167,7 @@ public:
     static const int refine_steps_for_half = DGFGridInfo< GridType >::refineStepsForHalf();
     for (size_t rr = 0; rr <= num_refinements; ++rr) {
       auto grid_ptr = GridProviderType(lower_left, upper_right, num_elements).grid_ptr();
-      grid_ptr->globalRefine(initial_refinements + rr*refine_steps_for_half);
+      grid_ptr->globalRefine(boost::numeric_cast< int >(initial_refinements + rr*refine_steps_for_half));
       level_providers_.emplace_back(new MsGridProviderType(grid_ptr,
                                                            lower_left,
                                                            upper_right,
@@ -173,7 +175,7 @@ public:
                                                            num_oversampling_layers));
     }
     auto grid_ptr = GridProviderType(lower_left, upper_right, num_elements).grid_ptr();
-    grid_ptr->globalRefine(initial_refinements + (num_refinements + 1)*refine_steps_for_half);
+    grid_ptr->globalRefine(boost::numeric_cast< int >(initial_refinements + (num_refinements + 1)*refine_steps_for_half));
     reference_provider_ = Stuff::Common::make_unique< MsGridProviderType >(grid_ptr,
                                                                            lower_left,
                                                                            upper_right,
