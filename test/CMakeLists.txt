@@ -3,6 +3,22 @@
 # Copyright holders: Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
+add_library(test_linearelliptic-block-swipdg-expectations_os2014_2daluconform
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx)
+add_library(test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-block-swipdg-expectations_esv2007_2daluconform.cxx)
+
+add_library(test_os2014
+            STATIC
+            EXCLUDE_FROM_ALL
+            $<TARGET_OBJECTS:test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>
+            $<TARGET_OBJECTS:test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
+add_dune_alugrid_flags(test_os2014)
+
 #add_library(test_linearelliptic_swipg_esv2007_fem_eigensparse_2daluconform
 #            OBJECT
 #            EXCLUDE_FROM_ALL
@@ -41,6 +57,6 @@ DEPENDENCYCHECK(${hdd})
 BEGIN_TESTCASES()
 END_TESTCASES()
 
-#if (NOT CMAKE_WITH_AUTOTOOLS)
-#  target_link_libraries(test_OS2014 test_linearelliptic_swipg)
-#endif (NOT CMAKE_WITH_AUTOTOOLS)
+if (NOT CMAKE_WITH_AUTOTOOLS)
+ target_link_libraries(test_OS2014 test_os2014)
+endif (NOT CMAKE_WITH_AUTOTOOLS)
