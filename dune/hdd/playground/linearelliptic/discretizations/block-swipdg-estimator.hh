@@ -199,6 +199,8 @@ public:
 
   typedef typename ProblemType::RangeFieldType RangeFieldType;
 
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
 private:
   static const unsigned int dimDomain = GridViewType::dimension;
 
@@ -218,24 +220,33 @@ private:
   typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< ConstantFunctionType > > LocalOperatorType;
   typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
 
-  static const ProblemType& assert_problem(const ProblemType& problem)
+  static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_minimizing)
   {
-    if (problem.parametric())
-      DUNE_THROW(NotImplemented, "Not implemented yet for parametric problems!");
-    assert(problem.diffusion_factor()->has_affine_part());
-    assert(problem.diffusion_tensor()->has_affine_part());
-    assert(problem.force()->has_affine_part());
+    if (mu_minimizing.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu_minimizing is of type " << mu_minimizing.type() << " and should be of type "
+                 << problem.parameter_type() << "!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
+    if (problem.force()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric force!");
     return problem;
   } // ... assert_problem(...)
 
 public:
-  static RangeFieldType estimate(const BlockSpaceType& space, const VectorType& /*vector*/, const ProblemType& problem)
+  static RangeFieldType estimate(const BlockSpaceType& space,
+                                 const VectorType& /*vector*/,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
   {
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
     // walk the subdomains
     double eta_r_squared = 0.0;
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
-      ThisType eta_r_T(*local_space, problem);
+      ThisType eta_r_T(*local_space, problem, mu_minimizing);
       GDT::GridWalker< GridViewType > grid_walker(*local_space->grid_view());
       grid_walker.add(eta_r_T);
       grid_walker.walk();
@@ -244,16 +255,17 @@ public:
     return std::sqrt(eta_r_squared);
   } // ... estimate(...)
 
-  LocalResidualOS2014(const LocalSpaceType& local_space, const ProblemType& problem)
+  LocalResidualOS2014(const LocalSpaceType& local_space,
+                      const ProblemType& problem,
+                      const Pymor::Parameter mu_minimizing = Pymor::Parameter())
     : local_space_(local_space)
-    , problem_(assert_problem(problem))
+    , problem_(assert_problem(problem, mu_minimizing))
+    , problem_mu_minimizing_(problem_.with_mu(mu_minimizing))
     , p0_space_(local_space_.grid_view())
     , p0_force_(p0_space_)
     , difference_(Stuff::Common::make_unique< DifferenceType >(*problem_.force()->affine_part() - p0_force_))
     , constant_one_(1)
     , local_operator_(SWIPDGEstimators::over_integrate, constant_one_)
-    , diffusion_factor_minimizing_(problem_.diffusion_factor()->affine_part())
-    , diffusion_tensor_minimizing_(problem_.diffusion_tensor()->affine_part())
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
     , vertices_()
     , min_diffusion_value_(std::numeric_limits< RangeFieldType >::max())
@@ -274,8 +286,8 @@ public:
       vertices_.push_back(entity.template subEntity< dimDomain >(cc)->geometry().center());
     // compute minimum diffusion
     const RangeFieldType min_diffusion_value_entity
-        =   internal::compute_minimum(*diffusion_factor_minimizing_, entity)
-          * internal::compute_minimum(*diffusion_tensor_minimizing_, entity);
+        =   internal::compute_minimum(*problem_mu_minimizing_->diffusion_factor()->affine_part(), entity)
+          * internal::compute_minimum(*problem_.diffusion_tensor()->affine_part(), entity);
     min_diffusion_value_ = std::min(min_diffusion_value_, min_diffusion_value_entity);
     // compute the local product
     const auto local_difference = difference_->local_function(entity);
@@ -310,13 +322,12 @@ public:
 private:
   const LocalSpaceType& local_space_;
   const ProblemType& problem_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_minimizing_;
   const P0SpaceType p0_space_;
   DiscreteFunctionType p0_force_;
   std::unique_ptr< const DifferenceType > difference_;
   const ConstantFunctionType constant_one_;
   const LocalOperatorType local_operator_;
-  std::shared_ptr< const DiffusionFactorType > diffusion_factor_minimizing_;
-  std::shared_ptr< const DiffusionTensorType > diffusion_tensor_minimizing_;
   TmpStorageProviderType tmp_local_matrices_;
   std::vector< DomainType > vertices_;
   RangeFieldType min_diffusion_value_;
