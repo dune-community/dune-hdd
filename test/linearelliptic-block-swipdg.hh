@@ -180,6 +180,29 @@ public:
           DUNE_THROW(Stuff::Exceptions::test_results_missing, polOrder);
       } else
         DUNE_THROW(Stuff::Exceptions::test_results_missing, this->test_case_.partitioning());
+    } else if (std::is_same< TestCaseType, TestCases::OS2014Multiscale< ALUConformGrid< 2, 2 > > >::value
+              || std::is_same< TestCaseType, TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > > >::value) {
+      if (polOrder != 1)
+        DUNE_THROW(Stuff::Exceptions::test_results_missing, polOrder);
+      const auto mu = this->test_case_.parameters().at("mu");
+      const auto mu_bar = this->test_case_.parameters().at("mu_bar");
+      const auto mu_hat = this->test_case_.parameters().at("mu_hat");
+      const auto mu_minimizing = this->test_case_.parameters().at("mu_minimizing");
+      if (this->test_case_.partitioning() == "[1 1 1]") {
+        if (type == "energy_mu") {
+          if (mu == Pymor::Parameter("mu", 1)
+              && mu_bar == Pymor::Parameter("mu", 1)
+              && mu_hat == Pymor::Parameter("mu", 1)
+              && mu_minimizing == Pymor::Parameter("mu", 1))
+            return {3.29e-01, 1.61e-01, 7.79e-02, 3.48e-02};
+          else
+            DUNE_THROW(Stuff::Exceptions::test_results_missing,
+                       "mu = " << mu << "\nmu_bar = " << mu_bar << "\nmu_hat = " << mu_hat
+                       << "\nmu_minimizing = " << mu_minimizing);
+        } else
+          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+      } else
+        DUNE_THROW(Stuff::Exceptions::test_results_missing, this->test_case_.partitioning());
     } else
       DUNE_THROW(Stuff::Exceptions::test_results_missing, Stuff::Common::Typename< TestCaseType >::value());
   } // ... expected_results(...)
