@@ -206,13 +206,13 @@ public:
 }; // class OS2014Multiscale
 
 
-# if HAVE_ALUGRID
+//# if HAVE_ALUGRID
 
 
-extern template class OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >;
+//extern template class OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >;
 
 
-# endif // HAVE_ALUGRID
+//# endif // HAVE_ALUGRID
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
 } // namespace TestCases

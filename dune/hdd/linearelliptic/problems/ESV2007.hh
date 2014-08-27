@@ -96,15 +96,14 @@ private:
 }; // class ESV2007< ..., 1 >
 
 
-#if HAVE_ALUGRID
-# include <dune/grid/alugrid.hh>
+//#if HAVE_ALUGRID
 
 
-extern template class ESV2007< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
-                               double, 2, double, 1 >;
+//extern template class ESV2007< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
+//                               double, 2, double, 1 >;
 
 
-#endif // HAVE_ALUGRID
+//#endif // HAVE_ALUGRID
 
 
 } // namespace Problems

@@ -132,7 +132,7 @@ else(CMAKE_WITH_AUTOTOOLS)
     include_directories(${ALUGRID_INCLUDES})
   endif (ALUGRID_FOUND)
   
-  add_subdirectory(dune)
+  #add_subdirectory(dune)
 
   # libs
   set(COMMON_LIBS ${DUNE_DEFAULT_LIBS})

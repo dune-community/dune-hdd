@@ -677,16 +677,16 @@ public:
 }; // class SWIPDGEstimator
 
 
-#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
+//#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
 
 
-extern template class SWIPDGEstimator< GDT::Spaces::DiscontinuousLagrange::FemBased< Fem::LeafGridPart< ALUGrid< 2, 2, simplex, conforming > >, 1, double, 1, 1 >,
-                                       Dune::Stuff::LA::EigenDenseVector< double > ,
-                                       ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity, double, 2, double, 1 >,
-                                       ALUGrid< 2, 2, simplex, conforming > >;
+//extern template class SWIPDGEstimator< GDT::Spaces::DiscontinuousLagrange::FemBased< Fem::LeafGridPart< ALUGrid< 2, 2, simplex, conforming > >, 1, double, 1, 1 >,
+//                                       Dune::Stuff::LA::EigenDenseVector< double > ,
+//                                       ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity, double, 2, double, 1 >,
+//                                       ALUGrid< 2, 2, simplex, conforming > >;
 
 
-#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
+//#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
 
 } // namespace Discretizations
 } // namespace LinearElliptic

@@ -163,14 +163,14 @@ private:
 }; // ProblemInterface
 
 
-#if HAVE_ALUGRID
+//#if HAVE_ALUGRID
 
 
-extern template class ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
-                                        double, 2, double, 1 >;
+//extern template class ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
+//                                        double, 2, double, 1 >;
 
 
-#endif // HAVE_ALUGRID
+//#endif // HAVE_ALUGRID
 
 
 template< class E, class D, int d, class R, int r >

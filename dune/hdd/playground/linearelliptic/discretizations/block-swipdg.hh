@@ -1805,15 +1805,15 @@ private:
 }; // BlockSWIPDG
 
 
-#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN && HAVE_DUNE_GRID_MULTISCALE
+//#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN && HAVE_DUNE_GRID_MULTISCALE
 
 
-extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming >,
-                              double, 1, 1,
-                              Stuff::LA::ChooseBackend::eigen_sparse >;
+//extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming >,
+//                              double, 1, 1,
+//                              Stuff::LA::ChooseBackend::eigen_sparse >;
 
 
-#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN && HAVE_DUNE_GRID_MULTISCALE
+//#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN && HAVE_DUNE_GRID_MULTISCALE
 
 
 } // namespace Discretizations
