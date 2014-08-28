@@ -62,7 +62,7 @@ public:
                << "  'template class EocStudyBlockSWIPDGExpectations< TestCaseType, " << polOrder << ", true >'\n"
                << "for this polOrder in the appropriate object file!\n\n"
                << "Oh: and do not forget to add\n"
-               << "  'template class EocStudyBlockSWIPDGExpectations...'\n"
+               << "  'extern template class EocStudyBlockSWIPDGExpectations...'\n"
                << "to each test source using these results!");
     return {};
   } // ... results(...)
