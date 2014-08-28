@@ -75,7 +75,19 @@ void nonparametric_block_convergence_study(const std::string& partitioning)
 } // ... nonparametric_block_convergence_study(...)
 
 
+void parametric_convergence_study(const std::string partitioning,
+                                  const std::vector< std::string >& only_these_norms,
+                                  const std::map< std::string, Pymor::Parameter >& parameters,
+                                  const bool print_info)
 {
+  const ParametricBlockTestCaseType test_case(parameters, partitioning);
+  if (print_info) {
+    test_case.print_header(DSC_LOG_INFO);
+    print_parameter_information(test_case);
+  }
+  ParametricBlockEocStudyType eoc_study(test_case, only_these_norms);
+  Dune::Stuff::Test::check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+} // ... parametric_convergence_study(...)
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE

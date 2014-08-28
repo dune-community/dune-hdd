@@ -11,11 +11,17 @@
 
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
+#include <string>
+#include <vector>
+#include <map>
+
 #include <dune/stuff/common/disable_warnings.hh>
 # include <dune/grid/alugrid.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/la/container.hh>
+
+#include <dune/pymor/parameters/base.hh>
 
 #include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
@@ -57,13 +63,18 @@ typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< ParametricBlockTestCaseType,
                                                                  ParametricBlockEocStudyType;
 
 
+void print_parameter_information(const ParametricBlockTestCaseType& parametric_test_case);
+
 void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation();
 
 void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation();
 
 void nonparametric_block_convergence_study(const std::string& partitioning);
 
-void print_parameter_information(const ParametricBlockTestCaseType& parametric_test_case);
+void parametric_convergence_study(const std::string partitioning,
+                                  const std::vector< std::string >& only_these_norms,
+                                  const std::map< std::string, Pymor::Parameter >& parameters,
+                                  const bool print_info = true);
 
 
 extern template class LinearElliptic::Tests::EocStudyBlockSWIPDGExpectations

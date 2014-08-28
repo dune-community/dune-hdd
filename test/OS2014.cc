@@ -39,18 +39,13 @@ TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
 
 TEST(OS2014_parametric_convergence_study, Block_SWIPDG_01_subdomain)
 {
-  const ParametricBlockTestCaseType test_case({{"mu_hat", Parameter("mu", 1)},
-                                               {"mu_bar", Parameter("mu", 1)},
-                                               {"mu", Parameter("mu", 1)},
-                                               {"mu_minimizing", Parameter("mu", 1)}},
-                                              "[1 1 1]");
-  test_case.print_header(DSC_LOG_INFO);
-  print_parameter_information(test_case);
-  DSC_LOG_INFO << std::endl;
-  ParametricBlockEocStudyType eoc_study(test_case,
-                                        {"energy_mu", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
-                                         "eff_OS2014_mu"});
-  check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
+  parametric_convergence_study("[1 1 1]",
+                               {"energy_mu", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
+                                "eff_OS2014_mu"},
+                               {{"mu_hat", Parameter("mu", 1)},
+                                {"mu_bar", Parameter("mu", 1)},
+                                {"mu", Parameter("mu", 1)},
+                                {"mu_minimizing", Parameter("mu", 1)}});
 }
 
 
