@@ -59,6 +59,7 @@
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/assembler/system.hh>
 #include <dune/gdt/assembler/gridwalker.hh>
+#include <dune/gdt/playground/localevaluation/OS2014.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/playground/linearelliptic/problems/zero-boundary.hh>
@@ -347,6 +348,157 @@ public:
 };
 
 
+class LocalDiffusiveFluxOS2014StarBase
+{
+public:
+  static std::string id() { return "eta_DF_OS2014_*"; }
+};
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class LocalDiffusiveFluxOS2014Star
+  : public LocalDiffusiveFluxOS2014StarBase
+{
+public:
+  static const bool available = false;
+};
+
+#if HAVE_ALUGRID
+
+template< class BlockSpaceType, class VectorType, class ProblemType >
+class LocalDiffusiveFluxOS2014Star< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+  : public LocalDiffusiveFluxOS2014StarBase
+  , public GDT::Functor::Codim0< typename BlockSpaceType::GridViewType >
+{
+  typedef LocalDiffusiveFluxOS2014Star
+      < BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > > ThisType;
+  typedef GDT::Functor::Codim0< typename BlockSpaceType::GridViewType > FunctorBaseType;
+public:
+  static const bool available = true;
+
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
+  typedef typename FunctorBaseType::GridViewType GridViewType;
+  typedef typename FunctorBaseType::EntityType   EntityType;
+
+  typedef typename ProblemType::RangeFieldType RangeFieldType;
+
+  static const unsigned int dimDomain = BlockSpaceType::dimDomain;
+
+private:
+  typedef GDT::ConstDiscreteFunction< BlockSpaceType, VectorType > ConstDiscreteFunctionType;
+  typedef GDT::Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+  typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
+
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+
+  typedef GDT::LocalOperator::Codim0Integral<
+      GDT::LocalEvaluation::OS2014::DiffusiveFluxEstimateStar< DiffusionFactorType,
+                                                               DiffusionFactorType,
+                                                               DiffusionTensorType,
+                                                               RTN0DiscreteFunctionType > >
+                                                              LocalOperatorType;
+  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+
+  static const ProblemType& assert_problem(const ProblemType& problem,
+                                           const Pymor::Parameter& mu,
+                                           const Pymor::Parameter& mu_hat)
+  {
+    if (mu.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu is of type " << mu.type() << " and should be of type " << problem.parameter_type()
+                 << "!");
+    if (mu_hat.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu_hat is of type " << mu_hat.type() << " and should be of type " << problem.parameter_type()
+                 << "!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
+    return problem;
+  } // ... assert_problem(...)
+
+public:
+  static RangeFieldType estimate(const BlockSpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
+  {
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_hat") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
+    const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
+    const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
+    ThisType estimator(space, vector, problem, mu, mu_hat);
+    GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
+    grid_walker.add(estimator);
+    grid_walker.walk();
+    return std::sqrt(estimator.result_);
+  } // ... estimate(...)
+
+  LocalDiffusiveFluxOS2014Star(const BlockSpaceType& space,
+                               const VectorType& vector,
+                               const ProblemType& problem,
+                               const Pymor::Parameter mu = Pymor::Parameter(),
+                               const Pymor::Parameter mu_hat = Pymor::Parameter())
+    : space_(space)
+    , vector_(vector)
+    , problem_(assert_problem(problem, mu, mu_hat))
+    , problem_mu_(problem_.with_mu(mu))
+    , problem_mu_hat_(problem.with_mu(mu_hat))
+    , discrete_solution_(space_, vector_)
+    , rtn0_space_(space.grid_view())
+    , diffusive_flux_(rtn0_space_)
+    , local_operator_(SWIPDGEstimators::over_integrate,
+                      *problem_mu_->diffusion_factor()->affine_part(),
+                      *problem_mu_hat_->diffusion_factor()->affine_part(),
+                      *problem_.diffusion_tensor()->affine_part(),
+                      diffusive_flux_)
+    , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , result_(0.0)
+  {}
+
+  virtual void prepare()
+  {
+    const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
+      diffusive_flux_reconstruction(*space_.grid_view(),
+                                    *problem_mu_->diffusion_factor()->affine_part(),
+                                    *problem_.diffusion_tensor()->affine_part());
+    diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
+    result_ = 0.0;
+  } // ... prepare(...)
+
+  virtual void apply_local(const EntityType &entity)
+  {
+    const auto local_discrete_solution = discrete_solution_.local_function(entity);
+    local_operator_.apply(*local_discrete_solution,
+                          *local_discrete_solution,
+                          tmp_local_matrices_.matrices()[0][0],
+                          tmp_local_matrices_.matrices()[1]);
+    assert(tmp_local_matrices_.matrices()[0][0].rows() >= 1);
+    assert(tmp_local_matrices_.matrices()[0][0].cols() >= 1);
+    result_ += tmp_local_matrices_.matrices()[0][0][0][0];
+  }
+
+private:
+  const BlockSpaceType& space_;
+  const VectorType& vector_;
+  const ProblemType& problem_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_hat_;
+  const ConstDiscreteFunctionType discrete_solution_;
+  const RTN0SpaceType rtn0_space_;
+  RTN0DiscreteFunctionType diffusive_flux_;
+  const LocalOperatorType local_operator_;
+  TmpStorageProviderType tmp_local_matrices_;
+public:
+  RangeFieldType result_;
+}; // class LocalDiffusiveFluxOS2014Star< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
+
+#endif // HAVE_ALUGRID
+
+
 class OS2014Base
 {
 public:
@@ -478,6 +630,8 @@ private:
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalResidualOS2014Type;
   typedef internal::BlockSWIPDGEstimators::LocalDiffusiveFluxOS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalDiffusiveFluxOS2014Type;
+  typedef internal::BlockSWIPDGEstimators::LocalDiffusiveFluxOS2014Star
+      < BlockSpaceType, VectorType, ProblemType, GridType >         LocalDiffusiveFluxOS2014StarType;
   typedef internal::BlockSWIPDGEstimators::OS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         OS2014Type;
 
@@ -488,6 +642,7 @@ public:
     tmp = call_append< LocalNonconformityOS2014Type >(tmp);
     tmp = call_append< LocalResidualOS2014Type >(tmp);
     tmp = call_append< LocalDiffusiveFluxOS2014Type >(tmp);
+    tmp = call_append< LocalDiffusiveFluxOS2014StarType >(tmp);
     tmp = call_append< OS2014Type >(tmp);
     return tmp;
   } // ... available(...)
@@ -504,6 +659,8 @@ public:
       return call_estimate< LocalResidualOS2014Type >(space, vector, problem, parameters);
     else if (call_equals< LocalDiffusiveFluxOS2014Type >(type))
       return call_estimate< LocalDiffusiveFluxOS2014Type >(space, vector, problem, parameters);
+    else if (call_equals< LocalDiffusiveFluxOS2014StarType >(type))
+      return call_estimate< LocalDiffusiveFluxOS2014StarType >(space, vector, problem, parameters);
     else if (call_equals< OS2014Type >(type))
       return call_estimate< OS2014Type >(space, vector, problem, parameters);
     else
