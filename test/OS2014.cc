@@ -14,7 +14,7 @@
 #endif
 
 // This one has to come first (includes the config.h)!
-#include <dune/stuff/test/main.hh>
+#include <dune/stuff/test/main.hxx>
 
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 

@@ -6,7 +6,7 @@
 #define DUNE_STUFF_FUNCTIONS_DISABLE_CHECKS
 
 // This one has to come first (includes the config.h)!
-#include <dune/stuff/test/test_common.hh>
+#include <dune/stuff/test/main.hxx>
 
 //#define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION 1
 
