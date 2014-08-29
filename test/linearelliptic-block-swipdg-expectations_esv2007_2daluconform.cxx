@@ -18,7 +18,10 @@ namespace Tests {
 
 
 template< bool implemented >
-class EocStudyBlockSWIPDGExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, implemented >
+class EocStudyBlockSWIPDGExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
+                                       1, implemented >
+  : public internal::EocStudyBlockSWIPDGExpectationsBase
+        < TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >
 {
   typedef TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
 

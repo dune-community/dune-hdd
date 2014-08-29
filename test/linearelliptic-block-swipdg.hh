@@ -83,24 +83,14 @@ public:
 
   virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
   {
-    if (type == "L2")
-      return polOrder + 1;
-    else if (type == "H1_semi")
-      return polOrder;
-    else if (type.substr(0, 6) == "energy")
-      return polOrder;
-    else if (type == "eta_NC_OS2014")
-      return polOrder;
-    else if (type == "eta_R_OS2014")
-      return polOrder + 1;
-    else if (type.substr(0, 13) == "eta_DF_OS2014")
-      return polOrder;
-    else if (type == "eta_OS2014")
-      return polOrder;
-    else if (type.substr(0, 10) == "eff_OS2014")
-      return 0;
-    else
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+    // If you get an undefined reference here from the linker you are missing the appropriate
+    // specialization of EocStudyBlockSWIPDGExpectations!
+    // For a new TestCaseType you have to add a specialization in a separate object file
+    // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
+    // CMakeLists.txt accordingly. For a new polOrder add
+    //     template class EocStudyBlockSWIPDGExpectations< TestCasesType, polOrder, true >;
+    // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
+    return EocStudyBlockSWIPDGExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
   virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL

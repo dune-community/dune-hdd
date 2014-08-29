@@ -44,10 +44,47 @@ class OS2014Multiscale;
 
 } // namespace TestCases
 namespace Tests {
+namespace internal {
+
+
+template< class TestCaseType, int polOrder >
+class EocStudyBlockSWIPDGExpectationsBase
+{
+public:
+  static size_t rate(const TestCaseType& /*test_case*/, const std::string type)
+  {
+    if (type == "L2")
+      return polOrder + 1;
+    else if (type == "H1_semi")
+      return polOrder;
+    else if (type.substr(0, 6) == "energy")
+      return polOrder;
+    else if (type == "eta_NC_OS2014")
+      return polOrder;
+    else if (type == "eta_R_OS2014")
+      return polOrder + 1;
+    else if (type.substr(0, 13) == "eta_DF_OS2014")
+      return polOrder;
+    else if (type == "eta_OS2014")
+      return polOrder;
+    else if (type == "eta_OS2014_*")
+      return polOrder;
+    else if (type.substr(0, 10) == "eff_OS2014")
+      return 0;
+    else if (type.substr(0, 12) == "eff_OS2014_*")
+      return 0;
+    else
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+  } // ... rate(...)
+}; // class EocStudyBlockSWIPDGExpectationsBase
+
+
+} // namespace internal
 
 
 template< class TestCaseType, int polOrder, bool implemented = true >
 class EocStudyBlockSWIPDGExpectations
+  : public internal::EocStudyBlockSWIPDGExpectationsBase< TestCaseType, polOrder >
 {
 public:
   static std::vector< double > results(const TestCaseType& /*test_case*/, const std::string type)
