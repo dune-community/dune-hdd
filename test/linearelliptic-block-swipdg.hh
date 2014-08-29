@@ -157,7 +157,7 @@ private:
    */
   std::vector< std::string > effectivities() const
   {
-    return { "OS2014_alt", "OS2014" };
+    return { "OS2014_alt", "OS2014_*", "OS2014" };
   }
 
   virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
