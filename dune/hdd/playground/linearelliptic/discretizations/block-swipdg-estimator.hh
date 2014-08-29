@@ -514,6 +514,7 @@ public:
   static const bool available = false;
 };
 
+#if HAVE_ALUGRID
 
 template< class BlockSpaceType, class VectorType, class ProblemType >
 class OS2014< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
@@ -532,16 +533,48 @@ public:
                                  const ProblemType& problem,
                                  const ParametersMapType parameters = ParametersMapType())
   {
+    // check parameters
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_hat") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_bar") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
+    if (problem.force()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric force!");
+    if (problem.dirichlet()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric dirichlet!");
+    if (problem.neumann()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric neumann!");
+    const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
+    const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
+    const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar") : Pymor::Parameter();
+    // compute parameter factors
+    const double alpha_mu_mu_bar = problem.diffusion_factor()->alpha(mu, mu_bar);
+    const double alpha_mu_mu_hat = problem.diffusion_factor()->alpha(mu, mu_hat);
+    const double gamma_mu_mu_bar = problem.diffusion_factor()->gamma(mu, mu_bar);
+    const double gamma_mu_mu_hat = problem.diffusion_factor()->gamma(mu, mu_hat);
+    assert(alpha_mu_mu_bar > 0.0);
+    assert(alpha_mu_mu_hat > 0.0);
+    assert(gamma_mu_mu_bar > 0.0);
+    assert(gamma_mu_mu_hat > 0.0);
+    const double sqrt_gamma_tile = std::max(std::sqrt(gamma_mu_mu_hat), 1.0/std::sqrt(alpha_mu_mu_hat));
+    // compute estimator
     typedef LocalNonconformityOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalNonconformityOS2014Type;
     typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType >      LocalResidualOS2014Type;
     typedef LocalDiffusiveFluxOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalDiffusiveFluxOS2014Type;
-
-    return LocalNonconformityOS2014Type::estimate(space, vector, problem, parameters)
-        + LocalResidualOS2014Type::estimate(space, vector, problem, parameters)
-        + LocalDiffusiveFluxOS2014Type::estimate(space, vector, problem, parameters);
+    return
+        (1.0/std::sqrt(alpha_mu_mu_bar)) * (
+            std::sqrt(gamma_mu_mu_bar) * LocalNonconformityOS2014Type::estimate(space, vector, problem, parameters)
+          +                              LocalResidualOS2014Type::estimate(space, vector, problem, parameters)
+          + sqrt_gamma_tile            * LocalDiffusiveFluxOS2014Type::estimate(space, vector, problem, parameters)
+        );
   } // ... estimate(...)
 }; // class OS2014
 
+#endif // HAVE_ALUGRID
 
 } // namespace BlockSWIPDGEstimators
 } // namespace internal
