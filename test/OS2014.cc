@@ -37,16 +37,29 @@ TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
   nonparametric_block_convergence_study("[8 8 1]");
 }
 
-TEST(OS2014_parametric_convergence_study, Block_SWIPDG_01_subdomain)
+TEST(OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain)
 {
-  parametric_convergence_study("[1 1 1]",
-                               {"energy_mu", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
-                                "eff_OS2014_mu"},
-                               {{"mu_hat", Parameter("mu", 1)},
-                                {"mu_bar", Parameter("mu", 1)},
-                                {"mu", Parameter("mu", 1)},
-                                {"mu_minimizing", Parameter("mu", 1)}});
-}
+  const std::string partitioning = "[1 1 1]";
+  const std::vector< std::string > only_these_norms = {"eta_DF_OS2014", "eta_DF_OS2014_*", "eta_OS2014",
+                                                       "eta_OS2014_*", "eff_OS2014_mu", "eff_OS2014_*_mu"};
+  bool print_header = true;
+  for (auto mu_hat_value : {0.1, 0.5, 1.0}) {
+    const auto mu_hat = Parameter("mu", mu_hat_value);
+    for (auto mu_value : {0.1, 0.3, 0.5, 0.75, 1.0}) {
+      const auto mu = Parameter("mu", mu_value);
+      const auto mu_bar = mu;
+      parametric_convergence_study(partitioning,
+                                   only_these_norms,
+                                   {{"mu_hat",        mu_hat},
+                                    {"mu_bar",        mu_bar},
+                                    {"mu",            mu},
+                                    {"mu_minimizing", Parameter("mu", 0.1)}},
+                                   print_header);
+      if (print_header)
+        print_header = false;
+    }
+  }
+} // OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain
 
 
 #else // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
@@ -58,6 +71,8 @@ TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain)
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {}
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {}
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {}
+
+TEST(DISABLED_OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain) {}
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
