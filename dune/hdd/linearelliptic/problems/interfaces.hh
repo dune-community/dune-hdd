@@ -129,8 +129,10 @@ public:
       DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
                  "mu is " << mu.type() << ", should be " << this->parameter_type() << "!");
     typedef Problems::Default< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > DefaultProblemType;
-    return std::make_shared< DefaultProblemType >(diffusion_factor()->with_mu(this->map_parameter(mu, "diffusion_factor")),
-                                                  diffusion_tensor()->with_mu(this->map_parameter(mu, "diffusion_tensor")),
+    return std::make_shared< DefaultProblemType >(diffusion_factor()->with_mu(this->map_parameter(mu,
+                                                                                                  "diffusion_factor")),
+                                                  diffusion_tensor()->with_mu(this->map_parameter(mu,
+                                                                                                  "diffusion_tensor")),
                                                   force()->with_mu(this->map_parameter(mu, "force")),
                                                   dirichlet()->with_mu(this->map_parameter(mu, "dirichlet")),
                                                   neumann()->with_mu(this->map_parameter(mu, "neumann")));
