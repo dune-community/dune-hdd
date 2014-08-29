@@ -30,7 +30,8 @@ void print_parameter_information(const ParametricBlockTestCaseType& parametric_t
   EXPECT_FALSE(force.parametric());
   EXPECT_FALSE(dirichlet.parametric());
   EXPECT_FALSE(neumann.parametric());
-  DSC_LOG_INFO << "| mu            = " << parameters.at("mu") << "\n"
+  DSC_LOG_INFO << "+==================================================================+\n"
+               << "| mu            = " << parameters.at("mu") << "\n"
                << "| mu_bar        = " << parameters.at("mu_bar") << "\n"
                << "| mu_hat        = " << parameters.at("mu_hat") << "\n"
                << "| mu_minimizing = " << parameters.at("mu_minimizing") << "\n";
@@ -78,13 +79,12 @@ void nonparametric_block_convergence_study(const std::string& partitioning)
 void parametric_convergence_study(const std::string partitioning,
                                   const std::vector< std::string >& only_these_norms,
                                   const std::map< std::string, Pymor::Parameter >& parameters,
-                                  const bool print_info)
+                                  const bool print_header)
 {
   const ParametricBlockTestCaseType test_case(parameters, partitioning);
-  if (print_info) {
+  if (print_header)
     test_case.print_header(DSC_LOG_INFO);
-    print_parameter_information(test_case);
-  }
+  print_parameter_information(test_case);
   ParametricBlockEocStudyType eoc_study(test_case, only_these_norms);
   Dune::Stuff::Test::check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO));
 } // ... parametric_convergence_study(...)

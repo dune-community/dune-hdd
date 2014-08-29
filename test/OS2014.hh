@@ -74,7 +74,7 @@ void nonparametric_block_convergence_study(const std::string& partitioning);
 void parametric_convergence_study(const std::string partitioning,
                                   const std::vector< std::string >& only_these_norms,
                                   const std::map< std::string, Pymor::Parameter >& parameters,
-                                  const bool print_info = true);
+                                  const bool print_header = false);
 
 
 extern template class LinearElliptic::Tests::EocStudyBlockSWIPDGExpectations
