@@ -576,6 +576,85 @@ public:
 
 #endif // HAVE_ALUGRID
 
+class OS2014StarBase
+{
+public:
+  static std::string id() { return "eta_OS2014_*"; }
+};
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class OS2014Star
+  : public OS2014StarBase
+{
+public:
+  static const bool available = false;
+};
+
+#if HAVE_ALUGRID
+
+template< class BlockSpaceType, class VectorType, class ProblemType >
+class OS2014Star< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+  : public OS2014StarBase
+{
+  typedef ALUGrid< 2, 2, simplex, conforming > GridType;
+public:
+  static const bool available = true;
+
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
+  typedef typename ProblemType::RangeFieldType RangeFieldType;
+
+  static RangeFieldType estimate(const BlockSpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
+  {
+    // check parameters
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_hat") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_bar") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
+    if (problem.force()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric force!");
+    if (problem.dirichlet()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric dirichlet!");
+    if (problem.neumann()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric neumann!");
+    const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
+    const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
+    const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar") : Pymor::Parameter();
+    // compute parameter factors
+    const double alpha_mu_mu_bar = problem.diffusion_factor()->alpha(mu, mu_bar);
+    const double alpha_mu_mu_hat = problem.diffusion_factor()->alpha(mu, mu_hat);
+    const double gamma_mu_mu_bar = problem.diffusion_factor()->gamma(mu, mu_bar);
+    assert(alpha_mu_mu_bar > 0.0);
+    assert(alpha_mu_mu_hat > 0.0);
+    assert(gamma_mu_mu_bar > 0.0);
+    // compute estimator components
+    typedef LocalNonconformityOS2014
+        < BlockSpaceType, VectorType, ProblemType, GridType >                          LocalNonconformityOS2014Type;
+    typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType >   LocalResidualOS2014Type;
+    typedef LocalDiffusiveFluxOS2014Star
+        < BlockSpaceType, VectorType, ProblemType, GridType >                          LocalDiffusiveFluxOS2014StarType;
+    const RangeFieldType eta_nc = LocalNonconformityOS2014Type::estimate(space, vector, problem, parameters);
+    const RangeFieldType eta_r = LocalResidualOS2014Type::estimate(space, vector, problem, parameters);
+    const RangeFieldType eta_df_star = LocalDiffusiveFluxOS2014StarType::estimate(space, vector, problem, parameters);
+    // compute estimator
+    return
+        (1.0/std::sqrt(alpha_mu_mu_bar)) * (        std::sqrt(gamma_mu_mu_bar) * eta_nc
+                                            +                                    eta_r
+                                            + (1.0/std::sqrt(alpha_mu_mu_hat)) * eta_df_star);
+  } // ... estimate(...)
+}; // class OS2014Star
+
+#endif // HAVE_ALUGRID
+
+
 } // namespace BlockSWIPDGEstimators
 } // namespace internal
 
@@ -667,6 +746,8 @@ private:
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalDiffusiveFluxOS2014StarType;
   typedef internal::BlockSWIPDGEstimators::OS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         OS2014Type;
+  typedef internal::BlockSWIPDGEstimators::OS2014Star
+      < BlockSpaceType, VectorType, ProblemType, GridType >         OS2014StarType;
 
 public:
   static std::vector< std::string > available()
@@ -677,6 +758,7 @@ public:
     tmp = call_append< LocalDiffusiveFluxOS2014Type >(tmp);
     tmp = call_append< LocalDiffusiveFluxOS2014StarType >(tmp);
     tmp = call_append< OS2014Type >(tmp);
+    tmp = call_append< OS2014StarType >(tmp);
     return tmp;
   } // ... available(...)
 
@@ -696,6 +778,8 @@ public:
       return call_estimate< LocalDiffusiveFluxOS2014StarType >(space, vector, problem, parameters);
     else if (call_equals< OS2014Type >(type))
       return call_estimate< OS2014Type >(space, vector, problem, parameters);
+    else if (call_equals< OS2014StarType >(type))
+      return call_estimate< OS2014StarType >(space, vector, problem, parameters);
     else
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available()!");
