@@ -61,6 +61,10 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain)
   }
 } // OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain
 
+TEST(OS2014_nonparametric_localization_study, SWIPDG_fine_triangulation) {
+  nonparametric_localization_study__SWIPDG_fine_triangulation();
+}
+
 
 #else // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
@@ -73,6 +77,8 @@ TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain)
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {}
 
 TEST(DISABLED_OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain) {}
+
+TEST(DISABLED_OS2014_nonparametric_localization_study, SWIPDG_fine_triangulation) {}
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE

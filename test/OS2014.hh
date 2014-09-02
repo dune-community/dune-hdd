@@ -25,6 +25,7 @@
 
 #include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
+#include <dune/hdd/playground/linearelliptic/testcases/spe10.hh>
 
 #include "linearelliptic-swipdg.hh"
 #include "linearelliptic-block-swipdg.hh"
@@ -62,6 +63,10 @@ typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< NonparametricBlockTestCaseTy
 typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< ParametricBlockTestCaseType, 1, la_backend >
                                                                  ParametricBlockEocStudyType;
 
+typedef LinearElliptic::TestCases::Spe10Model1< GridType >                  NonparametricLocalizationTestCaseType;
+typedef LinearElliptic::Tests::EocStudySWIPDG
+    < NonparametricLocalizationTestCaseType, 1, space_backend, la_backend > NonparametricLocalizationStudyType;
+
 
 void print_parameter_information(const ParametricBlockTestCaseType& parametric_test_case);
 
@@ -75,6 +80,8 @@ void parametric_convergence_study(const std::string partitioning,
                                   const std::vector< std::string >& only_these_norms,
                                   const std::map< std::string, Pymor::Parameter >& parameters,
                                   const bool print_header = false);
+
+void nonparametric_localization_study__SWIPDG_fine_triangulation();
 
 
 extern template class LinearElliptic::Tests::EocStudyBlockSWIPDGExpectations

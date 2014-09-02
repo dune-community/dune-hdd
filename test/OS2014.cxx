@@ -90,4 +90,14 @@ void parametric_convergence_study(const std::string partitioning,
 } // ... parametric_convergence_study(...)
 
 
+void nonparametric_localization_study__SWIPDG_fine_triangulation()
+{
+  const NonparametricLocalizationTestCaseType test_case;
+  test_case.print_header(DSC_LOG_INFO);
+  DSC_LOG_INFO << std::endl;
+  NonparametricLocalizationStudyType study(test_case);
+  study.run_localization(DSC_LOG_INFO);
+} // ... nonparametric_localization_study(...)
+
+
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
