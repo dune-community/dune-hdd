@@ -8,6 +8,8 @@
 
 #include <algorithm>
 
+#include <boost/numeric/conversion/cast.hpp>
+
 #include <dune/stuff/common/disable_warnings.hh>
 # if HAVE_ALUGRID
 #   include <dune/grid/alugrid.hh>
@@ -19,6 +21,8 @@
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/playground/products/elliptic.hh>
+#include <dune/gdt/playground/spaces/finitevolume/default.hh>
+#include <dune/gdt/discretefunction/default.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
 #include <dune/hdd/linearelliptic/discretizations/swipdg-estimator.hh>
@@ -172,6 +176,112 @@ public:
       DUNE_THROW(NotImplemented, "Please record the expected results for this TestCaseType/GridType combination!");
   } // ... expected_results(...)
 
+  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const
+  {
+    typedef typename TestCaseType::ProblemType ProblemType;
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    typedef typename DiffusionFactorType::RangeFieldType RangeFieldType;
+    assert(!this->test_case_.problem().diffusion_factor()->parametric());
+    assert(!this->test_case_.problem().diffusion_tensor()->parametric());
+    const auto diffusion_factor = this->test_case_.problem().diffusion_factor()->affine_part();
+    const auto diffusion_tensor = this->test_case_.problem().diffusion_tensor()->affine_part();
+
+    // get current solution
+    assert(this->current_refinement_ <= this->num_refinements());
+    if (this->last_computed_refinement_ != this->current_refinement_)
+      const_cast< ThisType& >(*this).compute_on_current_refinement();
+    assert(this->last_computed_refinement_ == this->current_refinement_);
+    assert(this->current_solution_vector_);
+    typedef typename BaseType::DiscreteFunctionType      DiscreteFunctionType;
+    typedef typename BaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
+    const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
+                                                     *this->current_solution_vector_,
+                                                     "current solution");
+    // compute error
+    if (this->test_case_.provides_exact_solution()) {
+      DUNE_THROW(Stuff::Exceptions::you_have_to_implement_this, "Felix!");
+    } else {
+      if (!this->reference_solution_computed_)
+        const_cast< ThisType& >(*this).compute_reference_solution();
+      assert(this->reference_discretization_);
+      assert(this->reference_solution_vector_);
+      // get reference solution
+      const ConstDiscreteFunctionType reference_solution(*(this->reference_discretization_->ansatz_space()),
+                                                         *this->reference_solution_vector_,
+                                                         "reference solution");
+      // define error norm
+      typedef typename ConstDiscreteFunctionType::DifferenceType DifferenceType;
+      GDT::Products::EllipticLocalizable< DiffusionFactorType, GridViewType,
+                                          DifferenceType, DifferenceType, RangeFieldType,
+                                          DiffusionTensorType >
+          local_energy_norm(*diffusion_factor,
+                            *diffusion_tensor,
+                            *(this->test_case_.reference_grid_view()),
+                            reference_solution - current_solution,
+                            reference_solution - current_solution,
+                            Discretizations::internal::SWIPDGEstimators::over_integrate);
+      local_energy_norm.prepare();
+      // prepare
+      const auto current_grid_view = this->current_discretization_->grid_view();
+      const int current_level = current_grid_view->template begin< 0 >()->level();
+      Stuff::LA::CommonDenseVector< double > error_indicators(boost::numeric_cast< size_t >(current_grid_view->indexSet().size(0)),
+                                                              0.0);
+      std::vector< size_t > fine_entities_per_coarse_entity(error_indicators.size(), 0);
+      RangeFieldType energy_error_squared = 0.0;
+      // walk the reference grid
+      const auto entity_it_end = this->test_case_.reference_grid_view()->template end< 0 >();
+      for (auto entity_it = this->test_case_.reference_grid_view()->template begin< 0 >();
+           entity_it != entity_it_end;
+           ++entity_it) {
+        const auto& entity = *entity_it;
+        int fine_level = entity.level();
+        typename GridViewType::template Codim< 0 >::EntityPointer father_entity_ptr(entity);
+        // find father entity in coarse grid view
+        assert(fine_level >= current_level);
+        while (fine_level > current_level) {
+          assert(father_entity_ptr->hasFather());
+          father_entity_ptr = father_entity_ptr->father();
+          fine_level = father_entity_ptr.level();
+        }
+        assert(fine_level == current_level);
+        const auto& father_entity = *father_entity_ptr;
+        assert(current_grid_view->indexSet().contains(father_entity));
+        const size_t index = current_grid_view->indexSet().index(father_entity);
+        ++fine_entities_per_coarse_entity[index];
+        const RangeFieldType local_energy_error_squared = local_energy_norm.compute_locally(entity);
+        energy_error_squared += local_energy_error_squared;
+        error_indicators[index] += local_energy_error_squared;
+      } // walk the reference grid
+      // average
+      for (size_t ii = 0; ii < error_indicators.size(); ++ii)
+        error_indicators[ii] /= (energy_error_squared * fine_entities_per_coarse_entity[ii]);
+//      visualize_indicators(current_grid_view, error_indicators, "energy", "indicators_energy_error");
+      return error_indicators;
+    }
+  } // ... compute_reference_indicators(...)
+
+  virtual std::vector< std::string > provided_indicators() const
+  {
+    return EstimatorType::available_local();
+  }
+
+  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const
+  {
+    // get current solution
+    assert(this->current_refinement_ <= this->num_refinements());
+    if (this->last_computed_refinement_ != this->current_refinement_) {
+      const_cast< ThisType& >(*this).compute_on_current_refinement();
+    }
+    assert(this->current_solution_vector_on_level_);
+    auto indicators = EstimatorType::estimate_local(*this->current_discretization_->ansatz_space(),
+                                                    *this->current_solution_vector_on_level_,
+                                                    this->test_case_.problem(),
+                                                    type);
+//    visualize_indicators(this->current_discretization_->grid_view(), indicators, type, "indicators_" + type);
+    return indicators;
+  } // ... compute_indicators(...)
+
 private:
   virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
   {
@@ -227,6 +337,18 @@ private:
                                      type);
     }
   } // ... estimate(...)
+
+//  template< class GV, class VV >
+//  void visualize_indicators(const std::shared_ptr< const GV >& grid_view_ptr,
+//                            const VV& vector,
+//                            const std::string name,
+//                            const std::string filename) const
+//  {
+//    typedef GDT::Spaces::FiniteVolume::Default< GV, typename VV::ScalarType, 1 > FVSpaceType;
+//    const FVSpaceType fv_space(grid_view_ptr);
+//    GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
+//    discrete_function.visualize(filename);
+//  } // ... visualize_indicators(...)
 }; // class EocStudySWIPDG
 
 
