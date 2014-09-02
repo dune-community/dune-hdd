@@ -219,7 +219,7 @@ public:
 
   virtual std::vector< double > expected_results(const std::string type) const = 0;
 
-private:
+protected:
   void compute_reference_solution()
   {
     if (!reference_solution_computed_) {
@@ -235,14 +235,12 @@ private:
     }
   } // ... compute_reference_solution()
 
-protected:
   bool is_norm(const std::string type) const
   {
     const auto norms = available_norms();
     return std::find(norms.begin(), norms.end(), type) != norms.end();
   } // ... is_norm(...)
 
-private:
   virtual std::vector< std::string > available_norms() const = 0;
 
   virtual std::vector< std::string > available_estimators() const = 0;
@@ -253,16 +251,12 @@ private:
                               const FunctionType& function,
                               const std::string type) const = 0;
 
-protected:
   const TestCaseType& test_case_;
-private:
   size_t current_refinement_;
   size_t last_computed_refinement_;
   double time_to_solution_;
   bool reference_solution_computed_;
-protected:
   std::unique_ptr< DiscretizationType > current_discretization_;
-private:
   std::unique_ptr< VectorType > current_solution_vector_on_level_;
   std::unique_ptr< DiscretizationType > reference_discretization_;
   std::unique_ptr< VectorType > reference_solution_vector_;
