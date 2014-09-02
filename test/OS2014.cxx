@@ -53,7 +53,7 @@ void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation()
   NonparametricEocStudyType eoc_study(test_case,
                                       {"energy", "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007",
                                        "eff_ESV2007"});
-  Stuff::Test::check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
+  Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
 } // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation(...)
 
 
@@ -62,7 +62,7 @@ void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternati
   const NonparametricTestCaseType test_case;
   NonparametricEocStudyType eoc_study(test_case,
                                       {"energy", "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
-  Stuff::Test::check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
+  Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
 } // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation(...)
 
 
@@ -72,7 +72,7 @@ void nonparametric_block_convergence_study(const std::string& partitioning)
   NonparametricBlockEocStudyType eoc_study(test_case,
                                            {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
                                             "eff_OS2014"});
-  Dune::Stuff::Test::check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
+  Dune::Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
 } // ... nonparametric_block_convergence_study(...)
 
 
@@ -86,7 +86,7 @@ void parametric_convergence_study(const std::string partitioning,
     test_case.print_header(DSC_LOG_INFO);
   print_parameter_information(test_case);
   ParametricBlockEocStudyType eoc_study(test_case, only_these_norms);
-  Dune::Stuff::Test::check_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
+  Dune::Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
 } // ... parametric_convergence_study(...)
 
 
