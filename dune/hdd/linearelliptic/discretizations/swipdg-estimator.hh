@@ -28,6 +28,7 @@
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/la/container.hh>
+#include <dune/stuff/la/container/common.hh>
 #include <dune/stuff/la/solver.hh>
 #include <dune/stuff/playground/functions/ESV2007.hh>
 
@@ -526,6 +527,37 @@ public:
     }
     return std::sqrt(eta_squared);
   } // ... estimate(...)
+
+  static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const SpaceType& space,
+                                                                       const VectorType& vector,
+                                                                       const ProblemType& problem)
+  {
+    LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, GridType > eta_nc(space, vector, problem);
+    LocalResidualESV2007< SpaceType, VectorType, ProblemType, GridType >      eta_r(space, problem);
+    LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, GridType > eta_df(space, vector, problem);
+    eta_nc.prepare();
+    eta_r.prepare();
+    eta_df.prepare();
+
+    const auto grid_view = space.grid_view();
+    Stuff::LA::CommonDenseVector< RangeFieldType >
+        local_indicators(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
+    RangeFieldType eta_squared = 0.0;
+
+    const auto entity_it_end = grid_view->template end< 0 >();
+    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+      const auto& entity = *entity_it;
+      const auto index = grid_view->indexSet().index(entity);
+      const RangeFieldType eta_t_squared
+          = eta_nc.compute_locally(entity)
+            + std::pow(std::sqrt(eta_r.compute_locally(entity)) + std::sqrt(eta_df.compute_locally(entity)), 2);
+      local_indicators[index] = eta_t_squared;
+      eta_squared += eta_t_squared;
+    }
+    for (auto& element : local_indicators)
+      element /= eta_squared;
+    return local_indicators;
+  } // ... estimate_local(...)
 }; // class ESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
 
 #endif // HAVE_ALUGRID
@@ -585,6 +617,43 @@ public:
     }
     return std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared);
   } // ... estimate(...)
+
+  static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const SpaceType& space,
+                                                                       const VectorType& vector,
+                                                                       const ProblemType& problem)
+  {
+    LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, GridType > eta_nc(space, vector, problem);
+    LocalResidualESV2007< SpaceType, VectorType, ProblemType, GridType >      eta_r(space, problem);
+    LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, GridType > eta_df(space, vector, problem);
+    eta_nc.prepare();
+    eta_r.prepare();
+    eta_df.prepare();
+
+    const auto grid_view = space.grid_view();
+    Stuff::LA::CommonDenseVector< RangeFieldType >
+        local_indicators(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
+    RangeFieldType eta_nc_squared(0.0);
+    RangeFieldType eta_r_squared(0.0);
+    RangeFieldType eta_df_squared(0.0);
+
+    const auto entity_it_end = grid_view->template end< 0 >();
+    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+      const auto& entity = *entity_it;
+      const auto index = grid_view->indexSet().index(entity);
+      const RangeFieldType eta_nc_t_squared = eta_nc.compute_locally(entity);
+      const RangeFieldType eta_r_t_squared = eta_r.compute_locally(entity);
+      const RangeFieldType eta_df_t_squared = eta_df.compute_locally(entity);
+      eta_nc_squared += eta_nc_t_squared;
+      eta_r_squared += eta_r_t_squared;
+      eta_df_squared += eta_df_t_squared;
+      local_indicators[index] = 3.0 *(eta_nc_t_squared + eta_r_t_squared + eta_df_t_squared);
+    }
+    const RangeFieldType eta_squared
+        = std::pow(std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared), 2);
+    for (auto& element : local_indicators)
+      element /= eta_squared;
+    return local_indicators;
+  } // ... estimate_local(...)
 }; // class ESV2007AlternativeSummation< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
 
 #endif // HAVE_ALUGRID
@@ -622,6 +691,14 @@ private:
       DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
       return RangeFieldType(0);
     }
+
+    static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const SpaceType& /*space*/,
+                                                                         const VectorType& /*vector*/,
+                                                                         const ProblemType& /*problem*/)
+    {
+      DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
+      return RangeFieldType(0);
+    }
   }; // class Caller
 
   template< class IndividualEstimator >
@@ -643,6 +720,13 @@ private:
     {
       return IndividualEstimator::estimate(space, vector, problem);
     }
+
+    static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const SpaceType& space,
+                                                                         const VectorType& vector,
+                                                                         const ProblemType& problem)
+    {
+      return IndividualEstimator::estimate_local(space, vector, problem);
+    }
   }; // class Caller< ..., true >
 
   template< class IndividualEstimator >
@@ -661,6 +745,14 @@ private:
   static RangeFieldType call_estimate(const SpaceType& space, const VectorType& vector, const ProblemType& problem)
   {
     return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(space, vector, problem);
+  }
+
+  template< class IndividualEstimator >
+  static Stuff::LA::CommonDenseVector< RangeFieldType > call_estimate_local(const SpaceType& space,
+                                                                            const VectorType& vector,
+                                                                            const ProblemType& problem)
+  {
+    return Caller< IndividualEstimator, IndividualEstimator::available >::estimate_local(space, vector, problem);
   }
 
   typedef internal::SWIPDGEstimators::LocalNonconformityESV2007
@@ -686,6 +778,14 @@ public:
     return tmp;
   } // ... available(...)
 
+  static std::vector< std::string > available_local()
+  {
+    std::vector< std::string > tmp;
+    tmp = call_append< ESV2007Type >(tmp);
+    tmp = call_append< ESV2007AlternativeSummationType >(tmp);
+    return tmp;
+  } // ... available_local(...)
+
   static RangeFieldType estimate(const SpaceType& space,
                                  const VectorType& vector,
                                  const ProblemType& problem,
@@ -705,6 +805,20 @@ public:
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available()!");
   } // ... estimate(...)
+
+  static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const SpaceType& space,
+                                                                       const VectorType& vector,
+                                                                       const ProblemType& problem,
+                                                                       const std::string type)
+  {
+    if (call_equals< ESV2007Type >(type))
+      return call_estimate_local< ESV2007Type >(space, vector, problem);
+    else if (call_equals< ESV2007AlternativeSummationType >(type))
+      return call_estimate_local< ESV2007AlternativeSummationType >(space, vector, problem);
+    else
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+                 "Requested type '" << type << "' is not one of available_local()!");
+  } // ... estimate_local(...)
 }; // class SWIPDGEstimator
 
 
