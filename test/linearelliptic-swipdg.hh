@@ -179,8 +179,8 @@ private:
   }
 
   virtual double compute_norm(const GridViewType& grid_view,
-                               const FunctionType& function,
-                               const std::string type) const DS_OVERRIDE DS_FINAL
+                              const FunctionType& function,
+                              const std::string type) const DS_OVERRIDE DS_FINAL
   {
     using namespace GDT;
     typedef typename TestCaseType::ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
