@@ -48,7 +48,7 @@ namespace internal {
 
 
 template< class TestCaseType, int polOrder >
-class EocStudyBlockSWIPDGExpectationsBase
+class BlockSWIPDGStudyExpectationsBase
 {
 public:
   static size_t rate(const TestCaseType& /*test_case*/, const std::string type)
@@ -76,15 +76,15 @@ public:
     else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
   } // ... rate(...)
-}; // class EocStudyBlockSWIPDGExpectationsBase
+}; // class BlockSWIPDGStudyExpectationsBase
 
 
 } // namespace internal
 
 
 template< class TestCaseType, int polOrder, bool implemented = true >
-class EocStudyBlockSWIPDGExpectations
-  : public internal::EocStudyBlockSWIPDGExpectationsBase< TestCaseType, polOrder >
+class BlockSWIPDGStudyExpectations
+  : public internal::BlockSWIPDGStudyExpectationsBase< TestCaseType, polOrder >
 {
 public:
   static std::vector< double > results(const TestCaseType& /*test_case*/, const std::string type)
@@ -94,16 +94,16 @@ public:
                << "TestCaseType: " << Stuff::Common::Typename< TestCaseType >::value() << "\n"
                << "polOrder: " << polOrder << "\n"
                << "type: " << type << "\n"
-               << "Please put an appropriate specialiaztion of EocStudyBlockSWIPDGExpectations for this TestCaseType "
+               << "Please put an appropriate specialiaztion of BlockSWIPDGStudyExpectations for this TestCaseType "
                << "in a separate object file (see examples below) or add\n"
-               << "  'template class EocStudyBlockSWIPDGExpectations< TestCaseType, " << polOrder << ", true >'\n"
+               << "  'template class BlockSWIPDGStudyExpectations< TestCaseType, " << polOrder << ", true >'\n"
                << "for this polOrder in the appropriate object file!\n\n"
                << "Oh: and do not forget to add\n"
-               << "  'extern template class EocStudyBlockSWIPDGExpectations...'\n"
+               << "  'extern template class BlockSWIPDGStudyExpectations...'\n"
                << "to each test source using these results!");
     return {};
   } // ... results(...)
-}; // EocStudyBlockSWIPDGExpectations
+}; // BlockSWIPDGStudyExpectations
 
 
 } // namespace Tests

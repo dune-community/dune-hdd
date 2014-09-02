@@ -18,9 +18,9 @@ namespace Tests {
 
 
 template< bool implemented >
-class EocStudyBlockSWIPDGExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
+class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
                                        1, implemented >
-  : public internal::EocStudyBlockSWIPDGExpectationsBase
+  : public internal::BlockSWIPDGStudyExpectationsBase
         < TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >
 {
   typedef TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
@@ -157,10 +157,10 @@ public:
     } else
       DUNE_THROW(Stuff::Exceptions::test_results_missing, test_case.partitioning());
   } // ... results(...)
-}; // EocStudyBlockSWIPDGExpectations
+}; // BlockSWIPDGStudyExpectations
 
 
-template class EocStudyBlockSWIPDGExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+template class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
 
 
 } // namespace Tests
