@@ -21,6 +21,7 @@
 
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/convergence-study.hh>
+#include <dune/stuff/common/localization-study.hh>
 #include <dune/stuff/grid/layers.hh>
 
 #include <dune/gdt/discretefunction/default.hh>
@@ -48,8 +49,10 @@ namespace Tests {
 template< class TestCaseType, class DiscretizationImp >
 class EocStudyBase
   : public Stuff::Common::ConvergenceStudy
+  , public Stuff::Common::LocalizationStudy
 {
-  typedef Stuff::Common::ConvergenceStudy BaseType;
+  typedef Stuff::Common::ConvergenceStudy  ConvergenceBaseType;
+  typedef Stuff::Common::LocalizationStudy LocalizationBaseType;
 protected:
 
   typedef DiscretizationImp DiscretizationType;
@@ -63,8 +66,11 @@ protected:
   typedef typename TestCaseType::FunctionType FunctionType;
 
 public:
-  EocStudyBase(const TestCaseType& test_case, const std::vector< std::string > only_these_norms = {})
-    : BaseType(only_these_norms)
+  EocStudyBase(const TestCaseType& test_case,
+               const std::vector< std::string > only_these_norms = {},
+               const std::vector< std::string > only_these_local_norms = {})
+    : ConvergenceBaseType(only_these_norms)
+    , LocalizationBaseType(only_these_local_norms)
     , test_case_(test_case)
     , current_refinement_(0)
     , last_computed_refinement_(std::numeric_limits< size_t >::max())
