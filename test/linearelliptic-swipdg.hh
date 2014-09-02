@@ -125,27 +125,27 @@ public:
         else if (type == "H1_semi")
           return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
         else if (type == "energy")
-          return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+          return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
         else if (type == "eta_NC_ESV2007")
-          return {1.90e-1, 9.73e-2, 4.90e-2, 2.46e-2};
+          return {1.66e-1, 7.89e-2, 3.91e-2, 1.95e-2};
         else if (type == "eta_R_ESV2007")
-          return {7.24e-2, 1.83e-2, 4.55e-3, 1.15e-3};
+          return {7.23e-2, 1.82e-2, 4.54e-3, 1.14e-3};
         else if (type == "eta_DF_ESV2007") {
           // these are the values reported in the ESV2007 preprint:
 //          return {3.39e-1, 1.70e-1, 8.40e-2, 4.19e-2};
           // but we do not want the test to fail each time, so we expect these:
-          return {3.56e-1, 1.77e-1, 8.74e-2, 4.36e-2};
+          return {3.55e-1, 1.76e-1, 8.73e-2, 4.35e-2};
         } else if (type == "eta_ESV2007")
-          return {4.50e-01, 2.08e-01,  9.92e-02, 4.86e-02};
+          return {4.49e-01, 2.07e-01,  9.91e-02, 4.85e-02};
         else if (type == "eff_ESV2007") {
           // these are the values reported in the ESV2007 preprint:
 //          return {1.21, 1.21, 1.21, 1.21};
           // but we do not want the test to fail each time, so we expect these:
-          return {1.38, 1.29, 1.24, 1.22};
+          return {1.37, 1.28, 1.23, 1.21};
         } else if (type == "eta_ESV2007_alt")
-          return {5.94e-01, 2.74e-01, 1.32e-01, 6.43e-02};
+          return {5.93e-01, 2.73e-01, 1.31e-01, 6.42e-02};
         else if (type == "eff_ESV2007_alt")
-          return {1.82, 1.70, 1.64, 1.61};
+          return {1.81, 1.69, 1.63, 1.60};
         else
           DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
       } else
