@@ -6,6 +6,8 @@
 #ifndef DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 #define DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 
+#include "config.h"
+
 #include <algorithm>
 
 #include <boost/numeric/conversion/cast.hpp>
@@ -17,6 +19,7 @@
 #include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/common/exceptions.hh>
+#include <dune/stuff/common/localization-study.hh>
 
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
@@ -59,33 +62,38 @@ public:
 
 
 template< class TestCaseType, int polOrder, GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
-class EocStudySWIPDG
+class SWIPDGStudy
   : public EocStudyBase< TestCaseType,
                          typename internal::DiscretizationSWIPDG< TestCaseType,
                                                                   polOrder,
                                                                   space_backend,
                                                                   la_backend >::Type >
+  , public Stuff::Common::LocalizationStudy
 {
   typedef EocStudyBase< TestCaseType,
                         typename internal::DiscretizationSWIPDG< TestCaseType,
                                                                  polOrder,
                                                                  space_backend,
-                                                                 la_backend >::Type > BaseType;
-  typedef EocStudySWIPDG< TestCaseType, polOrder, space_backend, la_backend > ThisType;
+                                                                 la_backend >::Type > StudyBaseType;
+  typedef Stuff::Common::LocalizationStudy                                            LocalizationBaseType;
+  typedef SWIPDGStudy< TestCaseType, polOrder, space_backend, la_backend >            ThisType;
 
-  typedef typename BaseType::DiscretizationType      DiscretizationType;
+  typedef typename StudyBaseType::DiscretizationType DiscretizationType;
   typedef typename internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::EstimatorType
-      EstimatorType;
-  typedef typename BaseType::GridViewType GridViewType;
-  typedef typename BaseType::FunctionType FunctionType;
-  typedef typename BaseType::VectorType   VectorType;
+                                                     EstimatorType;
+  typedef typename StudyBaseType::GridViewType GridViewType;
+  typedef typename StudyBaseType::FunctionType FunctionType;
+  typedef typename StudyBaseType::VectorType   VectorType;
 
 public:
-  EocStudySWIPDG(const TestCaseType& test_case, const std::vector< std::string > only_these_norms = {})
-    : BaseType(test_case, only_these_norms)
+  SWIPDGStudy(const TestCaseType& test_case,
+              const std::vector< std::string > only_these_norms = {},
+              const std::vector< std::string > only_these_local_norms = {})
+    : StudyBaseType(test_case, only_these_norms)
+    , LocalizationBaseType(only_these_local_norms)
   {}
 
-  virtual ~EocStudySWIPDG() {}
+  virtual ~SWIPDGStudy() {}
 
   virtual std::string identifier() const DS_OVERRIDE DS_FINAL
   {
@@ -193,8 +201,8 @@ public:
       const_cast< ThisType& >(*this).compute_on_current_refinement();
     assert(this->last_computed_refinement_ == this->current_refinement_);
     assert(this->current_solution_vector_);
-    typedef typename BaseType::DiscreteFunctionType      DiscreteFunctionType;
-    typedef typename BaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
+    typedef typename StudyBaseType::DiscreteFunctionType      DiscreteFunctionType;
+    typedef typename StudyBaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
     const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
                                                      *this->current_solution_vector_,
                                                      "current solution");
@@ -282,6 +290,16 @@ public:
     return indicators;
   } // ... compute_indicators(...)
 
+  std::map< std::string, std::vector< double > > run_eoc(std::ostream& out)
+  {
+    return StudyBaseType::run(out);
+  }
+
+  void run_localization(std::ostream& out)
+  {
+    LocalizationBaseType::run(out);
+  }
+
 private:
   virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
   {
@@ -349,13 +367,13 @@ private:
 //    GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
 //    discrete_function.visualize(filename);
 //  } // ... visualize_indicators(...)
-}; // class EocStudySWIPDG
+}; // class SWIPDGStudy
 
 
 //#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
 
 
-//extern template class EocStudySWIPDG< TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >,
+//extern template class SWIPDGStudy< TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >,
 //                                      1,
 //                                      GDT::ChooseSpaceBackend::fem,
 //                                      Stuff::LA::ChooseBackend::eigen_sparse >;
