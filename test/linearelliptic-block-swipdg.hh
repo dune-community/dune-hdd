@@ -48,31 +48,31 @@ public:
 
 
 template< class TestCaseType, int polOrder, Stuff::LA::ChooseBackend la_backend >
-class EocStudyBlockSWIPDG
+class BlockSWIPDGStudy
   : public MultiscaleEocStudyBase< TestCaseType,
                                    typename internal::DiscretizationBlockSWIPDG< TestCaseType,
                                                                                  polOrder,
                                                                                  la_backend >::Type >
 {
-  typedef EocStudyBlockSWIPDG< TestCaseType, polOrder, la_backend > ThisType;
+  typedef BlockSWIPDGStudy< TestCaseType, polOrder, la_backend > ThisType;
   typedef MultiscaleEocStudyBase
       < TestCaseType,
-        typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type > BaseType;
+        typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type > StudyBaseType;
 
-  typedef typename BaseType::DiscretizationType      DiscretizationType;
+  typedef typename StudyBaseType::DiscretizationType DiscretizationType;
   typedef typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::EstimatorType
-      EstimatorType;
+                                                     EstimatorType;
   typedef typename DiscretizationType::GridViewType GridViewType;
-  typedef typename BaseType::FunctionType FunctionType;
-  typedef typename BaseType::VectorType   VectorType;
+  typedef typename StudyBaseType::FunctionType      FunctionType;
+  typedef typename StudyBaseType::VectorType        VectorType;
 
 public:
-  EocStudyBlockSWIPDG(const TestCaseType& test_case,
-                      const std::vector< std::string > only_these_norms = std::vector< std::string >())
-    : BaseType(test_case, only_these_norms)
+  BlockSWIPDGStudy(const TestCaseType& test_case,
+                   const std::vector< std::string > only_these_norms = std::vector< std::string >())
+    : StudyBaseType(test_case, only_these_norms)
   {}
 
-  virtual ~EocStudyBlockSWIPDG() {}
+  virtual ~BlockSWIPDGStudy() {}
 
   virtual std::string identifier() const DS_OVERRIDE DS_FINAL
   {
@@ -104,6 +104,11 @@ public:
     // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
+
+  std::map< std::string, std::vector< double > > run_eoc(std::ostream& out)
+  {
+    return StudyBaseType::run(out);
+  }
 
 private:
   virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
@@ -201,17 +206,17 @@ private:
                                    type,
                                    this->test_case_.parameters());
   } // ... estimate(...)
-}; // class EocStudyBlockSWIPDG
+}; // class BlockSWIPDGStudy
 
 
 //#if HAVE_ALUGRID && HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_EIGEN
 
 
-//extern template class EocStudyBlockSWIPDG< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
+//extern template class BlockSWIPDGStudy< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
 //                                           1,
 //                                           Stuff::LA::ChooseBackend::eigen_sparse >;
 
-//extern template class EocStudyBlockSWIPDG< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
+//extern template class BlockSWIPDGStudy< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
 //                                           1,
 //                                           Stuff::LA::ChooseBackend::eigen_sparse >;
 
