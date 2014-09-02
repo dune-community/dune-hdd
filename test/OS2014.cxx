@@ -13,7 +13,38 @@
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
 
-void print_parameter_information(const ParametricBlockTestCaseType& parametric_test_case)
+void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation()
+{
+  const NonparametricEocTestCaseType test_case;
+  test_case.print_header(DSC_LOG_INFO);
+  DSC_LOG_INFO << std::endl;
+  NonparametricEocStudyType study(test_case,
+                                  {"energy", "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007",
+                                   "eff_ESV2007"});
+  Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
+} // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation(...)
+
+
+void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation()
+{
+  const NonparametricEocTestCaseType test_case;
+  NonparametricEocStudyType study(test_case,
+                                  {"energy", "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
+  Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
+} // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation(...)
+
+
+void nonparametric_block_convergence_study(const std::string& partitioning)
+{
+  const NonparametricBlockEocTestCaseType test_case(partitioning);
+  NonparametricBlockEocStudyType study(test_case,
+                                       {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
+                                        "eff_OS2014"});
+  Dune::Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
+} // ... nonparametric_block_convergence_study(...)
+
+
+void print_parameter_information(const ParametricBlockEocTestCaseType& parametric_test_case)
 {
   const auto& parameters = parametric_test_case.parameters();
   const auto& parametric_problem = parametric_test_case.problem();
@@ -45,48 +76,17 @@ void print_parameter_information(const ParametricBlockTestCaseType& parametric_t
 } // ... print_parameter_information(...)
 
 
-void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation()
-{
-  const NonparametricTestCaseType test_case;
-  test_case.print_header(DSC_LOG_INFO);
-  DSC_LOG_INFO << std::endl;
-  NonparametricEocStudyType eoc_study(test_case,
-                                      {"energy", "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007",
-                                       "eff_ESV2007"});
-  Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
-} // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation(...)
-
-
-void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation()
-{
-  const NonparametricTestCaseType test_case;
-  NonparametricEocStudyType eoc_study(test_case,
-                                      {"energy", "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
-  Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
-} // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation(...)
-
-
-void nonparametric_block_convergence_study(const std::string& partitioning)
-{
-  const NonparametricBlockTestCaseType test_case(partitioning);
-  NonparametricBlockEocStudyType eoc_study(test_case,
-                                           {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
-                                            "eff_OS2014"});
-  Dune::Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
-} // ... nonparametric_block_convergence_study(...)
-
-
 void parametric_convergence_study(const std::string partitioning,
                                   const std::vector< std::string >& only_these_norms,
                                   const std::map< std::string, Pymor::Parameter >& parameters,
                                   const bool print_header)
 {
-  const ParametricBlockTestCaseType test_case(parameters, partitioning);
+  const ParametricBlockEocTestCaseType test_case(parameters, partitioning);
   if (print_header)
     test_case.print_header(DSC_LOG_INFO);
   print_parameter_information(test_case);
-  ParametricBlockEocStudyType eoc_study(test_case, only_these_norms);
-  Dune::Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run(false, DSC_LOG_INFO, false));
+  ParametricBlockEocStudyType study(test_case, only_these_norms);
+  Dune::Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
 } // ... parametric_convergence_study(...)
 
 

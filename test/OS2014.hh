@@ -52,42 +52,50 @@ static const Stuff::LA::ChooseBackend la_backend    =
 
 typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 
-typedef LinearElliptic::TestCases::ESV2007< GridType >           NonparametricTestCaseType;
-typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > NonparametricBlockTestCaseType;
-typedef LinearElliptic::TestCases::OS2014Multiscale< GridType >  ParametricBlockTestCaseType;
 
-typedef LinearElliptic::Tests::EocStudySWIPDG< NonparametricTestCaseType, 1, space_backend, la_backend >
-                                                                 NonparametricEocStudyType;
-typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< NonparametricBlockTestCaseType, 1, la_backend >
-                                                                 NonparametricBlockEocStudyType;
-typedef LinearElliptic::Tests::EocStudyBlockSWIPDG< ParametricBlockTestCaseType, 1, la_backend >
-                                                                 ParametricBlockEocStudyType;
-
-typedef LinearElliptic::TestCases::Spe10Model1< GridType >                  NonparametricLocalizationTestCaseType;
-typedef LinearElliptic::Tests::EocStudySWIPDG
-    < NonparametricLocalizationTestCaseType, 1, space_backend, la_backend > NonparametricLocalizationStudyType;
-
-
-void print_parameter_information(const ParametricBlockTestCaseType& parametric_test_case);
+typedef LinearElliptic::TestCases::ESV2007< GridType >             NonparametricEocTestCaseType;
+typedef LinearElliptic::Tests::SWIPDGStudy
+    < NonparametricEocTestCaseType, 1, space_backend, la_backend > NonparametricEocStudyType;
 
 void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation();
 
 void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation();
 
+
+typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > NonparametricBlockEocTestCaseType;
+typedef LinearElliptic::Tests::BlockSWIPDGStudy
+    < NonparametricBlockEocTestCaseType, 1, la_backend >         NonparametricBlockEocStudyType;
+
 void nonparametric_block_convergence_study(const std::string& partitioning);
+
+
+typedef LinearElliptic::TestCases::OS2014Multiscale< GridType > ParametricBlockEocTestCaseType;
+typedef LinearElliptic::Tests::BlockSWIPDGStudy
+    < ParametricBlockEocTestCaseType, 1, la_backend >           ParametricBlockEocStudyType;
+
+void print_parameter_information(const ParametricBlockEocTestCaseType& parametric_test_case);
 
 void parametric_convergence_study(const std::string partitioning,
                                   const std::vector< std::string >& only_these_norms,
                                   const std::map< std::string, Pymor::Parameter >& parameters,
                                   const bool print_header = false);
 
+
+typedef LinearElliptic::TestCases::Spe10Model1< GridType >                  NonparametricLocalizationTestCaseType;
+typedef LinearElliptic::Tests::SWIPDGStudy
+    < NonparametricLocalizationTestCaseType, 1, space_backend, la_backend > NonparametricLocalizationStudyType;
+
 void nonparametric_localization_study__SWIPDG_fine_triangulation();
 
 
-extern template class LinearElliptic::Tests::EocStudyBlockSWIPDGExpectations
+typedef LinearElliptic::TestCases::Spe10Model1Multiscale< GridType > NonparametricBlockLocalizationTestCaseType;
+typedef LinearElliptic::Tests::BlockSWIPDGStudy
+    < NonparametricBlockLocalizationTestCaseType, 1, la_backend >    NonparametricBlockLocalizationStudyType;
+
+extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
     < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
 
-extern template class LinearElliptic::Tests::EocStudyBlockSWIPDGExpectations
+extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
     < LinearElliptic::TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
 
 
