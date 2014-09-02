@@ -45,32 +45,32 @@ public:
         DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
     } else if (test_case.partitioning() == "[2 2 1]") {
       if (type == "energy")
-        return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+        return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
       else if (type == "eta_NC_OS2014")
-        return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
+        return {1.66e-01, 7.89e-02, 3.91e-02, 1.95e-02};
       else if (type == "eta_R_OS2014")
-        return {2.90e-01, 1.46e-01, 7.28e-02, 3.64e-02};
+        return {2.89e-01, 1.45e-01, 7.27e-02, 3.63e-02};
       else if (type == "eta_DF_OS2014")
-        return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
+        return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
       else if (type == "eta_OS2014")
-        return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
+        return {8.10e-01, 4.00e-01, 1.99e-01, 9.94e-02};
       else if (type == "eff_OS2014")
-        return {2.48, 2.48, 2.49, 2.49};
+        return {2.47, 2.47, 2.48, 2.48};
       else
         DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
     } else if (test_case.partitioning() == "[4 4 1]") {
       if (type == "energy")
-        return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+        return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
       else if (type == "eta_NC_OS2014")
-        return {1.67e-01, 7.90e-02, 3.92e-02, 1.96e-02};
+        return {1.66e-01, 7.89e-02, 3.91e-02, 1.95e-02};
       else if (type == "eta_R_OS2014")
-        return {1.46e-01, 7.27e-02, 3.64e-02, 1.82e-02};
+        return {1.45e-01, 7.26e-02, 3.63e-02, 1.82e-02};
       else if (type == "eta_DF_OS2014")
-        return {3.56e-01, 1.77e-01, 8.74e-02, 4.36e-02};
+        return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
       else if (type == "eta_OS2014")
-        return {1.11e+00, 5.46e-01, 2.73e-01, 1.37e-01};
+        return {6.65e-01, 3.27e-01, 1.63e-01, 8.12e-02};
       else if (type == "eff_OS2014")
-        return {2.04, 2.03, 2.03, 2.04};
+        return {2.03, 2.02, 2.02, 2.03};
       else
         DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
     } else if (test_case.partitioning() == "[8 8 1]") {
