@@ -155,14 +155,18 @@ public:
                       *problem_mu_bar_->diffusion_factor()->affine_part(),
                       *problem_.diffusion_tensor()->affine_part())
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , prepared_(false)
     , result_(0.0)
   {}
 
   virtual void prepare()
   {
-    const GDT::Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*space_.grid_view());
-    oswald_interpolation_operator.apply(discrete_solution_, oswald_interpolation_);
-    result_ = 0.0;
+    if (!prepared_) {
+      const GDT::Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*space_.grid_view());
+      oswald_interpolation_operator.apply(discrete_solution_, oswald_interpolation_);
+      result_ = 0.0;
+      prepared_ = true;
+    }
   } // ... prepare(...)
 
   RangeFieldType compute_locally(const EntityType& entity)
@@ -192,6 +196,7 @@ private:
   std::unique_ptr< const DifferenceType > difference_;
   const LocalOperatorType local_operator_;
   TmpStorageProviderType tmp_local_matrices_;
+  bool prepared_;
 public:
   RangeFieldType result_;
 }; // class LocalNonconformityESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
@@ -277,14 +282,18 @@ public:
                        *problem_.diffusion_tensor()->affine_part())
     , local_operator_(over_integrate, cutoff_function_)
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , prepared_(false)
     , result_(0.0)
   {}
 
   virtual void prepare()
   {
-    const GDT::Operators::Projection< GridViewType > projection_operator(*space_.grid_view());
-    projection_operator.apply(*problem_.force()->affine_part(), p0_force_);
-    result_ = 0.0;
+    if (!prepared_) {
+      const GDT::Operators::Projection< GridViewType > projection_operator(*space_.grid_view());
+      projection_operator.apply(*problem_.force()->affine_part(), p0_force_);
+      result_ = 0.0;
+      prepared_ = true;
+    }
   } // ... prepare(...)
 
   RangeFieldType compute_locally(const EntityType& entity)
@@ -313,6 +322,7 @@ private:
   const CutoffFunctionType cutoff_function_;
   const LocalOperatorType local_operator_;
   TmpStorageProviderType tmp_local_matrices_;
+  bool prepared_;
 public:
   RangeFieldType result_;
 }; // class LocalResidualESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
@@ -428,17 +438,21 @@ public:
                       *problem_.diffusion_tensor()->affine_part(),
                       diffusive_flux_)
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , prepared_(false)
     , result_(0.0)
   {}
 
   virtual void prepare()
   {
-    const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
-      diffusive_flux_reconstruction(*space_.grid_view(),
-                                    *problem_mu_->diffusion_factor()->affine_part(),
-                                    *problem_.diffusion_tensor()->affine_part());
-    diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
-    result_ = 0.0;
+    if (!prepared_) {
+      const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
+        diffusive_flux_reconstruction(*space_.grid_view(),
+                                      *problem_mu_->diffusion_factor()->affine_part(),
+                                      *problem_.diffusion_tensor()->affine_part());
+      diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
+      result_ = 0.0;
+      prepared_ = true;
+    }
   } // ... prepare(...)
 
   RangeFieldType compute_locally(const EntityType& entity)
@@ -469,6 +483,7 @@ private:
   RTN0DiscreteFunctionType diffusive_flux_;
   const LocalOperatorType local_operator_;
   TmpStorageProviderType tmp_local_matrices_;
+  bool prepared_;
 public:
   RangeFieldType result_;
 }; // class LocalDiffusiveFluxESV2007< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
