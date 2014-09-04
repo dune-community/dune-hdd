@@ -92,6 +92,9 @@ typedef LinearElliptic::TestCases::Spe10Model1Multiscale< GridType > Nonparametr
 typedef LinearElliptic::Tests::BlockSWIPDGStudy
     < NonparametricBlockLocalizationTestCaseType, 1, la_backend >    NonparametricBlockLocalizationStudyType;
 
+void nonparametric_localization_study__Block_SWIPDG(const std::string partitioning);
+
+
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
     < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
 
