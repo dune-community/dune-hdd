@@ -218,6 +218,7 @@ public:
   {
     return BaseType::run(false, out, print_timings);
   }
+
 protected:
   void compute_reference_solution()
   {
@@ -401,8 +402,8 @@ public:
       if (!current_solution_vector_)
         current_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
       DiscreteFunctionType reference_refinement_solution(*(reference_discretization_->ansatz_space()),
-                                                    *current_solution_vector_,
-                                                    "solution on reference grid part");
+                                                         *current_solution_vector_,
+                                                         "solution on reference grid part");
       prolongation_operator.apply(current_refinement_solution, reference_refinement_solution);
       last_computed_refinement_ = current_refinement_;
     }
@@ -454,6 +455,11 @@ public:
 
   virtual std::vector< double > expected_results(const std::string type) const = 0;
 
+  std::map< std::string, std::vector< double > > run(std::ostream& out, const bool print_timings = false)
+  {
+    return BaseType::run(false, out, print_timings);
+  }
+
 protected:
   void compute_reference_solution()
   {
@@ -475,7 +481,6 @@ protected:
     return std::find(norms.begin(), norms.end(), type) != norms.end();
   } // ... is_norm(...)
 
-private:
   virtual std::vector< std::string > available_norms() const = 0;
 
   virtual std::vector< std::string > available_estimators() const = 0;
@@ -486,15 +491,12 @@ private:
                               const FunctionType& function,
                               const std::string type) const = 0;
 
-protected:
   const MultiscaleTestCaseType& test_case_;
-private:
   size_t current_refinement_;
   size_t last_computed_refinement_;
   double time_to_solution_;
   std::shared_ptr< NonparametricProblemType > nonparametric_problem_;
   bool reference_solution_computed_;
-protected:
   std::unique_ptr< DiscretizationType > current_discretization_;
   std::unique_ptr< VectorType > current_solution_vector_on_level_;
   std::unique_ptr< DiscretizationType > reference_discretization_;
