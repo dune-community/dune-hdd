@@ -6,8 +6,13 @@
 #ifndef DUNE_HDD_TEST_LINEARELLIPTIC_BLOCK_SWIPDG_HH
 #define DUNE_HDD_TEST_LINEARELLIPTIC_BLOCK_SWIPDG_HH
 
+#include <boost/numeric/conversion/cast.hpp>
+
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/type_utils.hh>
+#include <dune/stuff/common/localization-study.hh>
+#include <dune/stuff/grid/search.hh>
+#include <dune/stuff/common/ranges.hh>
 
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
@@ -39,8 +44,7 @@ public:
   typedef Discretizations::BlockSWIPDGEstimator< typename Type::AnsatzSpaceType,
                                                  typename Type::VectorType,
                                                  typename Type::ProblemType,
-                                                 GridType >
-      EstimatorType;
+                                                 GridType >                                        EstimatorType;
 }; // class DiscretizationBlockSWIPDG
 
 
@@ -53,11 +57,13 @@ class BlockSWIPDGStudy
                                    typename internal::DiscretizationBlockSWIPDG< TestCaseType,
                                                                                  polOrder,
                                                                                  la_backend >::Type >
+  , public Stuff::Common::LocalizationStudy
 {
   typedef BlockSWIPDGStudy< TestCaseType, polOrder, la_backend > ThisType;
   typedef MultiscaleEocStudyBase
       < TestCaseType,
         typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type > StudyBaseType;
+  typedef Stuff::Common::LocalizationStudy                                                         LocalizationBaseType;
 
   typedef typename StudyBaseType::DiscretizationType DiscretizationType;
   typedef typename internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::EstimatorType
@@ -68,8 +74,10 @@ class BlockSWIPDGStudy
 
 public:
   BlockSWIPDGStudy(const TestCaseType& test_case,
-                   const std::vector< std::string > only_these_norms = std::vector< std::string >())
+                   const std::vector< std::string > only_these_norms = std::vector< std::string >(),
+                   const std::vector< std::string > only_these_local_indicators = std::vector< std::string >())
     : StudyBaseType(test_case, only_these_norms)
+    , LocalizationBaseType(only_these_local_indicators)
   {}
 
   virtual ~BlockSWIPDGStudy() {}
@@ -105,9 +113,114 @@ public:
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 
+  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const
+  {
+    typedef typename TestCaseType::ProblemType ProblemType;
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    typedef typename DiffusionFactorType::DomainType     DomainType;
+    typedef typename DiffusionFactorType::RangeFieldType RangeFieldType;
+    const auto mu_bar = this->test_case_.parametric() ? this->test_case_.parameters().at("mu_bar") : Pymor::Parameter();
+    const auto problem_mu_bar = this->test_case_.problem().with_mu(mu_bar);
+    const auto diffusion_factor_mu_bar = problem_mu_bar->diffusion_factor()->affine_part();
+    const auto diffusion_tensor_mu_bar = problem_mu_bar->diffusion_tensor()->affine_part();
+    // get current solution
+    const_cast< ThisType& >(*this).compute_on_current_refinement();
+    assert(this->last_computed_refinement_ == this->current_refinement_);
+    assert(this->current_solution_vector_);
+    typedef typename StudyBaseType::DiscreteFunctionType      DiscreteFunctionType;
+    typedef typename StudyBaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
+    const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
+                                                     *this->current_solution_vector_,
+                                                     "current solution");
+    // compute error
+    if (this->test_case_.provides_exact_solution()) {
+      DUNE_THROW(Stuff::Exceptions::you_have_to_implement_this, "Felix!");
+    } else {
+      const_cast< ThisType& >(*this).compute_reference_solution();
+      assert(this->reference_discretization_);
+      assert(this->reference_solution_vector_);
+      // get reference solution
+      const ConstDiscreteFunctionType reference_solution(*(this->reference_discretization_->ansatz_space()),
+                                                         *this->reference_solution_vector_,
+                                                         "reference solution");
+      // define error norm
+      typedef typename ConstDiscreteFunctionType::DifferenceType DifferenceType;
+      GDT::Products::EllipticLocalizable< DiffusionFactorType, typename DiscretizationType::GridViewType,
+                                          DifferenceType, DifferenceType, RangeFieldType,
+                                          DiffusionTensorType >
+          local_energy_norm(*diffusion_factor_mu_bar,
+                            *diffusion_tensor_mu_bar,
+                            *this->reference_discretization_->grid_view(),
+                            reference_solution - current_solution,
+                            reference_solution - current_solution,
+                            Discretizations::internal::SWIPDGEstimators::over_integrate);
+      // prepare
+      local_energy_norm.prepare();
+      const auto ms_grid = this->current_discretization_->ansatz_space()->ms_grid();
+      const auto current_grid_view = this->current_discretization_->grid_view();
+      Stuff::Grid::EntityInlevelSearch< typename DiscretizationType::GridViewType > entity_search(*current_grid_view);
+      Stuff::LA::CommonDenseVector< double > error_indicators(ms_grid->size(), 0.0);
+      std::vector< size_t > fine_entities_per_subdomain(error_indicators.size(), 0);
+      RangeFieldType energy_error_squared = 0.0;
+      // walk the reference grid
+      const auto entity_it_end = this->reference_discretization_->grid_view()->template end< 0 >();
+      for (auto entity_it = this->reference_discretization_->grid_view()->template begin< 0 >();
+           entity_it != entity_it_end;
+           ++entity_it) {
+        const auto& entity = *entity_it;
+        // search for the father entity in the current (coarser) grid
+        std::vector< DomainType > center(1, DomainType(0));
+        center[0] = entity.geometry().center();
+        const auto father_entity_ptr_ptrs = entity_search(center);
+        assert(father_entity_ptr_ptrs.size() == 1);
+        const auto& father_entity_ptr_ptr = father_entity_ptr_ptrs[0];
+        const auto father_entity_ptr = *father_entity_ptr_ptr;
+        const auto& father_entity = *father_entity_ptr;
+        assert(current_grid_view->contains(father_entity));
+        const size_t current_subdomain = ms_grid->subdomainOf(father_entity);
+        ++fine_entities_per_subdomain[current_subdomain];
+        const RangeFieldType local_energy_error_squared = local_energy_norm.compute_locally(entity);
+        energy_error_squared += local_energy_error_squared;
+        error_indicators[current_subdomain] += local_energy_error_squared;
+      } // walk the reference grid
+      // average
+      for (size_t ii = 0; ii < error_indicators.size(); ++ii)
+        error_indicators[ii] /= (energy_error_squared * fine_entities_per_subdomain[ii]);
+//      visualize_indicators(*ms_grid, error_indicators, "energy", "BlockSWIPDG_indicators_energy_error");
+      return error_indicators;
+    } // this->test_case_.provides_exact_solution()
+  } // ... compute_reference_indicators(...)
+
+  virtual std::vector< std::string > provided_indicators() const
+  {
+    return EstimatorType::available_local();
+  }
+
+  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const
+  {
+    // get current solution
+    const_cast< ThisType& >(*this).compute_on_current_refinement();
+    assert(this->current_solution_vector_on_level_);
+    auto indicators = EstimatorType::estimate_local(*this->current_discretization_->ansatz_space(),
+                                                    *this->current_solution_vector_on_level_,
+                                                    this->test_case_.problem(),
+                                                    type);
+//    visualize_indicators(*this->current_discretization_->ansatz_space()->ms_grid(),
+//                         indicators,
+//                         type,
+//                         "BlockSWIPDG_indicators_" + type);
+    return indicators;
+  } // ... compute_indicators(...)
+
   std::map< std::string, std::vector< double > > run_eoc(std::ostream& out)
   {
     return StudyBaseType::run(out);
+  }
+
+  void run_localization(std::ostream& out)
+  {
+    LocalizationBaseType::run(out);
   }
 
 private:
@@ -206,6 +319,27 @@ private:
                                    type,
                                    this->test_case_.parameters());
   } // ... estimate(...)
+
+//  template< class MSG, class VV >
+//  void visualize_indicators(const MSG& ms_grid,
+//                            const VV& vector,
+//                            const std::string name,
+//                            const std::string filename) const
+//  {
+//    assert(vector.size() == ms_grid.size());
+//    const auto grid_view = ms_grid.globalGridView();
+//    VV fine_vector(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
+//    for (const auto& entity : Stuff::Common::viewRange(*grid_view)) {
+//      const size_t index = grid_view->indexSet().index(entity);
+//      const size_t subdomain = ms_grid.subdomainOf(entity);
+//      fine_vector[index] = vector[subdomain];
+//    }
+//    typedef GDT::Spaces::FiniteVolume::Default< typename MSG::GlobalGridViewType, typename VV::ScalarType, 1 >
+//        FVSpaceType;
+//    const FVSpaceType fv_space(grid_view);
+//    GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, fine_vector, name);
+//    discrete_function.visualize(filename);
+//  } // ... visualize_indicators(...)
 }; // class BlockSWIPDGStudy
 
 
