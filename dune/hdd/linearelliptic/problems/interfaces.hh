@@ -143,7 +143,7 @@ private:
   void add_visualizations_(const GridViewType& grid_view, VTKWriterType& vtk_writer) const
   {
     add_function_visualization_(grid_view, *diffusion_factor(), vtk_writer);
-//    add_function_visualization_(grid_view, *diffusion_tensor(), vtk_writer);
+    add_function_visualization_(grid_view, *diffusion_tensor(), vtk_writer);
     add_function_visualization_(grid_view, *force(), vtk_writer);
     add_function_visualization_(grid_view, *dirichlet(), vtk_writer);
     add_function_visualization_(grid_view, *neumann(), vtk_writer);
@@ -152,7 +152,7 @@ private:
   template< class GridViewType, class F, class VTKWriterType >
   void add_function_visualization_(const GridViewType& /*grid_view*/, const F& function, VTKWriterType& vtk_writer) const
   {
-    typedef Stuff::Functions::VisualizationAdapter< GridViewType, F::dimRange > VisualizationAdapter;
+    typedef Stuff::Functions::VisualizationAdapter< GridViewType, F::dimRange, F::dimRangeCols > VisualizationAdapter;
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < function.num_components(); ++qq)
       vtk_writer.addVertexData(std::make_shared< VisualizationAdapter >(*(function.component(qq))));
     if (function.has_affine_part())
