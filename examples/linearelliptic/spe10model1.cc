@@ -5,24 +5,25 @@
 
 #include "config.h"
 
-#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
-# define ENABLE_ALUGRID 1
-# include <dune/grid/alugrid.hh>
-#else
-# error This example requires alugrid!
-#endif
+#include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# else
+#   error This example requires alugrid!
+# endif
 
-#include <dune/common/timer.hh>
-#include <dune/common/fvector.hh>
+# include <dune/common/timer.hh>
+# include <dune/common/fvector.hh>
 
-#if HAVE_DUNE_FEM
-# include <dune/fem/misc/mpimanager.hh>
-#else
-# include <dune/common/parallel/mpihelper.hh>
-#endif
+# if HAVE_DUNE_FEM
+#   include <dune/fem/misc/mpimanager.hh>
+# else
+#   include <dune/common/parallel/mpihelper.hh>
+# endif
 
-#include <dune/grid/io/file/dgfparser.hh>
-#include <dune/grid/io/file/vtk/vtkwriter.hh>
+# include <dune/grid/io/file/dgfparser.hh>
+# include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/grid/multiscale/provider/cube.hh>
 
