@@ -20,21 +20,22 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace Problems {
+namespace OS2014 {
 
 
 template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim = 1 >
-class OS2014
+class ParametricESV2007
 {
   static_assert(AlwaysFalse< EntityImp >::value, "Not available for dimRange > 1!");
 };
 
 
 template< class EntityImp, class DomainFieldImp, class RangeFieldImp >
-class OS2014< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
+class ParametricESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
   : public Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
 {
-  typedef Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > BaseType;
-  typedef OS2014< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >  ThisType;
+  typedef Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >            BaseType;
+  typedef ParametricESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >  ThisType;
 
   typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >    ConstantScalarFunctionType;
   typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 > ConstantMatrixFunctionType;
@@ -76,7 +77,7 @@ class OS2014< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
 public:
   static std::string static_id()
   {
-    return BaseType::BaseType::static_id() + ".OS2014";
+    return BaseType::BaseType::static_id() + ".OS2014.parametricESV2007";
   }
 
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
@@ -99,7 +100,7 @@ public:
                                                           default_config().get< size_t >("integration_order")));
   } // ... create(...)
 
-  OS2014(const size_t integration_order = default_config().get< size_t >("integration_order"))
+  ParametricESV2007(const size_t integration_order = default_config().get< size_t >("integration_order"))
     : BaseType(create_diffusion_factor(integration_order),
                std::make_shared< ParametricMatrixFunctionType >(new ConstantMatrixFunctionType(unit_matrix(),
                                                                                                   "diffusion_tensor")),
@@ -110,11 +111,12 @@ public:
 
   virtual std::string type() const DS_OVERRIDE
   {
-    return BaseType::BaseType::static_id() + ".OS2014";
+    return BaseType::BaseType::static_id() + ".OS2014.parametricESV2007";
   }
-}; // class OS2014< ..., 2, ..., 1 >
+}; // class ParametricESV2007< ..., 2, ..., 1 >
 
 
+} // namespace OS2014
 } // namespace Problems
 } // namespace LinearElliptic
 } // namespace HDD

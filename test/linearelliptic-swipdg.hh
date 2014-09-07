@@ -162,8 +162,11 @@ public:
           DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
       } else
         DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
-    } else if (std::is_same< TestCaseType, TestCases::OS2014< ALUConformGrid< 2, 2 > > >::value
-               || std::is_same< TestCaseType, TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > > >::value) {
+    } else if (std::is_same< TestCaseType,
+                             TestCases::OS2014::ParametricConvergence< ALUConformGrid< 2, 2 > > >::value
+               || std::is_same< TestCaseType,
+                                TestCases::OS2014::ParametricConvergence< ALUGrid< 2, 2,
+                                                                                   simplex, conforming > > >::value) {
       if (polOrder == 1) {
         if (type == "energy")
           return {4.75e-01, 2.63e-01, 1.28e-01, 5.62e-02};

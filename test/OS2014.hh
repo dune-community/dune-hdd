@@ -69,9 +69,9 @@ typedef LinearElliptic::Tests::BlockSWIPDGStudy
 void nonparametric_block_convergence_study(const std::string& partitioning);
 
 
-typedef LinearElliptic::TestCases::OS2014Multiscale< GridType > ParametricBlockEocTestCaseType;
+typedef LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridType > ParametricBlockEocTestCaseType;
 typedef LinearElliptic::Tests::BlockSWIPDGStudy
-    < ParametricBlockEocTestCaseType, 1, la_backend >           ParametricBlockEocStudyType;
+    < ParametricBlockEocTestCaseType, 1, la_backend >                             ParametricBlockEocStudyType;
 
 void print_parameter_information(const ParametricBlockEocTestCaseType& parametric_test_case);
 
@@ -99,7 +99,7 @@ extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
     < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+    < LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE

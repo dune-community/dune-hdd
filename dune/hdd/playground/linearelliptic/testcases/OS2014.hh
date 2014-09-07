@@ -28,11 +28,12 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace TestCases {
+namespace OS2014 {
 namespace internal {
 
 
 template< class GridType >
-class OS2014Base
+class ParametricConvergenceBase
 {
   static_assert(GridType::dimension == 2, "This test case is only available in 2d!");
 public:
@@ -42,13 +43,14 @@ public:
   typedef double            RangeFieldType;
   static const unsigned int dimRange = 1;
 public:
-  typedef Problems::OS2014< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
-  typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
-      ExactSolutionType;
-  typedef typename ProblemType::FunctionType::NonparametricType FunctionType;
+  typedef Problems::OS2014::ParametricESV2007
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef Stuff::Functions::Constant
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ExactSolutionType;
+  typedef typename ProblemType::FunctionType::NonparametricType            FunctionType;
 
   typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
-  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+  typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
 
 protected:
   static const size_t default_num_refinements_ = 3;
@@ -73,7 +75,7 @@ public:
                                   {"mu_minimizing", Pymor::ParameterType("mu", 1)}});
   }
 
-  OS2014Base(const ParametersMapType parameters)
+  ParametricConvergenceBase(const ParametersMapType parameters)
     : parameters_(parameters)
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , problem_(3)
@@ -128,18 +130,18 @@ protected:
   const Stuff::Common::Configuration boundary_info_cfg_;
   const ProblemType problem_;
   const ExactSolutionType exact_solution_;
-}; // class OS2014Base
+}; // class ParametricConvergenceBase
 
 
 } // namespace internal
 
 
 template< class GridType >
-class OS2014
-  : public internal::OS2014Base< GridType >
+class ParametricConvergence
+  : public internal::ParametricConvergenceBase< GridType >
   , public Base< GridType >
 {
-  typedef internal::OS2014Base< GridType > OS2014BaseType;
+  typedef internal::ParametricConvergenceBase< GridType > ParametricConvergenceBaseType;
   typedef Base< GridType >                 TestCaseBaseType;
 
   static std::shared_ptr< GridType > create_initial_grid(const int refinements)
@@ -153,29 +155,29 @@ class OS2014
 public:
   typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
 
-  using OS2014BaseType::required_parameters;
-  using OS2014BaseType::parameters;
+  using ParametricConvergenceBaseType::required_parameters;
+  using ParametricConvergenceBaseType::parameters;
 
-  OS2014(const ParametersMapType parameters,
-         const size_t num_refinements = OS2014BaseType::default_num_refinements_)
-    : OS2014BaseType(parameters)
-    , TestCaseBaseType(create_initial_grid(OS2014BaseType::initial_refinements()), num_refinements)
+  ParametricConvergence(const ParametersMapType parameters,
+         const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
+    : ParametricConvergenceBaseType(parameters)
+    , TestCaseBaseType(create_initial_grid(ParametricConvergenceBaseType::initial_refinements()), num_refinements)
   {
-    this->check_parameters(OS2014BaseType::required_parameters(), parameters);
+    this->check_parameters(ParametricConvergenceBaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
   }
-}; // class OS2014
+}; // class ParametricConvergence
 
 
 #if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
-class OS2014Multiscale
-  : public internal::OS2014Base< GridType >
+class ParametricBlockConvergence
+  : public internal::ParametricConvergenceBase< GridType >
   , public MultiscaleCubeBase< GridType >
 {
-  typedef internal::OS2014Base< GridType > OS2014BaseType;
+  typedef internal::ParametricConvergenceBase< GridType > ParametricConvergenceBaseType;
   typedef MultiscaleCubeBase< GridType >   TestCaseBaseType;
 
   static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
@@ -191,19 +193,19 @@ class OS2014Multiscale
 public:
   typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
 
-  using OS2014BaseType::required_parameters;
-  using OS2014BaseType::parameters;
+  using ParametricConvergenceBaseType::required_parameters;
+  using ParametricConvergenceBaseType::parameters;
 
-  OS2014Multiscale(const ParametersMapType parameters,
+  ParametricBlockConvergence(const ParametersMapType parameters,
                    const std::string num_partitions = "[1 1 1]",
-                   const size_t num_refinements = OS2014BaseType::default_num_refinements_)
-    : OS2014BaseType(parameters)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions), OS2014BaseType::initial_refinements(), num_refinements)
+                   const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
+    : ParametricConvergenceBaseType(parameters)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions), ParametricConvergenceBaseType::initial_refinements(), num_refinements)
   {
-    this->check_parameters(OS2014BaseType::required_parameters(), parameters);
+    this->check_parameters(ParametricConvergenceBaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
   }
-}; // class OS2014Multiscale
+}; // class ParametricBlockConvergence
 
 
 //# if HAVE_ALUGRID
@@ -215,6 +217,7 @@ public:
 //# endif // HAVE_ALUGRID
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
+} // namespace OS2014
 } // namespace TestCases
 } // namespace LinearElliptic
 } // namespace HDD

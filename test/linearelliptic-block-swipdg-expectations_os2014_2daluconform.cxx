@@ -18,12 +18,13 @@ namespace Tests {
 
 
 template< bool implemented >
-class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
-                                       1, implemented >
+class BlockSWIPDGStudyExpectations
+    < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >,
+                                                     1, implemented >
   : public internal::BlockSWIPDGStudyExpectationsBase
-        < TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >
+      < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >
 {
-  typedef TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
+  typedef TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
 
 public:
   static std::vector< double > results(const TestCaseType& test_case, const std::string type)
@@ -160,7 +161,7 @@ public:
 }; // BlockSWIPDGStudyExpectations
 
 
-template class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+template class BlockSWIPDGStudyExpectations< TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
 
 
 } // namespace Tests
