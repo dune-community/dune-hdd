@@ -81,14 +81,13 @@ void parametric_convergence_study(const std::string partitioning,
                                   const bool print_header = false);
 
 
-typedef LinearElliptic::TestCases::Spe10Model1< GridType >                  NonparametricLocalizationTestCaseType;
+typedef LinearElliptic::TestCases::Spe10::Model1< GridType >                NonparametricLocalizationTestCaseType;
 typedef LinearElliptic::Tests::SWIPDGStudy
     < NonparametricLocalizationTestCaseType, 1, space_backend, la_backend > NonparametricLocalizationStudyType;
 
 void nonparametric_localization_study__SWIPDG_fine_triangulation();
 
-
-typedef LinearElliptic::TestCases::Spe10Model1Multiscale< GridType > NonparametricBlockLocalizationTestCaseType;
+typedef LinearElliptic::TestCases::Spe10::BlockModel1< GridType >    NonparametricBlockLocalizationTestCaseType;
 typedef LinearElliptic::Tests::BlockSWIPDGStudy
     < NonparametricBlockLocalizationTestCaseType, 1, la_backend >    NonparametricBlockLocalizationStudyType;
 

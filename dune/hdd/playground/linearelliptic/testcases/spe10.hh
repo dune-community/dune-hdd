@@ -29,11 +29,12 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace TestCases {
+namespace Spe10 {
 namespace internal {
 
 
 template< class GridType >
-class Spe10Model1Base
+class Model1Base
 {
   static_assert(GridType::dimension == 2, "This test case is only available in 2d!");
 public:
@@ -77,9 +78,9 @@ protected:
   } // ... configuration()
 
 public:
-  Spe10Model1Base(const std::string filename)
+  Model1Base(const std::string filename)
     : boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
-    , problem_(std::make_shared< ExactSolutionType >(1, "diffusion_factor"),
+    , problem_(std::make_shared< ExactSolutionType >(0, "diffusion_factor"),
                Spe10Model1FunctionType::create(configuration(filename)),
                std::shared_ptr< IndicatorFunctionType >(new IndicatorFunctionType(
                    {{{{0.55, 0.70}, {0.70, 0.85}},  1.0},
@@ -145,66 +146,67 @@ protected:
 
 
 template< class GridType >
-class Spe10Model1
-  : public internal::Spe10Model1Base< GridType >
+class Model1
+  : public internal::Model1Base< GridType >
   , public Base< GridType >
 {
-  typedef internal::Spe10Model1Base< GridType > Spe10Model1BaseType;
-  typedef Base< GridType >                      TestCaseBaseType;
+  typedef internal::Model1Base< GridType > Model1BaseType;
+  typedef Base< GridType >                 TestCaseBaseType;
 
-  typedef typename Spe10Model1BaseType::Spe10Model1FunctionType Spe10Model1FunctionType;
+  typedef typename Model1BaseType::Spe10Model1FunctionType Spe10Model1FunctionType;
 
   static std::shared_ptr< GridType > create_initial_grid(const int refinements)
   {
-    auto grid = Stuff::Grid::Providers::Cube< GridType >::create(Spe10Model1BaseType::configuration(""))->grid_ptr();
+    auto grid = Stuff::Grid::Providers::Cube< GridType >::create(Model1BaseType::configuration(""))->grid_ptr();
     grid->globalRefine(refinements);
     return grid;
   } // ... create_initial_grid(...)
 
 public:
-  Spe10Model1(const std::string filename
-                  = Spe10Model1FunctionType::default_config().template get< std::string >("filename"),
-              const size_t num_refinements = Spe10Model1BaseType::default_num_refinements_)
-    : Spe10Model1BaseType(filename)
-    , TestCaseBaseType(create_initial_grid(Spe10Model1BaseType::initial_refinements()), num_refinements)
+  Model1(const std::string filename
+            = Spe10Model1FunctionType::default_config().template get< std::string >("filename"),
+         const size_t num_refinements = Model1BaseType::default_num_refinements_)
+    : Model1BaseType(filename)
+    , TestCaseBaseType(create_initial_grid(Model1BaseType::initial_refinements()), num_refinements)
   {}
-}; // class Spe10Model1
+}; // class Model1
 
 
 //#if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
-class Spe10Model1Multiscale
-  : public internal::Spe10Model1Base< GridType >
+class BlockModel1
+  : public internal::Model1Base< GridType >
   , public MultiscaleCubeBase< GridType >
 {
-  typedef internal::Spe10Model1Base< GridType > Spe10Model1BaseType;
-  typedef MultiscaleCubeBase< GridType >        TestCaseBaseType;
+  typedef internal::Model1Base< GridType > Model1BaseType;
+  typedef MultiscaleCubeBase< GridType >   TestCaseBaseType;
 
-  typedef typename Spe10Model1BaseType::Spe10Model1FunctionType Spe10Model1FunctionType;
+  typedef typename Model1BaseType::Spe10Model1FunctionType Spe10Model1FunctionType;
 
   static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
   {
-    Stuff::Common::Configuration grid_cfg = Spe10Model1BaseType::configuration("");
+    Stuff::Common::Configuration grid_cfg = Model1BaseType::configuration("");
     grid_cfg["num_partitions"] = num_partitions;
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
 public:
-  Spe10Model1Multiscale(const std::string num_partitions = "[1 1 1]",
-                        const std::string filename
-                                          = Spe10Model1FunctionType::default_config().template get< std::string >("filename"),
-                        const size_t num_refinements = Spe10Model1BaseType::default_num_refinements_)
-    : Spe10Model1BaseType(filename)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions), Spe10Model1BaseType::initial_refinements(), num_refinements)
+  BlockModel1(const std::string num_partitions = "[1 1 1]",
+              const std::string filename
+                                = Spe10Model1FunctionType::default_config().template get< std::string >("filename"),
+              const size_t num_refinements = Model1BaseType::default_num_refinements_)
+    : Model1BaseType(filename)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions), Model1BaseType::initial_refinements(), num_refinements)
   {}
-}; // class Spe10Model1Multiscale
+}; // class BlockModel1
 
 
 //#endif // HAVE_DUNE_GRID_MULTISCALE
 
 
+} // namespace Spe10
 } // namespace TestCases
 } // namespace LinearElliptic
 } // namespace HDD
