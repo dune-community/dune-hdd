@@ -5,6 +5,8 @@
 
 #include "config.h"
 
+#include <dune/stuff/test/gtest/gtest.h>
+
 #if HAVE_ALUGRID
 
 #include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
@@ -17,9 +19,8 @@ namespace LinearElliptic {
 namespace Tests {
 
 
-template< bool implemented >
-class BlockSWIPDGStudyExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >,
-                                       1, implemented >
+template< bool anything >
+class BlockSWIPDGStudyExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
   : public internal::BlockSWIPDGStudyExpectationsBase
         < TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >
 {
@@ -42,7 +43,7 @@ public:
       else if (type == "eff_OS2014")
         return {3.35e+00, 3.37e+00, 3.38e+00, 3.39e+00};
       else
-        DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+        EXPECT_TRUE(false) << "test results missing for type: " << type;
     } else if (test_case.partitioning() == "[2 2 1]") {
       if (type == "energy")
         return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
@@ -57,7 +58,7 @@ public:
       else if (type == "eff_OS2014")
         return {2.47, 2.47, 2.48, 2.48};
       else
-        DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+        EXPECT_TRUE(false) << "test results missing for type: " << type;
     } else if (test_case.partitioning() == "[4 4 1]") {
       if (type == "energy")
         return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
@@ -72,7 +73,7 @@ public:
       else if (type == "eff_OS2014")
         return {2.03, 2.02, 2.02, 2.03};
       else
-        DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+        EXPECT_TRUE(false) << "test results missing for type: " << type;
     } else if (test_case.partitioning() == "[8 8 1]") {
       if (type == "energy")
         return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
@@ -87,14 +88,15 @@ public:
       else if (type == "eff_OS2014")
         return {1.81, 1.80, 1.80, 1.80};
       else
-        DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+        EXPECT_TRUE(false) << "test results missing for type: " << type;
     } else
-      DUNE_THROW(Stuff::Exceptions::test_results_missing, test_case.partitioning());
+      EXPECT_TRUE(false) << "test results missing for partitioning: " << test_case.partitioning();
+    return {};
   } // ... results(...)
 }; // BlockSWIPDGStudyExpectations
 
 
-template class BlockSWIPDGStudyExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+template class BlockSWIPDGStudyExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 
 } // namespace Tests
