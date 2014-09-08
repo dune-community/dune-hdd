@@ -3,36 +3,31 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#define DUNE_STUFF_FUNCTIONS_DISABLE_CHECKS
+#define DUNE_STUFF_FUNCTIONS_DISABLE_CHECKS 1
+
+#ifndef DUNE_STUFF_TEST_MAIN_ENABLE_INFO_LOGGING
+# define DUNE_STUFF_TEST_MAIN_ENABLE_INFO_LOGGING 1
+#endif
 
 // This one has to come first (includes the config.h)!
 #include <dune/stuff/test/main.hxx>
 
-//#define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_ALTERNATE_SUMMATION 1
+#if HAVE_ALUGRID
+# include <dune/stuff/common/disable_warnings.hh>
+#   include <dune/grid/alugrid.hh>
+# include <dune/stuff/common/reenable_warnings.hh>
 
-#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
-# define ENABLE_ALUGRID 1
-# include <dune/grid/alugrid.hh>
-#else
-# error This test requires ALUGrid!
-#endif
+# include <dune/stuff/common/exceptions.hh>
 
-#include <dune/stuff/common/exceptions.hh>
+# include <dune/stuff/common/print.hh>
+# include <dune/stuff/common/float_cmp.hh>
 
-#include <dune/stuff/common/print.hh>
-#include <dune/stuff/common/float_cmp.hh>
+# include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
 
-#include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
-
-#include "linearelliptic-swipdg.hh"
+# include "linearelliptic-swipdg.hh"
 
 using namespace Dune;
 using namespace HDD;
-
-
-// change this to toggle output
-std::ostream& test_out = std::cout;
-//std::ostream& test_out = DSC_LOG.devnull();
 
 
 typedef Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > AluConform2dGridType;
@@ -49,29 +44,27 @@ struct linearelliptic_SWIPDG_discretization
   static void eoc_study()
   {
     const TestCaseType test_case;
-    test_case.print_header(test_out);
-    test_out << std::endl;
-    LinearElliptic::Tests::EocStudySWIPDG< TestCaseType, 1, space_backend, la_backend > eoc_study(test_case);
-    auto errors = eoc_study.run(false, test_out);
-    for (const auto& norm : eoc_study.provided_norms())
-      if (!Dune::Stuff::Common::FloatCmp::lt(errors[norm],
-                                             truncate_vector(eoc_study.expected_results(norm), errors[norm].size()))) {
-        std::stringstream ss;
-        Dune::Stuff::Common::print(errors[norm],                        "errors           (" + norm + ")", ss);
-        Dune::Stuff::Common::print(eoc_study.expected_results(norm), "   expected results (" + norm + ")", ss);
-        DUNE_THROW(errors_are_not_as_expected, ss.str());
-      }
+    test_case.print_header(DSC_LOG_INFO);
+    DSC_LOG_INFO << std::endl;
+    LinearElliptic::Tests::SWIPDGStudy< TestCaseType, 1, space_backend, la_backend > eoc_study(test_case);
+    Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run_eoc(DSC_LOG_INFO));
   } // ... eoc_study()
 
+# if HAVE_DUNE_FEM
+#   if HAVE_DUNE_ISTL
   static void eoc_study_using_fem_and_istl()
   {
     eoc_study< GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::istl_sparse >();
   }
+#   endif // HAVE_DUNE_ISTL
 
+#   if HAVE_EIGEN
   static void eoc_study_using_fem_and_eigen_sparse()
   {
     eoc_study< GDT::ChooseSpaceBackend::fem, Stuff::LA::ChooseBackend::eigen_sparse >();
   }
+#   endif // HAVE_EIGEN
+# endif // HAVE_DUNE_FEM
 
 //  static void eoc_study_using_pdelab_and_istl()
 //  {
@@ -85,19 +78,34 @@ struct linearelliptic_SWIPDG_discretization
 }; // linearelliptic_SWIPDG_discretization
 
 
+# if HAVE_DUNE_FEM && (HAVE_DUNE_ISTL || HAVE_EIGEN)
 TYPED_TEST_CASE(linearelliptic_SWIPDG_discretization, AluConform2dTestCases);
+#   if HAVE_DUNE_ISTL
 TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {
   this->eoc_study_using_fem_and_istl();
 }
+#   else // HAVE_DUNE_ISTL
+TYPED_TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {}
+#   endif
+#   if HAVE_EIGEN
 TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {
   this->eoc_study_using_fem_and_eigen_sparse();
 }
+#   else // HAVE_EIGEN
+TYPED_TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {}
+#   endif // HAVE_EIGEN
 //TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_pdelab_and_istl) {
 //  this->eoc_study_using_pdelab_and_istl();
 //}
 //TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_pdelab_and_eigen_sparse) {
 //  this->eoc_study_using_pdelab_and_eigen_sparse();
 //}
+# endif // HAVE_DUNE_FEM && (HAVE_DUNE_ISTL || HAVE_EIGEN)
+#else // HAVE_ALUGRID
 
 
-#include <dune/stuff/test/test_main.cxx>
+TYPED_TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {}
+TYPED_TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {}
+
+
+#endif // HAVE_ALUGRID
