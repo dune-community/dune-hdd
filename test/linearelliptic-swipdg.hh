@@ -133,9 +133,9 @@ public:
         || std::is_same< TestCaseType, TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > > >::value) {
       if (polOrder == 1) {
         if (type == "L2")
-          return {1.84e-02, 4.54e-03, 1.13e-03, 2.79e-04};
+          return {1.83e-02, 4.53e-03, 1.12e-03, 2.78e-04};
         else if (type == "H1_semi")
-          return {3.29e-01, 1.63e-01, 8.05e-02, 4.02e-02};
+          return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
         else if (type == "energy")
           return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
         else if (type == "eta_NC_ESV2007")
