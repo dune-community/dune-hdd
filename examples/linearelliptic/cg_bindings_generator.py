@@ -61,9 +61,9 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
 
 if __name__ == '__main__':
     # prepare the module
-    module, pybindgen_filename = prepare_python_bindings(sys.argv[1:])
+    module, pybindgen_filename, config_h_filename = prepare_python_bindings(sys.argv[1:])
     # add all of libdunepymor
-    module, exceptions, interfaces, CONFIG_H = inject_lib_dune_pymor(module)
+    module, exceptions, interfaces, CONFIG_H = inject_lib_dune_pymor(module, config_h_filename)
     # add example user code (see above)
     inject_Example(module, exceptions, interfaces, CONFIG_H)
     # and finally write the pybindgen .cc file
