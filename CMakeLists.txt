@@ -130,21 +130,19 @@ else(CMAKE_WITH_AUTOTOOLS)
   set_source_files_properties(${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1)
   
   set(GRIDDIM "2" CACHE STRING "GRIDDIM")
-  set(GRIDTYPE "ALUGRID_CONFORM" CACHE STRING "GRIDTYPE")
-  add_definitions("-DGRIDDIM=${GRIDDIM}" "-DGRIDTYPE=${GRIDTYPE}")
+  set(GRIDTYPE "SGRID" CACHE STRING "GRIDTYPE")
   if (ALUGRID_FOUND)
+    set(GRIDTYPE "ALUGRID_CONFORM" CACHE STRING "GRIDTYPE")
     add_definitions("-DENABLE_ALUGRID=1")
     include_directories(${ALUGRID_INCLUDES})
   endif (ALUGRID_FOUND)
+  add_definitions("-DGRIDDIM=${GRIDDIM}" "-DGRIDTYPE=${GRIDTYPE}" "-D${GRIDTYPE}")
   
   #add_subdirectory(dune)
 
   # libs
   set(COMMON_LIBS ${DUNE_DEFAULT_LIBS})
 
-  add_subdirectory(examples EXCLUDE_FROM_ALL)
-  add_subdirectory(test EXCLUDE_FROM_ALL)
-  
   #disable most warnings from dependent modules
   foreach(_mod ${ALL_DEPENDENCIES})
       dune_module_to_uppercase(_upper_case "${_mod}")
@@ -154,6 +152,9 @@ else(CMAKE_WITH_AUTOTOOLS)
           endforeach( _idir )
       endif(${_mod}_INCLUDE_DIRS)
   endforeach(_mod DEPENDENCIES)
+
+  add_subdirectory(examples EXCLUDE_FROM_ALL)
+  add_subdirectory(test EXCLUDE_FROM_ALL)
 
   finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
 endif(CMAKE_WITH_AUTOTOOLS)
