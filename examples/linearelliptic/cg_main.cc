@@ -5,14 +5,10 @@
 
 #include "config.h"
 
-#ifdef HAVE_DUNE_GRID_MULTISCALE
-#undef HAVE_DUNE_GRID_MULTISCALE
-#endif
-
 #include <string>
 #include <vector>
 
-# include "cg.hh"
+#include "cg.hh"
 #include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
 #include <boost/filesystem.hpp>
