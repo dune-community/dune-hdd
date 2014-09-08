@@ -91,6 +91,10 @@ TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_64_
 # endif // HAVE_EIGEN // HAVE_DUNE_ISTL
 
 
+extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
+    < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+
+
 #else // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_ALUGRID
 
 
@@ -101,7 +105,3 @@ TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_istl_and_64_
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_ALUGRID
-
-
-extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
