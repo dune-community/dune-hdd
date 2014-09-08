@@ -8,12 +8,10 @@
 
 #include <memory>
 
-#   include <dune/stuff/common/disable_warnings.hh>
-# if HAVE_ALUGRID
-#   include <dune/stuff/common/reenable_warnings.hh>
-# include <dune/grid/alugrid.hh>
-#endif
 #include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
 # include <dune/grid/sgrid.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
@@ -92,12 +90,10 @@ private:
 
 extern template class LinearellipticExampleSWIPDG< Dune::SGrid< 1, 1 > >;
 
-#   include <dune/stuff/common/disable_warnings.hh>
-#if HAVE_ALUGRID
-#   include <dune/stuff/common/reenable_warnings.hh>
+# if HAVE_ALUGRID
 
 extern template class LinearellipticExampleSWIPDG< Dune::ALUConformGrid< 2, 2 > >;
 
 
-#endif // HAVE_ALUGRID
+# endif // HAVE_ALUGRID
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_SWIPDG_HH
