@@ -30,7 +30,7 @@ using namespace Dune;
 using namespace HDD;
 
 
-typedef Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > AluConform2dGridType;
+typedef ALUGrid< 2, 2, simplex, conforming > AluConform2dGridType;
 
 typedef testing::Types< LinearElliptic::TestCases::ESV2007< AluConform2dGridType >
                       > AluConform2dTestCases;
@@ -79,7 +79,9 @@ struct linearelliptic_SWIPDG_discretization
 
 
 # if HAVE_DUNE_FEM && (HAVE_DUNE_ISTL || HAVE_EIGEN)
+
 TYPED_TEST_CASE(linearelliptic_SWIPDG_discretization, AluConform2dTestCases);
+
 #   if HAVE_DUNE_ISTL
 TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {
   this->eoc_study_using_fem_and_istl();
@@ -87,6 +89,7 @@ TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {
 #   else // HAVE_DUNE_ISTL
 TYPED_TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_istl) {}
 #   endif
+
 #   if HAVE_EIGEN
 TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {
   this->eoc_study_using_fem_and_eigen_sparse();
@@ -94,12 +97,15 @@ TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_s
 #   else // HAVE_EIGEN
 TYPED_TEST(DISABLED_linearelliptic_SWIPDG_discretization, eoc_study_using_fem_and_eigen_sparse) {}
 #   endif // HAVE_EIGEN
+
 //TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_pdelab_and_istl) {
 //  this->eoc_study_using_pdelab_and_istl();
 //}
+
 //TYPED_TEST(linearelliptic_SWIPDG_discretization, eoc_study_using_pdelab_and_eigen_sparse) {
 //  this->eoc_study_using_pdelab_and_eigen_sparse();
 //}
+
 # endif // HAVE_DUNE_FEM && (HAVE_DUNE_ISTL || HAVE_EIGEN)
 #else // HAVE_ALUGRID
 
