@@ -26,7 +26,7 @@ namespace LinearElliptic {
 namespace internal {
 
 
-template< class E, class D, int d, class R, int r = 1 >
+template< class E, class D, int d, class R, int r >
 class ProblemProviderBase
 {
 public:
@@ -53,7 +53,7 @@ public:
   } // ... available(...)
 
   static Stuff::Common::Configuration default_config(const std::string type = available()[0],
-                                                  const std::string sub_name = "")
+                                                     const std::string sub_name = "")
   {
   if (type == Problems::Default< E, D, d, R, r >::static_id())
     return Problems::Default< E, D, d, R, r >::default_config(sub_name);
@@ -105,17 +105,17 @@ public:
   {
     auto base = BaseType::available();
     base.push_back(Problems::ESV2007< E, D, d, R, r >::static_id());
-    base.push_back(Problems::OS2014< E, D, d, R, r >::static_id());
+    base.push_back(Problems::OS2014::ParametricESV2007< E, D, d, R, r >::static_id());
     return base;
   } // ... available(...)
 
   static Stuff::Common::Configuration default_config(const std::string type = available()[0],
-                                                  const std::string sub_name = "")
+                                                     const std::string sub_name = "")
   {
   if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
     return Problems::ESV2007< E, D, d, R, r >::default_config(sub_name);
-  else if (type == Problems::OS2014< E, D, d, R, r >::static_id())
-    return Problems::OS2014< E, D, d, R, r >::default_config(sub_name);
+  else if (type == Problems::OS2014::ParametricESV2007< E, D, d, R, r >::static_id())
+    return Problems::OS2014::ParametricESV2007< E, D, d, R, r >::default_config(sub_name);
   else
     return BaseType::default_config(type, sub_name);
   } // ... default_config(...)
@@ -125,8 +125,8 @@ public:
   {
     if (type == Problems::ESV2007< E, D, d, R, r >::static_id())
       return BaseType::template call_create< Problems::ESV2007< E, D, d, R, r > >(config);
-    else if (type == Problems::OS2014< E, D, d, R, r >::static_id())
-      return BaseType::template call_create< Problems::OS2014< E, D, d, R, r > >(config);
+    else if (type == Problems::OS2014::ParametricESV2007< E, D, d, R, r >::static_id())
+      return BaseType::template call_create< Problems::OS2014::ParametricESV2007< E, D, d, R, r > >(config);
     else
       return BaseType::create(type, config);
   } // ... create(...)
