@@ -84,7 +84,7 @@ protected:
 public:
   Model1Base(const std::string filename)
     : boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
-    , problem_(std::make_shared< ExactSolutionType >(0, "diffusion_factor"),
+    , problem_(std::make_shared< ExactSolutionType >(1, "diffusion_factor"),
                Spe10Model1FunctionType::create(configuration(filename)),
                std::shared_ptr< IndicatorFunctionType >(new IndicatorFunctionType(
                    {{{{0.55, 0.70}, {0.70, 0.85}},  1.0},
@@ -326,7 +326,7 @@ public:
 }; // class Model1
 
 
-//#if HAVE_DUNE_GRID_MULTISCALE
+#if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
@@ -394,7 +394,7 @@ public:
 }; // class ParametricBlockModel1
 
 
-//#endif // HAVE_DUNE_GRID_MULTISCALE
+#endif // HAVE_DUNE_GRID_MULTISCALE
 
 
 } // namespace Spe10
