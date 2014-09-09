@@ -8,6 +8,8 @@
 
 #include <memory>
 
+#include <boost/numeric/conversion/cast.hpp>
+
 #include <dune/common/static_assert.hh>
 #include <dune/common/timer.hh>
 
@@ -434,7 +436,7 @@ public:
   ThermalblockMultiScale(const std::string id, const std::vector< std::string >& arguments, const bool visualize = true)
   {
     // mpi
-    int argc = arguments.size();
+    int argc = boost::numeric_cast< int >(arguments.size());
     char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);

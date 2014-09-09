@@ -17,10 +17,8 @@ namespace LinearElliptic {
 namespace Tests {
 
 
-template< bool implemented >
-class BlockSWIPDGStudyExpectations
-    < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >,
-                                                     1, implemented >
+template< bool anything >
+class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
   : public internal::BlockSWIPDGStudyExpectationsBase
       < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >
 {
@@ -54,7 +52,7 @@ public:
         else if (type == "eff_OS2014_*_mu")
           return {};
         else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (   mu            == Parameter("mu", 0.3)
                  && mu_bar        == Parameter("mu", 0.3)
                  && mu_hat        == Parameter("mu", 0.1)
@@ -74,7 +72,7 @@ public:
         else if (type == "eff_OS2014_mu")
           return {};
         else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (   mu            == Parameter("mu", 0.5)
                  && mu_bar        == Parameter("mu", 0.5)
                  && mu_hat        == Parameter("mu", 0.1)
@@ -94,7 +92,7 @@ public:
         else if (type == "eff_OS2014_mu")
           return {};
         else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (   mu            == Parameter("mu", 0.1)
                  && mu_bar        == Parameter("mu", 0.1)
                  && mu_hat        == Parameter("mu", 1.0)
@@ -112,7 +110,7 @@ public:
         else if (type == "eff_OS2014_mu")
           return {5.31e+00, 8.74e+00, 1.86e+01, 4.27e+01};
         else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
 //      } else if (   mu            == Parameter("mu", )
 //                 && mu_bar        == Parameter("mu", )
 //                 && mu_hat        == Parameter("mu", )
@@ -150,18 +148,19 @@ public:
         else if (type == "eff_OS2014_mu")
           return {};
         else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else
-          DUNE_THROW(Stuff::Exceptions::test_results_missing,
-                     "mu = " << mu << "\nmu_bar = " << mu_bar << "\nmu_hat = " << mu_hat
-                     << "\nmu_minimizing = " << mu_minimizing);
+        EXPECT_TRUE(false) << "test results missing for parameters: mu = " << mu << "\n"
+                           << "                                     mu_bar = " << mu_bar << "\n"
+                           << "                                     mu_hat = " << mu_hat << "\n"
+                           << "                                     mu_minimizing = " << mu_minimizing;
     } else
-      DUNE_THROW(Stuff::Exceptions::test_results_missing, test_case.partitioning());
+      EXPECT_TRUE(false) << "test results missing for partitioning: " << test_case.partitioning();
   } // ... results(...)
 }; // BlockSWIPDGStudyExpectations
 
 
-template class BlockSWIPDGStudyExpectations< TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+template class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 
 } // namespace Tests
