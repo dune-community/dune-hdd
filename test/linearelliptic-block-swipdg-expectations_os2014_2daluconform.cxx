@@ -5,7 +5,7 @@
 
 #include "config.h"
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID
 
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
@@ -18,7 +18,8 @@ namespace Tests {
 
 
 template< bool anything >
-class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
+class BlockSWIPDGStudyExpectations
+    < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
   : public internal::BlockSWIPDGStudyExpectationsBase
       < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >
 {
@@ -156,11 +157,13 @@ public:
                            << "                                     mu_minimizing = " << mu_minimizing;
     } else
       EXPECT_TRUE(false) << "test results missing for partitioning: " << test_case.partitioning();
+    return {};
   } // ... results(...)
 }; // BlockSWIPDGStudyExpectations
 
 
-template class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+template class BlockSWIPDGStudyExpectations
+    < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 
 } // namespace Tests
@@ -168,4 +171,4 @@ template class BlockSWIPDGStudyExpectations< TestCases::OS2014Multiscale< ALUGri
 } // namespace HDD
 } // namespace Dune
 
-//#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID
