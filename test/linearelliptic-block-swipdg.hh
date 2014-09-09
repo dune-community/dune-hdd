@@ -96,8 +96,12 @@ public:
     // For a new TestCaseType you have to add a specialization in a separate object file
     // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
     // CMakeLists.txt accordingly. For a new polOrder add
-    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder, true >;
+    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder >;
     // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
+    //
+    // Oh: and do not forget to add
+    //   'extern template class BlockSWIPDGStudyExpectations< ... >'
+    // to each test source using these results!
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
@@ -108,8 +112,12 @@ public:
     // For a new TestCaseType you have to add a specialization in a separate object file
     // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
     // CMakeLists.txt accordingly. For a new polOrder add
-    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder, true >;
+    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder >;
     // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
+    //
+    // Oh: and do not forget to add
+    //   'extern template class BlockSWIPDGStudyExpectations< ... >'
+    // to each test source using these results!
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 

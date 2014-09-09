@@ -111,10 +111,10 @@ public:
                        << "type: " << type << "\n"
                        << "Please put an appropriate specialiaztion of BlockSWIPDGStudyExpectations for this TestCaseType "
                        << "in a separate object file (see examples below) or add\n"
-                       << "  'template class BlockSWIPDGStudyExpectations< TestCaseType, " << polOrder << ", true >'\n"
+                       << "  'template class BlockSWIPDGStudyExpectations< TestCaseType, " << polOrder << " >'\n"
                        << "for this polOrder in the appropriate object file!\n\n"
                        << "Oh: and do not forget to add\n"
-                       << "  'extern template class BlockSWIPDGStudyExpectations...'\n"
+                       << "  'extern template class BlockSWIPDGStudyExpectations< ... >'\n"
                        << "to each test source using these results!";
     return {};
   } // ... results(...)
