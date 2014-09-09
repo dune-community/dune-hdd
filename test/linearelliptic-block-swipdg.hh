@@ -145,6 +145,7 @@ public:
                                                          *this->reference_solution_vector_,
                                                          "reference solution");
       // define error norm
+      const auto difference = reference_solution - current_solution;
       typedef typename ConstDiscreteFunctionType::DifferenceType DifferenceType;
       GDT::Products::EllipticLocalizable< DiffusionFactorType, typename DiscretizationType::GridViewType,
                                           DifferenceType, DifferenceType, RangeFieldType,
@@ -152,8 +153,8 @@ public:
           local_energy_norm(*diffusion_factor_mu_bar,
                             *diffusion_tensor_mu_bar,
                             *this->reference_discretization_->grid_view(),
-                            reference_solution - current_solution,
-                            reference_solution - current_solution,
+                            difference,
+                            difference,
                             Discretizations::internal::SWIPDGEstimators::over_integrate);
       // prepare
       local_energy_norm.prepare();
