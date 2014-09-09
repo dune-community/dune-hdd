@@ -146,6 +146,13 @@ else(CMAKE_WITH_AUTOTOOLS)
       endif(${_mod}_INCLUDE_DIRS)
   endforeach(_mod DEPENDENCIES)
 
+  # search for spe10 data files
+  find_file(SPE10MODEL1DATA
+            NAMES perm_case1.dat
+            PATHS "${dune-hdd_SOURCE_DIR}/../local/src/spe10/model1"
+            DOC "Location of perm_case1.dat"
+            NO_DEFAULT_PATH)
+
   add_subdirectory(examples EXCLUDE_FROM_ALL)
   add_subdirectory(test EXCLUDE_FROM_ALL)
 
