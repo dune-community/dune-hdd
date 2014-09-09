@@ -75,8 +75,9 @@ class BlockSWIPDGStudy
 public:
   BlockSWIPDGStudy(const TestCaseType& test_case,
                    const std::vector< std::string > only_these_norms = std::vector< std::string >(),
-                   const std::vector< std::string > only_these_local_indicators = std::vector< std::string >())
-    : StudyBaseType(test_case, only_these_norms)
+                   const std::vector< std::string > only_these_local_indicators = std::vector< std::string >(),
+                   const std::string visualize_prefix = "")
+    : StudyBaseType(test_case, only_these_norms, visualize_prefix)
     , LocalizationBaseType(only_these_local_indicators)
   {}
 
@@ -196,7 +197,12 @@ public:
       // average
       for (size_t ii = 0; ii < error_indicators.size(); ++ii)
         error_indicators[ii] /= (energy_error_squared * fine_entities_per_subdomain[ii]);
-//      visualize_indicators(*ms_grid, error_indicators, "energy", "BlockSWIPDG_indicators_energy_error");
+      if (!this->visualize_prefix_.empty())
+      visualize_indicators(*ms_grid,
+                           error_indicators,
+                           "energy",
+                           this->visualize_prefix_ + "_indicators_energy_error_"
+                              + DSC::toString(this->current_refinement_));
       return error_indicators;
     } // this->test_case_.provides_exact_solution()
   } // ... compute_reference_indicators(...)
@@ -215,10 +221,12 @@ public:
                                                     *this->current_solution_vector_on_level_,
                                                     this->test_case_.problem(),
                                                     type);
-//    visualize_indicators(*this->current_discretization_->ansatz_space()->ms_grid(),
-//                         indicators,
-//                         type,
-//                         "BlockSWIPDG_indicators_" + type);
+    if (!this->visualize_prefix_.empty())
+      visualize_indicators(*this->current_discretization_->ansatz_space()->ms_grid(),
+                           indicators,
+                           type,
+                           this->visualize_prefix_ + "_indicators_" + type + "_"
+                              + DSC::toString(this->current_refinement_));
     return indicators;
   } // ... compute_indicators(...)
 
@@ -329,26 +337,26 @@ private:
                                    this->test_case_.parameters());
   } // ... estimate(...)
 
-//  template< class MSG, class VV >
-//  void visualize_indicators(const MSG& ms_grid,
-//                            const VV& vector,
-//                            const std::string name,
-//                            const std::string filename) const
-//  {
-//    assert(vector.size() == ms_grid.size());
-//    const auto grid_view = ms_grid.globalGridView();
-//    VV fine_vector(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
-//    for (const auto& entity : Stuff::Common::viewRange(*grid_view)) {
-//      const size_t index = grid_view->indexSet().index(entity);
-//      const size_t subdomain = ms_grid.subdomainOf(entity);
-//      fine_vector[index] = vector[subdomain];
-//    }
-//    typedef GDT::Spaces::FiniteVolume::Default< typename MSG::GlobalGridViewType, typename VV::ScalarType, 1 >
-//        FVSpaceType;
-//    const FVSpaceType fv_space(grid_view);
-//    GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, fine_vector, name);
-//    discrete_function.visualize(filename);
-//  } // ... visualize_indicators(...)
+  template< class MSG, class VV >
+  void visualize_indicators(const MSG& ms_grid,
+                            const VV& vector,
+                            const std::string name,
+                            const std::string filename) const
+  {
+    assert(vector.size() == ms_grid.size());
+    const auto grid_view = ms_grid.globalGridView();
+    VV fine_vector(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
+    for (const auto& entity : Stuff::Common::viewRange(*grid_view)) {
+      const size_t index = grid_view->indexSet().index(entity);
+      const size_t subdomain = ms_grid.subdomainOf(entity);
+      fine_vector[index] = vector[subdomain];
+    }
+    typedef GDT::Spaces::FiniteVolume::Default< typename MSG::GlobalGridViewType, typename VV::ScalarType, 1 >
+        FVSpaceType;
+    const FVSpaceType fv_space(grid_view);
+    GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, fine_vector, name);
+    discrete_function.visualize(filename);
+  } // ... visualize_indicators(...)
 }; // class BlockSWIPDGStudy
 
 

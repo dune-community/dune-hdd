@@ -88,8 +88,9 @@ class SWIPDGStudy
 public:
   SWIPDGStudy(const TestCaseType& test_case,
               const std::vector< std::string > only_these_norms = {},
-              const std::vector< std::string > only_these_local_norms = {})
-    : StudyBaseType(test_case, only_these_norms)
+              const std::vector< std::string > only_these_local_norms = {},
+              const std::string visualize_prefix = "")
+    : StudyBaseType(test_case, only_these_norms, visualize_prefix)
     , LocalizationBaseType(only_these_local_norms)
   {}
 
@@ -268,7 +269,12 @@ public:
       // average
       for (size_t ii = 0; ii < error_indicators.size(); ++ii)
         error_indicators[ii] /= (energy_error_squared * fine_entities_per_coarse_entity[ii]);
-//      visualize_indicators(current_grid_view, error_indicators, "energy", "indicators_energy_error");
+      if (!this->visualize_prefix_.empty())
+        visualize_indicators(current_grid_view,
+                             error_indicators,
+                             "energy",
+                             this->visualize_prefix_ + "_indicators_energy_error_"
+                                + DSC::toString(this->current_refinement_));
       return error_indicators;
     }
   } // ... compute_reference_indicators(...)
@@ -290,7 +296,12 @@ public:
                                                     *this->current_solution_vector_on_level_,
                                                     this->test_case_.problem(),
                                                     type);
-//    visualize_indicators(this->current_discretization_->grid_view(), indicators, type, "indicators_" + type);
+    if (!this->visualize_prefix_.empty())
+      visualize_indicators(this->current_discretization_->grid_view(),
+                           indicators,
+                           type,
+                           this->visualize_prefix_ + "_indicators_" + type + "_"
+                           + DSC::toString(this->current_refinement_));
     return indicators;
   } // ... compute_indicators(...)
 
@@ -360,17 +371,17 @@ private:
     }
   } // ... estimate(...)
 
-//  template< class GV, class VV >
-//  void visualize_indicators(const std::shared_ptr< const GV >& grid_view_ptr,
-//                            const VV& vector,
-//                            const std::string name,
-//                            const std::string filename) const
-//  {
-//    typedef GDT::Spaces::FiniteVolume::Default< GV, typename VV::ScalarType, 1 > FVSpaceType;
-//    const FVSpaceType fv_space(grid_view_ptr);
-//    GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
-//    discrete_function.visualize(filename);
-//  } // ... visualize_indicators(...)
+  template< class GV, class VV >
+  void visualize_indicators(const std::shared_ptr< const GV >& grid_view_ptr,
+                            const VV& vector,
+                            const std::string name,
+                            const std::string filename) const
+  {
+    typedef GDT::Spaces::FiniteVolume::Default< GV, typename VV::ScalarType, 1 > FVSpaceType;
+    const FVSpaceType fv_space(grid_view_ptr);
+    GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
+    discrete_function.visualize(filename);
+  } // ... visualize_indicators(...)
 }; // class SWIPDGStudy
 
 

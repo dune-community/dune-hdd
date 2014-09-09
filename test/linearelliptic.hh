@@ -64,7 +64,8 @@ protected:
 
 public:
   EocStudyBase(const TestCaseType& test_case,
-               const std::vector< std::string > only_these_norms = {})
+               const std::vector< std::string > only_these_norms = {},
+               const std::string visualize_prefix = "")
     : BaseType(only_these_norms)
     , test_case_(test_case)
     , current_refinement_(0)
@@ -76,6 +77,7 @@ public:
     , reference_discretization_(nullptr)
     , reference_solution_vector_(nullptr)
     , current_solution_vector_(nullptr)
+    , visualize_prefix_(visualize_prefix)
   {
     if (test_case_.problem().parametric())
       DUNE_THROW(NotImplemented, "Parametric problems are not implemented yet!");
@@ -104,6 +106,11 @@ public:
   {
     if (is_norm(type)) {
       if (test_case_.provides_exact_solution()) {
+        // visualize
+        if (!visualize_prefix_.empty()) {
+          test_case_.exact_solution().visualize(*(test_case_.reference_grid_view()),
+                                                visualize_prefix_ + "_exact_solution");
+        }
         return compute_norm(*(test_case_.reference_grid_view()), test_case_.exact_solution(), type);
       } else {
         compute_reference_solution();
@@ -167,6 +174,12 @@ public:
                                                          "solution on reference grid part");
       prolongation_operator.apply(current_refinement_solution, reference_refinement_solution);
       last_computed_refinement_ = current_refinement_;
+      // visualize
+      if (!visualize_prefix_.empty()) {
+        this->test_case_.problem().visualize(*current_discretization_->grid_view(),
+                                             visualize_prefix_ + "_problem_" + DSC::toString(current_refinement_));
+        current_refinement_solution.visualize(visualize_prefix_ + "_solution_" + DSC::toString(current_refinement_));
+      }
     }
     return time_to_solution_;
   } // ... compute_on_current_refinement(...)
@@ -232,6 +245,14 @@ protected:
       reference_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
       reference_discretization_->solve(*reference_solution_vector_);
       reference_solution_computed_ = true;
+      // visualize
+      if (!visualize_prefix_.empty()) {
+        this->test_case_.problem().visualize(*reference_discretization_->grid_view(),
+                                             visualize_prefix_ + "_problem_reference");
+        ConstDiscreteFunctionType(*reference_discretization_->ansatz_space(),
+                                  *reference_solution_vector_,
+                                  "reference solution").visualize(visualize_prefix_ + "_reference_solution");
+      }
     }
   } // ... compute_reference_solution()
 
@@ -261,6 +282,7 @@ protected:
   std::unique_ptr< DiscretizationType > reference_discretization_;
   std::unique_ptr< VectorType > reference_solution_vector_;
   std::unique_ptr< VectorType > current_solution_vector_;
+  const std::string visualize_prefix_;
 }; // class EocStudyBase
 
 
@@ -303,7 +325,8 @@ protected:
 
 public:
   MultiscaleEocStudyBase(const MultiscaleTestCaseType& test_case,
-                         const std::vector< std::string > only_these_norms = std::vector< std::string >())
+                         const std::vector< std::string > only_these_norms = std::vector< std::string >(),
+                         const std::string visualize_prefix = "")
     : BaseType(only_these_norms)
     , test_case_(check_test_case(test_case))
     , current_refinement_(0)
@@ -316,6 +339,7 @@ public:
     , reference_discretization_(nullptr)
     , reference_solution_vector_(nullptr)
     , current_solution_vector_(nullptr)
+    , visualize_prefix_(visualize_prefix)
   {}
 
   virtual ~MultiscaleEocStudyBase() {}
@@ -342,9 +366,14 @@ public:
     if (is_norm(type)) {
       const auto reference_grid_view
           = test_case_.reference_provider()->template global< Stuff::Grid::ChoosePartView::view >();
-      if (test_case_.provides_exact_solution())
+      if (test_case_.provides_exact_solution()) {
+        // visualize
+        if (!visualize_prefix_.empty()) {
+          test_case_.exact_solution().visualize(*reference_grid_view,
+                                                visualize_prefix_ + "_exact_solution");
+        }
         return compute_norm(*reference_grid_view, test_case_.exact_solution(), type);
-      else {
+      } else {
         compute_reference_solution();
         assert(reference_discretization_);
         assert(reference_solution_vector_);
@@ -406,6 +435,12 @@ public:
                                                          "solution on reference grid part");
       prolongation_operator.apply(current_refinement_solution, reference_refinement_solution);
       last_computed_refinement_ = current_refinement_;
+      // visualize
+      if (!visualize_prefix_.empty()) {
+        this->test_case_.problem().visualize(*current_discretization_->grid_view(),
+                                             visualize_prefix_ + "_problem_" + DSC::toString(current_refinement_));
+        current_refinement_solution.visualize(visualize_prefix_ + "_solution_" + DSC::toString(current_refinement_));
+      }
     }
     return time_to_solution_;
   } // ... compute_on_current_refinement(...)
@@ -472,6 +507,14 @@ protected:
       reference_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
       reference_discretization_->solve(*reference_solution_vector_);
       reference_solution_computed_ = true;
+      // visualize
+      if (!visualize_prefix_.empty()) {
+        this->test_case_.problem().visualize(*reference_discretization_->grid_view(),
+                                             visualize_prefix_ + "_problem_reference");
+        ConstDiscreteFunctionType(*reference_discretization_->ansatz_space(),
+                                  *reference_solution_vector_,
+                                  "reference solution").visualize(visualize_prefix_ + "_reference_solution");
+      }
     }
   } // ... compute_reference_solution()
 
@@ -502,6 +545,7 @@ protected:
   std::unique_ptr< DiscretizationType > reference_discretization_;
   std::unique_ptr< VectorType > reference_solution_vector_;
   std::unique_ptr< VectorType > current_solution_vector_;
+  const std::string visualize_prefix_;
 }; // class MultiscaleEocStudyBase
 
 

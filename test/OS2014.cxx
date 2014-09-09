@@ -95,7 +95,10 @@ void nonparametric_localization_study__SWIPDG_fine_triangulation()
   const NonparametricLocalizationTestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
   DSC_LOG_INFO << std::endl;
-  NonparametricLocalizationStudyType study(test_case, {}, {"eta_ESV2007", "eta_ESV2007_alt"});
+  NonparametricLocalizationStudyType study(test_case,
+                                           {},
+                                           {"eta_ESV2007", "eta_ESV2007_alt"}/*,
+                                           "nonparametric_localization_study_swipdg"*/);
   study.run_localization(DSC_LOG_INFO);
 } // ... nonparametric_localization_study(...)
 
@@ -103,7 +106,10 @@ void nonparametric_localization_study__SWIPDG_fine_triangulation()
 void nonparametric_localization_study__Block_SWIPDG(const std::string partitioning)
 {
   const NonparametricBlockLocalizationTestCaseType test_case(partitioning);
-  NonparametricBlockLocalizationStudyType study(test_case, {}, {"eta_OS2014"});
+  NonparametricBlockLocalizationStudyType study(test_case,
+                                                {},
+                                                {"eta_OS2014"}/*,
+                                                "nonparametric_localization_study_blockswipdg"*/);
   study.run_localization(DSC_LOG_INFO);
 } // ... nonparametric_localization_study__Block_SWIPDG(...)
 
