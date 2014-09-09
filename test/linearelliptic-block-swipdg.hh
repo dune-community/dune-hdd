@@ -120,7 +120,7 @@ public:
     typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
     typedef typename DiffusionFactorType::DomainType     DomainType;
     typedef typename DiffusionFactorType::RangeFieldType RangeFieldType;
-    const auto mu_bar = this->test_case_.parametric() ? this->test_case_.parameters().at("mu_bar") : Pymor::Parameter();
+    const auto mu_bar = this->get_mu(this->test_case_);
     const auto problem_mu_bar = this->test_case_.problem().with_mu(mu_bar);
     const auto diffusion_factor_mu_bar = problem_mu_bar->diffusion_factor()->affine_part();
     const auto diffusion_tensor_mu_bar = problem_mu_bar->diffusion_tensor()->affine_part();
@@ -171,11 +171,11 @@ public:
            ++entity_it) {
         const auto& entity = *entity_it;
         // search for the father entity in the current (coarser) grid
-        std::vector< DomainType > center(1, DomainType(0));
-        center[0] = entity.geometry().center();
+        std::vector< DomainType > center = {entity.geometry().center()};
         const auto father_entity_ptr_ptrs = entity_search(center);
         assert(father_entity_ptr_ptrs.size() == 1);
         const auto& father_entity_ptr_ptr = father_entity_ptr_ptrs[0];
+        assert(father_entity_ptr_ptr);
         const auto father_entity_ptr = *father_entity_ptr_ptr;
         const auto& father_entity = *father_entity_ptr;
         assert(current_grid_view->contains(father_entity));
