@@ -113,7 +113,7 @@ public:
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 
-  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const
+  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const DS_OVERRIDE DS_FINAL
   {
     typedef typename TestCaseType::ProblemType ProblemType;
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
