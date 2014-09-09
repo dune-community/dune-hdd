@@ -114,6 +114,7 @@ else(CMAKE_WITH_AUTOTOOLS)
        ${CMAKE_CURRENT_SOURCE_DIR}/../dune-stuff/cmake)
 
   include(DuneUtils)
+  include(GridUtils)
   include(PymorUtils)
 
   link_directories("/usr/lib" ${CCGNU_LIBRARY_DIRS})
@@ -128,17 +129,10 @@ else(CMAKE_WITH_AUTOTOOLS)
   endforeach(_mod DEPENDENCIES)
   set_source_files_properties(${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1)
   
-  set(GRIDDIM "2" CACHE STRING "GRIDDIM")
-  set(GRIDTYPE "SGRID" CACHE STRING "GRIDTYPE")
   if (ALUGRID_FOUND)
-    set(GRIDTYPE "ALUGRID_CONFORM" CACHE STRING "GRIDTYPE")
-    add_definitions("-DENABLE_ALUGRID=1")
-    include_directories(${ALUGRID_INCLUDES})
+    set(GRIDTYPE "ALUGRID_CONFORM" CACHE STRING "GRIDTYPE" FORCE)
   endif (ALUGRID_FOUND)
-  add_definitions("-DGRIDDIM=${GRIDDIM}" "-DGRIDTYPE=${GRIDTYPE}" "-D${GRIDTYPE}")
   
-  #add_subdirectory(dune)
-
   # libs
   set(COMMON_LIBS ${DUNE_DEFAULT_LIBS})
 
