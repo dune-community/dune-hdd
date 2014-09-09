@@ -391,24 +391,6 @@ public:
 }; // class SWIPDG
 
 
-//#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
-
-
-//extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >,
-//                              Stuff::Grid::ChooseLayer::leaf,
-//                              double, 1, 1,
-//                              GDT::ChooseSpaceBackend::fem,
-//                              Stuff::LA::ChooseBackend::eigen_sparse >;
-
-//extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >,
-//                              Stuff::Grid::ChooseLayer::level,
-//                              double, 1, 1,
-//                              GDT::ChooseSpaceBackend::fem,
-//                              Stuff::LA::ChooseBackend::eigen_sparse >;
-
-
-//#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
-
 } // namespace Discretizations
 } // namespace LinearElliptic
 } // namespace HDD

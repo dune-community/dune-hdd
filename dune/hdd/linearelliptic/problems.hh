@@ -22,13 +22,6 @@
 
 namespace Dune {
 namespace HDD {
-namespace internal {
-
-
-void lib_exists();
-
-
-} // namespace internal
 namespace LinearElliptic {
 namespace internal {
 

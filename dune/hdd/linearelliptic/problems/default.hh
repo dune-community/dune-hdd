@@ -247,16 +247,6 @@ protected:
 }; // class Default
 
 
-//#if HAVE_ALUGRID
-
-
-//extern template class Default< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
-//                               double, 2, double, 1 >;
-
-
-//#endif // HAVE_ALUGRID
-
-
 } // namespace Problems
 } // namespace LinearElliptic
 } // namespace HDD

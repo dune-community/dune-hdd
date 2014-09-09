@@ -165,16 +165,6 @@ private:
 }; // ProblemInterface
 
 
-//#if HAVE_ALUGRID
-
-
-//extern template class ProblemInterface< typename ALUGrid< 2, 2, simplex, conforming >::template Codim< 0 >::Entity,
-//                                        double, 2, double, 1 >;
-
-
-//#endif // HAVE_ALUGRID
-
-
 template< class E, class D, int d, class R, int r >
 std::ostream& operator<<(std::ostream& out, const ProblemInterface< E, D, d, R, r >& problem)
 {
