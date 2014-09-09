@@ -65,3 +65,6 @@ END_TESTCASES()
 if (NOT CMAKE_WITH_AUTOTOOLS)
  target_link_libraries(test_OS2014 lib_test_OS2014)
 endif (NOT CMAKE_WITH_AUTOTOOLS)
+
+add_analyze(OS2014.cc)
+target_link_libraries(analyze_OS2014.cc lib_test_OS2014)
