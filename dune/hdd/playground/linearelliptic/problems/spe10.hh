@@ -43,9 +43,9 @@ class Model1< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
   typedef Problems::Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > BaseType;
   typedef Model1< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >            ThisType;
 
-  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >       ConstantFunctionType;
-  typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >      IndicatorFunctionType;
-  typedef Stuff::Functions::Spe10Model1< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 > Spe10FunctionType;
+  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >         ConstantFunctionType;
+  typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >        IndicatorFunctionType;
+  typedef Stuff::Functions::Spe10::Model1< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 > Spe10FunctionType;
 
 public:
   typedef typename BaseType::EntityType      EntityType;
@@ -138,10 +138,9 @@ public:
                           "forces.2.domain = [4.25 4.40; 0.25 0.40]\n"
                           "forces.2.value = -1");
     Stuff::Common::Configuration config(ss);
-    const Stuff::Common::Configuration spe10_cfg = Spe10FunctionType::default_config();
-    config["filename"]         = spe10_cfg.get< std::string >("filename");
-    config["lower_left"]       = spe10_cfg.get< std::string >("lower_left");
-    config["upper_right"]      = spe10_cfg.get< std::string >("upper_right");
+    config["filename"]    = Stuff::Functions::Spe10::internal::model1_filename;
+    config["lower_left"]  = "[0.0 0.0]";
+    config["upper_right"] = "[5.0 1.0]";
     if (sub_name.empty())
       return config;
     else {
@@ -167,8 +166,8 @@ public:
   Model1(const std::string filename,
          const DomainType& lower_left,
          const DomainType& upper_right,
-         const std::vector< std::pair< std::pair< DomainType, DomainType >, RangeFieldType > >& channel_values,
-         const std::vector< std::pair< std::pair< DomainType, DomainType >, RangeFieldType > >& force_values)
+         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& channel_values,
+         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& force_values)
     : BaseType(Stuff::Functions::make_sum(std::make_shared< ConstantFunctionType >(1, "one"),
                                           Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(0.9,
                                                                                                                   "0.9"),
@@ -179,8 +178,8 @@ public:
                std::make_shared< Spe10FunctionType >(filename,
                                                      lower_left,
                                                      upper_right,
-                                                     Spe10FunctionType::minValue,
-                                                     Spe10FunctionType::maxValue,
+                                                     Stuff::Functions::Spe10::internal::model1_min_value,
+                                                     Stuff::Functions::Spe10::internal::model1_max_value,
                                                      "diffusion_tensor"),
                std::make_shared< IndicatorFunctionType >(force_values, "force"),
                std::make_shared< ConstantFunctionType >(0, "dirichlet"),
@@ -188,7 +187,7 @@ public:
   {}
 
 private:
-  typedef std::vector< std::pair< std::pair< DomainType, DomainType >, RangeFieldType > > Values;
+  typedef std::vector< std::tuple< DomainType, DomainType, RangeFieldType > > Values;
 
   static Values get_values(const Stuff::Common::Configuration& cfg, const std::string id)
   {
@@ -207,7 +206,7 @@ private:
           tmp_upper[0] = domains[0][1];
           tmp_upper[1] = domains[1][1];
           auto val = local_cfg.get< RangeFieldType >("value");
-          values.push_back(std::make_pair(std::make_pair(tmp_lower, tmp_upper), val));
+          values.emplace_back(tmp_lower, tmp_upper, val);
         } else
           break;
         ++cc;
@@ -215,8 +214,6 @@ private:
     }
     return values;
   } // ... get_values(...)
-
-  typedef typename BaseType::DiffusionFactorType::NonparametricType DiffFacType;
 }; // class Model1< ..., 2, ... 1 >
 
 
