@@ -5,17 +5,11 @@
 
 #include "config.h"
 
-#define DUNE_GRID_MULTISCALE_PROVIDER_CUBE_DISABLE_CHECKS 1
+//#define DUNE_GRID_MULTISCALE_PROVIDER_CUBE_DISABLE_CHECKS 1
 
+#include <cstdlib>
 #include <string>
 #include <vector>
-
-#if HAVE_ALUGRID_SERIAL_H || HAVE_ALUGRID_PARALLEL_H
-# define ENABLE_ALUGRID 1
-# include <dune/grid/alugrid.hh>
-#else
-# error This example requires alugrid!
-#endif
 
 #include "block-swipdg.hh"
 
@@ -25,8 +19,7 @@
 int main(int argc, char** argv)
 {
   try {
-    // create empty example
-    typedef LinearellipticExampleBlockSWIPDG< Dune::ALUConformGrid< 2, 2 > > ExampleType;
+    typedef LinearellipticExampleBlockSWIPDG< Dune::GridSelector::GridType > ExampleType;
 
     // read or write config file
     const std::string config_file_name = ExampleType::static_id() + ".cfg";
@@ -77,23 +70,23 @@ int main(int argc, char** argv)
         discretization.solve(solution);
         info << "done (took " << timer.elapsed() << "s)" << std::endl;
         discretization.visualize(solution, example.static_id() + ".solution", "solution");
-        info << "estimating error: " << std::flush;
-        timer.reset();
-        info << discretization.estimate(solution) << " (took " << timer.elapsed() << "s)" << std::endl;
+//        info << "estimating error: " << std::flush;
+//        timer.reset();
+//        info << discretization.estimate(solution) << " (took " << timer.elapsed() << "s)" << std::endl;
       } // solve
 
     } // read or write config file
 
     // if we came that far we can as well be happy about it
-    return 0;
+    return EXIT_SUCCESS;
   } catch (Dune::Exception& e) {
     std::cerr << "\ndune reported error: " << e.what() << std::endl;
-    std::abort();
+    return EXIT_FAILURE;
   } catch (std::exception& e) {
     std::cerr << "\n" << e.what() << std::endl;
-    std::abort();
+    return EXIT_FAILURE;
   } catch (...) {
     std::cerr << "Unknown exception thrown!" << std::endl;
-    std::abort();
+    return EXIT_FAILURE;
   } // try
 } // ... main(...)
