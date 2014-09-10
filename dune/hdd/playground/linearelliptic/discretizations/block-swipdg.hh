@@ -74,7 +74,7 @@ namespace Discretizations {
 
 // forward, needed in the Traits
 template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder = 1
-        , Stuff::LA::ChooseBackend la_backend = Stuff::LA::ChooseBackend::istl_sparse >
+        , Stuff::LA::ChooseBackend la_backend = Stuff::LA::default_sparse_backend >
 class BlockSWIPDG;
 
 
