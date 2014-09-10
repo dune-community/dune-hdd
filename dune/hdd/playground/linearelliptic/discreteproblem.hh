@@ -6,17 +6,16 @@
 #ifndef DUNE_HDD_PLAYGROUND_LINEARELLIPTIC_DISCRETEPROBLEM_HH
 #define DUNE_HDD_PLAYGROUND_LINEARELLIPTIC_DISCRETEPROBLEM_HH
 
-#ifdef HAVE_DUNE_GRID_MULTISCALE
-# include <dune/grid/multiscale/provider.hh>
-#endif
+#if HAVE_DUNE_GRID_MULTISCALE
+# include <boost/numeric/conversion/cast.hpp>
 
-#include "../../linearelliptic/discreteproblem.hh"
+# include <dune/grid/multiscale/provider.hh>
+
+# include "../../linearelliptic/discreteproblem.hh"
 
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
-
-#ifdef HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridImp >
@@ -44,7 +43,7 @@ public:
     file.open(filename);
     file << "[" << id << "]" << std::endl;
     write_keys_to_file("gridprovider", GridProviders::available(), file);
-    write_keys_to_file("boundaryinfo", BoundaryInfoProvider::available(), file);
+//    write_keys_to_file("boundaryinfo", BoundaryInfoProvider::available(), file);
     write_keys_to_file("problem", ProblemProvider::available(), file);
     file << "[logging]" << std::endl;
     file << "info  = true" << std::endl;
@@ -55,7 +54,7 @@ public:
 //    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
 //    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
     write_config_to_file< GridProviders >(file);
-    write_config_to_file< BoundaryInfoProvider >(file);
+//    write_config_to_file< BoundaryInfoProvider >(file);
     write_config_to_file< ProblemProvider >(file);
     file.close();
   } // ... write_config(...)
@@ -63,7 +62,7 @@ public:
   DiscreteBlockProblem(const std::string id, const std::vector< std::string >& arguments)
   {
     // mpi
-    int argc = arguments.size();
+    int argc = boost::numeric_cast< int >(arguments.size());
     char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
@@ -102,11 +101,12 @@ public:
       info << "s";
     info << ")" << std::endl;
 
-    const std::string boundary_info_type = config_.get< std::string >(id + ".boundaryinfo");
-    if (config_.has_sub(boundary_info_type))
-      boundary_info_ = config_.sub(boundary_info_type);
-    else
-      boundary_info_ = Stuff::Common::Configuration("type", boundary_info_type);
+//    const std::string boundary_info_type = config_.get< std::string >(id + ".boundaryinfo");
+//    if (config_.has_sub(boundary_info_type))
+//      boundary_info_ = config_.sub(boundary_info_type);
+//    else
+//      boundary_info_ = Stuff::Common::Configuration("type", boundary_info_type);
+    boundary_info_ = Stuff::Grid::BoundaryInfoConfigs::AllNeumann::default_config();
 
     info << "setting up ";
     timer.reset();
@@ -192,10 +192,9 @@ private:
 }; // class DiscreteBlockProblem
 
 
-#endif // HAVE_DUNE_GRID_MULTISCALE
-
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
+#endif // HAVE_DUNE_GRID_MULTISCALE
 #endif // DUNE_HDD_PLAYGROUND_LINEARELLIPTIC_DISCRETEPROBLEM_HH
