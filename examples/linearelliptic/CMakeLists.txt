@@ -11,9 +11,6 @@ add_library(dunehdd-linearelliptic-swipdg
             STATIC
             "swipdg.cc")
 
-add_library(dunehdd-linearelliptic-block-swipdg
-            STATIC
-            "block-swipdg.cc")
 
 add_library(dunehdd-linearelliptic-thermalblock
             STATIC
@@ -22,7 +19,6 @@ add_library(dunehdd-linearelliptic-thermalblock
 
 ADD_EXECUTABLE(example_linearelliptic_block_swipdg "block-swipdg_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_block_swipdg
-                      dunehdd-linearelliptic-block-swipdg
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 ADD_EXECUTABLE(example_linearelliptic_cg "cg_main.cc" ${COMMON_HEADER})
