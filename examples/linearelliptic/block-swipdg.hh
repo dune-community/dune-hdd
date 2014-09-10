@@ -19,10 +19,11 @@ class LinearellipticExampleBlockSWIPDG
 public:
   typedef GridImp GridType;
   typedef Dune::HDD::LinearElliptic::DiscreteBlockProblem< GridType > DiscreteProblemType;
-  typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
-  static const unsigned int dimRange = DiscreteProblemType::dimRange;
+  typedef typename DiscreteProblemType::RangeFieldType                RangeFieldType;
+  static const unsigned int                                           dimRange = DiscreteProblemType::dimRange;
+  static const unsigned int                                           polOrder = 1;
   typedef Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG
-      < GridType, RangeFieldType, dimRange, 1, Dune::Stuff::LA::ChooseBackend::istl_sparse > DiscretizationType;
+      < GridType, RangeFieldType, dimRange, polOrder >                DiscretizationType;
 
   static std::string static_id()
   {
