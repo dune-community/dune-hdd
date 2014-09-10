@@ -285,7 +285,7 @@ public:
   Thermalblock(const std::string id, const std::vector< std::string >& arguments, const bool visualize = true)
   {
     // mpi
-    int argc = arguments.size();
+    int argc = boost::numeric_cast< int >(arguments.size());
     char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
@@ -594,7 +594,7 @@ public:
                               const bool visualize = true)
   {
     // mpi
-    int argc = arguments.size();
+    int argc = boost::numeric_cast< int >(arguments.size());
     char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
