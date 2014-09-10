@@ -61,15 +61,14 @@ public:
     : Pymor::Parametric(other)
   {}
 
-  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
-                                                      , RangeFieldType, 1, 1 >
-    DiffusionFactorType;
-  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
-                                                      , RangeFieldType, dimDomain, dimDomain >
-    DiffusionTensorType;
-  typedef Pymor::AffinelyDecomposableFunctionInterface< EntityType, DomainFieldType, dimDomain
-                                                      , RangeFieldType, dimRange >
-    FunctionType;
+  typedef Pymor::AffinelyDecomposableFunctionInterface
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >                 DiffusionFactorType;
+  typedef Pymor::AffinelyDecomposableFunctionInterface
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > DiffusionTensorType;
+  typedef Pymor::AffinelyDecomposableFunctionInterface
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >             FunctionType;
+
+  typedef typename FunctionType::DomainType DomainType;
 
   static std::string static_id()
   {
@@ -97,15 +96,21 @@ public:
                  const bool subsampling = true,
                  const VTK::OutputType vtk_output_type = VTK::appendedraw) const
   {
-    if (subsampling) {
-      SubsamplingVTKWriter< GridView< G > > vtk_writer(grid_view, VTK::nonconforming);
-      add_visualizations_(grid_view, vtk_writer);
-      vtk_writer.write(filename, vtk_output_type);
-    } else {
-      VTKWriter< GridView< G > > vtk_writer(grid_view, VTK::nonconforming);
-      add_visualizations_(grid_view, vtk_writer);
-      vtk_writer.write(filename, vtk_output_type);
-    }
+    std::unique_ptr< VTKWriter< GridView< G > > >
+        vtk_writer = subsampling ? DSC::make_unique< SubsamplingVTKWriter< GridView< G > > >(grid_view,
+                                                                                             VTK::nonconforming)
+                                 : DSC::make_unique< VTKWriter< GridView< G > > >(grid_view, VTK::nonconforming);
+    add_visualizations_(grid_view, *vtk_writer);
+    if (!diffusion_factor()->parametric() && !diffusion_tensor()->parametric()) {
+      auto diffusion = Stuff::Functions::make_product(diffusion_factor()->affine_part(),
+                                                      diffusion_tensor()->affine_part(),
+                                                      "diffusion");
+      auto diffusion_adapter = std::make_shared< Stuff::Functions::VisualizationAdapter
+          < GridView< G >, dimDomain, dimDomain > >(*diffusion);
+      vtk_writer->addVertexData(diffusion_adapter);
+      vtk_writer->write(filename, vtk_output_type);
+    } else
+      vtk_writer->write(filename, vtk_output_type);
   } // ... visualize(...) const
 
   virtual void report(std::ostream& out, std::string prefix = "") const
