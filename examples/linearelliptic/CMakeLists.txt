@@ -45,3 +45,11 @@ if(NOT CMAKE_WITH_AUTOTOOLS)
   add_dune_alugrid_flags(example_linearelliptic_swipdg)
   add_dune_alugrid_flags(example_linearelliptic_thermalblock)
 endif(NOT CMAKE_WITH_AUTOTOOLS)
+
+# link spe10 data file if present
+if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
+  set (SPE10MODEL1DATA_TARGET_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/perm_case1.dat")
+  if (NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
+    execute_process(COMMAND ln -s "${SPE10MODEL1DATA}" "${SPE10MODEL1DATA_TARGET_FILENAME}")
+  endif(NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
+endif (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
