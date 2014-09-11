@@ -61,6 +61,66 @@ private:
   typedef Pymor::Function::NonparametricDefault< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
       FunctionWrapperType;
 
+  template< class FunctionImp, bool anything = true >
+  class Choose
+  {
+    typedef typename FunctionImp::EntityType      E;
+    typedef typename FunctionImp::DomainFieldType D;
+    static const unsigned int                     d = FunctionImp::dimDomain;
+    typedef typename FunctionImp::RangeFieldType  R;
+    static const unsigned int                     r = FunctionImp::dimRange;
+    static const unsigned int                     rC = FunctionImp::dimRangeCols;
+  public:
+    typedef Pymor::AffinelyDecomposableFunctionInterface< E, D, d, R, r, rC > type;
+
+  private:
+    static_assert(std::is_base_of< type, FunctionImp >::value
+                  || std::is_base_of< Stuff::LocalizableFunctionInterface< E, D, d, R, r, rC >,
+                                      FunctionImp >::value,
+                  "Given FunctionImp is of wrong type!");
+
+    template< bool needs, bool nothing = false >
+    class Wrapper
+    {
+    public:
+      static std::shared_ptr< const type > wrap(std::shared_ptr< const FunctionImp > func)
+      {
+        return func;
+      }
+    };
+
+    template< bool nothing >
+    class Wrapper< true, nothing >
+    {
+    public:
+      static std::shared_ptr< const type > wrap(std::shared_ptr< const FunctionImp > func)
+      {
+        typedef Pymor::Function::NonparametricDefault< E, D, d, R, r, rC > WrappedType;
+        return std::make_shared< WrappedType >(func);
+      }
+    };
+
+    static const bool needs_wrapping = !std::is_base_of< type, FunctionImp >::value;
+  public:
+
+    static std::shared_ptr< const type > convert(std::shared_ptr< const FunctionImp > func)
+    {
+      return Wrapper< needs_wrapping >::wrap(func);
+    }
+  }; // class Choose
+
+  template< class FuncImp >
+  std::shared_ptr< const typename Choose< FuncImp >::type > convert(std::shared_ptr< const FuncImp > func)
+  {
+    return Choose< typename std::remove_const< FuncImp >::type >::convert(func);
+  }
+
+  template< class FuncImp >
+  std::shared_ptr< const typename Choose< FuncImp >::type > convert(std::shared_ptr< FuncImp > func)
+  {
+    return Choose< FuncImp >::convert(func);
+  }
+
 public:
   static std::string static_id()
   {
@@ -123,28 +183,17 @@ public:
                                                     create_vector_function("neumann", cfg)));
   } // ... create(...)
 
-  Default(const std::shared_ptr< const NonparametricDiffusionFactorType >& diff_fac,
-          const std::shared_ptr< const NonparametricDiffusionTensorType >& diff_ten,
-          const std::shared_ptr< const NonparametricFunctionType >& forc,
-          const std::shared_ptr< const NonparametricFunctionType >& dir,
-          const std::shared_ptr< const NonparametricFunctionType >& neum)
-    : diffusion_factor_(std::make_shared< DiffusionFactorWrapperType >(diff_fac))
-    , diffusion_tensor_(std::make_shared< DiffusiontensorWrapperType >(diff_ten))
-    , force_(std::make_shared< FunctionWrapperType >(forc))
-    , dirichlet_(std::make_shared< FunctionWrapperType >(dir))
-    , neumann_(std::make_shared< FunctionWrapperType >(neum))
-  {}
-
-  Default(const std::shared_ptr< const DiffusionFactorType >& diff_fac,
-          const std::shared_ptr< const DiffusionTensorType >& diff_ten,
-          const std::shared_ptr< const FunctionType >& forc,
-          const std::shared_ptr< const FunctionType >& dir,
-          const std::shared_ptr< const FunctionType >& neum)
-    : diffusion_factor_(diff_fac)
-    , diffusion_tensor_(diff_ten)
-    , force_(forc)
-    , dirichlet_(dir)
-    , neumann_(neum)
+  template< class DiffusionFactorImp, class DiffusionTensorImp, class ForceImp, class DirichletImp, class NeumannImp >
+  Default(std::shared_ptr< DiffusionFactorImp > diff_fac,
+          std::shared_ptr< DiffusionTensorImp > diff_ten,
+          std::shared_ptr< ForceImp > forc,
+          std::shared_ptr< DirichletImp > dir,
+          std::shared_ptr< NeumannImp > neum)
+    : diffusion_factor_(convert(diff_fac))
+    , diffusion_tensor_(convert(diff_ten))
+    , force_(convert(forc))
+    , dirichlet_(convert(dir))
+    , neumann_(convert(neum))
   {
     update_parameter_dependency();
   }
