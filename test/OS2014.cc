@@ -62,10 +62,10 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain)
 } // OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain
 
 TEST(OS2014_nonparametric_localization_study, SWIPDG_fine_triangulation) {
-  nonparametric_localization_study__SWIPDG_fine_triangulation();
+  nonparametric_localization_study();
 }
 TEST(OS2014_nonparametric_localization_study, Block_SWIPDG_80_subdomain) {
-  nonparametric_localization_study__Block_SWIPDG("[20 4 1]");
+  nonparametric_block_localization_study("[20 4 1]");
 }
 
 

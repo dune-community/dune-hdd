@@ -85,13 +85,13 @@ typedef LinearElliptic::TestCases::Spe10::Model1< GridType >                Nonp
 typedef LinearElliptic::Tests::SWIPDGStudy
     < NonparametricLocalizationTestCaseType, 1, space_backend, la_backend > NonparametricLocalizationStudyType;
 
-void nonparametric_localization_study__SWIPDG_fine_triangulation();
+void nonparametric_localization_study();
 
 typedef LinearElliptic::TestCases::Spe10::BlockModel1< GridType >    NonparametricBlockLocalizationTestCaseType;
 typedef LinearElliptic::Tests::BlockSWIPDGStudy
     < NonparametricBlockLocalizationTestCaseType, 1, la_backend >    NonparametricBlockLocalizationStudyType;
 
-void nonparametric_localization_study__Block_SWIPDG(const std::string partitioning);
+void nonparametric_block_localization_study(const std::string partitioning);
 
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations

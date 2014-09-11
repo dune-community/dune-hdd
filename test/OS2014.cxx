@@ -90,7 +90,7 @@ void parametric_convergence_study(const std::string partitioning,
 } // ... parametric_convergence_study(...)
 
 
-void nonparametric_localization_study__SWIPDG_fine_triangulation()
+void nonparametric_localization_study()
 {
   const NonparametricLocalizationTestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
@@ -103,7 +103,7 @@ void nonparametric_localization_study__SWIPDG_fine_triangulation()
 } // ... nonparametric_localization_study(...)
 
 
-void nonparametric_localization_study__Block_SWIPDG(const std::string partitioning)
+void nonparametric_block_localization_study(const std::string partitioning)
 {
   const NonparametricBlockLocalizationTestCaseType test_case(partitioning);
   NonparametricBlockLocalizationStudyType study(test_case,
@@ -111,7 +111,7 @@ void nonparametric_localization_study__Block_SWIPDG(const std::string partitioni
                                                 {"eta_OS2014"}/*,
                                                 "nonparametric_localization_study_blockswipdg"*/);
   study.run_localization(DSC_LOG_INFO);
-} // ... nonparametric_localization_study__Block_SWIPDG(...)
+} // ... nonparametric_block_localization_study(...)
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
