@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include <dune/stuff/aliases.hh>
+
 #include "block-swipdg.hh"
 
 #include <boost/filesystem.hpp>
@@ -48,8 +50,8 @@ int main(int argc, char** argv)
         if (config.has_sub("parameter")) {
           const auto parameters = config.sub("parameter");
           size_t pp = 0;
-          while (parameters.has_sub(Dune::Stuff::Common::toString(pp))) {
-            const auto parameter = parameters.sub(Dune::Stuff::Common::toString(pp));
+          while (parameters.has_sub(DSC::toString(pp))) {
+            const auto parameter = parameters.sub(DSC::toString(pp));
             Dune::Pymor::Parameter mu;
             for (std::string key : parameter.getValueKeys())
               mu.set(key, parameter.get< std::vector< double > >(key));
@@ -58,8 +60,8 @@ int main(int argc, char** argv)
             discretization.solve(solution, mu);
             info << " done (took " << timer.elapsed() << "s)" << std::endl;
             discretization.visualize(solution,
-                                     example.static_id() + ".solution_to_parameter_" + Dune::Stuff::Common::toString(pp),
-                                     "solution to parameter " + Dune::Stuff::Common::toString(pp));
+                                     example.static_id() + ".solution_to_parameter_" + DSC::toString(pp),
+                                     "solution to parameter " + DSC::toString(pp));
             ++pp;
           }
         } else
@@ -81,12 +83,10 @@ int main(int argc, char** argv)
     return EXIT_SUCCESS;
   } catch (Dune::Exception& e) {
     std::cerr << "\ndune reported error: " << e.what() << std::endl;
-    return EXIT_FAILURE;
   } catch (std::exception& e) {
     std::cerr << "\n" << e.what() << std::endl;
-    return EXIT_FAILURE;
   } catch (...) {
     std::cerr << "Unknown exception thrown!" << std::endl;
-    return EXIT_FAILURE;
   } // try
+  return EXIT_FAILURE;
 } // ... main(...)
