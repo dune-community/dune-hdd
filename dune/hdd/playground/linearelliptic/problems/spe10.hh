@@ -20,6 +20,8 @@
 #include <dune/stuff/functions/spe10.hh>
 #include <dune/stuff/playground/functions/indicator.hh>
 
+#include <dune/pymor/functions/default.hh>
+
 #include "../../../linearelliptic/problems/default.hh"
 
 namespace Dune {
@@ -141,6 +143,7 @@ public:
     config["filename"]    = Stuff::Functions::Spe10::internal::model1_filename;
     config["lower_left"]  = "[0.0 0.0]";
     config["upper_right"] = "[5.0 1.0]";
+    config["parametric"] = "false";
     if (sub_name.empty())
       return config;
     else {
@@ -160,21 +163,17 @@ public:
           cfg.get("lower_left",  def_cfg.get< DomainType >("lower_left")),
           cfg.get("upper_right", def_cfg.get< DomainType >("upper_right")),
           get_values(cfg, "channel"),
-          get_values(cfg, "forces"));
+          get_values(cfg, "forces"),
+          cfg.get("parametric",  def_cfg.get< bool >("parametric")));
   } // ... create(...)
 
   Model1(const std::string filename,
          const DomainType& lower_left,
          const DomainType& upper_right,
-         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& channel_values,
-         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& force_values)
-    : BaseType(Stuff::Functions::make_sum(std::make_shared< ConstantFunctionType >(1, "one"),
-                                          Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(0.9,
-                                                                                                                  "0.9"),
-                                                                         std::make_shared< IndicatorFunctionType >(channel_values,
-                                                                                                                   "channel"),
-                                                                         "scaled_channel"),
-                                          "diffusion_factor"),
+         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& channel_values = {},
+         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& force_values = {},
+         const bool parametric_channel = false)
+    : BaseType(create_diffusion_factor(channel_values, parametric_channel),
                std::make_shared< Spe10FunctionType >(filename,
                                                      lower_left,
                                                      upper_right,
@@ -214,6 +213,27 @@ private:
     }
     return values;
   } // ... get_values(...)
+
+  static std::shared_ptr< typename BaseType::DiffusionFactorType > create_diffusion_factor(const Values& values,
+                                                                                           const bool parametric)
+  {
+    auto one     = std::make_shared< ConstantFunctionType >( 1,      "one");
+    auto channel = std::make_shared< IndicatorFunctionType >(values, "channel");
+    if (parametric) {
+      typedef Pymor::Function::AffinelyDecomposableDefault< EntityType, DomainFieldType, 2, RangeFieldType, 1 >
+          ParametricType;
+      auto ret = std::make_shared< ParametricType >(Stuff::Functions::make_sum(one, channel), "diffusion_factor");
+      ret->register_component(channel, new Pymor::ParameterFunctional("mu", 1, "-1.0*mu"));
+      return ret;
+    } else {
+      typedef Pymor::Function::NonparametricDefault< EntityType, DomainFieldType, 2, RangeFieldType, 1 > WrapperType;
+      auto zero_pt_nine = std::make_shared< ConstantFunctionType >(0.9, "0.9");
+      return std::make_shared< WrapperType >(
+            Stuff::Functions::make_sum(one,
+                                       Stuff::Functions::make_product(zero_pt_nine, channel, "scaled_channel"),
+                                       "diffusion_factor"));
+    }
+  } // ... create_diffusion_factor(...)
 }; // class Model1< ..., 2, ... 1 >
 
 
