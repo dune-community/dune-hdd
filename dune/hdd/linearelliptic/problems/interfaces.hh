@@ -51,15 +51,7 @@ public:
   typedef RangeFieldImp     RangeFieldType;
   static const unsigned int dimRange = rangeDim;
 
-  typedef ProblemInterface< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, rangeDim > NonparametricType;
-
-  ProblemInterface(const Pymor::ParameterType tt = Pymor::ParameterType())
-    : Pymor::Parametric(tt)
-  {}
-
-  ProblemInterface(const Pymor::Parametric& other)
-    : Pymor::Parametric(other)
-  {}
+  typedef Problems::Default< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > NonparametricType;
 
   typedef Pymor::AffinelyDecomposableFunctionInterface
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >                 DiffusionFactorType;
@@ -70,10 +62,19 @@ public:
 
   typedef typename FunctionType::DomainType DomainType;
 
+  static const bool available = false;
+
   static std::string static_id()
   {
     return "hdd.linearelliptic.problem";
   }
+  ProblemInterface(const Pymor::ParameterType tt = Pymor::ParameterType())
+    : Pymor::Parametric(tt)
+  {}
+
+  ProblemInterface(const Pymor::Parametric& other)
+    : Pymor::Parametric(other)
+  {}
 
   virtual std::string type() const
   {

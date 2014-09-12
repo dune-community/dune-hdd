@@ -29,11 +29,12 @@ namespace Problems {
 namespace Spe10 {
 
 
-template< class E, class D, int d, class R, int r >
+template< class E, class D, int d, class R, int r = 1 >
 class Model1
+  : public ProblemInterface< E, D, d, R, r >
 {
-  static_assert(AlwaysFalse< E >::value, "Not available for these dimensions");
-}; // class Model1
+  Model1() { static_assert(AlwaysFalse< E >::value, "Not available for these dimensions!"); }
+};
 
 
 template< class EntityImp, class DomainFieldImp, class RangeFieldImp >
@@ -54,6 +55,8 @@ public:
   typedef typename BaseType::DomainType      DomainType;
   typedef typename BaseType::RangeFieldType  RangeFieldType;
   static const unsigned int                  dimRange = BaseType::dimRange;
+
+  static const bool available = true;
 
   static std::string static_id()
   {

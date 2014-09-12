@@ -33,10 +33,11 @@ namespace LinearElliptic {
 namespace Problems {
 
 
-template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim = 1 >
+template< class E, class D, int d, class R, int r = 1 >
 class Thermalblock
+  : public ProblemInterface< E, D, d, R, r >
 {
-  static_assert(AlwaysFalse< EntityImp >::value, "Not available for dimRange > 1!");
+  Thermalblock() { static_assert(AlwaysFalse< E >::value, "Not available for these dimensions!"); }
 };
 
 
@@ -52,6 +53,8 @@ public:
       CheckerboardFunctionType;
   using typename BaseType::DiffusionTensorType;
   using typename BaseType::FunctionType;
+
+  static const bool available = true;
 
   static std::string static_id()
   {

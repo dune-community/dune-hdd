@@ -23,10 +23,11 @@ namespace Problems {
 namespace OS2014 {
 
 
-template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim = 1 >
+template< class E, class D, int d, class R, int r = 1 >
 class ParametricESV2007
+  : public ProblemInterface< E, D, d, R, r >
 {
-  static_assert(AlwaysFalse< EntityImp >::value, "Not available for dimRange > 1!");
+  ParametricESV2007() { static_assert(AlwaysFalse< E >::value, "Not available for dimRange > 1!"); }
 };
 
 
@@ -75,6 +76,8 @@ class ParametricESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
   } // ... create_diffusion_factor(...)
 
 public:
+  static const bool available = true;
+
   static std::string static_id()
   {
     return BaseType::BaseType::static_id() + ".OS2014.parametricESV2007";

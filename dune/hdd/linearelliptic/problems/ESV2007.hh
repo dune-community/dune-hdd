@@ -24,10 +24,11 @@ namespace LinearElliptic {
 namespace Problems {
 
 
-template< class EntityImp, class DomainFieldImp, int domainDim, class RangeFieldImp, int rangeDim = 1 >
+template< class E, class D, int d, class R, int r = 1 >
 class ESV2007
+  : public ProblemInterface< E, D, d, R, r >
 {
-  static_assert(AlwaysFalse< EntityImp >::value, "Not available for dimRange > 1!");
+  ESV2007() { static_assert(AlwaysFalse< E >::value, "Not available for dimRange > 1!"); }
 };
 
 
@@ -45,6 +46,8 @@ class ESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
   typedef Pymor::Functions::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 >  FunctionType;
 
 public:
+  static const bool available = true;
+
   static std::string static_id()
   {
     return BaseType::BaseType::static_id() + ".ESV2007";

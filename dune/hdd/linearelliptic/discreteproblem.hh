@@ -52,7 +52,7 @@ public:
   typedef double RangeFieldType;
   static const unsigned int dimRange = 1;
   typedef LinearElliptic::ProblemInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
-  typedef LinearElliptic::ProblemProvider< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemProvider;
+  typedef LinearElliptic::ProblemsProvider< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemsProvider;
 
   static void write_config(const std::string filename, const std::string id)
   {
@@ -61,7 +61,7 @@ public:
     file << "[" << id << "]" << std::endl;
     write_keys_to_file("gridprovider", GridProviders::available(), file);
     write_keys_to_file("boundaryinfo", BoundaryInfoProvider::available(), file);
-    write_keys_to_file("problem", ProblemProvider::available(), file);
+    write_keys_to_file("problem", ProblemsProvider::available(), file);
     file << "[logging]" << std::endl;
     file << "info  = true" << std::endl;
     file << "debug = true" << std::endl;
@@ -72,7 +72,7 @@ public:
     file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
     write_config_to_file< GridProviders >(file);
     write_config_to_file< BoundaryInfoProvider >(file);
-    write_config_to_file< ProblemProvider >(file);
+    write_config_to_file< ProblemsProvider >(file);
     file.close();
   } // ... write_config(...)
 
@@ -130,7 +130,7 @@ public:
     const std::string problem_type = config_.get< std::string >(id + ".problem");
     if (!debug_logging_)
       info << "'" << problem_type << "'... " << std::flush;
-    problem_ = ProblemProvider::create(problem_type, config_);
+    problem_ = ProblemsProvider::create(problem_type, config_);
     if (debug_logging_)
       info << *problem_ << std::endl;
     else

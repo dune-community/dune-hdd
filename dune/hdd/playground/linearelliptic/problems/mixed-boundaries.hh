@@ -42,6 +42,8 @@ public:
   using typename BaseType::DiffusionTensorType;
   using typename BaseType::FunctionType;
 
+  static const bool available = true;
+
   static std::string static_id()
   {
     return BaseType::BaseType::static_id() + ".mixedboundaries";
