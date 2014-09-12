@@ -54,12 +54,12 @@ public:
   typedef typename FunctionType::NonparametricType NonparametricFunctionType;
 
 private:
-  typedef Pymor::Function::NonparametricDefault< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
-      DiffusionFactorWrapperType;
-  typedef Pymor::Function::NonparametricDefault
+  typedef Pymor::Functions::NonparametricDefault
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >                    DiffusionFactorWrapperType;
+  typedef Pymor::Functions::NonparametricDefault
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > DiffusiontensorWrapperType;
-  typedef Pymor::Function::NonparametricDefault< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
-      FunctionWrapperType;
+  typedef Pymor::Functions::NonparametricDefault
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >             FunctionWrapperType;
 
 public:
   static std::string static_id()
@@ -71,7 +71,7 @@ public:
   {
     Stuff::Common::Configuration config;
     // diffusion factor
-    typedef Pymor::Function::Checkerboard< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
+    typedef Pymor::Functions::Checkerboard< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
         CheckerBoardFunctionType;
     config.add(CheckerBoardFunctionType::default_config(), "diffusion_factor");
     config["diffusion_factor.parameter_name"] = "diffusion_factor";
@@ -198,7 +198,7 @@ protected:
   {
     typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >
         ExpressionFunctionType;
-    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >
+    typedef Pymor::AffinelyDecomposableFunctionsProvider< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1, 1 >
         FunctionsProvider;
     const Stuff::Common::Configuration cfg = config.sub(id);
     const std::string type = cfg.get("type", ExpressionFunctionType::static_id());
@@ -211,7 +211,7 @@ protected:
   {
     typedef Stuff::Functions::Expression< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
         ExpressionFunctionType;
-    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
+    typedef Pymor::AffinelyDecomposableFunctionsProvider< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange, 1 >
         FunctionsProvider;
     const Stuff::Common::Configuration cfg = config.sub(id);
     const std::string type = cfg.get("type", ExpressionFunctionType::static_id());
@@ -223,7 +223,7 @@ protected:
   {
     typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
         ConstantFunctionType;
-    typedef Pymor::AffinelyDecomposableFunctions< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
+    typedef Pymor::AffinelyDecomposableFunctionsProvider< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain >
         FunctionsProvider;
     const Stuff::Common::Configuration cfg = config.sub(id);
     const std::string type = cfg.get("type", ConstantFunctionType::static_id());

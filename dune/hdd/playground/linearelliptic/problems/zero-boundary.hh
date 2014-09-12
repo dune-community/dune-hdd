@@ -37,7 +37,7 @@ public:
 private:
   typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
     ConstantFunctionType;
-  typedef Pymor::Function::NonparametricDefault< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
+  typedef Pymor::Functions::NonparametricDefault< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
     NonparametricFunctionType;
 
 public:

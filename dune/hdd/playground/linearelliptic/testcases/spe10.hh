@@ -167,9 +167,9 @@ public:
 private:
   typedef Stuff::Functions::Indicator
       < EntityType, DomainFieldType, dimDomain, RangeFieldType >                       IndicatorFunctionType;
-  typedef Pymor::Function::AffinelyDecomposableDefault
+  typedef Pymor::Functions::AffinelyDecomposableDefault
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >             ScalarParametricFunctionType;
-  typedef Pymor::Function::AffinelyDecomposableDefault
+  typedef Pymor::Functions::AffinelyDecomposableDefault
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > MatrixParametricFunctionType;
 protected:
   typedef Stuff::Functions::Spe10Model1

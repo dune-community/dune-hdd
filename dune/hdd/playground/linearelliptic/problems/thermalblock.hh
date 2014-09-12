@@ -48,7 +48,7 @@ class Thermalblock< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
   typedef Thermalblock< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > ThisType;
 
 public:
-  typedef Pymor::Function::Checkerboard< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
+  typedef Pymor::Functions::Checkerboard< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
       CheckerboardFunctionType;
   using typename BaseType::DiffusionTensorType;
   using typename BaseType::FunctionType;
@@ -136,7 +136,7 @@ class LocalThermalblock< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 
   typedef Default< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > BaseType;
   typedef LocalThermalblock< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > ThisType;
 
-  typedef Pymor::Function::AffinelyDecomposableDefault< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
+  typedef Pymor::Functions::AffinelyDecomposableDefault< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 >
       AffinelyDecomposableDefaultFunctionType;
   typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, domainDim, domainDim >
       ConstantMatrixFunctionType;
@@ -199,7 +199,7 @@ public:
 private:
   static std::shared_ptr< AffinelyDecomposableDefaultFunctionType > create_diffusion_factor()
   {
-    typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, domainDim, RangeFieldImp > IndicatorFunctionType;
+    typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > IndicatorFunctionType;
     const Pymor::ParameterType mu("diffusion_factor", 3);
 
     auto ret = std::make_shared< AffinelyDecomposableDefaultFunctionType >("diffusion_factor");
@@ -218,7 +218,7 @@ private:
     return ret;
   } // ... create_diffusion_factor()
 
-  typedef Pymor::Function::NonparametricDefault
+  typedef Pymor::Functions::NonparametricDefault
       < EntityImp, DomainFieldImp, domainDim, RangeFieldImp, domainDim, domainDim > NonparametricFunctionType;
 
   static std::shared_ptr< NonparametricFunctionType > create_diffusion_tensor()
