@@ -20,6 +20,8 @@
 #include <dune/stuff/functions/spe10.hh>
 #include <dune/stuff/playground/functions/indicator.hh>
 
+#include <dune/pymor/functions/default.hh>
+
 #include "../../../linearelliptic/problems/default.hh"
 
 namespace Dune {
@@ -37,16 +39,16 @@ class Model1
 };
 
 
-template< class EntityImp, class DomainFieldImp, class RangeFieldImp >
-class Model1< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
-  : public Problems::Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
+template< class E, class D, class R >
+class Model1< E, D, 2, R, 1 >
+  : public Problems::Default< E, D, 2, R, 1 >
 {
-  typedef Problems::Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > BaseType;
-  typedef Model1< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >            ThisType;
+  typedef Problems::Default< E, D, 2, R, 1 > BaseType;
+  typedef Model1< E, D, 2, R, 1 >            ThisType;
 
-  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >         ConstantFunctionType;
-  typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >        IndicatorFunctionType;
-  typedef Stuff::Functions::Spe10::Model1< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 > Spe10FunctionType;
+  typedef Stuff::Functions::Constant< E, D, 2, R, 1 >         ConstantFunctionType;
+  typedef Stuff::Functions::Indicator< E, D, 2, R, 1 >        IndicatorFunctionType;
+  typedef Stuff::Functions::Spe10::Model1< E, D, 2, R, 2, 2 > Spe10FunctionType;
 
 public:
   typedef typename BaseType::EntityType      EntityType;
@@ -65,85 +67,21 @@ public:
 
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
-    std::istringstream ss("# upper part of the channel\n"
-                          "channel.0.domain  = [1.95 2.00; 0.30 0.35]\n"
-                          "channel.1.domain  = [2.00 2.05; 0.30 0.35]\n"
-                          "channel.2.domain  = [2.05 2.10; 0.30 0.35]\n"
-                          "channel.3.domain  = [2.10 2.15; 0.30 0.35]\n"
-                          "channel.4.domain  = [2.15 2.20; 0.30 0.35]\n"
-                          "channel.5.domain  = [2.20 2.25; 0.30 0.35]\n"
-                          "channel.6.domain  = [2.25 2.30; 0.30 0.35]\n"
-                          "channel.7.domain  = [2.30 2.35; 0.30 0.35]\n"
-                          "channel.8.domain  = [2.35 2.40; 0.30 0.35]\n"
-                          "channel.9.domain  = [2.40 2.45; 0.30 0.35]\n"
-                          "channel.10.domain = [2.45 2.50; 0.30 0.35]\n"
-                          "channel.11.domain = [2.50 2.55; 0.30 0.35]\n"
-                          "channel.12.domain = [2.55 2.60; 0.30 0.35]\n"
-                          "channel.13.domain = [2.60 2.65; 0.30 0.35]\n"
-                          "channel.14.domain = [2.65 2.70; 0.30 0.35]\n"
-                          "channel.15.domain = [2.70 2.75; 0.30 0.35]\n"
-                          "channel.16.domain = [2.75 2.80; 0.30 0.35]\n"
-                          "channel.17.domain = [2.80 2.85; 0.30 0.35]\n"
-                          "channel.18.domain = [2.85 2.90; 0.30 0.35]\n"
-                          "channel.19.domain = [2.90 2.95; 0.30 0.35]\n"
-                          "channel.20.domain = [2.95 3.00; 0.30 0.35]\n"
-                          "channel.21.domain = [3.00 3.05; 0.30 0.35]\n"
-                          "channel.22.domain = [3.05 3.10; 0.30 0.35]\n"
-                          "channel.23.domain = [3.10 3.15; 0.30 0.35]\n"
-                          "channel.24.domain = [3.15 3.20; 0.30 0.35]\n"
-                          "channel.25.domain = [3.20 3.25; 0.30 0.35]\n"
-                          "channel.26.domain = [3.25 3.30; 0.30 0.35]\n"
-                          "channel.0.value = 8.89427093374\n"
-                          "channel.1.value = 13.6099841033\n"
-                          "channel.2.value = 9.3045024096\n"
-                          "channel.3.value = 9.36541962265\n"
-                          "channel.4.value = 15.0913820881\n"
-                          "channel.5.value = 10.7480498312\n"
-                          "channel.6.value = 16.5883190883\n"
-                          "channel.7.value = 31.0861602166\n"
-                          "channel.8.value = 54.9712243572\n"
-                          "channel.9.value = 100.952720119\n"
-                          "channel.10.value = 52.0524075552\n"
-                          "channel.11.value = 50.6886980657\n"
-                          "channel.12.value = 480.647068351\n"
-                          "channel.13.value = 124.968722073\n"
-                          "channel.14.value = 253.47179089\n"
-                          "channel.15.value = 59.4846423418\n"
-                          "channel.16.value = 45.5966339635\n"
-                          "channel.17.value = 65.4927486582\n"
-                          "channel.18.value = 53.1302521008\n"
-                          "channel.19.value = 356.247915509\n"
-                          "channel.20.value = 119.247076023\n"
-                          "channel.21.value = 428.620844564\n"
-                          "channel.22.value = 105.760652121\n"
-                          "channel.23.value = 225.936826992\n"
-                          "channel.24.value = 86.2636769918\n"
-                          "channel.25.value = 100.853603482\n"
-                          "channel.26.value = 48.2026659651\n"
-                          "# lower part of the channel\n"
-                          "channel.27.domain = [3.00 3.05; 0.25 0.30]\n"
-                          "channel.28.domain = [3.05 3.10; 0.25 0.30]\n"
-                          "channel.29.domain = [3.10 3.15; 0.25 0.30]\n"
-                          "channel.30.domain = [3.15 3.20; 0.25 0.30]\n"
-                          "channel.31.domain = [3.20 3.25; 0.25 0.30]\n"
-                          "channel.32.domain = [3.25 3.30; 0.25 0.30]\n"
-                          "channel.27.value = 8.1565912417\n"
-                          "channel.28.value = 10.1920122888\n"
-                          "channel.29.value = 9.45165105239\n"
-                          "channel.30.value = 10.8577735731\n"
-                          "channel.31.value = 31.1455310916\n"
-                          "channel.32.value = 20.1779587527\n"
+    std::istringstream ss("# no channel, just to show the definition of a channel (analogue to forces)\n"
+                          "channel.0.domain  = [0.5 1.0; 0.2 0.3]\n"
+                          "channel.0.value = 0.0\n"
                           "# force\n"
                           "forces.0.domain = [0.95 1.10; 0.30 0.45]\n"
-                          "forces.0.value = 2\n"
+                          "forces.0.value = 2000\n"
                           "forces.1.domain = [3.00 3.15; 0.75 0.90]\n"
-                          "forces.1.value = -1\n"
+                          "forces.1.value = -1000\n"
                           "forces.2.domain = [4.25 4.40; 0.25 0.40]\n"
-                          "forces.2.value = -1");
+                          "forces.2.value = -1000");
     Stuff::Common::Configuration config(ss);
     config["filename"]    = Stuff::Functions::Spe10::internal::model1_filename;
     config["lower_left"]  = "[0.0 0.0]";
     config["upper_right"] = "[5.0 1.0]";
+    config["parametric_channel"] = "false";
     if (sub_name.empty())
       return config;
     else {
@@ -163,34 +101,66 @@ public:
           cfg.get("lower_left",  def_cfg.get< DomainType >("lower_left")),
           cfg.get("upper_right", def_cfg.get< DomainType >("upper_right")),
           get_values(cfg, "channel"),
-          get_values(cfg, "forces"));
+          get_values(cfg, "forces"),
+          cfg.get("parametric_channel", def_cfg.get< bool >("parametric_channel")));
   } // ... create(...)
 
   Model1(const std::string filename,
          const DomainType& lower_left,
          const DomainType& upper_right,
          const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& channel_values,
-         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& force_values)
-    : BaseType(Stuff::Functions::make_sum(std::make_shared< ConstantFunctionType >(1, "one"),
-                                          Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(0.9,
-                                                                                                                  "0.9"),
-                                                                         std::make_shared< IndicatorFunctionType >(channel_values,
-                                                                                                                   "channel"),
-                                                                         "scaled_channel"),
-                                          "diffusion_factor"),
-               std::make_shared< Spe10FunctionType >(filename,
-                                                     lower_left,
-                                                     upper_right,
-                                                     Stuff::Functions::Spe10::internal::model1_min_value,
-                                                     Stuff::Functions::Spe10::internal::model1_max_value,
-                                                     "diffusion_tensor"),
-               std::make_shared< IndicatorFunctionType >(force_values, "force"),
-               std::make_shared< ConstantFunctionType >(0, "dirichlet"),
-               std::make_shared< ConstantFunctionType >(0, "neumann"))
+         const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& force_values,
+         const bool parametric_channel = false)
+    : BaseType(create_base(filename, lower_left, upper_right, channel_values, force_values, parametric_channel))
   {}
 
 private:
   typedef std::vector< std::tuple< DomainType, DomainType, RangeFieldType > > Values;
+
+  static BaseType create_base(const std::string filename,
+                              const DomainType& lower_left,
+                              const DomainType& upper_right,
+                              const Values& channel_values,
+                              const Values& force_values,
+                              const bool parametric_channel)
+  {
+    auto one = std::make_shared< ConstantFunctionType >(1, "one");
+    auto channel = std::make_shared< IndicatorFunctionType >(channel_values, "channel");
+    auto diffusion_tensor = std::make_shared< Spe10FunctionType >(filename,
+                                                                  lower_left,
+                                                                  upper_right,
+                                                                  Stuff::Functions::Spe10::internal::model1_min_value,
+                                                                  Stuff::Functions::Spe10::internal::model1_max_value,
+                                                                  "diffusion_tensor");
+    auto force = std::make_shared< IndicatorFunctionType >(force_values, "force");
+    auto dirichlet = std::make_shared< ConstantFunctionType >(0, "dirichlet");
+    auto neumann = std::make_shared< ConstantFunctionType >(0, "neumann");
+    if (parametric_channel) {
+      typedef Pymor::Functions::NonparametricDefault< E, D, 2, R, 1 >        ScalarWrapper;
+      typedef Pymor::Functions::NonparametricDefault< E, D, 2, R, 2, 2 >     MatrixWrapper;
+      typedef Pymor::Functions::AffinelyDecomposableDefault< E, D, 2, R, 1 > ParametricFunctionType;
+      auto diffusion_factor = std::make_shared< ParametricFunctionType >("diffusion_factor");
+      diffusion_factor->register_affine_part(Stuff::Functions::make_sum(one, channel));
+      diffusion_factor->register_component(channel,
+                                           new Pymor::ParameterFunctional("channel", 1, "-1.0*channel"));
+      return BaseType(diffusion_factor,
+                      std::make_shared< MatrixWrapper >(diffusion_tensor),
+                      std::make_shared< ScalarWrapper >(force),
+                      std::make_shared< ScalarWrapper >(dirichlet),
+                      std::make_shared< ScalarWrapper >(neumann));
+    } else {
+      auto zero_pt_nine = std::make_shared< ConstantFunctionType >(0.9, "0.9");
+      return BaseType(Stuff::Functions::make_sum(one,
+                                                 Stuff::Functions::make_product(zero_pt_nine,
+                                                                                channel,
+                                                                                "scaled_channel"),
+                                                 "diffusion_factor"),
+                      diffusion_tensor,
+                      force,
+                      dirichlet,
+                      neumann);
+    }
+  } // ... create_base(...)
 
   static Values get_values(const Stuff::Common::Configuration& cfg, const std::string id)
   {
