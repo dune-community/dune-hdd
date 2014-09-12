@@ -57,9 +57,9 @@ typedef LinearElliptic::TestCases::ESV2007< GridType >             Nonparametric
 typedef LinearElliptic::Tests::SWIPDGStudy
     < NonparametricEocTestCaseType, 1, space_backend, la_backend > NonparametricEocStudyType;
 
-void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation();
+void OS2014_nonparametric_convergence();
 
-void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation();
+void OS2014_nonparametric_convergence_study_alternative_summation();
 
 
 typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > NonparametricBlockEocTestCaseType;
@@ -75,10 +75,10 @@ typedef LinearElliptic::Tests::BlockSWIPDGStudy
 
 void print_parameter_information(const ParametricBlockEocTestCaseType& parametric_test_case);
 
-void parametric_convergence_study(const std::string partitioning,
-                                  const std::vector< std::string >& only_these_norms,
-                                  const std::map< std::string, Pymor::Parameter >& parameters,
-                                  const bool print_header = false);
+void parametric_block_convergence_study(const std::string partitioning,
+                                        const std::vector< std::string >& only_these_norms,
+                                        const std::map< std::string, Pymor::Parameter >& parameters,
+                                        const bool print_header = false);
 
 
 typedef LinearElliptic::TestCases::Spe10::Model1< GridType >                NonparametricLocalizationTestCaseType;

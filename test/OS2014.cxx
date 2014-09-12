@@ -13,7 +13,7 @@
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
 
-void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation()
+void OS2014_nonparametric_convergence_study()
 {
   const NonparametricEocTestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
@@ -22,16 +22,16 @@ void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation()
                                   {"energy", "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007",
                                    "eff_ESV2007"});
   Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
-} // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation(...)
+} // ... OS2014_nonparametric_convergence_study(...)
 
 
-void OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation()
+void OS2014_nonparametric_convergence_study_alternative_summation()
 {
   const NonparametricEocTestCaseType test_case;
   NonparametricEocStudyType study(test_case,
                                   {"energy", "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
   Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
-} // ... OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation(...)
+} // ... OS2014_nonparametric_convergence_study_alternative_summation(...)
 
 
 void nonparametric_block_convergence_study(const std::string& partitioning)
@@ -61,8 +61,7 @@ void print_parameter_information(const ParametricBlockEocTestCaseType& parametri
   EXPECT_FALSE(force.parametric());
   EXPECT_FALSE(dirichlet.parametric());
   EXPECT_FALSE(neumann.parametric());
-  DSC_LOG_INFO << "+==================================================================+\n"
-               << "| mu            = " << parameters.at("mu") << "\n"
+  DSC_LOG_INFO << "| mu            = " << parameters.at("mu") << "\n"
                << "| mu_bar        = " << parameters.at("mu_bar") << "\n"
                << "| mu_hat        = " << parameters.at("mu_hat") << "\n"
                << "| mu_minimizing = " << parameters.at("mu_minimizing") << "\n";
@@ -76,18 +75,18 @@ void print_parameter_information(const ParametricBlockEocTestCaseType& parametri
 } // ... print_parameter_information(...)
 
 
-void parametric_convergence_study(const std::string partitioning,
-                                  const std::vector< std::string >& only_these_norms,
-                                  const std::map< std::string, Pymor::Parameter >& parameters,
-                                  const bool print_header)
+void parametric_block_convergence_study(const std::string partitioning,
+                                        const std::vector< std::string >& only_these_norms,
+                                        const std::map< std::string, Pymor::Parameter >& parameters,
+                                        const bool print_header)
 {
   const ParametricBlockEocTestCaseType test_case(parameters, partitioning);
   if (print_header)
     test_case.print_header(DSC_LOG_INFO);
   print_parameter_information(test_case);
-  ParametricBlockEocStudyType study(test_case, only_these_norms);
+  ParametricBlockEocStudyType study(test_case, only_these_norms, {}, "parametric_block_convergence_study");
   Dune::Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
-} // ... parametric_convergence_study(...)
+} // ... parametric_block_convergence_study(...)
 
 
 void nonparametric_localization_study()

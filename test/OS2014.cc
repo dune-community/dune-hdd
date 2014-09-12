@@ -19,10 +19,10 @@
 
 
 TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {
-  OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation();
+  OS2014_nonparametric_convergence_study();
 }
 TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alternative_summation) {
-  OS2014_nonparametric_convergence_study__SWIPDG_fine_triangulation_alternative_summation();
+  OS2014_nonparametric_convergence_study_alternative_summation();
 }
 TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
   nonparametric_block_convergence_study("[1 1 1]");
