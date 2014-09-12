@@ -220,7 +220,8 @@ public:
     auto indicators = EstimatorType::estimate_local(*this->current_discretization_->ansatz_space(),
                                                     *this->current_solution_vector_on_level_,
                                                     this->test_case_.problem(),
-                                                    type);
+                                                    type,
+                                                    this->test_case_.parameters());
     if (!this->visualize_prefix_.empty())
       visualize_indicators(*this->current_discretization_->ansatz_space()->ms_grid(),
                            indicators,
