@@ -712,7 +712,7 @@ private:
                                                                          const ProblemType& /*problem*/)
     {
       DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
-      return RangeFieldType(0);
+      return Stuff::LA::CommonDenseVector< RangeFieldType >();
     }
   }; // class Caller
 
