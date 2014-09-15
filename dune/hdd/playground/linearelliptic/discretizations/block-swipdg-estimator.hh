@@ -594,7 +594,7 @@ public:
     assert(alpha_mu_mu_hat > 0.0);
     assert(gamma_mu_mu_bar > 0.0);
     assert(gamma_mu_mu_hat > 0.0);
-    const double sqrt_gamma_tile = std::max(std::sqrt(gamma_mu_mu_hat), 1.0/std::sqrt(alpha_mu_mu_hat));
+    const double sqrt_gamma_tilde = std::max(std::sqrt(gamma_mu_mu_hat), 1.0/std::sqrt(alpha_mu_mu_hat));
     // compute estimator
     typedef LocalNonconformityOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalNonconformityOS2014Type;
     typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType >      LocalResidualOS2014Type;
@@ -603,13 +603,15 @@ public:
         (1.0/std::sqrt(alpha_mu_mu_bar)) * (
             std::sqrt(gamma_mu_mu_bar) * LocalNonconformityOS2014Type::estimate(space, vector, problem, parameters)
           +                              LocalResidualOS2014Type::estimate(space, vector, problem, parameters)
-          + sqrt_gamma_tile            * LocalDiffusiveFluxOS2014Type::estimate(space, vector, problem, parameters)
+          + sqrt_gamma_tilde           * LocalDiffusiveFluxOS2014Type::estimate(space, vector, problem, parameters)
         );
   } // ... estimate(...)
 
   static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const BlockSpaceType& space,
                                                                        const VectorType& vector,
-                                                                       const ProblemType& problem)
+                                                                       const ProblemType& problem,
+                                                                       const ParametersMapType parameters
+                                                                          = ParametersMapType())
   {
     // check parameters
     if (problem.parametric())
@@ -780,7 +782,8 @@ private:
 
     static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const BlockSpaceType& /*space*/,
                                                                          const VectorType& /*vector*/,
-                                                                         const ProblemType& /*problem*/)
+                                                                         const ProblemType& /*problem*/,
+                                                                         const ParametersMapType& /*parameters*/)
     {
       DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
       return RangeFieldType(0);
@@ -812,9 +815,10 @@ private:
 
     static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const BlockSpaceType& space,
                                                                          const VectorType& vector,
-                                                                         const ProblemType& problem)
+                                                                         const ProblemType& problem,
+                                                                         const ParametersMapType& parameters)
     {
-      return IndividualEstimator::estimate_local(space, vector, problem);
+      return IndividualEstimator::estimate_local(space, vector, problem, parameters);
     }
   }; // class Caller< ..., true >
 
@@ -834,7 +838,7 @@ private:
   static RangeFieldType call_estimate(const BlockSpaceType& space,
                                       const VectorType& vector,
                                       const ProblemType& problem,
-                                      const ParametersMapType& parameters = ParametersMapType())
+                                      const ParametersMapType& parameters)
   {
     return Caller< IndividualEstimator, IndividualEstimator::available >::estimate(space, vector, problem, parameters);
   }
@@ -842,10 +846,14 @@ private:
   template< class IndividualEstimator >
   static Stuff::LA::CommonDenseVector< RangeFieldType > call_estimate_local(const BlockSpaceType& space,
                                                                             const VectorType& vector,
-                                                                            const ProblemType& problem)
+                                                                            const ProblemType& problem,
+                                                                            const ParametersMapType& parameters)
   {
-    return Caller< IndividualEstimator, IndividualEstimator::available >::estimate_local(space, vector, problem);
-  }
+    return Caller< IndividualEstimator, IndividualEstimator::available >::estimate_local(space,
+                                                                                         vector,
+                                                                                         problem,
+                                                                                         parameters);
+  } // ... call_estimate_local(...)
 
   typedef internal::BlockSWIPDGEstimators::LocalNonconformityOS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalNonconformityOS2014Type;
@@ -906,10 +914,12 @@ public:
   static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const BlockSpaceType& space,
                                                                        const VectorType& vector,
                                                                        const ProblemType& problem,
-                                                                       const std::string type)
+                                                                       const std::string type,
+                                                                       const ParametersMapType parameters
+                                                                          = ParametersMapType())
   {
     if (call_equals< OS2014Type >(type))
-      return call_estimate_local< OS2014Type >(space, vector, problem);
+      return call_estimate_local< OS2014Type >(space, vector, problem, parameters);
     else
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available_local()!");
