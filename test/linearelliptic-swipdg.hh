@@ -6,17 +6,9 @@
 #ifndef DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 #define DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
 
-#include "config.h"
-
 #include <algorithm>
 
 #include <boost/numeric/conversion/cast.hpp>
-
-#include <dune/stuff/common/disable_warnings.hh>
-# if HAVE_ALUGRID
-#   include <dune/grid/alugrid.hh>
-# endif
-#include <dune/stuff/common/reenable_warnings.hh>
 
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/localization-study.hh>
@@ -33,6 +25,7 @@
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic.hh"
+#include "linearelliptic-swipdg-expectations.hh"
 
 namespace Dune {
 namespace HDD {
@@ -103,89 +96,34 @@ public:
 
   virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
   {
-    if (type == "L2")
-      return polOrder + 1;
-    else if (type == "H1_semi")
-      return polOrder;
-    else if (type == "energy")
-      return polOrder;
-    else if (type == "eta_NC_ESV2007")
-      return polOrder;
-    else if (type == "eta_R_ESV2007")
-      return polOrder + 1;
-    else if (type == "eta_DF_ESV2007")
-      return polOrder;
-    else if (type == "eta_ESV2007")
-      return polOrder;
-    else if (type == "eff_ESV2007")
-      return 0;
-    else if (type == "eta_ESV2007_alt")
-      return polOrder;
-    else if (type == "eff_ESV2007_alt")
-      return 0;
-    else
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
+    // If you get an undefined reference here from the linker you are missing the appropriate
+    // specialization of BlockSWIPDGStudyExpectations!
+    // For a new TestCaseType you have to add a specialization in a separate object file
+    // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
+    // CMakeLists.txt accordingly. For a new polOrder add
+    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder >;
+    // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
+    //
+    // Oh: and do not forget to add
+    //   'extern template class BlockSWIPDGStudyExpectations< ... >'
+    // to each test source using these results!
+    return SWIPDGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
   virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
   {
-#if HAVE_ALUGRID
-    if (std::is_same< TestCaseType, TestCases::ESV2007< ALUConformGrid< 2, 2 > > >::value
-        || std::is_same< TestCaseType, TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > > >::value) {
-      if (polOrder == 1) {
-        if (type == "L2")
-          return {1.83e-02, 4.53e-03, 1.12e-03, 2.78e-04};
-        else if (type == "H1_semi")
-          return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
-        else if (type == "energy")
-          return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
-        else if (type == "eta_NC_ESV2007")
-          return {1.66e-1, 7.89e-2, 3.91e-2, 1.95e-2};
-        else if (type == "eta_R_ESV2007")
-          return {7.23e-2, 1.82e-2, 4.54e-3, 1.14e-3};
-        else if (type == "eta_DF_ESV2007") {
-          // these are the values reported in the ESV2007 preprint:
-//          return {3.39e-1, 1.70e-1, 8.40e-2, 4.19e-2};
-          // but we do not want the test to fail each time, so we expect these:
-          return {3.55e-1, 1.76e-1, 8.73e-2, 4.35e-2};
-        } else if (type == "eta_ESV2007")
-          return {4.49e-01, 2.07e-01,  9.91e-02, 4.85e-02};
-        else if (type == "eff_ESV2007") {
-          // these are the values reported in the ESV2007 preprint:
-//          return {1.21, 1.21, 1.21, 1.21};
-          // but we do not want the test to fail each time, so we expect these:
-          return {1.37, 1.28, 1.23, 1.21};
-        } else if (type == "eta_ESV2007_alt")
-          return {5.93e-01, 2.73e-01, 1.31e-01, 6.42e-02};
-        else if (type == "eff_ESV2007_alt")
-          return {1.81, 1.69, 1.63, 1.60};
-        else
-          DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
-      } else
-        DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
-    } else if (std::is_same< TestCaseType,
-                             TestCases::OS2014::ParametricConvergence< ALUConformGrid< 2, 2 > > >::value
-               || std::is_same< TestCaseType,
-                                TestCases::OS2014::ParametricConvergence< ALUGrid< 2, 2,
-                                                                                   simplex, conforming > > >::value) {
-      if (polOrder == 1) {
-        if (type == "energy")
-          return {4.75e-01, 2.63e-01, 1.28e-01, 5.62e-02};
-        else if (type == "eta_NC")
-          return {2.39e-01, 1.43e-01, 6.83e-02, 3.14e-02};
-        else if (type == "eta_R")
-          return {8.19e-02, 1.99e-02, 4.84e-03, 1.20e-03};
-        else if (type == "eta_DF") {
-          return {6.35e-01, 3.62e-01, 1.88e-01, 9.18e-02};
-        } else if (type == "eta")
-          return {7.51e-01, 4.06e-01, 2.01e-01, 9.80e-02};
-        else
-          DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
-      } else
-        DUNE_THROW(NotImplemented, "Please record the expected results for this polOrder!");
-    } else
-#endif // HAVE_ALUGRID
-      DUNE_THROW(NotImplemented, "Please record the expected results for this TestCaseType/GridType combination!");
+    // If you get an undefined reference here from the linker you are missing the appropriate
+    // specialization of BlockSWIPDGStudyExpectations!
+    // For a new TestCaseType you have to add a specialization in a separate object file
+    // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
+    // CMakeLists.txt accordingly. For a new polOrder add
+    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder >;
+    // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
+    //
+    // Oh: and do not forget to add
+    //   'extern template class BlockSWIPDGStudyExpectations< ... >'
+    // to each test source using these results!
+    return SWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 
   virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const
