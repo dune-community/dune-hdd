@@ -11,6 +11,24 @@ add_library(obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconfo
             OBJECT
             EXCLUDE_FROM_ALL
             linearelliptic-block-swipdg-expectations_esv2007_2daluconform.cxx)
+
+add_library(obj_test_linearelliptic-swipdg-expectations_esv2007_2daluconform
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-swipdg-expectations_esv2007_2daluconform.cxx)
+add_library(obj_test_linearelliptic-swipdg-expectations_esv2007_2dsgrid
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-swipdg-expectations_esv2007_2dsgrid.cxx)
+add_library(obj_test_linearelliptic-swipdg-expectations_spe10_2daluconform
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-swipdg-expectations_spe10_2daluconform.cxx)
+add_library(obj_test_linearelliptic-swipdg-expectations_spe10_2dsgrid
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-swipdg-expectations_spe10_2dsgrid.cxx)
+
 add_library(obj_test_os2014
             OBJECT
             EXCLUDE_FROM_ALL
@@ -22,6 +40,15 @@ add_library(lib_test_OS2014
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
 add_dune_alugrid_flags(lib_test_OS2014)
+
+add_library(lib_test_linearelliptic-swipdg
+            STATIC
+            EXCLUDE_FROM_ALL
+            $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_esv2007_2daluconform>
+            $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_esv2007_2dsgrid>
+            $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_spe10_2daluconform>
+            $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_spe10_2dsgrid>)
+add_dune_alugrid_flags(lib_test_linearelliptic-swipdg)
 
 add_library(lib_test_linearelliptic-block-swipdg
             STATIC
@@ -44,6 +71,7 @@ if (NOT CMAKE_WITH_AUTOTOOLS)
  target_link_libraries(test_OS2014 lib_test_OS2014)
  target_link_libraries(test_linearelliptic-block-swipdg lib_test_linearelliptic-block-swipdg)
  target_link_libraries(test_OS2014-FVCA7-poster lib_test_linearelliptic-block-swipdg)
+ target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
 endif (NOT CMAKE_WITH_AUTOTOOLS)
 
 add_analyze(OS2014.cc)
