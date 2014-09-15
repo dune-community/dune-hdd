@@ -15,8 +15,11 @@
 #include <dune/common/fmatrix.hh>
 
 #include <dune/stuff/common/memory.hh>
+#include <dune/stuff/common/fvector.hh>
+#include <dune/stuff/common/float_cmp.hh>
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/combined.hh>
+#include <dune/stuff/functions/flattop.hh>
 #include <dune/stuff/functions/spe10.hh>
 #include <dune/stuff/playground/functions/indicator.hh>
 
@@ -47,6 +50,7 @@ class Model1< E, D, 2, R, 1 >
   typedef Model1< E, D, 2, R, 1 >            ThisType;
 
   typedef Stuff::Functions::Constant< E, D, 2, R, 1 >         ConstantFunctionType;
+  typedef Stuff::Functions::FlatTop< E, D, 2, R, 1 >          FlatTopFunctionType;
   typedef Stuff::Functions::Indicator< E, D, 2, R, 1 >        IndicatorFunctionType;
   typedef Stuff::Functions::Spe10::Model1< E, D, 2, R, 2, 2 > Spe10FunctionType;
 
@@ -67,10 +71,7 @@ public:
 
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
-    std::istringstream ss("# no channel, just to show the definition of a channel (analogue to forces)\n"
-                          "channel.0.domain  = [0.5 1.0; 0.2 0.3]\n"
-                          "channel.0.value = 0.0\n"
-                          "# force\n"
+    std::istringstream ss("# a definition of a channel would be analogue to the one of forces\n"
                           "forces.0.domain = [0.95 1.10; 0.30 0.45]\n"
                           "forces.0.value = 2000\n"
                           "forces.1.domain = [3.00 3.15; 0.75 0.90]\n"
@@ -82,6 +83,7 @@ public:
     config["lower_left"]  = "[0.0 0.0]";
     config["upper_right"] = "[5.0 1.0]";
     config["parametric_channel"] = "false";
+    config.set("channel_boundary_layer", FlatTopFunctionType::default_config().template get< std::string >("boundary_layer"));
     if (sub_name.empty())
       return config;
     else {
@@ -102,6 +104,7 @@ public:
           cfg.get("upper_right", def_cfg.get< DomainType >("upper_right")),
           get_values(cfg, "channel"),
           get_values(cfg, "forces"),
+          cfg.get("channel_boundary_layer", def_cfg.get< DomainType >("channel_boundary_layer")),
           cfg.get("parametric_channel", def_cfg.get< bool >("parametric_channel")));
   } // ... create(...)
 
@@ -110,22 +113,41 @@ public:
          const DomainType& upper_right,
          const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& channel_values,
          const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& force_values,
-         const bool parametric_channel = false)
-    : BaseType(create_base(filename, lower_left, upper_right, channel_values, force_values, parametric_channel))
+         const DomainType& channel_boundary_layer = default_config().get< DomainType >("channel_boundary_layer"),
+         const bool parametric_channel = default_config().get< bool >("parametric_channel"))
+    : BaseType(create_base(filename,
+                           lower_left,
+                           upper_right,
+                           channel_values,
+                           force_values,
+                           channel_boundary_layer,
+                           parametric_channel))
   {}
 
 private:
   typedef std::vector< std::tuple< DomainType, DomainType, RangeFieldType > > Values;
+  typedef typename BaseType::DiffusionFactorType::NonparametricType FlatTopIndicatorType;
 
   static BaseType create_base(const std::string filename,
                               const DomainType& lower_left,
                               const DomainType& upper_right,
                               const Values& channel_values,
                               const Values& force_values,
+                              const DomainType& channel_boundary_layer,
                               const bool parametric_channel)
   {
+    // build the channel as a sum of flattop functions
+    std::shared_ptr< FlatTopIndicatorType > channel(nullptr);
+    if (channel_values.empty())
+      channel = std::make_shared< ConstantFunctionType >(0, "zero");
+    else
+      channel = create_indicator(channel_values[0], channel_boundary_layer);
+    for (size_t ii = 1; ii < channel_values.size(); ++ii)
+      channel = Stuff::Functions::make_sum(channel,
+                                           create_indicator(channel_values[ii], channel_boundary_layer),
+                                           "channel");
+    // build the rest
     auto one = std::make_shared< ConstantFunctionType >(1, "one");
-    auto channel = std::make_shared< IndicatorFunctionType >(channel_values, "channel");
     auto diffusion_tensor = std::make_shared< Spe10FunctionType >(filename,
                                                                   lower_left,
                                                                   upper_right,
@@ -142,7 +164,7 @@ private:
       auto diffusion_factor = std::make_shared< ParametricFunctionType >("diffusion_factor");
       diffusion_factor->register_affine_part(Stuff::Functions::make_sum(one, channel));
       diffusion_factor->register_component(channel,
-                                           new Pymor::ParameterFunctional("channel", 1, "-1.0*channel"));
+                                           new Pymor::ParameterFunctional("mu", 1, "-1.0*mu"));
       return BaseType(diffusion_factor,
                       std::make_shared< MatrixWrapper >(diffusion_tensor),
                       std::make_shared< ScalarWrapper >(force),
@@ -187,6 +209,19 @@ private:
     }
     return values;
   } // ... get_values(...)
+
+  static std::shared_ptr< FlatTopIndicatorType > create_indicator(const typename Values::value_type& value,
+                                                                  const DomainType& channel_boundary_layer)
+  {
+    if (Stuff::Common::FloatCmp::eq(channel_boundary_layer, DomainType(0))) {
+      return std::make_shared< IndicatorFunctionType >(Values(1, value), "channel");
+    } else
+      return std::make_shared< FlatTopFunctionType >(std::get< 0 >(value),
+                                                     std::get< 1 >(value),
+                                                     channel_boundary_layer,
+                                                     std::get< 2 >(value),
+                                                     "channel");
+  } // ... create_indicator(...)
 }; // class Model1< ..., 2, ... 1 >
 
 
