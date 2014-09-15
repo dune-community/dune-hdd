@@ -64,8 +64,15 @@ class BlockSWIPDG;
 
 // forward, needed in the Traits
 template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder = 1,
+#if HAVE_DUNE_FEM
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
-          Stuff::LA::ChooseBackend la_backend = Stuff::LA::ChooseBackend::istl_sparse >
+#elif HAVE_DUNE_PDELAB
+          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
+#else
+# error No suitable space backend available!
+          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
+#endif
+          Stuff::LA::ChooseBackend la_backend  = Stuff::LA::default_sparse_backend >
 class SWIPDG;
 
 
