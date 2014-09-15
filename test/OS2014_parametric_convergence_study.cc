@@ -92,7 +92,7 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
   const std::string partitioning = "[4 4 1]";
   const std::vector< std::string > only_these_norms = {"eta_DF_OS2014", "eta_DF_OS2014_*", "eta_OS2014",
                                                        "eta_OS2014_*", "eff_OS2014_mu", "eff_OS2014_*_mu"};
-  const std::string visualization_prefix = "parametric_block_convergence_study_eta_DF_comparison";
+  const std::string visualization_prefix = ""; //"parametric_block_convergence_study_eta_DF_comparison";
   bool print_header = true;
   for (auto mu_hat_value : {0.1, 0.5, 1.0}) {
     const auto mu_hat = Pymor::Parameter("mu", mu_hat_value);
