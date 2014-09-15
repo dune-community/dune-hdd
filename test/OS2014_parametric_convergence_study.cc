@@ -20,14 +20,15 @@
 #include <map>
 
 #if HAVE_ALUGRID
-#include <dune/grid/alugrid.hh>
+# include <dune/grid/alugrid.hh>
 
-#include <dune/pymor/parameters/base.hh>
+# include <dune/pymor/parameters/base.hh>
 
-#include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
+# include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
+# include <dune/hdd/playground/linearelliptic/testcases/spe10.hh>
 
-#include "linearelliptic-block-swipdg.hh"
-#include "linearelliptic-block-swipdg-expectations.hh"
+# include "linearelliptic-block-swipdg.hh"
+# include "linearelliptic-block-swipdg-expectations.hh"
 
 using namespace Dune;
 using namespace HDD;
@@ -38,6 +39,8 @@ typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 typedef LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridType > SmoothTestCaseType;
 typedef LinearElliptic::Tests::BlockSWIPDGStudy< SmoothTestCaseType >             SmoothStudyType;
 
+typedef LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridType > MultiscaleTestCaseType;
+typedef LinearElliptic::Tests::BlockSWIPDGStudy< MultiscaleTestCaseType >   MultiscaleStudyType;
 
 template< class TestCaseType >
 void print_parameter_information(const TestCaseType& test_case)
@@ -67,7 +70,7 @@ void print_parameter_information(const TestCaseType& test_case)
                                                    << 1.0/std::sqrt(alpha) << "\n"
                << "| gamma_tilde(mu, mu_hat)^2 = " << std::setprecision(2) << std::scientific
                                                    << std::max(std::sqrt(gamma), 1.0/std::sqrt(alpha)) << "\n"
-               << "+==================================================================+\n";
+               << "+\n";
 } // ... print_parameter_information(...)
 
 
@@ -84,7 +87,7 @@ void run_eoc_study(const std::string partitioning,
   print_parameter_information(test_case);
   StudyType study(test_case, only_these_norms, {}, visualization);
   Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
-} // ... parametric_block_convergence_study(...)
+} // ... run_eoc_study(...)
 
 
 TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
@@ -92,11 +95,11 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
   const std::string partitioning = "[4 4 1]";
   const std::vector< std::string > only_these_norms = {"eta_DF_OS2014", "eta_DF_OS2014_*", "eta_OS2014",
                                                        "eta_OS2014_*", "eff_OS2014_mu", "eff_OS2014_*_mu"};
-  const std::string visualization_prefix = ""; //"parametric_block_convergence_study_eta_DF_comparison";
+  const std::string visualization_prefix = ""; //"OS2014_parametric_block_convergence_study_eta_DF_comparison";
   bool print_header = true;
-  for (auto mu_hat_value : {0.1, 0.5, 1.0}) {
+  for (auto mu_hat_value : {0.1/*, 0.5*/, 1.0}) {
     const auto mu_hat = Pymor::Parameter("mu", mu_hat_value);
-    for (auto mu_value : {0.1, 0.3, 0.5, 0.75, 1.0}) {
+    for (auto mu_value : {0.1/*, 0.3, 0.5, 0.75*/, 1.0}) {
       const auto mu = Pymor::Parameter("mu", mu_value);
       const auto mu_bar = mu;
       run_eoc_study< SmoothTestCaseType, SmoothStudyType >(partitioning,
@@ -114,13 +117,41 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
 } // TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
 
 
+TEST(OS2014_parametric_convergence_study, multiscale)
+{
+  const std::string partitioning = "[20 4 1]";
+  const std::vector< std::string > only_these_norms = {"energy_mu", "eta_OS2014", "eta_OS2014_*"};
+  const std::string visualization_prefix = ""; //"OS2014_parametric_block_convergence_study_spe10_model1";
+  bool print_header = true;
+  for (auto mu_hat_value : {0.1/*, 0.5*/, 1.0}) {
+    const auto mu_hat = Pymor::Parameter("mu", mu_hat_value);
+    for (auto mu_value : {0.1/*, 0.3, 0.5, 0.75*/, 1.0}) {
+      const auto mu = Pymor::Parameter("mu", mu_value);
+      const auto mu_bar = mu;
+      run_eoc_study< MultiscaleTestCaseType, MultiscaleStudyType >(partitioning,
+                                                                   only_these_norms,
+                                                                   {{"mu_hat",        mu_hat},
+                                                                    {"mu_bar",        mu_bar},
+                                                                    {"mu",            mu},
+                                                                    {"mu_minimizing", Pymor::Parameter("mu", 0.1)}},
+                                                                   print_header,
+                                                                   visualization_prefix);
+      if (print_header)
+        print_header = false;
+    }
+  }
+} // TEST(OS2014_parametric_convergence_study, multiscale)
+
+
 extern template class Dune::HDD::LinearElliptic::Tests::BlockSWIPDGStudyExpectations< SmoothTestCaseType >;
+extern template class Dune::HDD::LinearElliptic::Tests::BlockSWIPDGStudyExpectations< MultiscaleTestCaseType >;
 
 
 #else // HAVE_ALUGRID
 
 
 TEST(DISABLED_OS2014_parametric_convergence_study, eta_DF_comparison) {}
+TEST(DISABLED_OS2014_parametric_convergence_study, multiscale) {}
 
 
 #endif // HAVE_ALUGRID
