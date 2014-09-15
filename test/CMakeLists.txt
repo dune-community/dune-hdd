@@ -18,6 +18,10 @@ add_library(obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconfo
             OBJECT
             EXCLUDE_FROM_ALL
             linearelliptic-block-swipdg-expectations_esv2007_2daluconform.cxx)
+add_library(obj_test_linearelliptic-block-swipdg-expectations_spe10_2daluconform
+            OBJECT
+            EXCLUDE_FROM_ALL
+            linearelliptic-block-swipdg-expectations_spe10_2daluconform.cxx)
 
 add_library(obj_test_linearelliptic-swipdg-expectations_esv2007_2daluconform
             OBJECT
@@ -52,7 +56,8 @@ add_dune_alugrid_flags(lib_test_OS2014)
 add_library(lib_test_OS2014_parametric_convergence_study
             STATIC
             EXCLUDE_FROM_ALL
-            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>)
+            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>
+            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_spe10_2daluconform>)
 add_dune_alugrid_flags(lib_test_OS2014_parametric_convergence_study)
 
 add_library(lib_test_linearelliptic-swipdg
