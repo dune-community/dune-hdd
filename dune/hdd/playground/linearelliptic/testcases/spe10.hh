@@ -13,7 +13,6 @@
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/functions/constant.hh>
 
-
 #include <dune/hdd/playground/linearelliptic/problems/spe10.hh>
 
 #include "base.hh"
@@ -480,6 +479,39 @@ public:
     , TestCaseBaseType(create_initial_grid(Model1BaseType::initial_refinements()), num_refinements)
   {}
 }; // class Model1
+
+
+template< class GridType >
+class ParametricModel1
+  : public internal::ParametricModel1Base< GridType >
+  , public Base< GridType >
+{
+  typedef internal::ParametricModel1Base< GridType > Model1BaseType;
+  typedef Base< GridType >                           TestCaseBaseType;
+
+  static std::shared_ptr< GridType > create_initial_grid(const int refinements)
+  {
+    auto grid = Stuff::Grid::Providers::Cube< GridType >::create(Model1BaseType::configuration(""))->grid_ptr();
+    grid->globalRefine(refinements);
+    return grid;
+  } // ... create_initial_grid(...)
+
+public:
+  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
+
+  using Model1BaseType::required_parameters;
+  using Model1BaseType::parameters;
+
+  ParametricModel1(const ParametersMapType parameters,
+                   const size_t num_refinements = Model1BaseType::default_num_refinements_,
+                   const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
+    : Model1BaseType(parameters, filename)
+    , TestCaseBaseType(create_initial_grid(Model1BaseType::initial_refinements()), num_refinements)
+  {
+    this->check_parameters(Model1BaseType::required_parameters(), parameters);
+    this->inherit_parameter_type(*this->problem_, "problem");
+  }
+}; // class ParametricModel1
 
 
 #if HAVE_DUNE_GRID_MULTISCALE
