@@ -30,8 +30,7 @@ public:
   static const unsigned int dimRange = DiscreteProblemType::dimRange;
   typedef Dune::HDD::LinearElliptic::Discretizations::SWIPDG
       < GridType, Dune::Stuff::Grid::ChooseLayer::leaf, RangeFieldType, dimRange, 1
-      , Dune::GDT::ChooseSpaceBackend::fem
-      , Dune::Stuff::LA::ChooseBackend::istl_sparse > DiscretizationType;
+      , Dune::GDT::ChooseSpaceBackend::fem > DiscretizationType;
 
   static std::string static_id()
   {
