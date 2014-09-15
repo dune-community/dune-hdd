@@ -51,7 +51,7 @@ public:
 } // namespace internal
 
 
-template< class TestCaseType, int polOrder, Stuff::LA::ChooseBackend la_backend >
+template< class TestCaseType, int polOrder = 1, Stuff::LA::ChooseBackend la_backend = Stuff::LA::default_sparse_backend >
 class BlockSWIPDGStudy
   : public MultiscaleEocStudyBase< TestCaseType,
                                    typename internal::DiscretizationBlockSWIPDG< TestCaseType,
