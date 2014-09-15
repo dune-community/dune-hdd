@@ -40,8 +40,7 @@ int main(int argc, char** argv)
 
       // solve
       if (discretization.parametric()) {
-        info << "discretization is parametric with parameter_type:" << std::endl;
-        info << "  " << discretization.parameter_type() << std::endl;
+        info << "discretization is parametric with parameter_type: " << discretization.parameter_type() << std::endl;
         const auto& config = discreteProblem.config();
         if (config.has_sub("parameter")) {
           const auto parameters = config.sub("parameter");
