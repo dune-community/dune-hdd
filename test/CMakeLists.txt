@@ -3,6 +3,13 @@
 # Copyright holders: Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
+# test infrastructure
+enable_testing()
+DEPENDENCYCHECK()
+BEGIN_TESTCASES()
+END_TESTCASES()
+
+# expectation targets
 add_library(obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform
             OBJECT
             EXCLUDE_FROM_ALL
@@ -29,6 +36,7 @@ add_library(obj_test_linearelliptic-swipdg-expectations_spe10_2dsgrid
             EXCLUDE_FROM_ALL
             linearelliptic-swipdg-expectations_spe10_2dsgrid.cxx)
 
+# test target libs
 add_library(obj_test_os2014
             OBJECT
             EXCLUDE_FROM_ALL
@@ -40,6 +48,12 @@ add_library(lib_test_OS2014
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
 add_dune_alugrid_flags(lib_test_OS2014)
+
+add_library(lib_test_OS2014_parametric_convergence_study
+            STATIC
+            EXCLUDE_FROM_ALL
+            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>)
+add_dune_alugrid_flags(lib_test_OS2014_parametric_convergence_study)
 
 add_library(lib_test_linearelliptic-swipdg
             STATIC
@@ -60,22 +74,16 @@ add_library(lib_test_OS2014-FVCA7-poster
             EXCLUDE_FROM_ALL
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
 
-enable_testing()
+# test targets
+target_link_libraries(test_OS2014_parametric_convergence_study lib_test_OS2014_parametric_convergence_study)
+target_link_libraries(test_OS2014 lib_test_OS2014)
+target_link_libraries(test_linearelliptic-block-swipdg lib_test_linearelliptic-block-swipdg)
+target_link_libraries(test_OS2014-FVCA7-poster lib_test_linearelliptic-block-swipdg)
+target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
 
-DEPENDENCYCHECK()
-
-BEGIN_TESTCASES()
-END_TESTCASES()
-
-if (NOT CMAKE_WITH_AUTOTOOLS)
- target_link_libraries(test_OS2014 lib_test_OS2014)
- target_link_libraries(test_linearelliptic-block-swipdg lib_test_linearelliptic-block-swipdg)
- target_link_libraries(test_OS2014-FVCA7-poster lib_test_linearelliptic-block-swipdg)
- target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
-endif (NOT CMAKE_WITH_AUTOTOOLS)
-
-add_analyze(OS2014.cc)
-target_link_libraries(analyze_OS2014.cc lib_test_OS2014)
+# clang analizer targets (should be guarded)
+#add_analyze(OS2014.cc)
+#target_link_libraries(analyze_OS2014.cc lib_test_OS2014)
 
 # link spe10 data file if present
 if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
