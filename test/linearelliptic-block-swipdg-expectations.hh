@@ -98,7 +98,7 @@ public:
 } // namespace internal
 
 
-template< class TestCaseType, int polOrder, bool anything = true >
+template< class TestCaseType, int polOrder = 1, bool anything = true >
 class BlockSWIPDGStudyExpectations
   : public internal::BlockSWIPDGStudyExpectationsBase< TestCaseType, polOrder >
 {

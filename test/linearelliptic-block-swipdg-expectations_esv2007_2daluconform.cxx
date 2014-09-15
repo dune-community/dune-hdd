@@ -8,24 +8,27 @@
 #include <dune/stuff/test/gtest/gtest.h>
 
 #if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
 
-#include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
 
-#include "linearelliptic-block-swipdg-expectations.hh"
+# include "linearelliptic-block-swipdg-expectations.hh"
 
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
+
+
+typedef TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
+
+
 namespace Tests {
 
 
 template< bool anything >
-class BlockSWIPDGStudyExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
-  : public internal::BlockSWIPDGStudyExpectationsBase
-        < TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >
+class BlockSWIPDGStudyExpectations< TestCaseType, 1, anything >
+  : public internal::BlockSWIPDGStudyExpectationsBase< TestCaseType, 1 >
 {
-  typedef TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
-
 public:
   static std::vector< double > results(const TestCaseType& test_case, const std::string type)
   {
@@ -136,7 +139,7 @@ public:
 }; // BlockSWIPDGStudyExpectations
 
 
-template class BlockSWIPDGStudyExpectations< TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+template class BlockSWIPDGStudyExpectations< TestCaseType, 1 >;
 
 
 } // namespace Tests

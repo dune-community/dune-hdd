@@ -6,38 +6,42 @@
 #include "config.h"
 
 #if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
 
-#include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
+# include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
-#include "linearelliptic-block-swipdg-expectations.hh"
+# include "linearelliptic-block-swipdg-expectations.hh"
 
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
+
+
+typedef TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
+
 namespace Tests {
 
 
 template< bool anything >
-class BlockSWIPDGStudyExpectations
-    < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
-  : public internal::BlockSWIPDGStudyExpectationsBase
-      < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >
+class BlockSWIPDGStudyExpectations< TestCaseType, 1, anything >
+  : public internal::BlockSWIPDGStudyExpectationsBase< TestCaseType, 1 >
 {
-  typedef TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
-
 public:
   static std::vector< double > results(const TestCaseType& test_case, const std::string type)
   {
-    using Parameter = Pymor::Parameter;
+    if (test_case.num_refinements() != 3) {
+      EXPECT_TRUE(false) << "test results missing for num_refinements: " << test_case.num_refinements();
+      return {};
+    }
     const auto mu = test_case.parameters().at("mu");
     const auto mu_bar = test_case.parameters().at("mu_bar");
     const auto mu_hat = test_case.parameters().at("mu_hat");
     const auto mu_minimizing = test_case.parameters().at("mu_minimizing");
     if (test_case.partitioning() == "[1 1 1]") {
-      if (   mu            == Parameter("mu", 0.1)
-          && mu_bar        == Parameter("mu", 0.1)
-          && mu_hat        == Parameter("mu", 0.1)
-          && mu_minimizing == Parameter("mu", 0.1)) {
+      if (   mu            == 0.1
+          && mu_bar        == 0.1
+          && mu_hat        == 0.1
+          && mu_minimizing == 0.1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_DF_OS2014")
@@ -54,10 +58,10 @@ public:
           return {};
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
-      } else if (   mu            == Parameter("mu", 0.3)
-                 && mu_bar        == Parameter("mu", 0.3)
-                 && mu_hat        == Parameter("mu", 0.1)
-                 && mu_minimizing == Parameter("mu", 0.1)) {
+      } else if (   mu            == 0.3
+                 && mu_bar        == 0.3
+                 && mu_hat        == 0.1
+                 && mu_minimizing == 0.1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_DF_OS2014")
@@ -74,10 +78,10 @@ public:
           return {};
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
-      } else if (   mu            == Parameter("mu", 0.5)
-                 && mu_bar        == Parameter("mu", 0.5)
-                 && mu_hat        == Parameter("mu", 0.1)
-                 && mu_minimizing == Parameter("mu", 0.1)) {
+      } else if (   mu            == 0.5
+                 && mu_bar        == 0.5
+                 && mu_hat        == 0.1
+                 && mu_minimizing == 0.1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_DF_OS2014")
@@ -94,10 +98,10 @@ public:
           return {};
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
-      } else if (   mu            == Parameter("mu", 0.1)
-                 && mu_bar        == Parameter("mu", 0.1)
-                 && mu_hat        == Parameter("mu", 1.0)
-                 && mu_minimizing == Parameter("mu", 0.1)) {
+      } else if (   mu            == 0.1
+                 && mu_bar        == 0.1
+                 && mu_hat        == 1
+                 && mu_minimizing == 0.1) {
         if (type == "eta_DF_OS2014")
           return {1.01e+00, 1.21e+00, 1.35e+00, 1.41e+00};
         else if (type == "eta_DF_OS2014_*")
@@ -131,11 +135,11 @@ public:
 //        else if (type == "eff_OS2014_mu")
 //          return {};
 //        else
-//          DUNE_THROW(Stuff::Exceptions::test_results_missing, type);
-      } else if (   mu            == Parameter("mu", 1)
-                 && mu_bar        == Parameter("mu", 1)
-                 && mu_hat        == Parameter("mu", 1)
-                 && mu_minimizing == Parameter("mu", 1)) {
+//          EXPECT_TRUE(false) << "test results missing for type: " << type;
+      } else if (   mu            == 1
+                 && mu_bar        == 1
+                 && mu_hat        == 1
+                 && mu_minimizing == 1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_NC_OS2014")
@@ -162,8 +166,7 @@ public:
 }; // BlockSWIPDGStudyExpectations
 
 
-template class BlockSWIPDGStudyExpectations
-    < TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+template class BlockSWIPDGStudyExpectations< TestCaseType, 1 >;
 
 
 } // namespace Tests
