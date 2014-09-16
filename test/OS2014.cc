@@ -27,40 +27,15 @@ TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alternati
 TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
   nonparametric_block_convergence_study("[1 1 1]");
 }
-TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {
+TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomains) {
   nonparametric_block_convergence_study("[2 2 1]");
 }
-TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {
+TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomains) {
   nonparametric_block_convergence_study("[4 4 1]");
 }
-TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
+TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomains) {
   nonparametric_block_convergence_study("[8 8 1]");
 }
-
-TEST(OS2014_parametric_convergence_study, eta_DF_comparison_16_subdomain)
-{
-  const std::string partitioning = "[4 4 1]";
-  const std::vector< std::string > only_these_norms = {"eta_DF_OS2014", "eta_DF_OS2014_*", "eta_OS2014",
-                                                       "eta_OS2014_*", "eff_OS2014_mu", "eff_OS2014_*_mu"};
-  bool print_header = true;
-  for (auto mu_hat_value : {0.1, 0.5, 1.0}) {
-    const auto mu_hat = Parameter("mu", mu_hat_value);
-    for (auto mu_value : {0.1, 0.3, 0.5, 0.75, 1.0}) {
-      const auto mu = Parameter("mu", mu_value);
-      const auto mu_bar = mu;
-      parametric_block_convergence_study(partitioning,
-                                         only_these_norms,
-                                         {{"mu_hat",        mu_hat},
-                                          {"mu_bar",        mu_bar},
-                                          {"mu",            mu},
-                                          {"mu_minimizing", Parameter("mu", 0.1)}},
-                                         print_header/*,
-                                         "parametric_block_convergence_study"*/);
-      if (print_header)
-        print_header = false;
-    }
-  }
-} // TEST(OS2014_parametric_convergence_study, eta_DF_comparison_16_subdomain)
 
 
 #else // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
@@ -69,11 +44,9 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison_16_subdomain)
 TEST(DISABLED_OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {}
 TEST(DISABLED_OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alternative_summation) {}
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {}
-TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain) {}
-TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {}
-TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {}
-
-TEST(DISABLED_OS2014_parametric_convergence_study, eta_DF_comparison_16_subdomain) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomains) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomains) {}
+TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomains) {}
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE

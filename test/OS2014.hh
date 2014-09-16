@@ -69,19 +69,6 @@ typedef LinearElliptic::Tests::BlockSWIPDGStudy
 void nonparametric_block_convergence_study(const std::string& partitioning);
 
 
-typedef LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridType > ParametricBlockEocTestCaseType;
-typedef LinearElliptic::Tests::BlockSWIPDGStudy
-    < ParametricBlockEocTestCaseType, 1, la_backend >                             ParametricBlockEocStudyType;
-
-void print_parameter_information(const ParametricBlockEocTestCaseType& parametric_test_case);
-
-void parametric_block_convergence_study(const std::string partitioning,
-                                        const std::vector< std::string >& only_these_norms,
-                                        const std::map< std::string, Pymor::Parameter >& parameters,
-                                        const bool print_header = false,
-                                        const std::string visualization = "");
-
-
 extern template class LinearElliptic::Tests::SWIPDGStudyExpectations
     < LinearElliptic::TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
