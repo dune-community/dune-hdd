@@ -574,6 +574,8 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
     if (problem.diffusion_factor()->parametric() && parameters.find("mu_bar") == parameters.end())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
     if (problem.diffusion_tensor()->parametric())
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
     if (problem.force()->parametric())
@@ -614,16 +616,44 @@ public:
                                                                           = ParametersMapType())
   {
     // check parameters
-    if (problem.parametric())
-      DUNE_THROW(NotImplemented, "For parametric problems yet!");
+    if (problem.diffusion_factor()->parametric() && !parameters.count("mu"))
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    if (problem.diffusion_factor()->parametric() && !parameters.count("mu_hat"))
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
+    if (problem.diffusion_factor()->parametric() && !parameters.count("mu_bar"))
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
+    if (problem.force()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric force!");
+    if (problem.dirichlet()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric dirichlet!");
+    if (problem.neumann()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric neumann!");
+    const Pymor::Parameter mu            = problem.parametric() ? parameters.at("mu")            : Pymor::Parameter();
+    const Pymor::Parameter mu_hat        = problem.parametric() ? parameters.at("mu_hat")        : Pymor::Parameter();
+    const Pymor::Parameter mu_bar        = problem.parametric() ? parameters.at("mu_bar")        : Pymor::Parameter();
+    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
+    // compute parameter factors
+    const double alpha_mu_mu_bar = problem.diffusion_factor()->alpha(mu, mu_bar);
+    const double alpha_mu_mu_hat = problem.diffusion_factor()->alpha(mu, mu_hat);
+    const double gamma_mu_mu_bar = problem.diffusion_factor()->gamma(mu, mu_bar);
+    const double gamma_mu_mu_hat = problem.diffusion_factor()->gamma(mu, mu_hat);
+    assert(alpha_mu_mu_bar > 0.0);
+    assert(alpha_mu_mu_hat > 0.0);
+    assert(gamma_mu_mu_bar > 0.0);
+    assert(gamma_mu_mu_hat > 0.0);
+    const double sqrt_gamma_tilde = std::max(std::sqrt(gamma_mu_mu_hat), 1.0/std::sqrt(alpha_mu_mu_hat));
 
     typedef LocalNonconformityOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalNonconformityOS2014Type;
     typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType >      LocalResidualOS2014Type;
     typedef LocalDiffusiveFluxOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalDiffusiveFluxOS2014Type;
 
     // prepare
-    LocalNonconformityOS2014Type eta_nc(space, vector, problem);
-    LocalDiffusiveFluxOS2014Type eta_df(space, vector, problem);
+    LocalNonconformityOS2014Type eta_nc(space, vector, problem, mu_bar);
+    LocalDiffusiveFluxOS2014Type eta_df(space, vector, problem, mu, mu_hat);
     eta_nc.prepare();
     eta_df.prepare();
     RangeFieldType eta_nc_squared = 0.0;
@@ -634,7 +664,7 @@ public:
     // walk the subdomains
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
-      LocalResidualOS2014Type eta_r_T(*local_space, problem);
+      LocalResidualOS2014Type eta_r_T(*local_space, problem, mu_minimizing);
       eta_r_T.prepare();
       eta_nc.result_ = 0.0;
       eta_df.result_ = 0.0;
@@ -650,13 +680,18 @@ public:
       const RangeFieldType eta_r_T_squared  = eta_r_T.result_;
       const RangeFieldType eta_df_T_squared = eta_df.result_;
       // compute indicators
-      indicators[subdomain] = 3.0 * (eta_nc_T_squared + eta_r_T_squared + eta_df_T_squared);
+      indicators[subdomain] = 3.0/std::sqrt(alpha_mu_mu_bar) * (std::sqrt(gamma_mu_mu_bar)*eta_nc_T_squared
+                                                                + eta_r_T_squared
+                                                                + sqrt_gamma_tilde*eta_df_T_squared);
       eta_nc_squared += eta_nc_T_squared;
       eta_r_squared  += eta_r_T_squared;
       eta_df_squared += eta_df_T_squared;
     } // walk the subdomains
     const RangeFieldType eta_squared
-        = std::pow(std::sqrt(eta_nc_squared) + std::sqrt(eta_r_squared) + std::sqrt(eta_df_squared), 2);
+        = std::pow(1.0/std::sqrt(alpha_mu_mu_bar) * (std::sqrt(gamma_mu_mu_bar)*std::sqrt(eta_nc_squared)
+                                                     + std::sqrt(eta_r_squared)
+                                                     + sqrt_gamma_tilde*std::sqrt(eta_df_squared)),
+                   2);
     // scale
     for (auto& element : indicators)
       element /= eta_squared;
@@ -740,6 +775,94 @@ public:
                                             +                                    eta_r
                                             + (1.0/std::sqrt(alpha_mu_mu_hat)) * eta_df_star);
   } // ... estimate(...)
+
+  static Stuff::LA::CommonDenseVector< RangeFieldType > estimate_local(const BlockSpaceType& space,
+                                                                       const VectorType& vector,
+                                                                       const ProblemType& problem,
+                                                                       const ParametersMapType parameters
+                                                                          = ParametersMapType())
+  {
+    // check parameters
+    if (problem.diffusion_factor()->parametric() && !parameters.count("mu"))
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    if (problem.diffusion_factor()->parametric() && !parameters.count("mu_hat"))
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
+    if (problem.diffusion_factor()->parametric() && !parameters.count("mu_bar"))
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
+    if (problem.force()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric force!");
+    if (problem.dirichlet()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric dirichlet!");
+    if (problem.neumann()->parametric())
+      DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric neumann!");
+    const Pymor::Parameter mu            = problem.parametric() ? parameters.at("mu")            : Pymor::Parameter();
+    const Pymor::Parameter mu_hat        = problem.parametric() ? parameters.at("mu_hat")        : Pymor::Parameter();
+    const Pymor::Parameter mu_bar        = problem.parametric() ? parameters.at("mu_bar")        : Pymor::Parameter();
+    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
+    // compute parameter factors
+    const double alpha_mu_mu_bar = problem.diffusion_factor()->alpha(mu, mu_bar);
+    const double alpha_mu_mu_hat = problem.diffusion_factor()->alpha(mu, mu_hat);
+    const double gamma_mu_mu_bar = problem.diffusion_factor()->gamma(mu, mu_bar);
+    assert(alpha_mu_mu_bar > 0.0);
+    assert(alpha_mu_mu_hat > 0.0);
+    assert(gamma_mu_mu_bar > 0.0);
+
+    typedef LocalNonconformityOS2014
+        < BlockSpaceType, VectorType, ProblemType, GridType >                        LocalNonconformityOS2014Type;
+    typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalResidualOS2014Type;
+    typedef LocalDiffusiveFluxOS2014Star
+        < BlockSpaceType, VectorType, ProblemType, GridType >                        LocalDiffusiveFluxOS2014StarType;
+
+    // prepare
+    LocalNonconformityOS2014Type eta_nc(space, vector, problem, mu_bar);
+    LocalDiffusiveFluxOS2014StarType eta_df(space, vector, problem, mu, mu_hat);
+    eta_nc.prepare();
+    eta_df.prepare();
+    RangeFieldType eta_nc_squared = 0.0;
+    RangeFieldType eta_r_squared  = 0.0;
+    RangeFieldType eta_df_squared = 0.0;
+    Stuff::LA::CommonDenseVector< RangeFieldType > indicators(space.ms_grid()->size(), 0.0);
+
+    // walk the subdomains
+    for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
+      const auto local_space = space.local_spaces()[subdomain];
+      LocalResidualOS2014Type eta_r_T(*local_space, problem, mu_minimizing);
+      eta_r_T.prepare();
+      eta_nc.result_ = 0.0;
+      eta_df.result_ = 0.0;
+      // walk the local grid
+      const auto local_grid_view = local_space->grid_view();
+      for (const auto& entity : Stuff::Common::viewRange(*local_grid_view)) {
+        eta_nc.apply_local(entity);
+        eta_r_T.apply_local(entity);
+        eta_df.apply_local(entity);
+      } // walk the local grid
+      eta_r_T.finalize();
+      const RangeFieldType eta_nc_T_squared = eta_nc.result_;
+      const RangeFieldType eta_r_T_squared  = eta_r_T.result_;
+      const RangeFieldType eta_df_T_squared = eta_df.result_;
+      // compute indicators
+      indicators[subdomain] = 3.0/std::sqrt(alpha_mu_mu_bar) * (std::sqrt(gamma_mu_mu_bar)*eta_nc_T_squared
+                                                                + eta_r_T_squared
+                                                                + std::sqrt(alpha_mu_mu_hat)*eta_df_T_squared);
+      eta_nc_squared += eta_nc_T_squared;
+      eta_r_squared  += eta_r_T_squared;
+      eta_df_squared += eta_df_T_squared;
+    } // walk the subdomains
+    const RangeFieldType eta_squared
+        = std::pow(1.0/std::sqrt(alpha_mu_mu_bar) * (std::sqrt(gamma_mu_mu_bar)*std::sqrt(eta_nc_squared)
+                                                     + std::sqrt(eta_r_squared)
+                                                     + std::sqrt(alpha_mu_mu_hat)*std::sqrt(eta_df_squared)),
+                   2);
+    // scale
+    for (auto& element : indicators)
+      element /= eta_squared;
+    return indicators;
+  } // ... estimate_local(...)
 }; // class OS2014Star
 
 #endif // HAVE_ALUGRID
@@ -786,7 +909,7 @@ private:
                                                                          const ParametersMapType& /*parameters*/)
     {
       DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
-      return RangeFieldType(0);
+      return Stuff::LA::CommonDenseVector< RangeFieldType >();
     }
   }; // class Caller
 
@@ -885,6 +1008,7 @@ public:
   {
     std::vector< std::string > tmp;
     tmp = call_append< OS2014Type >(tmp);
+    tmp = call_append< OS2014StarType >(tmp);
     return tmp;
   } // ... available_local(...)
 
@@ -920,6 +1044,8 @@ public:
   {
     if (call_equals< OS2014Type >(type))
       return call_estimate_local< OS2014Type >(space, vector, problem, parameters);
+    else if (call_equals< OS2014StarType >(type))
+      return call_estimate_local< OS2014StarType >(space, vector, problem, parameters);
     else
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available_local()!");
