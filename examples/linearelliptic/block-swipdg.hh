@@ -10,7 +10,7 @@
 
 #include <dune/stuff/common/memory.hh>
 
-#include <dune/hdd/playground/linearelliptic/discreteproblem.hh>
+#include <dune/hdd/linearelliptic/discreteproblem.hh>
 #include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
 
 template< class GridImp >
