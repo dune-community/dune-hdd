@@ -92,11 +92,11 @@ extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
 #else // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
 
 
-TEST_F(DISABLED_OS2014_FVCA7_Poster_convergence_study, ESV2007_fine_triangulation) {}
-TEST_F(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_01_subdomain) {}
-TEST_F(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_04_subdomain) {}
-TEST_F(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_16_subdomain) {}
-TEST_F(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_64_subdomain) {}
+TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, ESV2007_fine_triangulation) {}
+TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_01_subdomain) {}
+TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_04_subdomain) {}
+TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_16_subdomain) {}
+TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_64_subdomain) {}
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
