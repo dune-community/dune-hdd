@@ -20,7 +20,7 @@
 #include <dune/gdt/discretefunction/default.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
-#include <dune/hdd/linearelliptic/discretizations/swipdg-estimator.hh>
+#include <dune/hdd/linearelliptic/estimators/swipdg.hh>
 #include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
@@ -43,11 +43,8 @@ class DiscretizationSWIPDG
 public:
   typedef Discretizations::SWIPDG
       < GridType, Stuff::Grid::ChooseLayer::level, RangeFieldType, dimRange, polOrder, space_backend, la_backend > Type;
-  typedef Discretizations::SWIPDGEstimator< typename Type::AnsatzSpaceType,
-                                            typename Type::VectorType,
-                                            typename Type::ProblemType,
-                                            GridType >
-      EstimatorType;
+  typedef Estimators::SWIPDG
+      < typename Type::AnsatzSpaceType, typename Type::VectorType, typename Type::ProblemType, GridType > EstimatorType;
 }; // class DiscretizationSWIPDG
 
 
@@ -181,7 +178,7 @@ public:
                             *(this->test_case_.reference_grid_view()),
                             difference,
                             difference,
-                            Discretizations::internal::SWIPDGEstimators::over_integrate);
+                            Estimators::internal::SWIPDG::over_integrate);
       local_energy_norm.prepare();
       // prepare
       const auto current_grid_view = this->current_discretization_->grid_view();

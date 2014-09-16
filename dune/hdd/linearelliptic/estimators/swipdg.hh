@@ -3,15 +3,14 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_HH
-#define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_SWIPDG_HH
+#define DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_SWIPDG_HH
 
 #include <memory>
 #include <vector>
 
 #include <boost/numeric/conversion/cast.hpp>
 
-#include <dune/common/timer.hh>
 #include <dune/common/static_assert.hh>
 
 #include <dune/stuff/common/disable_warnings.hh>
@@ -19,10 +18,6 @@
 #   include <dune/grid/alugrid.hh>
 # endif
 #include <dune/stuff/common/reenable_warnings.hh>
-
-#if HAVE_DUNE_GRID_MULTISCALE
-# include <dune/grid/multiscale/provider/interface.hh>
-#endif
 
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/grid/layers.hh>
@@ -50,14 +45,12 @@
 #include <dune/gdt/playground/products/ESV2007.hh>
 #include <dune/gdt/assembler/tmp-storage.hh>
 
-#include "base.hh"
-
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
-namespace Discretizations {
+namespace Estimators {
 namespace internal {
-namespace SWIPDGEstimators {
+namespace SWIPDG {
 
 
 static const size_t over_integrate = 2;
@@ -674,12 +667,12 @@ public:
 #endif // HAVE_ALUGRID
 
 
-} // namespace SWIPDGEstimators
+} // namespace SWIPDG
 } // namespace internal
 
 
 template< class SpaceType, class VectorType, class ProblemType, class GridType >
-class SWIPDGEstimator
+class SWIPDG
 {
 public:
   typedef typename ProblemType::RangeFieldType RangeFieldType;
@@ -770,15 +763,15 @@ private:
     return Caller< IndividualEstimator, IndividualEstimator::available >::estimate_local(space, vector, problem);
   }
 
-  typedef internal::SWIPDGEstimators::LocalNonconformityESV2007
+  typedef internal::SWIPDG::LocalNonconformityESV2007
       < SpaceType, VectorType, ProblemType, GridType >              LocalNonconformityESV2007Type;
-  typedef internal::SWIPDGEstimators::LocalResidualESV2007
+  typedef internal::SWIPDG::LocalResidualESV2007
       < SpaceType, VectorType, ProblemType, GridType >              LocalResidualESV2007Type;
-  typedef internal::SWIPDGEstimators::LocalDiffusiveFluxESV2007
+  typedef internal::SWIPDG::LocalDiffusiveFluxESV2007
       < SpaceType, VectorType, ProblemType, GridType >              LocalDiffusiveFluxESV2007Type;
-  typedef internal::SWIPDGEstimators::ESV2007
+  typedef internal::SWIPDG::ESV2007
       < SpaceType, VectorType, ProblemType, GridType >              ESV2007Type;
-  typedef internal::SWIPDGEstimators::ESV2007AlternativeSummation
+  typedef internal::SWIPDG::ESV2007AlternativeSummation
       < SpaceType, VectorType, ProblemType, GridType >              ESV2007AlternativeSummationType;
 
 public:
@@ -834,12 +827,12 @@ public:
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available_local()!");
   } // ... estimate_local(...)
-}; // class SWIPDGEstimator
+}; // class SWIPDG
 
 
 } // namespace Discretizations
-} // namespace LinearElliptic
+} // namespace Estimators
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_ESTIMATOR_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_SWIPDG_HH

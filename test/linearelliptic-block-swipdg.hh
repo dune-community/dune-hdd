@@ -19,7 +19,7 @@
 #include <dune/gdt/playground/products/elliptic.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
-#include <dune/hdd/linearelliptic/discretizations/block-swipdg-estimator.hh>
+#include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
 #include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
@@ -40,11 +40,9 @@ class DiscretizationBlockSWIPDG
   typedef typename TestCaseType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = TestCaseType::dimRange;
 public:
-  typedef Discretizations::BlockSWIPDG< GridType, RangeFieldType, dimRange, polOrder, la_backend > Type;
-  typedef Discretizations::BlockSWIPDGEstimator< typename Type::AnsatzSpaceType,
-                                                 typename Type::VectorType,
-                                                 typename Type::ProblemType,
-                                                 GridType >                                        EstimatorType;
+  typedef Discretizations::BlockSWIPDG< GridType, RangeFieldType, dimRange, polOrder, la_backend >            Type;
+  typedef Estimators::BlockSWIPDG
+      < typename Type::AnsatzSpaceType, typename Type::VectorType, typename Type::ProblemType, GridType > EstimatorType;
 }; // class DiscretizationBlockSWIPDG
 
 
@@ -164,7 +162,7 @@ public:
                             *this->reference_discretization_->grid_view(),
                             difference,
                             difference,
-                            Discretizations::internal::SWIPDGEstimators::over_integrate);
+                            Estimators::internal::SWIPDG::over_integrate);
       // prepare
       local_energy_norm.prepare();
       const auto ms_grid = this->current_discretization_->ansatz_space()->ms_grid();

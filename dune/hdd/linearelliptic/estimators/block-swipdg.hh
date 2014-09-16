@@ -3,8 +3,8 @@
 // Copyright holders: Felix Albrecht
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BLOCK_SWIPDG_ESTIMATOR_HH
-#define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BLOCK_SWIPDG_ESTIMATOR_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_BLOCK_SWIPDG_HH
+#define DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_BLOCK_SWIPDG_HH
 
 #include <memory>
 #include <vector>
@@ -65,14 +65,12 @@
 #include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/linearelliptic/problems/zero-boundary.hh>
 
-#include "base.hh"
 #include "swipdg.hh"
-#include "swipdg-estimator.hh"
 
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
-namespace Discretizations {
+namespace Estimators {
 namespace internal {
 
 
@@ -156,14 +154,14 @@ static typename FunctionType::RangeFieldType compute_minimum(const FunctionType&
 } // ... compute_minimum(...)
 
 
-namespace BlockSWIPDGEstimators {
+namespace BlockSWIPDG {
 
 
 template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
 class LocalNonconformityOS2014
-  : public SWIPDGEstimators::LocalNonconformityESV2007< BlockSpaceType, VectorType, ProblemType, GridType >
+  : public SWIPDG::LocalNonconformityESV2007< BlockSpaceType, VectorType, ProblemType, GridType >
 {
-  typedef SWIPDGEstimators::LocalNonconformityESV2007< BlockSpaceType, VectorType, ProblemType, GridType > BaseType;
+  typedef SWIPDG::LocalNonconformityESV2007< BlockSpaceType, VectorType, ProblemType, GridType > BaseType;
 public:
   static std::string id() { return "eta_NC_OS2014"; }
 
@@ -275,7 +273,7 @@ public:
     , p0_force_(p0_space_)
     , difference_(Stuff::Common::make_unique< DifferenceType >(*problem_.force()->affine_part() - p0_force_))
     , constant_one_(1)
-    , local_operator_(SWIPDGEstimators::over_integrate, constant_one_)
+    , local_operator_(SWIPDG::over_integrate, constant_one_)
     , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
     , vertices_()
     , min_diffusion_value_(std::numeric_limits< RangeFieldType >::max())
@@ -361,9 +359,9 @@ public:
 
 template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
 class LocalDiffusiveFluxOS2014
-  : public SWIPDGEstimators::LocalDiffusiveFluxESV2007< BlockSpaceType, VectorType, ProblemType, GridType >
+  : public SWIPDG::LocalDiffusiveFluxESV2007< BlockSpaceType, VectorType, ProblemType, GridType >
 {
-  typedef SWIPDGEstimators::LocalDiffusiveFluxESV2007< BlockSpaceType, VectorType, ProblemType, GridType > BaseType;
+  typedef SWIPDG::LocalDiffusiveFluxESV2007< BlockSpaceType, VectorType, ProblemType, GridType > BaseType;
 public:
   static std::string id() { return "eta_DF_OS2014"; }
 
@@ -479,7 +477,7 @@ public:
     , discrete_solution_(space_, vector_)
     , rtn0_space_(space.grid_view())
     , diffusive_flux_(rtn0_space_)
-    , local_operator_(SWIPDGEstimators::over_integrate,
+    , local_operator_(SWIPDG::over_integrate,
                       *problem_mu_->diffusion_factor()->affine_part(),
                       *problem_mu_hat_->diffusion_factor()->affine_part(),
                       *problem_.diffusion_tensor()->affine_part(),
@@ -868,12 +866,12 @@ public:
 #endif // HAVE_ALUGRID
 
 
-} // namespace BlockSWIPDGEstimators
+} // namespace BlockSWIPDG
 } // namespace internal
 
 
 template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
-class BlockSWIPDGEstimator
+class BlockSWIPDG
 {
 public:
   typedef typename ProblemType::RangeFieldType RangeFieldType;
@@ -978,17 +976,17 @@ private:
                                                                                          parameters);
   } // ... call_estimate_local(...)
 
-  typedef internal::BlockSWIPDGEstimators::LocalNonconformityOS2014
+  typedef internal::BlockSWIPDG::LocalNonconformityOS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalNonconformityOS2014Type;
-  typedef internal::BlockSWIPDGEstimators::LocalResidualOS2014
+  typedef internal::BlockSWIPDG::LocalResidualOS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalResidualOS2014Type;
-  typedef internal::BlockSWIPDGEstimators::LocalDiffusiveFluxOS2014
+  typedef internal::BlockSWIPDG::LocalDiffusiveFluxOS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalDiffusiveFluxOS2014Type;
-  typedef internal::BlockSWIPDGEstimators::LocalDiffusiveFluxOS2014Star
+  typedef internal::BlockSWIPDG::LocalDiffusiveFluxOS2014Star
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalDiffusiveFluxOS2014StarType;
-  typedef internal::BlockSWIPDGEstimators::OS2014
+  typedef internal::BlockSWIPDG::OS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         OS2014Type;
-  typedef internal::BlockSWIPDGEstimators::OS2014Star
+  typedef internal::BlockSWIPDG::OS2014Star
       < BlockSpaceType, VectorType, ProblemType, GridType >         OS2014StarType;
 
 public:
@@ -1050,12 +1048,12 @@ public:
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                  "Requested type '" << type << "' is not one of available_local()!");
   } // ... estimate_local(...)
-}; // class BlockSWIPDGEstimator
+}; // class BlockSWIPDG
 
 
-} // namespace Discretizations
+} // namespace Estimators
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BLOCK_SWIPDG_ESTIMATOR_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_BLOCK_SWIPDG_HH
