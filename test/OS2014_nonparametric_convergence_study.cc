@@ -15,7 +15,7 @@
 
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
-#include "OS2014.hh"
+#include "OS2014_nonparametric_convergence_study.hh"
 
 
 TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {

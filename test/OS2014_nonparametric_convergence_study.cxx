@@ -8,7 +8,7 @@
 #include <dune/stuff/test/gtest/gtest.h>
 #include <dune/stuff/test/common.hh>
 
-#include "OS2014.hh"
+#include "OS2014_nonparametric_convergence_study.hh"
 
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
