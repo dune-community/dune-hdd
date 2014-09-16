@@ -525,8 +525,6 @@ class BlockModel1
   typedef internal::Model1Base< GridType > Model1BaseType;
   typedef MultiscaleCubeBase< GridType >   TestCaseBaseType;
 
-  typedef typename Model1BaseType::Spe10Model1FunctionType Spe10Model1FunctionType;
-
   static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
   {
     Stuff::Common::Configuration grid_cfg = Model1BaseType::configuration("");
