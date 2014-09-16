@@ -65,9 +65,9 @@
 #include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/linearelliptic/problems/zero-boundary.hh>
 
-#include "../../../linearelliptic/discretizations/base.hh"
-#include "../../../linearelliptic/discretizations/swipdg.hh"
-#include "../../../linearelliptic/discretizations/swipdg-estimator.hh"
+#include "base.hh"
+#include "swipdg.hh"
+#include "swipdg-estimator.hh"
 
 namespace Dune {
 namespace HDD {

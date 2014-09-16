@@ -18,8 +18,8 @@
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/playground/products/elliptic.hh>
 
-#include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
-#include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg-estimator.hh>
+#include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
+#include <dune/hdd/linearelliptic/discretizations/block-swipdg-estimator.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
 
