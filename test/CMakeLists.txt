@@ -49,6 +49,7 @@ add_library(lib_test_OS2014
             STATIC
             EXCLUDE_FROM_ALL
             $<TARGET_OBJECTS:obj_test_os2014>
+            $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_esv2007_2daluconform>
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
 add_dune_alugrid_flags(lib_test_OS2014)
