@@ -57,9 +57,9 @@ typedef LinearElliptic::TestCases::ESV2007< GridType >             Nonparametric
 typedef LinearElliptic::Tests::SWIPDGStudy
     < NonparametricEocTestCaseType, 1, space_backend, la_backend > NonparametricEocStudyType;
 
-void OS2014_nonparametric_convergence();
+void nonparametric_convergence_study(const std::string visualization = "");
 
-void OS2014_nonparametric_convergence_study_alternative_summation();
+void nonparametric_convergence_study_alternative_summation();
 
 
 typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > NonparametricBlockEocTestCaseType;
@@ -78,27 +78,18 @@ void print_parameter_information(const ParametricBlockEocTestCaseType& parametri
 void parametric_block_convergence_study(const std::string partitioning,
                                         const std::vector< std::string >& only_these_norms,
                                         const std::map< std::string, Pymor::Parameter >& parameters,
-                                        const bool print_header = false);
+                                        const bool print_header = false,
+                                        const std::string visualization = "");
 
 
-typedef LinearElliptic::TestCases::Spe10::Model1< GridType >                NonparametricLocalizationTestCaseType;
-typedef LinearElliptic::Tests::SWIPDGStudy
-    < NonparametricLocalizationTestCaseType, 1, space_backend, la_backend > NonparametricLocalizationStudyType;
-
-void nonparametric_localization_study();
-
-typedef LinearElliptic::TestCases::Spe10::BlockModel1< GridType >    NonparametricBlockLocalizationTestCaseType;
-typedef LinearElliptic::Tests::BlockSWIPDGStudy
-    < NonparametricBlockLocalizationTestCaseType, 1, la_backend >    NonparametricBlockLocalizationStudyType;
-
-void nonparametric_block_localization_study(const std::string partitioning);
-
+extern template class LinearElliptic::Tests::SWIPDGStudyExpectations
+    < LinearElliptic::TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+    < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1, true >;
+    < LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE

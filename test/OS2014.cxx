@@ -13,25 +13,27 @@
 #if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
 
 
-void OS2014_nonparametric_convergence_study()
+void nonparametric_convergence_study(const std::string visualization)
 {
   const NonparametricEocTestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
   DSC_LOG_INFO << std::endl;
   NonparametricEocStudyType study(test_case,
                                   {"energy", "eta_NC_ESV2007", "eta_R_ESV2007", "eta_DF_ESV2007", "eta_ESV2007",
-                                   "eff_ESV2007"});
+                                   "eff_ESV2007"},
+                                  {},
+                                  visualization);
   Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
-} // ... OS2014_nonparametric_convergence_study(...)
+} // ... nonparametric_convergence_study(...)
 
 
-void OS2014_nonparametric_convergence_study_alternative_summation()
+void nonparametric_convergence_study_alternative_summation()
 {
   const NonparametricEocTestCaseType test_case;
   NonparametricEocStudyType study(test_case,
                                   {"energy", "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
   Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
-} // ... OS2014_nonparametric_convergence_study_alternative_summation(...)
+} // ... nonparametric_convergence_study_alternative_summation(...)
 
 
 void nonparametric_block_convergence_study(const std::string& partitioning)
@@ -78,39 +80,16 @@ void print_parameter_information(const ParametricBlockEocTestCaseType& parametri
 void parametric_block_convergence_study(const std::string partitioning,
                                         const std::vector< std::string >& only_these_norms,
                                         const std::map< std::string, Pymor::Parameter >& parameters,
-                                        const bool print_header)
+                                        const bool print_header,
+                                        const std::string visualization)
 {
   const ParametricBlockEocTestCaseType test_case(parameters, partitioning);
   if (print_header)
     test_case.print_header(DSC_LOG_INFO);
   print_parameter_information(test_case);
-  ParametricBlockEocStudyType study(test_case, only_these_norms, {}, "parametric_block_convergence_study");
+  ParametricBlockEocStudyType study(test_case, only_these_norms, {}, visualization);
   Dune::Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
 } // ... parametric_block_convergence_study(...)
-
-
-void nonparametric_localization_study()
-{
-  const NonparametricLocalizationTestCaseType test_case;
-  test_case.print_header(DSC_LOG_INFO);
-  DSC_LOG_INFO << std::endl;
-  NonparametricLocalizationStudyType study(test_case,
-                                           {},
-                                           {"eta_ESV2007", "eta_ESV2007_alt"}/*,
-                                           "nonparametric_localization_study_swipdg"*/);
-  study.run_localization(DSC_LOG_INFO);
-} // ... nonparametric_localization_study(...)
-
-
-void nonparametric_block_localization_study(const std::string partitioning)
-{
-  const NonparametricBlockLocalizationTestCaseType test_case(partitioning);
-  NonparametricBlockLocalizationStudyType study(test_case,
-                                                {},
-                                                {"eta_OS2014"}/*,
-                                                "nonparametric_localization_study_blockswipdg"*/);
-  study.run_localization(DSC_LOG_INFO);
-} // ... nonparametric_block_localization_study(...)
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE

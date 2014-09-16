@@ -3,9 +3,9 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_STUFF_TEST_MAIN_CATCH_EXCEPTIONS
-# define DUNE_STUFF_TEST_MAIN_CATCH_EXCEPTIONS
-#endif
+//#ifndef DUNE_STUFF_TEST_MAIN_CATCH_EXCEPTIONS
+//# define DUNE_STUFF_TEST_MAIN_CATCH_EXCEPTIONS
+//#endif
 #ifndef DUNE_STUFF_TEST_MAIN_ENABLE_INFO_LOGGING
 # define DUNE_STUFF_TEST_MAIN_ENABLE_INFO_LOGGING
 #endif
@@ -19,10 +19,10 @@
 
 
 TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation) {
-  OS2014_nonparametric_convergence_study();
+  nonparametric_convergence_study(/*"nonparametric_convergence_study"*/);
 }
 TEST(OS2014_nonparametric_convergence_study, SWIPDG_fine_triangulation_alternative_summation) {
-  OS2014_nonparametric_convergence_study_alternative_summation();
+  nonparametric_convergence_study_alternative_summation();
 }
 TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_01_subdomain) {
   nonparametric_block_convergence_study("[1 1 1]");
@@ -37,9 +37,9 @@ TEST(OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {
   nonparametric_block_convergence_study("[8 8 1]");
 }
 
-TEST(OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain)
+TEST(OS2014_parametric_convergence_study, eta_DF_comparison_16_subdomain)
 {
-  const std::string partitioning = "[1 1 1]";
+  const std::string partitioning = "[4 4 1]";
   const std::vector< std::string > only_these_norms = {"eta_DF_OS2014", "eta_DF_OS2014_*", "eta_OS2014",
                                                        "eta_OS2014_*", "eff_OS2014_mu", "eff_OS2014_*_mu"};
   bool print_header = true;
@@ -48,25 +48,19 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain)
     for (auto mu_value : {0.1, 0.3, 0.5, 0.75, 1.0}) {
       const auto mu = Parameter("mu", mu_value);
       const auto mu_bar = mu;
-      parametric_convergence_study(partitioning,
-                                   only_these_norms,
-                                   {{"mu_hat",        mu_hat},
-                                    {"mu_bar",        mu_bar},
-                                    {"mu",            mu},
-                                    {"mu_minimizing", Parameter("mu", 0.1)}},
-                                   print_header);
+      parametric_block_convergence_study(partitioning,
+                                         only_these_norms,
+                                         {{"mu_hat",        mu_hat},
+                                          {"mu_bar",        mu_bar},
+                                          {"mu",            mu},
+                                          {"mu_minimizing", Parameter("mu", 0.1)}},
+                                         print_header/*,
+                                         "parametric_block_convergence_study"*/);
       if (print_header)
         print_header = false;
     }
   }
-} // OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain
-
-TEST(OS2014_nonparametric_localization_study, SWIPDG_fine_triangulation) {
-  nonparametric_localization_study();
-}
-TEST(OS2014_nonparametric_localization_study, Block_SWIPDG_80_subdomain) {
-  nonparametric_block_localization_study("[20 4 1]");
-}
+} // TEST(OS2014_parametric_convergence_study, eta_DF_comparison_16_subdomain)
 
 
 #else // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
@@ -79,9 +73,7 @@ TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_04_subdomain)
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_16_subdomain) {}
 TEST(DISABLED_OS2014_nonparametric_convergence_study, Block_SWIPDG_64_subdomain) {}
 
-TEST(DISABLED_OS2014_parametric_convergence_study, eta_DF_comparison_01_subdomain) {}
+TEST(DISABLED_OS2014_parametric_convergence_study, eta_DF_comparison_16_subdomain) {}
 
-TEST(DISABLED_OS2014_nonparametric_localization_study, SWIPDG_fine_triangulation) {}
-TEST(DISABLED_OS2014_nonparametric_localization_study, Block_SWIPDG_80_subdomain) {}
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE
