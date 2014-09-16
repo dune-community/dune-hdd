@@ -41,18 +41,18 @@ add_library(obj_test_linearelliptic-swipdg-expectations_spe10_2dsgrid
             linearelliptic-swipdg-expectations_spe10_2dsgrid.cxx)
 
 # test target libs
-add_library(obj_test_os2014
+add_library(obj_test_os2014_nonparametric_convergence_study
             OBJECT
             EXCLUDE_FROM_ALL
-            OS2014.cxx)
-add_library(lib_test_OS2014
+            OS2014_nonparametric_convergence_study.cxx)
+add_library(lib_test_OS2014_nonparametric_convergence_study
             STATIC
             EXCLUDE_FROM_ALL
-            $<TARGET_OBJECTS:obj_test_os2014>
+            $<TARGET_OBJECTS:obj_test_os2014_nonparametric_convergence_study>
             $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_esv2007_2daluconform>
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
-add_dune_alugrid_flags(lib_test_OS2014)
+add_dune_alugrid_flags(lib_test_OS2014_nonparametric_convergence_study)
 
 add_library(lib_test_OS2014_parametric_convergence_study
             STATIC
@@ -82,7 +82,7 @@ add_library(lib_test_OS2014-FVCA7-poster
 
 # test targets
 target_link_libraries(test_OS2014_parametric_convergence_study lib_test_OS2014_parametric_convergence_study)
-target_link_libraries(test_OS2014 lib_test_OS2014)
+target_link_libraries(test_OS2014_nonparametric_convergence_study lib_test_OS2014_nonparametric_convergence_study)
 target_link_libraries(test_linearelliptic-block-swipdg lib_test_linearelliptic-block-swipdg)
 target_link_libraries(test_OS2014-FVCA7-poster lib_test_linearelliptic-block-swipdg)
 target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
