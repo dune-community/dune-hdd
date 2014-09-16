@@ -26,7 +26,7 @@
 
 # include <dune/stuff/common/exceptions.hh>
 
-# include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 
 # include "linearelliptic-block-swipdg.hh"
 

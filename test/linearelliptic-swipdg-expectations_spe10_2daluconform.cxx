@@ -10,7 +10,7 @@
 
 # include <dune/stuff/test/gtest/gtest.h>
 
-# include <dune/hdd/playground/linearelliptic/testcases/spe10.hh>
+# include <dune/hdd/linearelliptic/testcases/spe10.hh>
 
 # include "linearelliptic-swipdg-expectations.hh"
 

@@ -25,7 +25,7 @@
 # include <dune/stuff/common/print.hh>
 # include <dune/stuff/common/float_cmp.hh>
 
-# include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 
 # include "linearelliptic-swipdg.hh"
 # include "linearelliptic-block-swipdg.hh"

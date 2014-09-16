@@ -21,8 +21,8 @@
 
 #include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
 #include <dune/hdd/linearelliptic/discretizations/swipdg-estimator.hh>
-#include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
-#include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
+#include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic.hh"
 #include "linearelliptic-swipdg-expectations.hh"

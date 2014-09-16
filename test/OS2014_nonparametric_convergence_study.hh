@@ -23,9 +23,9 @@
 
 #include <dune/pymor/parameters/base.hh>
 
-#include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
-#include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
-#include <dune/hdd/playground/linearelliptic/testcases/spe10.hh>
+#include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2014.hh>
+#include <dune/hdd/linearelliptic/testcases/spe10.hh>
 
 #include "linearelliptic-swipdg.hh"
 #include "linearelliptic-block-swipdg.hh"

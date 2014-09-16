@@ -8,7 +8,7 @@
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
 
-# include <dune/hdd/playground/linearelliptic/testcases/OS2014.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 # include "linearelliptic-block-swipdg-expectations.hh"
 

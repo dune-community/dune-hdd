@@ -10,7 +10,7 @@
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
 
-# include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 
 # include "linearelliptic-block-swipdg-expectations.hh"
 

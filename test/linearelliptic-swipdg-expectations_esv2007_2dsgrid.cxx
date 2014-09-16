@@ -9,7 +9,7 @@
 
 #include <dune/stuff/test/gtest/gtest.h>
 
-#include <dune/hdd/playground/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 
 #include "linearelliptic-swipdg-expectations.hh"
 
