@@ -13,7 +13,7 @@
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/expression.hh>
 
-#include "../../../linearelliptic/problems/default.hh"
+#include "default.hh"
 
 namespace Dune {
 namespace HDD {

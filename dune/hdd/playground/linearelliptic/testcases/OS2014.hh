@@ -20,7 +20,7 @@
 
 #include <dune/pymor/functions/default.hh>
 
-#include <dune/hdd/playground/linearelliptic/problems/OS2014.hh>
+#include <dune/hdd/linearelliptic/problems/OS2014.hh>
 
 #include "base.hh"
 

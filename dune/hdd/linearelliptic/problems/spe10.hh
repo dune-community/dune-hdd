@@ -25,7 +25,7 @@
 
 #include <dune/pymor/functions/default.hh>
 
-#include "../../../linearelliptic/problems/default.hh"
+#include "default.hh"
 
 namespace Dune {
 namespace HDD {

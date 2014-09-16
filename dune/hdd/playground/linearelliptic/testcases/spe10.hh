@@ -13,7 +13,7 @@
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/functions/constant.hh>
 
-#include <dune/hdd/playground/linearelliptic/problems/spe10.hh>
+#include <dune/hdd/linearelliptic/problems/spe10.hh>
 
 #include "base.hh"
 

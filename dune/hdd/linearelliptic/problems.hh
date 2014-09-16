@@ -16,10 +16,10 @@
 #include "problems/interfaces.hh"
 #include "problems/default.hh"
 #include "problems/ESV2007.hh"
-#include "../playground/linearelliptic/problems/mixed-boundaries.hh"
-#include "../playground/linearelliptic/problems/OS2014.hh"
-#include "../playground/linearelliptic/problems/spe10.hh"
-#include "../playground/linearelliptic/problems/thermalblock.hh"
+#include "problems/mixed-boundaries.hh"
+#include "problems/OS2014.hh"
+#include "problems/spe10.hh"
+#include "problems/thermalblock.hh"
 
 namespace Dune {
 namespace HDD {

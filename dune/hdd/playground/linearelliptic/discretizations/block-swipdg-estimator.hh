@@ -63,7 +63,7 @@
 #include <dune/gdt/playground/localevaluation/OS2014.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
-#include <dune/hdd/playground/linearelliptic/problems/zero-boundary.hh>
+#include <dune/hdd/linearelliptic/problems/zero-boundary.hh>
 
 #include "../../../linearelliptic/discretizations/base.hh"
 #include "../../../linearelliptic/discretizations/swipdg.hh"

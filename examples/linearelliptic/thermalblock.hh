@@ -16,7 +16,7 @@
 
 #include <dune/stuff/common/memory.hh>
 
-#include <dune/hdd/playground/linearelliptic/problems/thermalblock.hh>
+#include <dune/hdd/linearelliptic/problems/thermalblock.hh>
 #include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
 
 
