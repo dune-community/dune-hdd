@@ -477,14 +477,12 @@ public:
 
   VectorType* localize_vector_and_return_ptr(const VectorType& global_vector, const DUNE_STUFF_SSIZE_T ss) const
   {
-    assert(ss >= 0);
-    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
-    return new VectorType(localize_vector(global_vector, size_t(ss)));
+    return new VectorType(localize_vector(global_vector, boost::numeric_cast< size_t >(ss)));
   }
 
   ProductType get_local_product(const size_t ss, const std::string id) const
   {
-    if ((std::make_signed< size_t >::type)(ss) >= num_subdomains())
+    if (boost::numeric_cast< DUNE_STUFF_SSIZE_T >(ss) >= num_subdomains())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     return this->local_discretizations_[ss]->get_product(id);
@@ -492,14 +490,12 @@ public:
 
   ProductType* get_local_product_and_return_ptr(const DUNE_STUFF_SSIZE_T ss, const std::string id) const
   {
-    assert(ss >= 0);
-    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
-    return new ProductType(get_local_product(size_t(ss), id));
+    return new ProductType(get_local_product(boost::numeric_cast< size_t >(ss), id));
   }
 
   OperatorType get_local_operator(const size_t ss) const
   {
-    if ((std::make_signed< size_t >::type)(ss) >= num_subdomains())
+    if (boost::numeric_cast< DUNE_STUFF_SSIZE_T >(ss) >= num_subdomains())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
     assert(ss < local_matrices_.size());
@@ -508,9 +504,7 @@ public:
 
   OperatorType* get_local_operator_and_return_ptr(const DUNE_STUFF_SSIZE_T ss) const
   {
-    assert(ss >= 0);
-    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
-    return new OperatorType(get_local_operator(size_t(ss)));
+    return new OperatorType(get_local_operator(boost::numeric_cast< size_t >(ss)));
   }
 
   OperatorType get_coupling_operator(const size_t ss, const size_t nn) const
@@ -548,11 +542,8 @@ public:
 
   OperatorType* get_coupling_operator_and_return_ptr(const DUNE_STUFF_SSIZE_T ss, const DUNE_STUFF_SSIZE_T nn) const
   {
-    assert(ss >= 0);
-    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
-    assert(nn >= 0);
-    assert(nn < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
-    return new OperatorType(get_coupling_operator(size_t(ss), size_t(nn)));
+    return new OperatorType(get_coupling_operator(boost::numeric_cast< size_t >(ss),
+                                                  boost::numeric_cast< size_t >(nn)));
   }
 
   FunctionalType get_local_functional(const size_t ss) const
@@ -566,9 +557,7 @@ public:
 
   FunctionalType* get_local_functional_and_return_ptr(const DUNE_STUFF_SSIZE_T ss) const
   {
-    assert(ss >= 0);
-    assert(ss < (std::make_signed< size_t >::type)(std::numeric_limits< size_t >::max()));
-    return new FunctionalType(get_local_functional(size_t(ss)));
+    return new FunctionalType(get_local_functional(boost::numeric_cast< size_t >(ss)));
   }
 
 #if 0
