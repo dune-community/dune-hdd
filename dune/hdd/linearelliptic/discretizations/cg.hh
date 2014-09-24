@@ -52,7 +52,6 @@ template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, in
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
 #else
 # error No suitable space backend available!
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
 #endif
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::default_sparse_backend >
 class CG;
