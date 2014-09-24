@@ -44,6 +44,7 @@
 #include <dune/stuff/functions/interfaces.hh>
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
+#include <dune/stuff/grid/walker.hh>
 
 #include <dune/pymor/common/exceptions.hh>
 
@@ -59,7 +60,6 @@
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/assembler/system.hh>
-#include <dune/gdt/assembler/gridwalker.hh>
 #include <dune/gdt/playground/localevaluation/OS2014.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
@@ -194,11 +194,11 @@ public:
 template< class BlockSpaceType, class VectorType, class ProblemType >
 class LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalResidualOS2014Base
-  , public GDT::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType >
+  , public Stuff::Grid::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType >
 {
   typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
                                                                                         ThisType;
-  typedef GDT::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType > FunctorBaseType;
+  typedef Stuff::Grid::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
 
@@ -255,7 +255,7 @@ public:
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
       ThisType eta_r_T(*local_space, problem, mu_minimizing);
-      GDT::GridWalker< GridViewType > grid_walker(*local_space->grid_view());
+      Stuff::Grid::Walker< GridViewType > grid_walker(*local_space->grid_view());
       grid_walker.add(eta_r_T);
       grid_walker.walk();
       eta_r_squared += eta_r_T.result_;
@@ -395,11 +395,11 @@ public:
 template< class BlockSpaceType, class VectorType, class ProblemType >
 class LocalDiffusiveFluxOS2014Star< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalDiffusiveFluxOS2014StarBase
-  , public GDT::Functor::Codim0< typename BlockSpaceType::GridViewType >
+  , public Stuff::Grid::Functor::Codim0< typename BlockSpaceType::GridViewType >
 {
   typedef LocalDiffusiveFluxOS2014Star
       < BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > > ThisType;
-  typedef GDT::Functor::Codim0< typename BlockSpaceType::GridViewType > FunctorBaseType;
+  typedef Stuff::Grid::Functor::Codim0< typename BlockSpaceType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
 
@@ -458,7 +458,7 @@ public:
     const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
     const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
     ThisType estimator(space, vector, problem, mu, mu_hat);
-    GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
@@ -668,7 +668,7 @@ public:
       eta_df.result_ = 0.0;
       // walk the local grid
       const auto local_grid_view = local_space->grid_view();
-      for (const auto& entity : Stuff::Common::viewRange(*local_grid_view)) {
+      for (const auto& entity : Stuff::Common::entityRange(*local_grid_view)) {
         eta_nc.apply_local(entity);
         eta_r_T.apply_local(entity);
         eta_df.apply_local(entity);
@@ -834,7 +834,7 @@ public:
       eta_df.result_ = 0.0;
       // walk the local grid
       const auto local_grid_view = local_space->grid_view();
-      for (const auto& entity : Stuff::Common::viewRange(*local_grid_view)) {
+      for (const auto& entity : Stuff::Common::entityRange(*local_grid_view)) {
         eta_nc.apply_local(entity);
         eta_r_T.apply_local(entity);
         eta_df.apply_local(entity);

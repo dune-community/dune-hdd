@@ -26,11 +26,11 @@
 #include <dune/stuff/la/container/common.hh>
 #include <dune/stuff/la/solver.hh>
 #include <dune/stuff/playground/functions/ESV2007.hh>
+#include <dune/stuff/grid/walker/functors.hh>
 
 #include <dune/gdt/spaces/discontinuouslagrange.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
-#include <dune/gdt/playground/assembler/functors.hh>
 #include <dune/gdt/playground/operators/elliptic-swipdg.hh>
 #include <dune/gdt/functionals/l2.hh>
 #include <dune/gdt/playground/functionals/swipdg.hh>
@@ -79,11 +79,11 @@ public:
 template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
 class LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
   : public LocalNonconformityESV2007Base
-  , public GDT::Functor::Codim0< typename SpaceType::GridViewType >
+  , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
   typedef LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
     ThisType;
-  typedef GDT::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
+  typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
 
@@ -127,7 +127,7 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
     const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar") : Pymor::Parameter();
     ThisType estimator(space, vector, problem, mu_bar);
-    GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
@@ -220,11 +220,11 @@ public:
 template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
 class LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
   : public LocalResidualESV2007Base
-  , public GDT::Functor::Codim0< typename SpaceType::GridViewType >
+  , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
   typedef LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
       ThisType;
-  typedef GDT::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
+  typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
 
@@ -259,7 +259,7 @@ public:
   static RangeFieldType estimate(const SpaceType& space, const VectorType& /*vector*/, const ProblemType& problem)
   {
     ThisType estimator(space, problem);
-    GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
@@ -346,11 +346,11 @@ public:
 template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
 class LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
   : public LocalDiffusiveFluxESV2007Base
-  , public GDT::Functor::Codim0< typename SpaceType::GridViewType >
+  , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
   typedef LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
       ThisType;
-  typedef GDT::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
+  typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
   static const bool available = true;
 
@@ -407,7 +407,7 @@ public:
     const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
     const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
     ThisType estimator(space, vector, problem, mu, mu_hat);
-    GDT::GridWalker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);

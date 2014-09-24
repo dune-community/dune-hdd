@@ -43,6 +43,7 @@
 #include <dune/stuff/functions/interfaces.hh>
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
+#include <dune/stuff/grid/walker.hh>
 
 #include <dune/pymor/common/exceptions.hh>
 
@@ -58,7 +59,6 @@
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/assembler/system.hh>
-#include <dune/gdt/assembler/gridwalker.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/linearelliptic/problems/zero-boundary.hh>
@@ -1551,7 +1551,7 @@ private:
       dirichlet_matrix_assemblers.push_back(new DirichletMatrixAssemblerType(*(dirichlet_operators[qq])));
       boundary_assembler.add(*(dirichlet_matrix_assemblers[qq]),
                              *(local_matrix.component(qq)),
-                             new GDT::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
+                             new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
     if (this->problem().diffusion_factor()->has_affine_part()) {
       dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->affine_part()),
@@ -1560,7 +1560,7 @@ private:
           dirichlet_operators[dirichlet_operators.size() - 1])));
       boundary_assembler.add(*(dirichlet_matrix_assemblers[dirichlet_matrix_assemblers.size() - 1]),
                              *(local_matrix.affine_part()),
-                             new GDT::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
+                             new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
 
     // rhs
@@ -1575,7 +1575,7 @@ private:
       neumann_vector_assemblers.push_back(new NeumannVectorAssemblerType(*(neumann_functionals[qq])));
       boundary_assembler.add(*(neumann_vector_assemblers[qq]),
                              *(local_vector.component(this->problem().force()->num_components() + qq)),
-                             new GDT::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
+                             new Stuff::Grid::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
     if (this->problem().neumann()->has_affine_part()) {
       neumann_functionals.push_back(new NeumannFunctionalType(*(this->problem().neumann()->affine_part())));
@@ -1583,7 +1583,7 @@ private:
           neumann_functionals[neumann_functionals.size() - 1])));
       boundary_assembler.add(*(neumann_vector_assemblers[neumann_vector_assemblers.size() - 1]),
                              *(local_vector.affine_part()),
-                             new GDT::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
+                             new Stuff::Grid::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
 
     // * dirichlet boundary terms
@@ -1605,7 +1605,7 @@ private:
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
                                *(local_vector.component(component_index)),
-                               new GDT::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
+                               new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
         ++component_index;
       }
     }
@@ -1618,7 +1618,7 @@ private:
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
                                *(local_vector.component(component_index)),
-                               new GDT::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
+                               new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
         ++component_index;
       }
     }
@@ -1631,7 +1631,7 @@ private:
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
                                *(local_vector.component(component_index)),
-                               new GDT::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
+                               new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
         ++component_index;
       }
     } // dirichlet boundary terms

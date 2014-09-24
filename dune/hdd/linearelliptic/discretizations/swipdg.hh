@@ -30,11 +30,11 @@
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
 #include <dune/stuff/playground/functions/ESV2007.hh>
+#include <dune/stuff/grid/walker/functors.hh>
 
 #include <dune/gdt/spaces/discontinuouslagrange.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
-#include <dune/gdt/playground/assembler/functors.hh>
 #include <dune/gdt/playground/operators/elliptic-swipdg.hh>
 #include <dune/gdt/functionals/l2.hh>
 #include <dune/gdt/playground/functionals/swipdg.hh>
@@ -215,7 +215,7 @@ public:
       out << prefix << "assembling... " << std::flush;
       Dune::Timer timer;
       SystemAssembler< TestSpaceType > system_assembler(space);
-      Functor::DirichletDetector< GridViewType > dirichlet_detector(this->boundary_info());
+      Stuff::Grid::Functor::DirichletDetector< GridViewType > dirichlet_detector(this->boundary_info());
       system_assembler.add(dirichlet_detector);
 
       // lhs operator
@@ -340,7 +340,7 @@ public:
             *(neumann.component(qq)),
             *(rhs.component(id)),
             space,
-            new ApplyOn::NeumannIntersections< GridViewType >(boundary_info)));
+            new Stuff::Grid::ApplyOn::NeumannIntersections< GridViewType >(boundary_info)));
       }
       if (neumann.has_affine_part()) {
         if (!rhs.has_affine_part())
@@ -349,7 +349,7 @@ public:
             *(neumann.affine_part()),
             *(rhs.affine_part()),
             space,
-            new ApplyOn::NeumannIntersections< GridViewType >(boundary_info)));
+            new Stuff::Grid::ApplyOn::NeumannIntersections< GridViewType >(boundary_info)));
       }
       for (auto& neumann_boundary_functional : neumann_boundary_functionals)
         system_assembler.add(*neumann_boundary_functional);
