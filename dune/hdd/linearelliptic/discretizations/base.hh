@@ -165,7 +165,7 @@ public:
 
   void uncached_solve(VectorType& vector, const Pymor::Parameter mu) const
   {
-    CHECK_AND_CALL_CRTP(this->as_imp(*this).uncached_solve(vector, mu));
+    CHECK_AND_CALL_CRTP(this->as_imp().uncached_solve(vector, mu));
   }
 
 protected:
