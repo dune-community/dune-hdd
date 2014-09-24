@@ -68,49 +68,49 @@ public:
 
   const std::shared_ptr< const GridViewType >& grid_view() const
   {
-    CHECK_CRTP(this->as_imp(*this).grid_view());
-    return this->as_imp(*this).grid_view();
+    CHECK_CRTP(this->as_imp().grid_view());
+    return this->as_imp().grid_view();
   }
 
   const std::shared_ptr< const TestSpaceType >& test_space() const
   {
-    CHECK_CRTP(this->as_imp(*this).test_space());
-    return this->as_imp(*this).test_space();
+    CHECK_CRTP(this->as_imp().test_space());
+    return this->as_imp().test_space();
   }
 
   const std::shared_ptr< const TestSpaceType >& ansatz_space() const
   {
-    CHECK_CRTP(this->as_imp(*this).ansatz_space());
-    return this->as_imp(*this).ansatz_space();
+    CHECK_CRTP(this->as_imp().ansatz_space());
+    return this->as_imp().ansatz_space();
   }
 
   const PatternType& pattern() const
   {
-    CHECK_CRTP(this->as_imp(*this).pattern());
-    return this->as_imp(*this).pattern();
+    CHECK_CRTP(this->as_imp().pattern());
+    return this->as_imp().pattern();
   }
 
   const Stuff::Common::Configuration& boundary_info_cfg() const
   {
-    CHECK_CRTP(this->as_imp(*this).boundary_info_cfg());
-    return this->as_imp(*this).boundary_info_cfg();
+    CHECK_CRTP(this->as_imp().boundary_info_cfg());
+    return this->as_imp().boundary_info_cfg();
   }
 
   const BoundaryInfoType& boundary_info() const
   {
-    CHECK_CRTP(this->as_imp(*this).boundary_info());
-    return this->as_imp(*this).boundary_info();
+    CHECK_CRTP(this->as_imp().boundary_info());
+    return this->as_imp().boundary_info();
   }
 
   const ProblemType& problem() const
   {
-    CHECK_CRTP(this->as_imp(*this).model());
-    return this->as_imp(*this).model();
+    CHECK_CRTP(this->as_imp().model());
+    return this->as_imp().model();
   }
 
   void init(std::ostream& out = Dune::Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
-    CHECK_AND_CALL_CRTP(this->as_imp(*this).init(out, prefix));
+    CHECK_AND_CALL_CRTP(this->as_imp().init(out, prefix));
   }
 }; // class DiscretizationInterface
 
