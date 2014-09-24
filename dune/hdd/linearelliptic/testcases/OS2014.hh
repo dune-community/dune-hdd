@@ -159,7 +159,7 @@ public:
   using ParametricConvergenceBaseType::parameters;
 
   ParametricConvergence(const ParametersMapType parameters,
-         const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
+                        const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
     : ParametricConvergenceBaseType(parameters)
     , TestCaseBaseType(create_initial_grid(ParametricConvergenceBaseType::initial_refinements()), num_refinements)
   {
@@ -197,8 +197,8 @@ public:
   using ParametricConvergenceBaseType::parameters;
 
   ParametricBlockConvergence(const ParametersMapType parameters,
-                   const std::string num_partitions = "[1 1 1]",
-                   const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
+                             const std::string num_partitions = "[1 1 1]",
+                             const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
     : ParametricConvergenceBaseType(parameters)
     , TestCaseBaseType(initial_grid_cfg(num_partitions), ParametricConvergenceBaseType::initial_refinements(), num_refinements)
   {
