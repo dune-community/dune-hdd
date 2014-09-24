@@ -345,7 +345,7 @@ private:
     assert(vector.size() == ms_grid.size());
     const auto grid_view = ms_grid.globalGridView();
     VV fine_vector(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
-    for (const auto& entity : Stuff::Common::viewRange(*grid_view)) {
+    for (const auto& entity : Stuff::Common::entityRange(*grid_view)) {
       const size_t index = grid_view->indexSet().index(entity);
       const size_t subdomain = ms_grid.subdomainOf(entity);
       fine_vector[index] = vector[subdomain];
