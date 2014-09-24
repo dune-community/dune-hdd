@@ -218,7 +218,7 @@ public:
                                               *(dirichlet_projections[dirichlet_projections.size() - 1])));
       }
       for (auto& projection_operator : dirichlet_projection_operators)
-        system_assembler.add(*projection_operator, new GDT::ApplyOn::BoundaryEntities< GridViewType >());
+        system_assembler.add(*projection_operator, new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
 
       // lhs operator
       const auto& diffusion_factor = *(this->problem_.diffusion_factor());
@@ -286,7 +286,7 @@ public:
       }
       for (auto& neumann_functional : neumann_functionals)
         system_assembler.add(*neumann_functional,
-                             new GDT::ApplyOn::NeumannIntersections< GridViewType >(boundary_info));
+                             new Stuff::Grid::ApplyOn::NeumannIntersections< GridViewType >(boundary_info));
 
       // products
       // * L2
@@ -375,25 +375,25 @@ public:
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       out << prefix << "applying constraints... " << std::flush;
-      GDT::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType, true >
+      GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
         clear_and_set_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
-      GDT::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType, false >
-        clear_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
+      GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
+        clear_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs(), false);
       // we always need an affine part in the system matrix for the dirichlet rows
       if (!matrix.has_affine_part())
         matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
       system_assembler.add(clear_and_set_dirichlet_rows,
                            *(matrix.affine_part()),
-                           new GDT::ApplyOn::BoundaryEntities< GridViewType >());
+                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
         system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)),
-                             new GDT::ApplyOn::BoundaryEntities< GridViewType >());
+                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
       if (rhs.has_affine_part())
         system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()),
-                             new GDT::ApplyOn::BoundaryEntities< GridViewType >());
+                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
         system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
-                             new GDT::ApplyOn::BoundaryEntities< GridViewType >());
+                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
       system_assembler.walk();
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
