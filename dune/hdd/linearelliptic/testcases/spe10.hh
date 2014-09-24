@@ -25,7 +25,7 @@ namespace Spe10 {
 namespace internal {
 
 
-static Stuff::Common::Configuration parametric_model1_problem_cfg()
+static inline Stuff::Common::Configuration parametric_model1_problem_cfg()
 {
   std::istringstream ss(
       "# forces\n"
@@ -259,7 +259,7 @@ static Stuff::Common::Configuration parametric_model1_problem_cfg()
 } // ... parametric_model1_problem_cfg(...)
 
 
-static Stuff::Common::Configuration parametric_model1_grid_cfg()
+static inline Stuff::Common::Configuration parametric_model1_grid_cfg()
 {
   Stuff::Common::Configuration config;
   config["lower_left"]   = "[0 0]";
