@@ -223,38 +223,50 @@ class DiscreteBlockProblem
 public:
   typedef GridImp GridType;
   typedef grid::Multiscale::ProviderInterface< GridType > GridProviderType;
-private:
   typedef grid::Multiscale::MsGridProviders< GridType > GridProviders;
   typedef typename GridType::LeafIntersection IntersectionType;
   typedef Stuff::Grid::BoundaryInfoProvider< IntersectionType > BoundaryInfoProvider;
   typedef typename GridType::template Codim< 0 >::Entity EntityType;
   typedef typename GridType::ctype DomainFieldType;
   static const unsigned int dimDomain = GridType::dimension;
-public:
   typedef double RangeFieldType;
   static const unsigned int dimRange = 1;
-  typedef LinearElliptic::ProblemInterface< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
-  typedef LinearElliptic::ProblemsProvider< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemsProvider;
+  typedef LinearElliptic::ProblemInterface
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef LinearElliptic::ProblemsProvider
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemsProvider;
 
-  static void write_config(const std::string filename, const std::string id)
+  static void write_config(const std::string filename,
+                           const std::string id,
+                           const Stuff::Common::Configuration& problem_cfg = Stuff::Common::Configuration(),
+                           const Stuff::Common::Configuration& grid_cfg = Stuff::Common::Configuration(),
+                           const Stuff::Common::Configuration& additional_cfg = Stuff::Common::Configuration())
   {
     std::ofstream file;
     file.open(filename);
     file << "[" << id << "]" << std::endl;
-    write_keys_to_file("gridprovider", GridProviders::available(), file);
-//    write_keys_to_file("boundaryinfo", BoundaryInfoProvider::available(), file);
-    write_keys_to_file("problem", ProblemsProvider::available(), file);
+    if (grid_cfg.has_key("type"))
+      file << "gridprovider = " << grid_cfg.get< std::string >("type") << std::endl;
+    else
+      write_keys_to_file("gridprovider", GridProviders::available(), file);
+    if (problem_cfg.has_key("type"))
+      file << "problem = " << problem_cfg.get< std::string >("type") << std::endl;
+    else
+      write_keys_to_file("problem", ProblemsProvider::available(), file);
     file << "[logging]" << std::endl;
     file << "info  = true" << std::endl;
-    file << "debug = true" << std::endl;
+    file << "debug = false" << std::endl;
     file << "file  = false" << std::endl;
     file << "visualize = true" << std::endl;
-//    file << "[parameter]" << std::endl;
-//    file << "0.diffusion_factor = [0.1 0.1 1.0 1.0]" << std::endl;
-//    file << "1.diffusion_factor = [1.0 1.0 0.1 0.1]" << std::endl;
-    write_config_to_file< GridProviders >(file);
-//    write_config_to_file< BoundaryInfoProvider >(file);
-    write_config_to_file< ProblemsProvider >(file);
+    if (grid_cfg.has_key("type"))
+      file << Stuff::Common::Configuration(grid_cfg, grid_cfg.get< std::string >("type"));
+    else
+      write_config_to_file< GridProviders >(file);
+    if (problem_cfg.has_key("type"))
+      file << Stuff::Common::Configuration(problem_cfg, problem_cfg.get< std::string >("type"));
+    else
+      write_config_to_file< ProblemsProvider >(file);
+    file << additional_cfg;
     file.close();
   } // ... write_config(...)
 
@@ -300,23 +312,18 @@ public:
       info << "s";
     info << ")" << std::endl;
 
-//    const std::string boundary_info_type = config_.get< std::string >(id + ".boundaryinfo");
-//    if (config_.has_sub(boundary_info_type))
-//      boundary_info_ = config_.sub(boundary_info_type);
-//    else
-//      boundary_info_ = Stuff::Common::Configuration("type", boundary_info_type);
-    boundary_info_ = Stuff::Grid::BoundaryInfoConfigs::AllNeumann::default_config();
+    boundary_info_ = Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config();
 
-    info << "setting up ";
-    timer.reset();
+//    info << "setting up ";
+//    timer.reset();
     const std::string problem_type = config_.get< std::string >(id + ".problem");
-    if (!debug_logging_)
-      info << "'" << problem_type << "'... " << std::flush;
+//    if (!debug_logging_)
+//      info << "'" << problem_type << "'... " << std::flush;
     problem_ = ProblemsProvider::create(problem_type, config_);
-    if (debug_logging_)
-      info << *problem_ << std::endl;
-    else
-      info << "done (took " << timer.elapsed() << "s)" << std::endl;
+//    if (debug_logging_)
+//      info << *problem_ << std::endl;
+//    else
+//      info << "done (took " << timer.elapsed() << "s)" << std::endl;
 
     if (logger_config.get("visualize", true)) {
       info << "visualizing grid and problem... " << std::flush;
