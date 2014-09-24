@@ -12,6 +12,7 @@
 #include <dune/stuff/common/crtp.hh>
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/la/solver.hh>
+#include <dune/stuff/common/logging.hh>
 
 #include <dune/pymor/operators/base.hh>
 #include <dune/pymor/operators/affine.hh>
@@ -68,6 +69,8 @@ private:
   typedef Stuff::Grid::BoundaryInfoProvider< typename GridViewType::Intersection > BoundaryInfoProvider;
 
 public:
+  static std::string static_id() { return "hdd.linearelliptic.discretizations.cached"; }
+
   CachedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
                 const std::shared_ptr< const AnsatzSpaceType > ansatz_spc,
                 const Stuff::Common::Configuration& bnd_inf_cfg,
@@ -145,11 +148,16 @@ public:
 
   void solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
+    auto logger = DSC::TimedLogger().get(static_id());
     const auto search_result = cache_.find(mu);
     if (search_result == cache_.end()) {
       uncached_solve(vector, mu);
       cache_.insert(std::make_pair(mu, Stuff::Common::make_unique< VectorType >(vector.copy())));
     } else {
+      logger.info() << "retrieving solution ";
+      if (!mu.empty())
+        logger.info() << "for mu = " << mu << " ";
+      logger.info() << "from cache... " << std::endl;
       const auto& result = *(search_result->second);
       vector = result;
     }
@@ -196,6 +204,8 @@ protected:
   typedef Pymor::LA::AffinelyDecomposedContainer< VectorType > AffinelyDecomposedVectorType;
 
 public:
+  static std::string static_id() { return "hdd.linearelliptic.discretizations.containerbased"; }
+
   ContainerBasedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
                         const std::shared_ptr< const AnsatzSpaceType >& ansatz_spc,
                         const Stuff::Common::Configuration& bnd_inf_cfg,
@@ -290,6 +300,11 @@ public:
    */
   void uncached_solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
+    auto logger = DSC::TimedLogger().get(static_id());
+    logger.info() << "solving";
+    if (!mu.empty())
+      logger.info() << " for mu = " << mu;
+    logger.info() << "... " << std::endl;
     assert_everything_is_ready();
     if (mu.type() != this->parameter_type())
       DUNE_THROW(Pymor::Exceptions::wrong_parameter_type, mu.type() << " vs. " << this->parameter_type());
@@ -306,6 +321,9 @@ public:
       vector -= vector.mean();
     } else {
       // compute right hand side vector
+#ifndef NDEBUG
+      logger.debug() << "computing right hand side..." << std::endl;
+#endif
       std::shared_ptr< const VectorType > rhs_vector;
       if (!rhs.parametric())
         rhs_vector = rhs.affine_part();
@@ -313,6 +331,9 @@ public:
         const Pymor::Parameter mu_rhs = this->map_parameter(mu, "rhs");
         rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(mu_rhs));
       }
+#ifndef NDEBUG
+      logger.debug() << "computing system matrix..." << std::endl;
+#endif
       const OperatorType lhsOperator(matrix);
       if (lhsOperator.parametric()) {
         const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
