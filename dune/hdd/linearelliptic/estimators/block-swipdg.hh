@@ -6,65 +6,22 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_BLOCK_SWIPDG_HH
 #define DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_BLOCK_SWIPDG_HH
 
-#include <memory>
-#include <vector>
-#include <map>
-#include <set>
-#include <cmath>
-#include <limits>
-#include <type_traits>
-
-#include <boost/numeric/conversion/cast.hpp>
-
 #include <dune/stuff/common/disable_warnings.hh>
 # if HAVE_EIGEN
 #   include <Eigen/Eigenvalues>
 # endif
-
-# include <dune/common/timer.hh>
-# include <dune/common/dynmatrix.hh>
-
-# if HAVE_ALUGRID
-#   include <dune/grid/alugrid.hh>
-# endif
-
-#include <dune/stuff/common/timedlogging.hh>
-# include <dune/geometry/quadraturerules.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
-#include <dune/grid/multiscale/provider.hh>
+#include <dune/geometry/quadraturerules.hh>
 
-#include <dune/stuff/common/logging.hh>
-#include <dune/stuff/common/configuration.hh>
-#include <dune/stuff/common/float_cmp.hh>
-#include <dune/stuff/common/fixed_map.hh>
-#include <dune/stuff/common/ranges.hh>
-#include <dune/stuff/grid/layers.hh>
-#include <dune/stuff/grid/boundaryinfo.hh>
-#include <dune/stuff/functions/constant.hh>
-#include <dune/stuff/functions/interfaces.hh>
-#include <dune/stuff/la/container.hh>
-#include <dune/stuff/la/solver.hh>
-#include <dune/stuff/grid/walker.hh>
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
 
-#include <dune/pymor/common/exceptions.hh>
+#include <dune/stuff/common/timedlogging.hh>
+#include <dune/stuff/la/container/eigen.hh>
 
-#include <dune/gdt/spaces/discontinuouslagrange.hh>
-#include <dune/gdt/playground/spaces/block.hh>
-#include <dune/gdt/playground/localevaluation/swipdg.hh>
-#include <dune/gdt/discretefunction/default.hh>
-#include <dune/gdt/operators/oswaldinterpolation.hh>
-#include <dune/gdt/operators/projections.hh>
-#include <dune/gdt/playground/spaces/finitevolume/default.hh>
-#include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
-#include <dune/gdt/playground/operators/fluxreconstruction.hh>
-#include <dune/gdt/products/l2.hh>
-#include <dune/gdt/products/h1.hh>
-#include <dune/gdt/assembler/system.hh>
 #include <dune/gdt/playground/localevaluation/OS2014.hh>
-
-#include <dune/hdd/linearelliptic/problems/default.hh>
-#include <dune/hdd/linearelliptic/problems/zero-boundary.hh>
 
 #include "swipdg.hh"
 

@@ -6,44 +6,35 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_SWIPDG_HH
 #define DUNE_HDD_LINEARELLIPTIC_ESTIMATORS_SWIPDG_HH
 
+#include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <boost/numeric/conversion/cast.hpp>
 
-#include <dune/common/static_assert.hh>
+#if HAVE_ALUGRID
+# include <dune/grid/alugrid.hh>
+#endif
 
-#include <dune/stuff/common/disable_warnings.hh>
-# if HAVE_ALUGRID
-#   include <dune/grid/alugrid.hh>
-# endif
-#include <dune/stuff/common/reenable_warnings.hh>
-
-#include <dune/stuff/common/configuration.hh>
-#include <dune/stuff/grid/layers.hh>
-#include <dune/stuff/grid/provider.hh>
-#include <dune/stuff/la/container.hh>
-#include <dune/stuff/la/container/common.hh>
-#include <dune/stuff/la/solver.hh>
-#include <dune/stuff/playground/functions/ESV2007.hh>
+#include <dune/stuff/common/memory.hh>
+#include <dune/stuff/common/tmp-storage.hh>
+#include <dune/stuff/grid/walker.hh>
 #include <dune/stuff/grid/walker/functors.hh>
+#include <dune/stuff/playground/functions/ESV2007.hh>
 
-#include <dune/gdt/spaces/discontinuouslagrange.hh>
+#include <dune/pymor/common/exceptions.hh>
+#include <dune/pymor/parameters/base.hh>
+
 #include <dune/gdt/discretefunction/default.hh>
-#include <dune/gdt/assembler/system.hh>
-#include <dune/gdt/playground/operators/elliptic-swipdg.hh>
-#include <dune/gdt/functionals/l2.hh>
-#include <dune/gdt/playground/functionals/swipdg.hh>
-#include <dune/gdt/products/l2.hh>
-#include <dune/gdt/products/h1.hh>
-#include <dune/gdt/playground/products/elliptic.hh>
+#include <dune/gdt/localevaluation/elliptic.hh>
+#include <dune/gdt/localevaluation/product.hh>
+#include <dune/gdt/localoperator/codim0.hh>
 #include <dune/gdt/operators/oswaldinterpolation.hh>
-#include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/operators/projections.hh>
-#include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
+#include <dune/gdt/playground/localevaluation/ESV2007.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
-#include <dune/gdt/playground/products/ESV2007.hh>
-#include <dune/gdt/assembler/tmp-storage.hh>
+#include <dune/gdt/playground/spaces/finitevolume/default.hh>
 
 namespace Dune {
 namespace HDD {
