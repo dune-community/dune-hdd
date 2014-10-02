@@ -28,6 +28,7 @@
 #   include <dune/grid/alugrid.hh>
 # endif
 
+#include <dune/stuff/common/timedlogging.hh>
 # include <dune/geometry/quadraturerules.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
@@ -1016,6 +1017,12 @@ public:
                                  const std::string type,
                                  const ParametersMapType parameters = ParametersMapType())
   {
+    auto logger = DSC::TimedLogger().get("hdd.linearelliptic.estimators.blockswipdg");
+    logger.info() << "estimating ";
+    const auto search_for_mu = parameters.find("mu");
+    if (search_for_mu != parameters.end())
+      logger.info() << "for mu = " << search_for_mu->second << " ";
+    logger.info() << "using '" << type << "' estimator..." << std::endl;
     if (call_equals< LocalNonconformityOS2014Type >(type))
       return call_estimate< LocalNonconformityOS2014Type >(space, vector, problem, parameters);
     else if (call_equals< LocalResidualOS2014Type >(type))
