@@ -40,7 +40,7 @@
 #include <dune/gdt/playground/functionals/swipdg.hh>
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
-#include <dune/gdt/playground/products/elliptic.hh>
+#include <dune/gdt/products/elliptic.hh>
 #include <dune/gdt/operators/oswaldinterpolation.hh>
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/operators/projections.hh>

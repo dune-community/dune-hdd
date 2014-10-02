@@ -15,7 +15,7 @@
 
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
-#include <dune/gdt/playground/products/elliptic.hh>
+#include <dune/gdt/products/elliptic.hh>
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/discretefunction/default.hh>
 
@@ -170,14 +170,14 @@ public:
       // define error norm
       const auto difference = reference_solution - current_solution;
       typedef typename ConstDiscreteFunctionType::DifferenceType DifferenceType;
-      GDT::Products::EllipticLocalizable< DiffusionFactorType, GridViewType,
+      GDT::Products::EllipticLocalizable< GridViewType, DiffusionFactorType,
                                           DifferenceType, DifferenceType, RangeFieldType,
                                           DiffusionTensorType >
-          local_energy_norm(*diffusion_factor,
+          local_energy_norm(*(this->test_case_.reference_grid_view()),
+                            difference,
+                            difference,
+                            *diffusion_factor,
                             *diffusion_tensor,
-                            *(this->test_case_.reference_grid_view()),
-                            difference,
-                            difference,
                             Estimators::internal::SWIPDG::over_integrate);
       local_energy_norm.prepare();
       // prepare
@@ -276,7 +276,7 @@ private:
     if (type == "L2") {
       return Products::L2< GridViewType >(grid_view).induced_norm(function);
     } else if (type == "H1_semi") {
-      return Products::H1SemiGeneric< GridViewType >(grid_view).induced_norm(function);
+      return Products::H1Semi< GridViewType >(grid_view).induced_norm(function);
     } else if (type == "energy") {
       const auto& diffusion_factor = *(this->test_case_.problem().diffusion_factor());
       assert(!diffusion_factor.parametric());
@@ -284,8 +284,8 @@ private:
       const auto& diffusion_tensor = *(this->test_case_.problem().diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
-      Products::Elliptic< DiffusionFactorType, GridViewType, double, DiffusionTensorType >
-          elliptic_product(*diffusion_factor.affine_part(), *diffusion_tensor.affine_part(), grid_view);
+      Products::Elliptic< GridViewType, DiffusionFactorType, double, DiffusionTensorType >
+          elliptic_product(grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
       return elliptic_product.induced_norm(function);
     } else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");

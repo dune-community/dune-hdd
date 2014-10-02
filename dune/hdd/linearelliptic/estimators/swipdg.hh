@@ -104,7 +104,7 @@ private:
 
   typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Elliptic< DiffusionFactorType,
                                                                               DiffusionTensorType > > LocalOperatorType;
-  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+  typedef Stuff::Common::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
 
   static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_bar)
   {
@@ -243,7 +243,7 @@ private:
 
   typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
   typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< CutoffFunctionType > > LocalOperatorType;
-  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+  typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
 
   static const ProblemType& assert_problem(const ProblemType& problem)
   {
@@ -375,7 +375,7 @@ private:
       GDT::LocalEvaluation::ESV2007::DiffusiveFluxEstimate< DiffusionFactorType,
                                                             RTN0DiscreteFunctionType,
                                                             DiffusionTensorType > > LocalOperatorType;
-  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+  typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
 
   static const ProblemType& assert_problem(const ProblemType& problem,
                                            const Pymor::Parameter& mu,

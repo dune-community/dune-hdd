@@ -226,7 +226,7 @@ private:
       ConstantFunctionType;
   typedef typename ConstantFunctionType::DomainType DomainType;
   typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< ConstantFunctionType > > LocalOperatorType;
-  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+  typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
 
   static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_minimizing)
   {
@@ -426,7 +426,7 @@ private:
                                                                DiffusionTensorType,
                                                                RTN0DiscreteFunctionType > >
                                                               LocalOperatorType;
-  typedef GDT::TmpStorageProvider::Matrices< RangeFieldType > TmpStorageProviderType;
+  typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
 
   static const ProblemType& assert_problem(const ProblemType& problem,
                                            const Pymor::Parameter& mu,
