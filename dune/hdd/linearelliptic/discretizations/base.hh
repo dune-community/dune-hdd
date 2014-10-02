@@ -151,6 +151,10 @@ public:
     auto logger = DSC::TimedLogger().get(static_id());
     const auto search_result = cache_.find(mu);
     if (search_result == cache_.end()) {
+      logger.info() << "solving";
+      if (!mu.empty())
+        logger.info() << " for mu = " << mu;
+      logger.info() << "... " << std::endl;
       uncached_solve(vector, mu);
       cache_.insert(std::make_pair(mu, Stuff::Common::make_unique< VectorType >(vector.copy())));
     } else {
@@ -301,10 +305,6 @@ public:
   void uncached_solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get(static_id());
-    logger.info() << "solving";
-    if (!mu.empty())
-      logger.info() << " for mu = " << mu;
-    logger.info() << "... " << std::endl;
     assert_everything_is_ready();
     if (mu.type() != this->parameter_type())
       DUNE_THROW(Pymor::Exceptions::wrong_parameter_type, mu.type() << " vs. " << this->parameter_type());
@@ -321,9 +321,7 @@ public:
       vector -= vector.mean();
     } else {
       // compute right hand side vector
-#ifndef NDEBUG
       logger.debug() << "computing right hand side..." << std::endl;
-#endif
       std::shared_ptr< const VectorType > rhs_vector;
       if (!rhs.parametric())
         rhs_vector = rhs.affine_part();
@@ -331,9 +329,7 @@ public:
         const Pymor::Parameter mu_rhs = this->map_parameter(mu, "rhs");
         rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(mu_rhs));
       }
-#ifndef NDEBUG
       logger.debug() << "computing system matrix..." << std::endl;
-#endif
       const OperatorType lhsOperator(matrix);
       if (lhsOperator.parametric()) {
         const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
