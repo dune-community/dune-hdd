@@ -429,6 +429,8 @@ public:
       this->inherit_parameter_type(*(this->rhs_), "rhs");
       this->products_.insert(std::make_pair("l2", l2_product_matrix));
       this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
+      this->products_.insert(std::make_pair("energy",
+                                            std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
 
       this->container_based_initialized_ = true;
     } // if (!this->container_based_initialized_)
