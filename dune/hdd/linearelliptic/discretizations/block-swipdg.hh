@@ -56,6 +56,7 @@
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
+#include <dune/gdt/products/boundaryl2.hh>
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/assembler/system.hh>
@@ -177,6 +178,7 @@ class BlockSWIPDG
 public:
   typedef internal::BlockSWIPDGTraits< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend > Traits;
   using typename BaseType::ProblemType;
+  using typename BaseType::GridViewType;
   using typename BaseType::TestSpaceType;
   using typename BaseType::AnsatzSpaceType;
   using typename BaseType::EntityType;
@@ -395,7 +397,7 @@ public:
       GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(*this->test_space(),
                                                                                                   *this->ansatz_space(),
                                                                                                   global_grid_view);
-
+      const size_t over_integrate = 2;
       // * L2
       typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
           L2ProductType;
@@ -407,7 +409,8 @@ public:
       L2ProductType l2_product(*(l2_product_matrix->affine_part()),
                                *this->test_space(),
                                global_grid_view,
-                               *this->ansatz_space());
+                               *this->ansatz_space(),
+                               over_integrate);
       system_assembler.add(l2_product);
       // * H1 semi
       typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
@@ -420,8 +423,23 @@ public:
       H1ProductType h1_product(*(h1_product_matrix->affine_part()),
                                *this->test_space(),
                                global_grid_view,
-                               *this->ansatz_space());
+                               *this->ansatz_space(),
+                               over_integrate);
       system_assembler.add(h1_product);
+      // * boundary L2
+      typedef GDT::Products::BoundaryL2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
+          BoundaryL2ProductType;
+      auto boundary_l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      boundary_l2_product_matrix->register_affine_part(this->test_space()->mapper().size(),
+                                                       this->ansatz_space()->mapper().size(),
+                                                       BoundaryL2ProductType::pattern(*this->test_space(),
+                                                                                      *this->ansatz_space()));
+      BoundaryL2ProductType boundary_l2_product(*(boundary_l2_product_matrix->affine_part()),
+                                                *this->test_space(),
+                                                global_grid_view,
+                                                *this->ansatz_space(),
+                                                over_integrate);
+      system_assembler.add(boundary_l2_product);
       system_assembler.assemble();
 
       // finalize
@@ -429,6 +447,7 @@ public:
       this->inherit_parameter_type(*(this->rhs_), "rhs");
       this->products_.insert(std::make_pair("l2", l2_product_matrix));
       this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
+      this->products_.insert(std::make_pair("boundary_l2", boundary_l2_product_matrix));
       this->products_.insert(std::make_pair("energy",
                                             std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
 
