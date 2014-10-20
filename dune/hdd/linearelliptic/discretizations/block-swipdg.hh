@@ -59,6 +59,7 @@
 #include <dune/gdt/products/boundaryl2.hh>
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
+#include <dune/gdt/products/elliptic.hh>
 #include <dune/gdt/assembler/system.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
@@ -426,6 +427,46 @@ public:
                                *this->ansatz_space(),
                                over_integrate);
       system_assembler.add(h1_product);
+      // * elliptic
+      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+      const auto diffusion_factor = this->problem().diffusion_factor();
+      const auto diffusion_tensor = this->problem().diffusion_tensor();
+      assert(!diffusion_tensor->parametric());
+      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType, GlobalGridViewType,
+                                                  AnsatzSpaceType, RangeFieldType, DiffusionTensorType >
+          EllipticProductType;
+      std::vector< std::unique_ptr< EllipticProductType > > elliptic_products;
+      auto elliptic_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
+        const auto id = elliptic_product_matrix->register_component(diffusion_factor->coefficient(qq),
+                                                                    this->test_space()->mapper().size(),
+                                                                    this->ansatz_space()->mapper().size(),
+                                                                    EllipticProductType::pattern(*this->test_space(),
+                                                                                                 *this->ansatz_space()));
+        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->component(id),
+                                                               *this->test_space(),
+                                                               global_grid_view,
+                                                               *this->ansatz_space(),
+                                                               *diffusion_factor->component(qq),
+                                                               *diffusion_tensor->affine_part(),
+                                                               over_integrate));
+      }
+      if (diffusion_factor->has_affine_part()) {
+        elliptic_product_matrix->register_affine_part(this->test_space()->mapper().size(),
+                                                      this->ansatz_space()->mapper().size(),
+                                                      EllipticProductType::pattern(*this->test_space(),
+                                                                                   *this->ansatz_space()));
+        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->affine_part(),
+                                                               *this->test_space(),
+                                                               global_grid_view,
+                                                               *this->ansatz_space(),
+                                                               *diffusion_factor->affine_part(),
+                                                               *diffusion_tensor->affine_part(),
+                                                               over_integrate));
+      }
+      for (auto& product : elliptic_products)
+        system_assembler.add(*product);
       // * boundary L2
       typedef GDT::Products::BoundaryL2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
           BoundaryL2ProductType;
@@ -447,6 +488,7 @@ public:
       this->inherit_parameter_type(*(this->rhs_), "rhs");
       this->products_.insert(std::make_pair("l2", l2_product_matrix));
       this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
+      this->products_.insert(std::make_pair("elliptic", elliptic_product_matrix));
       this->products_.insert(std::make_pair("boundary_l2", boundary_l2_product_matrix));
       this->products_.insert(std::make_pair("energy",
                                             std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
