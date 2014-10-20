@@ -11,7 +11,6 @@ add_library(dunehdd-linearelliptic-swipdg
             STATIC
             "swipdg.cc")
 
-
 add_library(dunehdd-linearelliptic-thermalblock
             STATIC
             "thermalblock.cc")
@@ -45,6 +44,7 @@ if(NOT CMAKE_WITH_AUTOTOOLS)
   add_dune_alugrid_flags(example_linearelliptic_swipdg)
   add_dune_alugrid_flags(example_linearelliptic_thermalblock)
 endif(NOT CMAKE_WITH_AUTOTOOLS)
+
 
 # link spe10 data file if present
 if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
