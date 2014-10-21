@@ -118,7 +118,7 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
     const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar") : Pymor::Parameter();
     ThisType estimator(space, vector, problem, mu_bar);
-    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
@@ -146,7 +146,7 @@ public:
   virtual void prepare()
   {
     if (!prepared_) {
-      const GDT::Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(*space_.grid_view());
+      const GDT::Operators::OswaldInterpolation< GridViewType > oswald_interpolation_operator(space_.grid_view());
       oswald_interpolation_operator.apply(discrete_solution_, oswald_interpolation_);
       result_ = 0.0;
       prepared_ = true;
@@ -250,7 +250,7 @@ public:
   static RangeFieldType estimate(const SpaceType& space, const VectorType& /*vector*/, const ProblemType& problem)
   {
     ThisType estimator(space, problem);
-    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
@@ -273,7 +273,7 @@ public:
   virtual void prepare()
   {
     if (!prepared_) {
-      const GDT::Operators::Projection< GridViewType > projection_operator(*space_.grid_view());
+      const GDT::Operators::Projection< GridViewType > projection_operator(space_.grid_view());
       projection_operator.apply(*problem_.force()->affine_part(), p0_force_);
       result_ = 0.0;
       prepared_ = true;
@@ -398,7 +398,7 @@ public:
     const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
     const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
     ThisType estimator(space, vector, problem, mu, mu_hat);
-    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
@@ -430,7 +430,7 @@ public:
   {
     if (!prepared_) {
       const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
-        diffusive_flux_reconstruction(*space_.grid_view(),
+        diffusive_flux_reconstruction(space_.grid_view(),
                                       *problem_mu_->diffusion_factor()->affine_part(),
                                       *problem_.diffusion_tensor()->affine_part());
       diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
@@ -517,9 +517,9 @@ public:
 
     RangeFieldType eta_squared(0.0);
 
-    const auto grid_view = space.grid_view();
-    const auto entity_it_end = grid_view->template end< 0 >();
-    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+    const auto& grid_view = space.grid_view();
+    const auto entity_it_end = grid_view.template end< 0 >();
+    for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
       const auto& entity = *entity_it;
       eta_squared += eta_nc.compute_locally(entity)
                    + std::pow(std::sqrt(eta_r.compute_locally(entity)) + std::sqrt(eta_df.compute_locally(entity)), 2);
@@ -538,15 +538,15 @@ public:
     eta_r.prepare();
     eta_df.prepare();
 
-    const auto grid_view = space.grid_view();
+    const auto& grid_view = space.grid_view();
     Stuff::LA::CommonDenseVector< RangeFieldType >
-        local_indicators(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
+        local_indicators(boost::numeric_cast< size_t >(grid_view.indexSet().size(0)), 0.0);
     RangeFieldType eta_squared = 0.0;
 
-    const auto entity_it_end = grid_view->template end< 0 >();
-    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+    const auto entity_it_end = grid_view.template end< 0 >();
+    for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
       const auto& entity = *entity_it;
-      const auto index = grid_view->indexSet().index(entity);
+      const auto index = grid_view.indexSet().index(entity);
       const RangeFieldType eta_t_squared
           = eta_nc.compute_locally(entity)
             + std::pow(std::sqrt(eta_r.compute_locally(entity)) + std::sqrt(eta_df.compute_locally(entity)), 2);
@@ -606,9 +606,9 @@ public:
     RangeFieldType eta_r_squared(0.0);
     RangeFieldType eta_df_squared(0.0);
 
-    const auto grid_view = space.grid_view();
-    const auto entity_it_end = grid_view->template end< 0 >();
-    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+    const auto& grid_view = space.grid_view();
+    const auto entity_it_end = grid_view.template end< 0 >();
+    for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
       const auto& entity = *entity_it;
       eta_nc_squared += eta_nc.compute_locally(entity);
       eta_r_squared += eta_r.compute_locally(entity);
@@ -630,15 +630,15 @@ public:
 
     const auto grid_view = space.grid_view();
     Stuff::LA::CommonDenseVector< RangeFieldType >
-        local_indicators(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
+        local_indicators(boost::numeric_cast< size_t >(grid_view.indexSet().size(0)), 0.0);
     RangeFieldType eta_nc_squared(0.0);
     RangeFieldType eta_r_squared(0.0);
     RangeFieldType eta_df_squared(0.0);
 
-    const auto entity_it_end = grid_view->template end< 0 >();
-    for (auto entity_it = grid_view->template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
+    const auto entity_it_end = grid_view.template end< 0 >();
+    for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it) {
       const auto& entity = *entity_it;
-      const auto index = grid_view->indexSet().index(entity);
+      const auto index = grid_view.indexSet().index(entity);
       const RangeFieldType eta_nc_t_squared = eta_nc.compute_locally(entity);
       const RangeFieldType eta_r_t_squared = eta_r.compute_locally(entity);
       const RangeFieldType eta_df_t_squared = eta_df.compute_locally(entity);

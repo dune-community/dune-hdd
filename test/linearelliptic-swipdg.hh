@@ -173,7 +173,7 @@ public:
       GDT::Products::EllipticLocalizable< GridViewType, DiffusionFactorType,
                                           DifferenceType, DifferenceType, RangeFieldType,
                                           DiffusionTensorType >
-          local_energy_norm(*(this->test_case_.reference_grid_view()),
+          local_energy_norm(this->test_case_.reference_grid_view(),
                             difference,
                             difference,
                             *diffusion_factor,
@@ -181,15 +181,16 @@ public:
                             Estimators::internal::SWIPDG::over_integrate);
       local_energy_norm.prepare();
       // prepare
-      const auto current_grid_view = this->current_discretization_->grid_view();
-      const int current_level = current_grid_view->template begin< 0 >()->level();
-      Stuff::LA::CommonDenseVector< double > error_indicators(boost::numeric_cast< size_t >(current_grid_view->indexSet().size(0)),
+      const auto& current_grid_view = this->current_discretization_->grid_view();
+      const int current_level = current_grid_view.template begin< 0 >()->level();
+      Stuff::LA::CommonDenseVector< double > error_indicators(boost::numeric_cast< size_t >(current_grid_view.indexSet().size(0)),
                                                               0.0);
       std::vector< size_t > fine_entities_per_coarse_entity(error_indicators.size(), 0);
       RangeFieldType energy_error_squared = 0.0;
       // walk the reference grid
-      const auto entity_it_end = this->test_case_.reference_grid_view()->template end< 0 >();
-      for (auto entity_it = this->test_case_.reference_grid_view()->template begin< 0 >();
+      auto reference_grid_view = this->test_case_.reference_grid_view();
+      const auto entity_it_end = reference_grid_view.template end< 0 >();
+      for (auto entity_it = reference_grid_view.template begin< 0 >();
            entity_it != entity_it_end;
            ++entity_it) {
         const auto& entity = *entity_it;
@@ -204,8 +205,8 @@ public:
         }
         assert(fine_level == current_level);
         const auto& father_entity = *father_entity_ptr;
-        assert(current_grid_view->indexSet().contains(father_entity));
-        const size_t index = current_grid_view->indexSet().index(father_entity);
+        assert(current_grid_view.indexSet().contains(father_entity));
+        const size_t index = current_grid_view.indexSet().index(father_entity);
         ++fine_entities_per_coarse_entity[index];
         const RangeFieldType local_energy_error_squared = local_energy_norm.compute_locally(entity);
         energy_error_squared += local_energy_error_squared;
@@ -317,13 +318,13 @@ private:
   } // ... estimate(...)
 
   template< class GV, class VV >
-  void visualize_indicators(const std::shared_ptr< const GV >& grid_view_ptr,
+  void visualize_indicators(const GV& grid_view,
                             const VV& vector,
                             const std::string name,
                             const std::string filename) const
   {
     typedef GDT::Spaces::FiniteVolume::Default< GV, typename VV::ScalarType, 1 > FVSpaceType;
-    const FVSpaceType fv_space(grid_view_ptr);
+    const FVSpaceType fv_space(grid_view);
     GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
     discrete_function.visualize(filename);
   } // ... visualize_indicators(...)

@@ -108,10 +108,10 @@ public:
       if (test_case_.provides_exact_solution()) {
         // visualize
         if (!visualize_prefix_.empty()) {
-          test_case_.exact_solution().visualize(*(test_case_.reference_grid_view()),
+          test_case_.exact_solution().visualize(test_case_.reference_grid_view(),
                                                 visualize_prefix_ + "_exact_solution");
         }
-        return compute_norm(*(test_case_.reference_grid_view()), test_case_.exact_solution(), type);
+        return compute_norm(test_case_.reference_grid_view(), test_case_.exact_solution(), type);
       } else {
         compute_reference_solution();
         assert(reference_discretization_);
@@ -119,7 +119,7 @@ public:
         const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm(*(test_case_.reference_grid_view()), reference_solution, type);
+        return compute_norm(test_case_.reference_grid_view(), reference_solution, type);
       }
     } else
       return 1.0;
@@ -137,7 +137,7 @@ public:
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
     const auto grid_part = test_case_.template level< Stuff::Grid::ChoosePartView::part >(level);
-    return Fem::GridWidth::calcGridWidth(*grid_part);
+    return Fem::GridWidth::calcGridWidth(grid_part);
   } // ... current_grid_width(...)
 
   virtual double compute_on_current_refinement() DS_OVERRIDE DS_FINAL
@@ -164,8 +164,8 @@ public:
       // prolong to reference grid part
       if (!reference_solution_computed_)
         compute_reference_solution();
-      const auto reference_grid_view = test_case_.reference_grid_view();
-      const Operators::Prolongation< GridViewType > prolongation_operator(*reference_grid_view);
+      auto reference_grid_view = test_case_.reference_grid_view();
+      const Operators::Prolongation< GridViewType > prolongation_operator(reference_grid_view);
       assert(reference_discretization_);
       if (!current_solution_vector_)
         current_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
@@ -176,7 +176,7 @@ public:
       last_computed_refinement_ = current_refinement_;
       // visualize
       if (!visualize_prefix_.empty()) {
-        this->test_case_.problem().visualize(*current_discretization_->grid_view(),
+        this->test_case_.problem().visualize(current_discretization_->grid_view(),
                                              visualize_prefix_ + "_problem_" + DSC::toString(current_refinement_));
         current_refinement_solution.visualize(visualize_prefix_ + "_solution_" + DSC::toString(current_refinement_));
       }
@@ -202,7 +202,7 @@ public:
                                                        "current solution");
       // compute error
       if (test_case_.provides_exact_solution()) {
-        return compute_norm(*(test_case_.reference_grid_view()), test_case_.exact_solution() - current_solution, type);
+        return compute_norm(test_case_.reference_grid_view(), test_case_.exact_solution() - current_solution, type);
       } else {
         // get reference solution
         compute_reference_solution();
@@ -211,7 +211,7 @@ public:
         const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm(*(test_case_.reference_grid_view()), reference_solution- current_solution, type);
+        return compute_norm(test_case_.reference_grid_view(), reference_solution- current_solution, type);
       }
     } else {
       assert(current_solution_vector_on_level_);
@@ -247,7 +247,7 @@ protected:
       reference_solution_computed_ = true;
       // visualize
       if (!visualize_prefix_.empty()) {
-        this->test_case_.problem().visualize(*reference_discretization_->grid_view(),
+        this->test_case_.problem().visualize(reference_discretization_->grid_view(),
                                              visualize_prefix_ + "_problem_reference");
         ConstDiscreteFunctionType(*reference_discretization_->ansatz_space(),
                                   *reference_solution_vector_,
