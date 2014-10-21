@@ -157,7 +157,7 @@ public:
       GDT::Products::EllipticLocalizable< typename DiscretizationType::GridViewType, DiffusionFactorType,
                                           DifferenceType, DifferenceType, RangeFieldType,
                                           DiffusionTensorType >
-          local_energy_norm(*this->reference_discretization_->grid_view(),
+          local_energy_norm(this->reference_discretization_->grid_view(),
                             difference,
                             difference,
                             *diffusion_factor_mu_bar,
@@ -167,13 +167,13 @@ public:
       local_energy_norm.prepare();
       const auto ms_grid = this->current_discretization_->ansatz_space()->ms_grid();
       const auto current_grid_view = this->current_discretization_->grid_view();
-      Stuff::Grid::EntityInlevelSearch< typename DiscretizationType::GridViewType > entity_search(*current_grid_view);
+      Stuff::Grid::EntityInlevelSearch< typename DiscretizationType::GridViewType > entity_search(current_grid_view);
       Stuff::LA::CommonDenseVector< double > error_indicators(ms_grid->size(), 0.0);
       std::vector< size_t > fine_entities_per_subdomain(error_indicators.size(), 0);
       RangeFieldType energy_error_squared = 0.0;
       // walk the reference grid
-      const auto entity_it_end = this->reference_discretization_->grid_view()->template end< 0 >();
-      for (auto entity_it = this->reference_discretization_->grid_view()->template begin< 0 >();
+      const auto entity_it_end = this->reference_discretization_->grid_view().template end< 0 >();
+      for (auto entity_it = this->reference_discretization_->grid_view().template begin< 0 >();
            entity_it != entity_it_end;
            ++entity_it) {
         const auto& entity = *entity_it;
@@ -185,7 +185,7 @@ public:
         assert(father_entity_ptr_ptr);
         const auto father_entity_ptr = *father_entity_ptr_ptr;
         const auto& father_entity = *father_entity_ptr;
-        assert(current_grid_view->contains(father_entity));
+        assert(current_grid_view.contains(father_entity));
         const size_t current_subdomain = ms_grid->subdomainOf(father_entity);
         ++fine_entities_per_subdomain[current_subdomain];
         const RangeFieldType local_energy_error_squared = local_energy_norm.compute_locally(entity);
@@ -345,9 +345,9 @@ private:
   {
     assert(vector.size() == ms_grid.size());
     const auto grid_view = ms_grid.globalGridView();
-    VV fine_vector(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
-    for (const auto& entity : Stuff::Common::entityRange(*grid_view)) {
-      const size_t index = grid_view->indexSet().index(entity);
+    VV fine_vector(boost::numeric_cast< size_t >(grid_view.indexSet().size(0)), 0.0);
+    for (const auto& entity : Stuff::Common::entityRange(grid_view)) {
+      const size_t index = grid_view.indexSet().index(entity);
       const size_t subdomain = ms_grid.subdomainOf(entity);
       fine_vector[index] = vector[subdomain];
     }

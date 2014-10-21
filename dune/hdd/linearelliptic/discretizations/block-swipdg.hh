@@ -313,8 +313,8 @@ public:
           if (ss < nn) {
             const auto& outer_test_space = *(this->local_discretizations_[nn]->test_space());
             const auto& outer_ansatz_space = *(this->local_discretizations_[nn]->ansatz_space());
-            const auto& inside_outside_grid_part = *(ms_grid_->couplingGridPart(ss, nn));
-            const auto& outside_inside_grid_part = *(ms_grid_->couplingGridPart(nn, ss));
+            const auto inside_outside_grid_part = ms_grid_->couplingGridPart(ss, nn);
+            const auto outside_inside_grid_part = ms_grid_->couplingGridPart(nn, ss);
             // create the coupling patterns
             auto inside_outside_pattern = std::make_shared< PatternType >(
                   inner_test_space.compute_face_pattern(inside_outside_grid_part, outer_ansatz_space));
@@ -394,7 +394,8 @@ public:
 
       // products
       typedef typename MsGridType::GlobalGridPartType::GridViewType GlobalGridViewType;
-      const auto& global_grid_view = ms_grid_->globalGridPart()->gridView();
+      const auto global_grid_part = ms_grid_->globalGridPart();
+      const auto global_grid_view = global_grid_part.gridView();
       GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(*this->test_space(),
                                                                                                   *this->ansatz_space(),
                                                                                                   global_grid_view);
@@ -1591,7 +1592,7 @@ private:
     typedef GDT::SystemAssembler< LocalTestSpaceType, BoundaryGridPartType, LocalAnsatzSpaceType > BoundaryAssemblerType;
     BoundaryAssemblerType boundary_assembler(local_test_space,
                                              local_ansatz_space,
-                                             *(ms_grid_->boundaryGridPart(subdomain)));
+                                             ms_grid_->boundaryGridPart(subdomain));
 
     auto& local_matrix = *(local_matrices_[subdomain]);
     auto& local_vector = *(local_vectors_[subdomain]);
@@ -1730,7 +1731,7 @@ private:
     const LocalAnsatzSpaceType& outer_ansatz_space = *(this->local_discretizations_[neighbour]->ansatz_space());
     CouplingAssembler coupling_assembler(inner_test_space, inner_ansatz_space,
                                          outer_test_space, outer_ansatz_space,
-                                         *(ms_grid_->couplingGridPart(subdomain, neighbour)));
+                                         ms_grid_->couplingGridPart(subdomain, neighbour));
 
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
     typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
