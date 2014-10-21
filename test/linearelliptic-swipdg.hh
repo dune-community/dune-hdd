@@ -93,12 +93,12 @@ public:
 
   virtual ~SWIPDGStudy() {}
 
-  virtual std::string identifier() const DS_OVERRIDE DS_FINAL
+  virtual std::string identifier() const override final
   {
     return DiscretizationType::static_id() + " (polorder " + Stuff::Common::toString(polOrder) + ")";
   }
 
-  virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual size_t expected_rate(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -114,7 +114,7 @@ public:
     return SWIPDGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
-  virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual std::vector< double > expected_results(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -259,14 +259,14 @@ public:
   }
 
 private:
-  virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_norms() const override final
   {
     return {"L2", "H1_semi", "energy"};
   }
 
   virtual double compute_norm(const GridViewType& grid_view,
                               const FunctionType& function,
-                              const std::string type) const DS_OVERRIDE DS_FINAL
+                              const std::string type) const override final
   {
     using namespace GDT;
     typedef typename TestCaseType::ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -289,7 +289,7 @@ private:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
   } // ... compute_norm(...)
 
-  virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_estimators() const override final
   {
     auto ret = EstimatorType::available();
     if (std::find(ret.begin(), ret.end(), "eta_ESV2007") != ret.end())
@@ -299,7 +299,7 @@ private:
     return ret;
   }
 
-  virtual double estimate(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual double estimate(const VectorType& vector, const std::string type) const override final
   {
     if (type == "eff_ESV2007")
       return estimate(vector, "eta_ESV2007") / const_cast< ThisType& >(*this).current_error_norm("energy");

@@ -118,7 +118,7 @@ public:
     : BaseType(checkerboard_function, diffusion_tensor, force, dirichlet, neumann)
   {}
 
-  virtual std::string type() const DS_OVERRIDE
+  virtual std::string type() const override
   {
     return BaseType::BaseType::static_id() + ".thermalblock";
   }
@@ -194,7 +194,7 @@ public:
                neumann)
   {}
 
-  virtual std::string type() const DS_OVERRIDE
+  virtual std::string type() const override
   {
     return BaseType::BaseType::static_id() + ".localthermalblock";
   }

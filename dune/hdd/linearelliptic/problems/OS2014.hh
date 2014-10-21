@@ -112,7 +112,7 @@ public:
                std::make_shared< ParametricScalarFunctionType >(new ConstantScalarFunctionType(0, "neumann")))
   {}
 
-  virtual std::string type() const DS_OVERRIDE
+  virtual std::string type() const override
   {
     return BaseType::BaseType::static_id() + ".OS2014.parametricESV2007";
   }

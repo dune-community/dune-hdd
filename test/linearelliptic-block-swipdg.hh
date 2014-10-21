@@ -81,14 +81,14 @@ public:
 
   virtual ~BlockSWIPDGStudy() {}
 
-  virtual std::string identifier() const DS_OVERRIDE DS_FINAL
+  virtual std::string identifier() const override final
   {
     return DiscretizationType::static_id()
         + " (polorder " + Stuff::Common::toString(polOrder)
         + ", " + this->test_case_.partitioning() + " partitioning)";
   } // ... identifier(...)
 
-  virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual size_t expected_rate(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -104,7 +104,7 @@ public:
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
-  virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual std::vector< double > expected_results(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -120,7 +120,7 @@ public:
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 
-  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const DS_OVERRIDE DS_FINAL
+  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const override final
   {
     typedef typename TestCaseType::ProblemType ProblemType;
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -240,7 +240,7 @@ public:
   }
 
 private:
-  virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_norms() const override final
   {
     std::vector< std::string > norms = {"L2", "H1_semi"};
     if (this->test_case_.parametric()) {
@@ -253,7 +253,7 @@ private:
 
   virtual double compute_norm(const GridViewType& grid_view,
                               const FunctionType& function,
-                              const std::string type) const DS_OVERRIDE DS_FINAL
+                              const std::string type) const override final
   {
     using namespace GDT;
     typedef typename TestCaseType::ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -295,7 +295,7 @@ private:
     return { "OS2014_alt", "OS2014_*", "OS2014" };
   }
 
-  virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_estimators() const override final
   {
     auto ret = EstimatorType::available();
     for (auto id : effectivities()) {
@@ -310,7 +310,7 @@ private:
     return ret;
   } // ... available_estimators(..)
 
-  virtual double estimate(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual double estimate(const VectorType& vector, const std::string type) const override final
   {
     // process all efficitvities
     for (auto id : effectivities()) {

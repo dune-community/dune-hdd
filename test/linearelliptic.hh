@@ -85,12 +85,12 @@ public:
 
   virtual ~EocStudyBase() {}
 
-  virtual size_t num_refinements() const DS_OVERRIDE DS_FINAL
+  virtual size_t num_refinements() const override final
   {
     return test_case_.num_refinements();
   }
 
-  virtual std::vector< std::string > provided_norms() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > provided_norms() const override final
   {
     std::vector< std::string > ret = available_norms();
     for (auto estimator : available_estimators()) {
@@ -102,7 +102,7 @@ public:
     return ret;
   } // ... provided_norms(...)
 
-  virtual double norm_reference_solution(const std::string type) DS_OVERRIDE DS_FINAL
+  virtual double norm_reference_solution(const std::string type) override final
   {
     if (is_norm(type)) {
       if (test_case_.provides_exact_solution()) {
@@ -125,14 +125,14 @@ public:
       return 1.0;
   } // ... norm_reference_solution(...)
 
-  virtual size_t current_grid_size() const DS_OVERRIDE DS_FINAL
+  virtual size_t current_grid_size() const override final
   {
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
     return test_case_.grid().size(level, 0);
   } // ... current_grid_size(...)
 
-  virtual double current_grid_width() const DS_OVERRIDE DS_FINAL
+  virtual double current_grid_width() const override final
   {
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
@@ -140,7 +140,7 @@ public:
     return Fem::GridWidth::calcGridWidth(grid_part);
   } // ... current_grid_width(...)
 
-  virtual double compute_on_current_refinement() DS_OVERRIDE DS_FINAL
+  virtual double compute_on_current_refinement() override final
   {
     using namespace Dune;
     using namespace Dune::GDT;
@@ -184,7 +184,7 @@ public:
     return time_to_solution_;
   } // ... compute_on_current_refinement(...)
 
-  virtual double current_error_norm(const std::string type) DS_OVERRIDE DS_FINAL
+  virtual double current_error_norm(const std::string type) override final
   {
     // get current solution
     assert(current_refinement_ <= num_refinements());
@@ -219,7 +219,7 @@ public:
     }
   } // ... current_error_norm(...)
 
-  virtual void refine() DS_OVERRIDE DS_FINAL
+  virtual void refine() override final
   {
     if (current_refinement_ <= num_refinements())
       ++current_refinement_;
@@ -344,12 +344,12 @@ public:
 
   virtual ~MultiscaleEocStudyBase() {}
 
-  virtual size_t num_refinements() const DS_OVERRIDE DS_FINAL
+  virtual size_t num_refinements() const override final
   {
     return test_case_.num_refinements();
   }
 
-  virtual std::vector< std::string > provided_norms() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > provided_norms() const override final
   {
     std::vector< std::string > ret = available_norms();
     for (auto estimator : available_estimators()) {
@@ -361,7 +361,7 @@ public:
     return ret;
   } // ... provided_norms(...)
 
-  virtual double norm_reference_solution(const std::string type) DS_OVERRIDE DS_FINAL
+  virtual double norm_reference_solution(const std::string type) override final
   {
     if (is_norm(type)) {
       const auto reference_grid_view
@@ -386,7 +386,7 @@ public:
       return 1.0;
   } // ... norm_reference_solution(...)
 
-  virtual size_t current_grid_size() const DS_OVERRIDE DS_FINAL
+  virtual size_t current_grid_size() const override final
   {
     assert(current_refinement_ <= num_refinements());
     const auto grid_part
@@ -394,7 +394,7 @@ public:
     return grid_part.gridView().size(0);
   } // ... current_grid_size(...)
 
-  virtual double current_grid_width() const DS_OVERRIDE DS_FINAL
+  virtual double current_grid_width() const override final
   {
     assert(current_refinement_ <= num_refinements());
     const auto grid_part
@@ -402,7 +402,7 @@ public:
     return Fem::GridWidth::calcGridWidth(grid_part);
   } // ... current_grid_width(...)
 
-  virtual double compute_on_current_refinement() DS_OVERRIDE DS_FINAL
+  virtual double compute_on_current_refinement() override final
   {
     using namespace Dune;
     using namespace Dune::GDT;
@@ -445,7 +445,7 @@ public:
     return time_to_solution_;
   } // ... compute_on_current_refinement(...)
 
-  virtual double current_error_norm(const std::string type) DS_OVERRIDE DS_FINAL
+  virtual double current_error_norm(const std::string type) override final
   {
     // get current solution
     assert(current_refinement_ <= num_refinements());
@@ -482,7 +482,7 @@ public:
     }
   } // ... current_error_norm(...)
 
-  virtual void refine() DS_OVERRIDE DS_FINAL
+  virtual void refine() override final
   {
     if (current_refinement_ <= num_refinements())
       ++current_refinement_;

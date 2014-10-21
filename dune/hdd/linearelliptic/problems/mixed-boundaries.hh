@@ -117,7 +117,7 @@ public:
     : BaseType(diffusion_factor, diffusion_tensor, force, dirichlet, neumann)
   {}
 
-  virtual std::string type() const DS_OVERRIDE
+  virtual std::string type() const override
   {
     return BaseType::BaseType::static_id() + ".mixedboundaries";
   }

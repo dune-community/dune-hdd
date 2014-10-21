@@ -81,7 +81,7 @@ public:
                std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(0, "neumann")))
   {}
 
-  virtual std::string type() const DS_OVERRIDE
+  virtual std::string type() const override
   {
     return BaseType::BaseType::static_id() + ".ESV2007";
   }
