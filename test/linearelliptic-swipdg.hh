@@ -55,11 +55,8 @@ template< class TestCaseType,
           int polOrder = 1,
 #if HAVE_DUNE_FEM
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
-#elif HAVE_DUNE_PDELAB
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
 #else
 # error No space backend available!
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
 #endif
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::default_sparse_backend >
 class SWIPDGStudy
