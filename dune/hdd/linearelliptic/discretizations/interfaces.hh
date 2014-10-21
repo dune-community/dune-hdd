@@ -66,7 +66,7 @@ public:
     return "hdd.linearelliptic.discretization";
   }
 
-  const std::shared_ptr< const GridViewType >& grid_view() const
+  const GridViewType& grid_view() const
   {
     CHECK_CRTP(this->as_imp().grid_view());
     return this->as_imp().grid_view();

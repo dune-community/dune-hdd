@@ -120,8 +120,8 @@ public:
     grid_provider_ = GridProviders::create(griprovider_type, config_);
     const auto grid_view = grid_provider_->leaf_view();
     info << " done (took " << timer.elapsed()
-         << "s, has " << grid_view->indexSet().size(0) << " element";
-    if (grid_view->indexSet().size(0) > 1)
+         << "s, has " << grid_view.indexSet().size(0) << " element";
+    if (grid_view.indexSet().size(0) > 1)
       info << "s";
     info << ")" << std::endl;
 
@@ -146,7 +146,7 @@ public:
       info << "visualizing grid and problem... " << std::flush;
       timer.reset();
       grid_provider_->visualize(boundary_info_, filename_ + ".grid");
-      problem_->visualize(*grid_view, filename_ + ".problem");
+      problem_->visualize(grid_view, filename_ + ".problem");
       info << "done (took " << timer.elapsed() << "s)" << std::endl;
     } // if (visualize)
   } // DiscreteProblem
@@ -307,8 +307,8 @@ public:
     grid_provider_ = GridProviders::create(griprovider_type, config_);
     const auto grid_view = grid_provider_->leaf_view();
     info << " done (took " << timer.elapsed()
-         << "s, has " << grid_view->indexSet().size(0) << " element";
-    if (grid_view->indexSet().size(0) > 1)
+         << "s, has " << grid_view.indexSet().size(0) << " element";
+    if (grid_view.indexSet().size(0) > 1)
       info << "s";
     info << ")" << std::endl;
 
@@ -330,7 +330,7 @@ public:
       timer.reset();
       grid_provider_->visualize(filename_ + ".ms_grid", false);
       grid_provider_->visualize(boundary_info_, filename_ + ".grid");
-      problem_->visualize(*grid_view, filename_ + ".problem");
+      problem_->visualize(grid_view, filename_ + ".problem");
       info << "done (took " << timer.elapsed() << "s)" << std::endl;
     } // if (visualize)
   } // DiscreteBlockProblem

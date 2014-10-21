@@ -66,8 +66,6 @@ class BlockSWIPDG;
 template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, int rangeDim, int polynomialOrder = 1,
 #if HAVE_DUNE_FEM
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
-#elif HAVE_DUNE_PDELAB
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
 #else
 # error No suitable space backend available!
 #endif

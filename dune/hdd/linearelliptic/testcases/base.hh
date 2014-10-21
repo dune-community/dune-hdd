@@ -119,7 +119,7 @@ public:
     return reference_level_;
   }
 
-  std::shared_ptr< const typename BaseType::LevelGridViewType > reference_grid_view() const
+  typename BaseType::LevelGridViewType reference_grid_view() const
   {
     return this->level_view(reference_level_);
   }

@@ -55,11 +55,8 @@ template< class TestCaseType,
           int polOrder = 1,
 #if HAVE_DUNE_FEM
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
-#elif HAVE_DUNE_PDELAB
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
 #else
 # error No space backend available!
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
 #endif
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::default_sparse_backend >
 class SWIPDGStudy
@@ -96,12 +93,12 @@ public:
 
   virtual ~SWIPDGStudy() {}
 
-  virtual std::string identifier() const DS_OVERRIDE DS_FINAL
+  virtual std::string identifier() const override final
   {
     return DiscretizationType::static_id() + " (polorder " + Stuff::Common::toString(polOrder) + ")";
   }
 
-  virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual size_t expected_rate(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -117,7 +114,7 @@ public:
     return SWIPDGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
-  virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual std::vector< double > expected_results(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -173,7 +170,7 @@ public:
       GDT::Products::EllipticLocalizable< GridViewType, DiffusionFactorType,
                                           DifferenceType, DifferenceType, RangeFieldType,
                                           DiffusionTensorType >
-          local_energy_norm(*(this->test_case_.reference_grid_view()),
+          local_energy_norm(this->test_case_.reference_grid_view(),
                             difference,
                             difference,
                             *diffusion_factor,
@@ -181,15 +178,16 @@ public:
                             Estimators::internal::SWIPDG::over_integrate);
       local_energy_norm.prepare();
       // prepare
-      const auto current_grid_view = this->current_discretization_->grid_view();
-      const int current_level = current_grid_view->template begin< 0 >()->level();
-      Stuff::LA::CommonDenseVector< double > error_indicators(boost::numeric_cast< size_t >(current_grid_view->indexSet().size(0)),
+      const auto& current_grid_view = this->current_discretization_->grid_view();
+      const int current_level = current_grid_view.template begin< 0 >()->level();
+      Stuff::LA::CommonDenseVector< double > error_indicators(boost::numeric_cast< size_t >(current_grid_view.indexSet().size(0)),
                                                               0.0);
       std::vector< size_t > fine_entities_per_coarse_entity(error_indicators.size(), 0);
       RangeFieldType energy_error_squared = 0.0;
       // walk the reference grid
-      const auto entity_it_end = this->test_case_.reference_grid_view()->template end< 0 >();
-      for (auto entity_it = this->test_case_.reference_grid_view()->template begin< 0 >();
+      auto reference_grid_view = this->test_case_.reference_grid_view();
+      const auto entity_it_end = reference_grid_view.template end< 0 >();
+      for (auto entity_it = reference_grid_view.template begin< 0 >();
            entity_it != entity_it_end;
            ++entity_it) {
         const auto& entity = *entity_it;
@@ -204,8 +202,8 @@ public:
         }
         assert(fine_level == current_level);
         const auto& father_entity = *father_entity_ptr;
-        assert(current_grid_view->indexSet().contains(father_entity));
-        const size_t index = current_grid_view->indexSet().index(father_entity);
+        assert(current_grid_view.indexSet().contains(father_entity));
+        const size_t index = current_grid_view.indexSet().index(father_entity);
         ++fine_entities_per_coarse_entity[index];
         const RangeFieldType local_energy_error_squared = local_energy_norm.compute_locally(entity);
         energy_error_squared += local_energy_error_squared;
@@ -261,14 +259,14 @@ public:
   }
 
 private:
-  virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_norms() const override final
   {
     return {"L2", "H1_semi", "energy"};
   }
 
   virtual double compute_norm(const GridViewType& grid_view,
                               const FunctionType& function,
-                              const std::string type) const DS_OVERRIDE DS_FINAL
+                              const std::string type) const override final
   {
     using namespace GDT;
     typedef typename TestCaseType::ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -291,7 +289,7 @@ private:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Wrong type '" << type << "' requested!");
   } // ... compute_norm(...)
 
-  virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_estimators() const override final
   {
     auto ret = EstimatorType::available();
     if (std::find(ret.begin(), ret.end(), "eta_ESV2007") != ret.end())
@@ -301,7 +299,7 @@ private:
     return ret;
   }
 
-  virtual double estimate(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual double estimate(const VectorType& vector, const std::string type) const override final
   {
     if (type == "eff_ESV2007")
       return estimate(vector, "eta_ESV2007") / const_cast< ThisType& >(*this).current_error_norm("energy");
@@ -317,13 +315,13 @@ private:
   } // ... estimate(...)
 
   template< class GV, class VV >
-  void visualize_indicators(const std::shared_ptr< const GV >& grid_view_ptr,
+  void visualize_indicators(const GV& grid_view,
                             const VV& vector,
                             const std::string name,
                             const std::string filename) const
   {
     typedef GDT::Spaces::FiniteVolume::Default< GV, typename VV::ScalarType, 1 > FVSpaceType;
-    const FVSpaceType fv_space(grid_view_ptr);
+    const FVSpaceType fv_space(grid_view);
     GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
     discrete_function.visualize(filename);
   } // ... visualize_indicators(...)

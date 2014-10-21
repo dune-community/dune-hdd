@@ -81,14 +81,14 @@ public:
 
   virtual ~BlockSWIPDGStudy() {}
 
-  virtual std::string identifier() const DS_OVERRIDE DS_FINAL
+  virtual std::string identifier() const override final
   {
     return DiscretizationType::static_id()
         + " (polorder " + Stuff::Common::toString(polOrder)
         + ", " + this->test_case_.partitioning() + " partitioning)";
   } // ... identifier(...)
 
-  virtual size_t expected_rate(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual size_t expected_rate(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -104,7 +104,7 @@ public:
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
-  virtual std::vector< double > expected_results(const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual std::vector< double > expected_results(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
     // specialization of BlockSWIPDGStudyExpectations!
@@ -120,7 +120,7 @@ public:
     return BlockSWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 
-  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const DS_OVERRIDE DS_FINAL
+  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const override final
   {
     typedef typename TestCaseType::ProblemType ProblemType;
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -157,7 +157,7 @@ public:
       GDT::Products::EllipticLocalizable< typename DiscretizationType::GridViewType, DiffusionFactorType,
                                           DifferenceType, DifferenceType, RangeFieldType,
                                           DiffusionTensorType >
-          local_energy_norm(*this->reference_discretization_->grid_view(),
+          local_energy_norm(this->reference_discretization_->grid_view(),
                             difference,
                             difference,
                             *diffusion_factor_mu_bar,
@@ -167,13 +167,13 @@ public:
       local_energy_norm.prepare();
       const auto ms_grid = this->current_discretization_->ansatz_space()->ms_grid();
       const auto current_grid_view = this->current_discretization_->grid_view();
-      Stuff::Grid::EntityInlevelSearch< typename DiscretizationType::GridViewType > entity_search(*current_grid_view);
+      Stuff::Grid::EntityInlevelSearch< typename DiscretizationType::GridViewType > entity_search(current_grid_view);
       Stuff::LA::CommonDenseVector< double > error_indicators(ms_grid->size(), 0.0);
       std::vector< size_t > fine_entities_per_subdomain(error_indicators.size(), 0);
       RangeFieldType energy_error_squared = 0.0;
       // walk the reference grid
-      const auto entity_it_end = this->reference_discretization_->grid_view()->template end< 0 >();
-      for (auto entity_it = this->reference_discretization_->grid_view()->template begin< 0 >();
+      const auto entity_it_end = this->reference_discretization_->grid_view().template end< 0 >();
+      for (auto entity_it = this->reference_discretization_->grid_view().template begin< 0 >();
            entity_it != entity_it_end;
            ++entity_it) {
         const auto& entity = *entity_it;
@@ -185,7 +185,7 @@ public:
         assert(father_entity_ptr_ptr);
         const auto father_entity_ptr = *father_entity_ptr_ptr;
         const auto& father_entity = *father_entity_ptr;
-        assert(current_grid_view->contains(father_entity));
+        assert(current_grid_view.contains(father_entity));
         const size_t current_subdomain = ms_grid->subdomainOf(father_entity);
         ++fine_entities_per_subdomain[current_subdomain];
         const RangeFieldType local_energy_error_squared = local_energy_norm.compute_locally(entity);
@@ -240,7 +240,7 @@ public:
   }
 
 private:
-  virtual std::vector< std::string > available_norms() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_norms() const override final
   {
     std::vector< std::string > norms = {"L2", "H1_semi"};
     if (this->test_case_.parametric()) {
@@ -253,7 +253,7 @@ private:
 
   virtual double compute_norm(const GridViewType& grid_view,
                               const FunctionType& function,
-                              const std::string type) const DS_OVERRIDE DS_FINAL
+                              const std::string type) const override final
   {
     using namespace GDT;
     typedef typename TestCaseType::ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -295,7 +295,7 @@ private:
     return { "OS2014_alt", "OS2014_*", "OS2014" };
   }
 
-  virtual std::vector< std::string > available_estimators() const DS_OVERRIDE DS_FINAL
+  virtual std::vector< std::string > available_estimators() const override final
   {
     auto ret = EstimatorType::available();
     for (auto id : effectivities()) {
@@ -310,7 +310,7 @@ private:
     return ret;
   } // ... available_estimators(..)
 
-  virtual double estimate(const VectorType& vector, const std::string type) const DS_OVERRIDE DS_FINAL
+  virtual double estimate(const VectorType& vector, const std::string type) const override final
   {
     // process all efficitvities
     for (auto id : effectivities()) {
@@ -345,9 +345,9 @@ private:
   {
     assert(vector.size() == ms_grid.size());
     const auto grid_view = ms_grid.globalGridView();
-    VV fine_vector(boost::numeric_cast< size_t >(grid_view->indexSet().size(0)), 0.0);
-    for (const auto& entity : Stuff::Common::entityRange(*grid_view)) {
-      const size_t index = grid_view->indexSet().index(entity);
+    VV fine_vector(boost::numeric_cast< size_t >(grid_view.indexSet().size(0)), 0.0);
+    for (const auto& entity : Stuff::Common::entityRange(grid_view)) {
+      const size_t index = grid_view.indexSet().index(entity);
       const size_t subdomain = ms_grid.subdomainOf(entity);
       fine_vector[index] = vector[subdomain];
     }

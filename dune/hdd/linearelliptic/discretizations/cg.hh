@@ -183,7 +183,7 @@ public:
       auto& matrix = *(this->matrix_);
       auto& rhs = *(this->rhs_);
       const auto& space = *(this->test_space_);
-      const auto& grid_view = *(space.grid_view());
+      const auto& grid_view = space.grid_view();
       const auto& boundary_info = *(this->boundary_info_);
 
       out << prefix << "assembling... " << std::flush;
@@ -306,7 +306,7 @@ public:
       H1ProductType h1_product(*(h1_product_matrix->affine_part()), space);
       system_assembler.add(h1_product);
       // * energy
-      typedef GDT::Products::EllipticAssemblable< DiffusionFactorType, MatrixType, TestSpaceType > EnergyProductType;
+      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
       auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       std::vector< std::unique_ptr< EnergyProductType > > energy_products;
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
@@ -314,17 +314,17 @@ public:
                                                                                    space.mapper().size(),
                                                                                    EnergyProductType::pattern(space)),
                                                                     diffusion_factor.coefficient(qq));
-        energy_products.emplace_back(new EnergyProductType(*(diffusion_factor.component(qq)),
-                                                           *(energy_product_matrix->component(id)),
-                                                           space));
+        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->component(id)),
+                                                           space,
+                                                           *(diffusion_factor.component(qq))));
       }
       if (diffusion_factor.has_affine_part()) {
         energy_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
                                                                    space.mapper().size(),
                                                                    EnergyProductType::pattern(space)));
-        energy_products.emplace_back(new EnergyProductType(*(diffusion_factor.affine_part()),
-                                                           *(energy_product_matrix->affine_part()),
-                                                           space));
+        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->affine_part()),
+                                                           space,
+                                                           *(diffusion_factor.affine_part())));
       }
       for (auto& energy_product : energy_products)
         system_assembler.add(*energy_product);

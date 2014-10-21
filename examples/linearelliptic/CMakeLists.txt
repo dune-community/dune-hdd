@@ -40,12 +40,10 @@ add_python_bindings(linearellipticexamplethermalblock thermalblock_bindings_gene
 add_python_bindings(linearellipticexampleOS2014 OS2014_bindings_generator.py OS2014_bindings_generator.hh "")
 
 
-if(NOT CMAKE_WITH_AUTOTOOLS)
-  add_dune_alugrid_flags(example_linearelliptic_block_swipdg)
-  add_dune_alugrid_flags(example_linearelliptic_cg)
-  add_dune_alugrid_flags(example_linearelliptic_swipdg)
-  add_dune_alugrid_flags(example_linearelliptic_thermalblock)
-endif(NOT CMAKE_WITH_AUTOTOOLS)
+add_dune_alugrid_flags(example_linearelliptic_block_swipdg)
+add_dune_alugrid_flags(example_linearelliptic_cg)
+add_dune_alugrid_flags(example_linearelliptic_swipdg)
+add_dune_alugrid_flags(example_linearelliptic_thermalblock)
 
 
 # link spe10 data file if present

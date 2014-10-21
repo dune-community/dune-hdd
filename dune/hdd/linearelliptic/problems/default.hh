@@ -163,32 +163,32 @@ public:
 
   ThisType& operator=(const ThisType& other) = delete;
 
-  virtual std::string type() const DS_OVERRIDE
+  virtual std::string type() const override
   {
     return BaseType::static_id() + ".default";
   }
 
-  virtual const std::shared_ptr< const DiffusionFactorType >& diffusion_factor() const DS_OVERRIDE
+  virtual const std::shared_ptr< const DiffusionFactorType >& diffusion_factor() const override
   {
     return diffusion_factor_;
   }
 
-  virtual const std::shared_ptr< const DiffusionTensorType >& diffusion_tensor() const DS_OVERRIDE
+  virtual const std::shared_ptr< const DiffusionTensorType >& diffusion_tensor() const override
   {
     return diffusion_tensor_;
   }
 
-  virtual const std::shared_ptr< const FunctionType >& force() const DS_OVERRIDE
+  virtual const std::shared_ptr< const FunctionType >& force() const override
   {
     return force_;
   }
 
-  virtual const std::shared_ptr< const FunctionType >& dirichlet() const DS_OVERRIDE
+  virtual const std::shared_ptr< const FunctionType >& dirichlet() const override
   {
     return dirichlet_;
   }
 
-  virtual const std::shared_ptr< const FunctionType >& neumann() const DS_OVERRIDE
+  virtual const std::shared_ptr< const FunctionType >& neumann() const override
   {
     return neumann_;
   }

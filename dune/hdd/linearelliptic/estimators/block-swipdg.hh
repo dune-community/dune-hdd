@@ -213,7 +213,7 @@ public:
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
       ThisType eta_r_T(*local_space, problem, mu_minimizing);
-      Stuff::Grid::Walker< GridViewType > grid_walker(*local_space->grid_view());
+      Stuff::Grid::Walker< GridViewType > grid_walker(local_space->grid_view());
       grid_walker.add(eta_r_T);
       grid_walker.walk();
       eta_r_squared += eta_r_T.result_;
@@ -243,7 +243,7 @@ public:
   virtual void prepare()
   {
     if (!prepared_) {
-      const GDT::Operators::Projection< GridViewType > projection_operator(*local_space_.grid_view());
+      const GDT::Operators::Projection< GridViewType > projection_operator(local_space_.grid_view());
       projection_operator.apply(*problem_.force()->affine_part(), p0_force_);
       result_ = 0.0;
       prepared_ = true;
@@ -416,7 +416,7 @@ public:
     const Pymor::Parameter mu =     problem.parametric() ? parameters.at("mu")     : Pymor::Parameter();
     const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat") : Pymor::Parameter();
     ThisType estimator(space, vector, problem, mu, mu_hat);
-    Stuff::Grid::Walker< GridViewType > grid_walker(*space.grid_view());
+    Stuff::Grid::Walker< GridViewType > grid_walker(space.grid_view());
     grid_walker.add(estimator);
     grid_walker.walk();
     return std::sqrt(estimator.result_);
@@ -449,7 +449,7 @@ public:
   {
     if (!prepared_) {
       const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
-        diffusive_flux_reconstruction(*space_.grid_view(),
+        diffusive_flux_reconstruction(space_.grid_view(),
                                       *problem_mu_->diffusion_factor()->affine_part(),
                                       *problem_.diffusion_tensor()->affine_part());
       diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
@@ -626,7 +626,7 @@ public:
       eta_df.result_ = 0.0;
       // walk the local grid
       const auto local_grid_view = local_space->grid_view();
-      for (const auto& entity : Stuff::Common::entityRange(*local_grid_view)) {
+      for (const auto& entity : Stuff::Common::entityRange(local_grid_view)) {
         eta_nc.apply_local(entity);
         eta_r_T.apply_local(entity);
         eta_df.apply_local(entity);
@@ -792,7 +792,7 @@ public:
       eta_df.result_ = 0.0;
       // walk the local grid
       const auto local_grid_view = local_space->grid_view();
-      for (const auto& entity : Stuff::Common::entityRange(*local_grid_view)) {
+      for (const auto& entity : Stuff::Common::entityRange(local_grid_view)) {
         eta_nc.apply_local(entity);
         eta_r_T.apply_local(entity);
         eta_df.apply_local(entity);

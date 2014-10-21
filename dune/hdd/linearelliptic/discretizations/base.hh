@@ -97,7 +97,7 @@ public:
     return test_space_;
   }
 
-  const std::shared_ptr< const GridViewType >& grid_view() const
+  const GridViewType& grid_view() const
   {
     return test_space_->grid_view();
   }
