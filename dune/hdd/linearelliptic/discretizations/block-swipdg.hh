@@ -178,21 +178,21 @@ class BlockSWIPDG
   typedef BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >        ThisType;
 public:
   typedef internal::BlockSWIPDGTraits< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend > Traits;
-  using typename BaseType::ProblemType;
-  using typename BaseType::GridViewType;
-  using typename BaseType::TestSpaceType;
-  using typename BaseType::AnsatzSpaceType;
-  using typename BaseType::EntityType;
-  using typename BaseType::DomainFieldType;
-  using typename BaseType::RangeFieldType;
-  using typename BaseType::MatrixType;
-  using typename BaseType::VectorType;
-  using typename BaseType::OperatorType;
-  using typename BaseType::ProductType;
-  using typename BaseType::FunctionalType;
+  typedef typename BaseType::ProblemType     ProblemType;
+  typedef typename BaseType::GridViewType    GridViewType;
+  typedef typename BaseType::TestSpaceType   TestSpaceType;
+  typedef typename BaseType::AnsatzSpaceType AnsatzSpaceType;
+  typedef typename BaseType::EntityType      EntityType;
+  typedef typename BaseType::DomainFieldType DomainFieldType;
+  typedef typename BaseType::RangeFieldType  RangeFieldType;
+  typedef typename BaseType::MatrixType      MatrixType;
+  typedef typename BaseType::VectorType      VectorType;
+  typedef typename BaseType::OperatorType    OperatorType;
+  typedef typename BaseType::ProductType     ProductType;
+  typedef typename BaseType::FunctionalType  FunctionalType;
 
   static const unsigned int dimDomain = BaseType::dimDomain;
-  static const unsigned int dimRange = BaseType::dimRange;
+  static const unsigned int dimRange  = BaseType::dimRange;
 
   typedef grid::Multiscale::ProviderInterface< GridImp > GridProviderType;
   typedef typename GridProviderType::GridType   GridType;
