@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # This file is part of the dune-hdd project:
 #   http://users.dune-project.org/projects/dune-hdd
-# Copyright holders: Felix Albrecht
+# Copyright holders: Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 import sys
@@ -47,6 +47,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                custom_name='OS2014Spe10Model1Example')
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
                              param('const bool', 'enable_warnings'),
@@ -57,6 +58,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             throw=[exceptions['Exception']])
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
                              param('const bool', 'enable_warnings'),
@@ -66,6 +68,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             throw=[exceptions['Exception']])
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
                              param('const bool', 'enable_warnings'),
@@ -74,6 +77,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             throw=[exceptions['Exception']])
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
                              param('const bool', 'enable_warnings'),
@@ -81,18 +85,25 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             throw=[exceptions['Exception']])
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
                              param('const bool', 'enable_warnings')],
                             throw=[exceptions['Exception']])
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels')],
                             throw=[exceptions['Exception']])
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels')],
+                            throw=[exceptions['Exception']])
+    Example.add_constructor([param('const std::string', 'partitioning'),
+                             param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                             param('const std::vector< std::string >', 'products')],
                             throw=[exceptions['Exception']])
     Example.add_constructor([param('const std::string', 'partitioning'),
                              param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements')],

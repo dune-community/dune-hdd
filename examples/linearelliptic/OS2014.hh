@@ -80,6 +80,7 @@ private:
 public:
   OS2014Spe10Model1Example(const std::string partitioning = "[1 1 1]",
                            const DUNE_STUFF_SSIZE_T num_refinements = 0,
+                           const std::vector< std::string > products = {},
                            const ssize_t info_log_levels  = 0,
                            const ssize_t debug_log_levels = -1,
                            const bool enable_warnings = true,
@@ -108,10 +109,12 @@ public:
                            boost::numeric_cast< size_t >(num_refinements + 1))
     , discretization_(*test_case_./*reference*/level_provider(0),
                       test_case_.boundary_info(),
-                      test_case_.problem())
+                      test_case_.problem(),
+                      products)
     , reference_discretization_(*reference_test_case_.reference_provider(),
                                 reference_test_case_.boundary_info(),
-                                reference_test_case_.problem())
+                                reference_test_case_.problem(),
+                                products)
   {
     auto logger = DSC::TimedLogger().get("OS2014.spe10model1example");
     logger.info() << "initializing discretization... " << std::flush;
