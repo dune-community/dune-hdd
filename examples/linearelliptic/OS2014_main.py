@@ -1,7 +1,7 @@
-#!/usr/bin/env python
-# This file is part of the dune-pymor project:
-#   https://github.com/pyMor/dune-pymor
-# Copyright Holders: Felix Albrecht, Stephan Rave
+#!/usr/bin/env python2
+# This file is part of the dune-hdd project:
+#   https://github.com/pymor/dune-hdd
+# Copyright Holders: Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 '''Dune LRBMS demo.
