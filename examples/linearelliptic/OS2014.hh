@@ -117,7 +117,7 @@ public:
     logger.info() << "initializing discretization... " << std::flush;
     discretization_.init();
     reference_discretization_.init();
-    logger.info() << "done (grid has " << discretization_.grid_view()->indexSet().size(0)
+    logger.info() << "done (grid has " << discretization_.grid_view().indexSet().size(0)
                   << " elements, discretization has " << discretization_.ansatz_space()->mapper().size() << " DoFs)"
                   << std::endl;
   } // ... OS2014Spe10Model1Example(...)
@@ -151,7 +151,7 @@ public:
                                           DiscreteFunctionType::dimRange > ExpressionFunctionType;
     ExpressionFunctionType func("x", expression);
 
-    GDT::Operators::Projection< typename DiscretizationType::GridViewType > projection(*discretization_.grid_view());
+    GDT::Operators::Projection< typename DiscretizationType::GridViewType > projection(discretization_.grid_view());
     projection.apply(func, discrete_function);
 
     return discrete_function.vector();
@@ -174,7 +174,7 @@ public:
     typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
     DiscreteFunctionType fine_solution(*reference_discretization_.ansatz_space());
     GDT::Operators::Prolongation< typename DiscretizationType::GridViewType >
-        prolongation_operator(*reference_discretization_.grid_view());
+        prolongation_operator(reference_discretization_.grid_view());
     prolongation_operator.apply(coarse_solution, fine_solution);
     // compute reference solution
     DiscreteFunctionType reference_solution(*reference_discretization_.ansatz_space());
@@ -201,7 +201,7 @@ public:
           ConstDiscreteFunctionType,
           RangeFieldType,
           typename DiscretizationType::ProblemType::DiffusionTensorType::NonparametricType > ProductType;
-    ProductType penalty_product(*discretization_.grid_view(),
+    ProductType penalty_product(discretization_.grid_view(),
                                 solution,
                                 solution,
                                 *diffusion_factor,
