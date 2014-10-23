@@ -257,4 +257,20 @@ public:
 }; // class Spe10Model1Example
 
 
+template< class GridImp >
+class OS2014Example
+  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridImp > >
+{
+  static_assert(GridImp::dimension == 2, "Only available in 2d!");
+  typedef internal::Example
+      < Dune::HDD::LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridImp > > BaseType;
+
+public:
+  template< class... Args >
+  OS2014Example(Args&& ...args)
+    : BaseType(std::forward< Args >(args)...)
+  {}
+}; // class OS2014Example
+
+
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_OS2014_HH
