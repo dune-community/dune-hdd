@@ -130,7 +130,7 @@ def run_experiment(example, wrapper, cfg, product, norm):
     initial_basis = discretization.functionals['rhs'].source.empty()
     if cfg['initialize_with_one']:
         one = wrapper.vector_array(wrapper[example.project('1')])
-        initial_basis = extension_algorithm(initial_basis, one)
+        initial_basis = extension_algorithm(initial_basis, one)[0]
 
     greedy_data = greedy(discretization,
                          reduce_generic_rb,
