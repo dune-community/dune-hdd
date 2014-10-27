@@ -1498,7 +1498,7 @@ private:
     const LocalAnsatzSpaceType& innerAnsatzSpace_;
     const LocalTestSpaceType& outerTestSpace_;
     const LocalAnsatzSpaceType& outerAnsatzSpace_;
-    const CouplingGridPartType& grid_part_;
+    const CouplingGridPartType grid_part_;
     std::vector< LocalCodim1MatrixAssemblerApplication* > localCodim1MatrixAssemblers_;
   }; // class CouplingAssembler
 
