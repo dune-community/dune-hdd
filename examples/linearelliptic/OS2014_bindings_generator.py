@@ -55,7 +55,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                  param('const std::string', 'info_color'),
                                  param('const std::string', 'debug_color'),
                                  param('const std::string', 'warn_color')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
                                  param('const std::vector< std::string >', 'products'),
@@ -65,7 +65,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                  param('const bool', 'enable_colors'),
                                  param('const std::string', 'info_color'),
                                  param('const std::string', 'debug_color')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
                                  param('const std::vector< std::string >', 'products'),
@@ -74,7 +74,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                  param('const bool', 'enable_warnings'),
                                  param('const bool', 'enable_colors'),
                                  param('const std::string', 'info_color')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
                                  param('const std::vector< std::string >', 'products'),
@@ -82,71 +82,71 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
                                  param('const bool', 'enable_warnings'),
                                  param('const bool', 'enable_colors')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
                                  param('const bool', 'enable_warnings')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
                                  param('const std::vector< std::string >', 'products')],
-                                throw=[exceptions['Exception']])
+                                throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements')],
-                                throw=[exceptions['Exception']])
-        Example.add_constructor([], throw=[exceptions['Exception']])
+                                throw=exceptions)
+        Example.add_constructor([], throw=exceptions)
         Example.add_method('discretization_and_return_ptr',
                            retval(DiscretizationFullName + ' *', caller_owns_return=True),
-                           [], is_const=True, throw=[exceptions['Exception']],
+                           [], is_const=True, throw=exceptions,
                            custom_name='discretization')
         Example.add_method('project',
                            retval(VectorType),
-                           [param('const std::string', 'expression')], is_const=True, throw=[exceptions['Exception']])
+                           [param('const std::string', 'expression')], is_const=True, throw=exceptions)
         Example.add_method('compute_error',
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'solution'),
                             param('const std::string', 'product_type'),
                             param('const Dune::Pymor::Parameter', 'mu'),
                             param('const Dune::Pymor::Parameter', 'mu_product')],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
         Example.add_method('compute_error',
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'solution'),
                             param('const std::string', 'product_type'),
                             param('const Dune::Pymor::Parameter', 'mu')],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
         Example.add_method('compute_error',
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'solution'),
                             param('const std::string', 'product_type')],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
         Example.add_method('compute_error',
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'solution')],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
         Example.add_method('compute_jump_norm',
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'solution_vector'),
                             param('const Dune::Pymor::Parameter', 'mu_product')],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
         Example.add_method('available_estimators',
                            retval('std::vector< std::string >'),
                            [],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
         Example.add_method('estimate',
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'vector'),
@@ -154,12 +154,12 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             param('const Dune::Pymor::Parameter', 'mu_hat'),
                             param('const Dune::Pymor::Parameter', 'mu_bar'),
                             param('const Dune::Pymor::Parameter', 'mu')],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
         Example.add_method('estimate',
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'vector'),
                             param('const std::string', 'type')],
-                           is_const=True, throw=[exceptions['Exception']])
+                           is_const=True, throw=exceptions)
     add_example('OS2014Example')
 
 
