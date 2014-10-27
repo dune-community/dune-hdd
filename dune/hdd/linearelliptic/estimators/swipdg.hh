@@ -54,7 +54,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class LocalNonconformityESV2007
   : public LocalNonconformityESV2007Base
 {
@@ -67,12 +67,12 @@ public:
 /**
  *  \brief computes the local nonconformity estimator as defined in ESV2007
  */
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalNonconformityESV2007Base
   , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
-  typedef LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+  typedef LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
     ThisType;
   typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
@@ -195,7 +195,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class LocalResidualESV2007
   : public LocalResidualESV2007Base
 {
@@ -208,12 +208,12 @@ public:
 /**
  *  \brief computes the local residual estimator as defined in ESV2007
  */
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalResidualESV2007Base
   , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
-  typedef LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+  typedef LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
       ThisType;
   typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
@@ -478,7 +478,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class LocalDiffusiveFluxESV2007
   : public LocalDiffusiveFluxESV2007Base
 {
@@ -491,12 +491,12 @@ public:
 /**
  *  \brief computes the local diffusive flux estimator as defined in ESV2007
  */
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalDiffusiveFluxESV2007Base
   , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
-  typedef LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+  typedef LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
       ThisType;
   typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
@@ -642,7 +642,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class ESV2007
   : public ESV2007Base
 {
@@ -653,8 +653,8 @@ public:
 
 #if HAVE_ALUGRID
 
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class ESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class ESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public ESV2007Base
 {
   typedef ALUGrid< 2, 2, simplex, conforming > GridType;
@@ -729,7 +729,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class ESV2007AlternativeSummation
   : public ESV2007AlternativeSummationBase
 {
@@ -740,8 +740,8 @@ public:
 
 #if HAVE_ALUGRID
 
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class ESV2007AlternativeSummation< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class ESV2007AlternativeSummation< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public ESV2007AlternativeSummationBase
 {
   typedef ALUGrid< 2, 2, simplex, conforming > GridType;
