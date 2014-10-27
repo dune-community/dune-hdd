@@ -41,7 +41,7 @@ public:
         return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
       else if (type == "eta_NC_OS2014")
         return {1.66e-01, 7.89e-02, 3.91e-02, 1.95e-02};
-      else if (type == "eta_R_OS2014")
+      else if (type.substr(0, 12) == "eta_R_OS2014")
         return {5.79e-01, 2.90e-01, 1.45e-01, 7.27e-02};
       else if (type == "eta_DF_OS2014_*")
         return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
@@ -66,7 +66,7 @@ public:
         return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
       else if (type == "eta_NC_OS2014")
         return {1.66e-01, 7.89e-02, 3.91e-02, 1.95e-02};
-      else if (type == "eta_R_OS2014")
+      else if (type.substr(0, 12) == "eta_R_OS2014")
         return {2.89e-01, 1.45e-01, 7.27e-02, 3.63e-02};
       else if (type == "eta_DF_OS2014")
         return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
@@ -91,7 +91,7 @@ public:
         return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
       else if (type == "eta_NC_OS2014")
         return {1.66e-01, 7.89e-02, 3.91e-02, 1.95e-02};
-      else if (type == "eta_R_OS2014")
+      else if (type.substr(0, 12) == "eta_R_OS2014")
         return {1.45e-01, 7.26e-02, 3.63e-02, 1.82e-02};
       else if (type == "eta_DF_OS2014")
         return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
@@ -116,7 +116,7 @@ public:
         return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
       else if (type == "eta_NC_OS2014")
         return {1.66e-01, 7.89e-02, 3.91e-02, 1.95e-02};
-      else if (type == "eta_R_OS2014")
+      else if (type.substr(0, 12) == "eta_R_OS2014")
         return {7.23e-02, 3.63e-02, 1.82e-02, 9.09e-03};
       else if (type == "eta_DF_OS2014")
         return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};

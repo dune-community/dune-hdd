@@ -76,7 +76,7 @@ public:
       return polOrder;
     else if (type == "eta_NC_OS2014")
       return polOrder;
-    else if (type == "eta_R_OS2014")
+    else if (type.substr(0, 12) == "eta_R_OS2014")
       return polOrder + 1;
     else if (type.substr(0, 13) == "eta_DF_OS2014")
       return polOrder;
