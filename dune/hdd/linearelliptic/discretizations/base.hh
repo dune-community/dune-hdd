@@ -210,10 +210,12 @@ public:
   using typename BaseType::TestSpaceType;
   using typename BaseType::AnsatzSpaceType;
   using typename BaseType::VectorType;
+  typedef typename VectorType::ScalarType RangeFieldType;
 
 protected:
   typedef Pymor::LA::AffinelyDecomposedContainer< MatrixType > AffinelyDecomposedMatrixType;
   typedef Pymor::LA::AffinelyDecomposedContainer< VectorType > AffinelyDecomposedVectorType;
+  typedef Stuff::LA::Solver< MatrixType > SolverType;
 
 public:
   static std::string static_id() { return "hdd.linearelliptic.discretizations.containerbased"; }
@@ -307,10 +309,22 @@ public:
     return *(result->second);
   } // ... get_vector(...)
 
+  std::vector< std::string > solver_types() const
+  {
+    return SolverType::types();
+  }
+
+  DSC::Configuration solver_options(const std::string type = "") const
+  {
+    return SolverType::options(type);
+  }
+
   /**
    * \brief solves for u_0
    */
-  void uncached_solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
+  void uncached_solve(const DSC::Configuration options,
+                      VectorType& vector,
+                      const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get(static_id());
     assert_everything_is_ready();
@@ -325,7 +339,7 @@ public:
                                                          : *(matrix.affine_part());
       tmp_system_matrix.unit_row(0);
       tmp_rhs.set_entry(0, 0.0);
-      Stuff::LA::Solver< MatrixType >(tmp_system_matrix).apply(tmp_rhs, vector);
+      SolverType(tmp_system_matrix).apply(tmp_rhs, vector, options);
       vector -= vector.mean();
     } else {
       // compute right hand side vector
@@ -342,10 +356,10 @@ public:
       if (lhsOperator.parametric()) {
         const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
         const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);
-        frozenOperator.apply_inverse(*rhs_vector, vector);
+        frozenOperator.apply_inverse(*rhs_vector, vector, options);
       } else {
         const auto nonparametricOperator = lhsOperator.affine_part();
-        nonparametricOperator.apply_inverse(*rhs_vector, vector);
+        nonparametricOperator.apply_inverse(*rhs_vector, vector, options);
       }
     }
   } // ... uncached_solve(...)
