@@ -146,30 +146,38 @@ public:
     function.visualize(filename);
   } // ... visualize(...)
 
-  void solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
+  using BaseType::solve;
+
+  void solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get(static_id());
-    const auto search_result = cache_.find(mu);
-    if (search_result == cache_.end()) {
+    const auto options_in_cache = cache_.find(options);
+    bool exists = (options_in_cache != cache_.end());
+    typename std::map< Pymor::Parameter, std::shared_ptr< VectorType > >::const_iterator options_and_mu_in_cache;
+    if (exists) {
+      options_and_mu_in_cache = options_in_cache->second.find(mu);
+      exists = (options_and_mu_in_cache != options_in_cache->second.end());
+    }
+    if (!exists) {
       logger.info() << "solving";
       if (!mu.empty())
         logger.info() << " for mu = " << mu;
       logger.info() << "... " << std::endl;
-      uncached_solve(vector, mu);
-      cache_.insert(std::make_pair(mu, Stuff::Common::make_unique< VectorType >(vector.copy())));
+      uncached_solve(options, vector, mu);
+      cache_[options][mu] = Stuff::Common::make_unique< VectorType >(vector.copy());
     } else {
       logger.info() << "retrieving solution ";
       if (!mu.empty())
         logger.info() << "for mu = " << mu << " ";
       logger.info() << "from cache... " << std::endl;
-      const auto& result = *(search_result->second);
+      const auto& result = *(options_and_mu_in_cache->second);
       vector = result;
     }
   } // ... solve(...)
 
-  void uncached_solve(VectorType& vector, const Pymor::Parameter mu) const
+  void uncached_solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu) const
   {
-    CHECK_AND_CALL_CRTP(this->as_imp().uncached_solve(vector, mu));
+    CHECK_AND_CALL_CRTP(this->as_imp().uncached_solve(options, vector, mu));
   }
 
 protected:
@@ -179,7 +187,7 @@ protected:
   const std::shared_ptr< const BoundaryInfoType > boundary_info_;
   const ProblemType& problem_;
 
-  mutable std::map< Pymor::Parameter, std::shared_ptr< VectorType > > cache_;
+  mutable std::map< DSC::Configuration, std::map< Pymor::Parameter, std::shared_ptr< VectorType > > > cache_;
 }; // class CachedDefault
 
 
