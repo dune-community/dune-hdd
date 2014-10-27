@@ -1136,6 +1136,8 @@ private:
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalNonconformityOS2014Type;
   typedef internal::BlockSWIPDG::LocalResidualOS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalResidualOS2014Type;
+  typedef internal::BlockSWIPDG::LocalResidualOS2014Star
+      < BlockSpaceType, VectorType, ProblemType, GridType >         LocalResidualOS2014StarType;
   typedef internal::BlockSWIPDG::LocalDiffusiveFluxOS2014
       < BlockSpaceType, VectorType, ProblemType, GridType >         LocalDiffusiveFluxOS2014Type;
   typedef internal::BlockSWIPDG::LocalDiffusiveFluxOS2014Star
@@ -1151,6 +1153,7 @@ public:
     std::vector< std::string > tmp;
     tmp = call_append< LocalNonconformityOS2014Type >(tmp);
     tmp = call_append< LocalResidualOS2014Type >(tmp);
+    tmp = call_append< LocalResidualOS2014StarType >(tmp);
     tmp = call_append< LocalDiffusiveFluxOS2014Type >(tmp);
     tmp = call_append< LocalDiffusiveFluxOS2014StarType >(tmp);
     tmp = call_append< OS2014Type >(tmp);
@@ -1182,6 +1185,8 @@ public:
       return call_estimate< LocalNonconformityOS2014Type >(space, vector, problem, parameters);
     else if (call_equals< LocalResidualOS2014Type >(type))
       return call_estimate< LocalResidualOS2014Type >(space, vector, problem, parameters);
+    else if (call_equals< LocalResidualOS2014StarType >(type))
+      return call_estimate< LocalResidualOS2014StarType >(space, vector, problem, parameters);
     else if (call_equals< LocalDiffusiveFluxOS2014Type >(type))
       return call_estimate< LocalDiffusiveFluxOS2014Type >(space, vector, problem, parameters);
     else if (call_equals< LocalDiffusiveFluxOS2014StarType >(type))
