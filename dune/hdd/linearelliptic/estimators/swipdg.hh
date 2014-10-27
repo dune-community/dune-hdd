@@ -915,6 +915,8 @@ private:
       < SpaceType, VectorType, ProblemType, GridType >              LocalNonconformityESV2007Type;
   typedef internal::SWIPDG::LocalResidualESV2007
       < SpaceType, VectorType, ProblemType, GridType >              LocalResidualESV2007Type;
+  typedef internal::SWIPDG::LocalResidualESV2007Star
+      < SpaceType, VectorType, ProblemType, GridType >              LocalResidualESV2007StarType;
   typedef internal::SWIPDG::LocalDiffusiveFluxESV2007
       < SpaceType, VectorType, ProblemType, GridType >              LocalDiffusiveFluxESV2007Type;
   typedef internal::SWIPDG::ESV2007
@@ -928,6 +930,7 @@ public:
     std::vector< std::string > tmp;
     tmp = call_append< LocalNonconformityESV2007Type >(tmp);
     tmp = call_append< LocalResidualESV2007Type >(tmp);
+    tmp = call_append< LocalResidualESV2007StarType >(tmp);
     tmp = call_append< LocalDiffusiveFluxESV2007Type >(tmp);
     tmp = call_append< ESV2007Type >(tmp);
     tmp = call_append< ESV2007AlternativeSummationType >(tmp);
@@ -951,6 +954,8 @@ public:
       return call_estimate< LocalNonconformityESV2007Type >(space, vector, problem);
     else if (call_equals< LocalResidualESV2007Type >(type))
       return call_estimate< LocalResidualESV2007Type >(space, vector, problem);
+    else if (call_equals< LocalResidualESV2007StarType >(type))
+      return call_estimate< LocalResidualESV2007StarType >(space, vector, problem);
     else if (call_equals< LocalDiffusiveFluxESV2007Type >(type))
       return call_estimate< LocalDiffusiveFluxESV2007Type >(space, vector, problem);
     else if (call_equals< ESV2007Type >(type))
