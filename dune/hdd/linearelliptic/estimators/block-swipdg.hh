@@ -880,6 +880,8 @@ class OS2014Star< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simple
 public:
   static const bool available = true;
 
+  static const unsigned int dimDomain = 2;
+
   typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
 
   typedef typename ProblemType::RangeFieldType RangeFieldType;
@@ -916,12 +918,13 @@ public:
     assert(gamma_mu_mu_bar > 0.0);
     // compute estimator components
     typedef LocalNonconformityOS2014
-        < BlockSpaceType, VectorType, ProblemType, GridType >                          LocalNonconformityOS2014Type;
-    typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType >   LocalResidualOS2014Type;
+        < BlockSpaceType, VectorType, ProblemType, GridType > LocalNonconformityOS2014Type;
+    typedef LocalResidualOS2014Star
+        < BlockSpaceType, VectorType, ProblemType, GridType > LocalResidualOS2014Type;
     typedef LocalDiffusiveFluxOS2014Star
-        < BlockSpaceType, VectorType, ProblemType, GridType >                          LocalDiffusiveFluxOS2014StarType;
-    const RangeFieldType eta_nc = LocalNonconformityOS2014Type::estimate(space, vector, problem, parameters);
-    const RangeFieldType eta_r = LocalResidualOS2014Type::estimate(space, vector, problem, parameters);
+        < BlockSpaceType, VectorType, ProblemType, GridType > LocalDiffusiveFluxOS2014StarType;
+    const RangeFieldType eta_nc      = LocalNonconformityOS2014Type::estimate(space, vector, problem, parameters);
+    const RangeFieldType eta_r       = LocalResidualOS2014Type::estimate(space, vector, problem, parameters);
     const RangeFieldType eta_df_star = LocalDiffusiveFluxOS2014StarType::estimate(space, vector, problem, parameters);
     // compute estimator
     return
@@ -964,12 +967,30 @@ public:
     assert(alpha_mu_mu_bar > 0.0);
     assert(alpha_mu_mu_hat > 0.0);
     assert(gamma_mu_mu_bar > 0.0);
+    // compute the diffusive flux reconstruction
+    typedef GDT::ConstDiscreteFunction< BlockSpaceType, VectorType > ConstDiscreteFunctionType;
+    typedef typename BlockSpaceType::GridViewType                    GlobalGridViewType;
+    typedef GDT::Spaces::RaviartThomas::PdelabBased
+        < GlobalGridViewType, 0, RangeFieldType, dimDomain >         RTN0SpaceType;
+    typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType >       RTN0DiscreteFunctionType;
+    const ConstDiscreteFunctionType discrete_solution(space, vector);
+    const RTN0SpaceType rtn0_space(space.grid_view());
+    RTN0DiscreteFunctionType diffusive_flux(rtn0_space);
+    const auto problem_mu = problem.with_mu(mu);
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const GDT::Operators::DiffusiveFluxReconstruction< GlobalGridViewType, DiffusionFactorType, DiffusionTensorType >
+      diffusive_flux_reconstruction(space.grid_view(),
+                                    *problem_mu->diffusion_factor()->affine_part(),
+                                    *problem.diffusion_tensor()->affine_part());
+    diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
 
     typedef LocalNonconformityOS2014
-        < BlockSpaceType, VectorType, ProblemType, GridType >                        LocalNonconformityOS2014Type;
-    typedef LocalResidualOS2014< BlockSpaceType, VectorType, ProblemType, GridType > LocalResidualOS2014Type;
+        < BlockSpaceType, VectorType, ProblemType, GridType > LocalNonconformityOS2014Type;
+    typedef LocalResidualOS2014Star
+        < BlockSpaceType, VectorType, ProblemType, GridType > LocalResidualOS2014Type;
     typedef LocalDiffusiveFluxOS2014Star
-        < BlockSpaceType, VectorType, ProblemType, GridType >                        LocalDiffusiveFluxOS2014StarType;
+        < BlockSpaceType, VectorType, ProblemType, GridType > LocalDiffusiveFluxOS2014StarType;
 
     // prepare
     LocalNonconformityOS2014Type eta_nc(space, vector, problem, mu_bar);
@@ -984,7 +1005,7 @@ public:
     // walk the subdomains
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
-      LocalResidualOS2014Type eta_r_T(*local_space, problem, mu_minimizing);
+      LocalResidualOS2014Type eta_r_T(*local_space, diffusive_flux, problem, mu_minimizing);
       eta_r_T.prepare();
       eta_nc.result_ = 0.0;
       eta_df.result_ = 0.0;
