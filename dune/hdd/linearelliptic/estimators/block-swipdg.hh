@@ -315,6 +315,204 @@ public:
 #endif // HAVE_ALUGRID
 
 
+class LocalResidualOS2014StarBase
+{
+public:
+  static std::string id() { return "eta_R_OS2014_*"; }
+};
+
+
+template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
+class LocalResidualOS2014Star
+  : public LocalResidualOS2014StarBase
+{
+public:
+  static const bool available = false;
+};
+
+#if HAVE_ALUGRID
+
+template< class BlockSpaceType, class VectorType, class ProblemType >
+class LocalResidualOS2014Star< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+  : public LocalResidualOS2014StarBase
+  , public Stuff::Grid::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType >
+{
+  typedef LocalResidualOS2014Star< BlockSpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+                                                                                        ThisType;
+  typedef Stuff::Grid::Functor::Codim0< typename BlockSpaceType::LocalSpaceType::GridViewType > FunctorBaseType;
+public:
+  static const bool available = true;
+
+  typedef typename FunctorBaseType::GridViewType GridViewType;
+  typedef typename FunctorBaseType::EntityType   EntityType;
+
+  typedef typename ProblemType::RangeFieldType RangeFieldType;
+
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
+private:
+  static const unsigned int dimDomain = GridViewType::dimension;
+
+  typedef typename BlockSpaceType::LocalSpaceType LocalSpaceType;
+
+  typedef GDT::ConstDiscreteFunction< BlockSpaceType, VectorType > ConstDiscreteFunctionType;
+  typedef typename BlockSpaceType::GridViewType GlobalGridViewType;
+  typedef GDT::Spaces::RaviartThomas::PdelabBased< GlobalGridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+  typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
+  typedef typename RTN0DiscreteFunctionType::DivergenceType DivergenceType;
+  typedef typename DivergenceType::DifferenceType DifferenceType;
+
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+
+  typedef typename ProblemType::DomainFieldType DomainFieldType;
+  typedef Stuff::Functions::Constant< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
+      ConstantFunctionType;
+  typedef typename ConstantFunctionType::DomainType DomainType;
+  typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< ConstantFunctionType > > LocalOperatorType;
+  typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
+
+  static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_minimizing)
+  {
+    if (mu_minimizing.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu_minimizing is of type " << mu_minimizing.type() << " and should be of type "
+                 << problem.parameter_type() << "!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
+    if (problem.force()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric force!");
+    return problem;
+  } // ... assert_problem(...)
+
+public:
+  static RangeFieldType estimate(const BlockSpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
+  {
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    const Pymor::Parameter mu            = problem.parametric() ? parameters.at("mu")            : Pymor::Parameter();
+    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
+    // compute the diffusive flux reconstruction
+    const ConstDiscreteFunctionType discrete_solution(space, vector);
+    const RTN0SpaceType rtn0_space(space.grid_view());
+    RTN0DiscreteFunctionType diffusive_flux(rtn0_space);
+    const auto problem_mu = problem.with_mu(mu);
+    const GDT::Operators::DiffusiveFluxReconstruction< GlobalGridViewType, DiffusionFactorType, DiffusionTensorType >
+      diffusive_flux_reconstruction(space.grid_view(),
+                                    *problem_mu->diffusion_factor()->affine_part(),
+                                    *problem.diffusion_tensor()->affine_part());
+    diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
+    // walk the subdomains
+    double eta_r_squared = 0.0;
+    for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
+      const auto local_space = space.local_spaces()[subdomain];
+      ThisType eta_r_T(*local_space, diffusive_flux, problem, mu_minimizing);
+      Stuff::Grid::Walker< GridViewType > grid_walker(local_space->grid_view());
+      grid_walker.add(eta_r_T);
+      grid_walker.walk();
+      eta_r_squared += eta_r_T.result_;
+    } // walk the subdomains
+    return std::sqrt(eta_r_squared);
+  } // ... estimate(...)
+
+  LocalResidualOS2014Star(const LocalSpaceType& local_space,
+                          const RTN0DiscreteFunctionType& diffusive_flux,
+                          const ProblemType& problem,
+                          const Pymor::Parameter mu_minimizing = Pymor::Parameter())
+    : local_space_(local_space)
+    , diffusive_flux_(diffusive_flux)
+    , problem_(assert_problem(problem, mu_minimizing))
+    , problem_mu_minimizing_(problem_.with_mu(mu_minimizing))
+    , divergence_(diffusive_flux_.divergence())
+    , difference_(*problem_.force()->affine_part() - divergence_)
+    , constant_one_(1)
+    , local_operator_(SWIPDG::over_integrate, constant_one_)
+    , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , vertices_()
+    , min_diffusion_value_(std::numeric_limits< RangeFieldType >::max())
+    , prepared_(false)
+    , finalized_(false)
+    , result_(0.0)
+  {}
+
+  virtual void prepare()
+  {
+    if (!prepared_) {
+      result_ = 0.0;
+      prepared_ = true;
+    }
+  } // ... prepare(...)
+
+  virtual void apply_local(const EntityType &entity)
+  {
+    // collect all vertices
+    for (int cc = 0; cc < entity.template count< dimDomain >(); ++cc)
+      vertices_.push_back(entity.template subEntity< dimDomain >(cc)->geometry().center());
+    // compute minimum diffusion
+    const RangeFieldType min_diffusion_value_entity
+        =   internal::compute_minimum(*problem_mu_minimizing_->diffusion_factor()->affine_part(), entity)
+          * internal::compute_minimum(*problem_.diffusion_tensor()->affine_part(), entity);
+    min_diffusion_value_ = std::min(min_diffusion_value_, min_diffusion_value_entity);
+    // compute the local product
+    const auto local_difference = difference_.local_function(entity);
+    local_operator_.apply(*local_difference,
+                          *local_difference,
+                          tmp_local_matrices_.matrices()[0][0],
+                          tmp_local_matrices_.matrices()[1]);
+    assert(tmp_local_matrices_.matrices()[0][0].rows() >= 1);
+    assert(tmp_local_matrices_.matrices()[0][0].cols() >= 1);
+    result_ += tmp_local_matrices_.matrices()[0][0][0][0];
+  } // ... apply_local(...)
+
+  virtual void finalize()
+  {
+    if (!prepared_)
+      DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong, "Do not call finalize() before calling prepare()!");
+    if (!finalized_) {
+      // compute diameter
+      DomainFieldType diameter(0);
+      DomainType tmp_diff;
+      for (size_t cc = 0; cc < vertices_.size(); ++cc) {
+        const auto& vertex = vertices_[cc];
+        for (size_t dd = cc + 1; dd < vertices_.size(); ++dd) {
+          const auto& other_vertex = vertices_[dd];
+          tmp_diff = vertex - other_vertex;
+          diameter = std::max(diameter, tmp_diff.two_norm());
+        }
+      }
+      // compute local estimator
+      const RangeFieldType poincare_constant = 1.0 / (M_PIl * M_PIl);
+      assert(min_diffusion_value_ > 0.0);
+      result_ *= ((poincare_constant * diameter * diameter) / min_diffusion_value_);
+    }
+  } // ... finalize(...)
+
+private:
+  const LocalSpaceType& local_space_;
+  const RTN0DiscreteFunctionType& diffusive_flux_;
+  const ProblemType& problem_;
+  const std::shared_ptr< typename ProblemType::NonparametricType > problem_mu_minimizing_;
+  const DivergenceType divergence_;
+  const DifferenceType difference_;
+  const ConstantFunctionType constant_one_;
+  const LocalOperatorType local_operator_;
+  TmpStorageProviderType tmp_local_matrices_;
+  std::vector< DomainType > vertices_;
+  RangeFieldType min_diffusion_value_;
+  bool prepared_;
+  bool finalized_;
+public:
+  RangeFieldType result_;
+}; // class LocalResidualOS2014Star< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
+
+#endif // HAVE_ALUGRID
+
+
 template< class BlockSpaceType, class VectorType, class ProblemType, class GridType >
 class LocalDiffusiveFluxOS2014
   : public SWIPDG::LocalDiffusiveFluxESV2007< BlockSpaceType, VectorType, ProblemType, GridType >
