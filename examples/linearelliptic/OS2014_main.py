@@ -33,6 +33,7 @@ dune_config = {'dune_partitioning': '[1 1 1]',
                'dune_log_debug_level': -1,
                'dune_log_enable_warnings': True}
 config = {'num_training_samples': 100,
+          'mu_hat_value': 1.0,
           'mu_bar_value': 1.0,
           'greedy_use_estimator': False,
           'greedy_target_error': 1e-12,
@@ -43,6 +44,82 @@ pymor.core.logger.MAX_HIERACHY_LEVEL = 2
 getLogger('pymor.WrappedDiscretization').setLevel('WARN')
 getLogger('pymor.algorithms').setLevel('INFO')
 getLogger('dune.pymor.discretizations').setLevel('WARN')
+
+
+class DetailedEstimator(ImmutableInterface):
+
+
+    def __init__(self, example, wrapper, mu_hat, mu_bar):
+        self._example = example
+        self._wrapper = wrapper
+        self._mu_hat = mu_hat
+        self._mu_bar = mu_bar
+
+    def estimate(self, U_h, mu):
+        return self._example.estimate(U_h, 'eta_OS2014_*', self._mu_hat, self._mu_bar, mu)
+
+
+class ReducedEstimator(ImmutableInterface):
+
+    def __init__(self, discretization, example, wrapper, mu_hat, mu_bar, norm, rc):
+        self._discretization = discretization
+        self._wrapper = wrapper
+        self._estimator = DetailedEstimator(example, wrapper, mu_hat, mu_bar)
+        self._norm = norm
+        self._rc = rc
+
+    def estimate(self, U, mu, discretization):
+        mu_dune = self._wrapper.dune_parameter(mu)
+        # mu_bar_dune = self._estimator._mu_bar
+        # mu_hat_dune = self._estimator._mu_hat
+        # example = self._estimator._example
+        # print('mu     = {}'.format(mu_dune.report()))
+        # print('mu_bar = {}'.format(mu_bar_dune.report()))
+        # print('mu_hat = {}'.format(mu_hat_dune.report()))
+        U_red = self._rc.reconstruct(U)
+        assert len(U_red) == 1
+        U_red_dune = U_red._list[0]._impl
+        # U_h = self._discretization.solve(mu)
+        # assert len(U_h) == 1
+        # U_h_dune = U_h._list[0]._impl
+        # print('    || U(mu) - U_red(mu) ||_mu_bar = {}'.format(example.compute_error(U_red_dune,
+        #                                                                              'elliptic',
+        #                                                                              mu_dune,
+        #                                                                              mu_bar_dune)))
+        # print('    || U(mu) - U_h(mu)   ||_mu_bar = {}'.format(example.compute_error(U_h_dune,
+        #                                                                              'elliptic',
+        #                                                                              mu_dune,
+        #                                                                              mu_bar_dune)))
+        return self._estimator.estimate(U_red_dune, mu_dune)
+        # print('         eta[mu_bar,mu_hat](U_red) = {}'.format(eta))
+        # if self._norm is not None:
+        #     err = self._norm(U_red - U_h)[0]
+        #     print('  || U_h(mu) - U_red(mu) ||_mu_bar = {}'.format(err))
+        #     return err
+        # else:
+        #     return eta
+
+
+def reduce_with_estimator(discretization,
+                          RB,
+                          operator_product=None,
+                          vector_product=None,
+                          disable_caching=True,
+                          extends=None,
+                          detailed_discretization=None,
+                          example=None,
+                          wrapper=None,
+                          mu_hat=None,
+                          mu_bar=None,
+                          norm=None):
+    rd, rc, reduction_data = reduce_generic_rb(discretization,
+                                               RB,
+                                               operator_product,
+                                               vector_product,
+                                               disable_caching,
+                                               extends)
+    rd = rd.with_(estimator=ReducedEstimator(detailed_discretization, example, wrapper, mu_hat, mu_bar, norm, rc))
+    return rd, rc, reduction_data
 
 
 def get_logger():
@@ -96,6 +173,7 @@ def run_experiment(example, wrapper, cfg, product, norm):
     logger.info('')
 
     logger.info('computing solution norms:')
+    mu_hat_dune = wrapper.DuneParameter('mu', cfg['mu_hat_value'])
     mu_bar_dune = wrapper.DuneParameter('mu', cfg['mu_bar_value'])
     products = {}
     for nm, pr in discretization.products.items():
@@ -129,7 +207,13 @@ def run_experiment(example, wrapper, cfg, product, norm):
         initial_basis = extension_algorithm(initial_basis, one)[0]
 
     greedy_data = greedy(discretization,
-                         reduce_generic_rb,
+                         partial(reduce_with_estimator,
+                                 detailed_discretization=discretization,
+                                 example=example,
+                                 wrapper=wrapper,
+                                 mu_hat=mu_hat_dune,
+                                 mu_bar=mu_bar_dune,
+                                 norm=norm),
                          training_samples,
                          initial_basis=initial_basis,
                          use_estimator=cfg['greedy_use_estimator'],
