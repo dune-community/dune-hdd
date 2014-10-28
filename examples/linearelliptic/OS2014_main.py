@@ -31,7 +31,8 @@ dune_config = {'dune_partitioning': '[1 1 1]',
                'dune_products': ['l2', 'h1_semi', 'elliptic', 'energy'],
                'dune_log_info_level': -1,
                'dune_log_debug_level': -1,
-               'dune_log_enable_warnings': True}
+               'dune_log_enable_warnings': True,
+               'dune_linear_solver_options': {'type': 'bicgstab.ilut', 'precision': '1e-4'}}
 config = {'num_training_samples': 100,
           'mu_hat_value': 1.0,
           'mu_bar_value': 1.0,
@@ -158,14 +159,21 @@ def create_product(products, product_type):
         return LincombOperator(operators=prods, coefficients=[1 for pp in prods]), product_name
 
 
+def create_discretization(example, wrapper, cfg):
+
+    discretization = example.discretization()
+    linear_solver_options = cfg['dune_linear_solver_options']
+    dune_linear_solver_options = discretization.solver_options(linear_solver_options['type'])
+    for kk, vv in linear_solver_options.items():
+        dune_linear_solver_options.set(kk, vv, True)
+    return wrapper[discretization].with_(solver_options=dune_linear_solver_options)
 
 
 def run_experiment(example, wrapper, cfg, product, norm):
 
     logger, logfile = get_logger()
 
-
-    discretization = wrapper[example.discretization()]
+    discretization = create_discretization(example, wrapper, cfg)
     discretization = discretization.with_(
                     parameter_space=CubicParameterSpace(discretization.parameter_type, 0.1, 1.0))
     logger.info('the discretization has {} DoFs.'.format(discretization.solution_space.dim))
