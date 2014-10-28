@@ -16,6 +16,7 @@ import pymor.core
 from pymor.core import getLogger, ImmutableInterface
 from pymor.la import induced_norm
 from pymor.parameters import CubicParameterSpace, Parametric
+from pymor.operators import LincombOperator
 from pymor.reductors import reduce_generic_rb
 
 from dune.pymor.core import wrap_module
@@ -65,26 +66,19 @@ def init_dune(cfg):
 
 def create_product(products, product_type):
 
-    tt = product_type if isinstance(product_type, tuple) else (product_type,)
-    prods = [products[t] for t in tt]
+    if product_type is None:
+        return None, 'None'
 
-    product_name = tt[0]
-    for ii in np.arange(1, len(tt)):
-        product_name += '_plus_' + tt[ii]
+    if not isinstance(product_type, tuple):
+        return products[product_type], product_type
+    else:
+        prods = [products[tt] for tt in product_type]
+        product_name = product_type[0]
+        for ii in np.arange(1, len(product_type)):
+            product_name += '_plus_' + product_type[ii]
+        return LincombOperator(operators=prods, coefficients=[1 for pp in prods]), product_name
 
-    class Product(ImmutableInterface, Parametric):
 
-        def __init__(self):
-            self.build_parameter_type(inherits=prods)
-            assert len(prods) > 0
-
-        def apply2(self, V, U, pairwise, U_ind=None, V_ind=None, mu=None, product=None):
-            result = prods[0].apply2(V, U, pairwise, U_ind, V_ind, mu, product)
-            for ii in np.arange(1, len(prods)):
-                result += prods[ii].apply2(V, U, pairwise, U_ind, V_ind, mu, product)
-            return result
-
-    return Product(), product_name
 
 
 def run_experiment(example, wrapper, cfg, product, norm):
