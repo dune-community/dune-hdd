@@ -59,7 +59,9 @@ def init_dune(cfg):
                                         products=cfg['dune_products'],
                                         info_log_levels=cfg['dune_log_info_level'],
                                         debug_log_levels=cfg['dune_log_debug_level'],
-                                        enable_warnings=cfg['dune_log_enable_warnings'])
+                                        enable_warnings=cfg['dune_log_enable_warnings'],
+                                        enable_colors=True,
+                                        info_color='blue')
     _, wrapper = wrap_module(dune_module)
     return example, wrapper
 
