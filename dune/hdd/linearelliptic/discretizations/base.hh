@@ -146,30 +146,38 @@ public:
     function.visualize(filename);
   } // ... visualize(...)
 
-  void solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
+  using BaseType::solve;
+
+  void solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get(static_id());
-    const auto search_result = cache_.find(mu);
-    if (search_result == cache_.end()) {
+    const auto options_in_cache = cache_.find(options);
+    bool exists = (options_in_cache != cache_.end());
+    typename std::map< Pymor::Parameter, std::shared_ptr< VectorType > >::const_iterator options_and_mu_in_cache;
+    if (exists) {
+      options_and_mu_in_cache = options_in_cache->second.find(mu);
+      exists = (options_and_mu_in_cache != options_in_cache->second.end());
+    }
+    if (!exists) {
       logger.info() << "solving";
       if (!mu.empty())
         logger.info() << " for mu = " << mu;
       logger.info() << "... " << std::endl;
-      uncached_solve(vector, mu);
-      cache_.insert(std::make_pair(mu, Stuff::Common::make_unique< VectorType >(vector.copy())));
+      uncached_solve(options, vector, mu);
+      cache_[options][mu] = Stuff::Common::make_unique< VectorType >(vector.copy());
     } else {
       logger.info() << "retrieving solution ";
       if (!mu.empty())
         logger.info() << "for mu = " << mu << " ";
       logger.info() << "from cache... " << std::endl;
-      const auto& result = *(search_result->second);
+      const auto& result = *(options_and_mu_in_cache->second);
       vector = result;
     }
   } // ... solve(...)
 
-  void uncached_solve(VectorType& vector, const Pymor::Parameter mu) const
+  void uncached_solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu) const
   {
-    CHECK_AND_CALL_CRTP(this->as_imp().uncached_solve(vector, mu));
+    CHECK_AND_CALL_CRTP(this->as_imp().uncached_solve(options, vector, mu));
   }
 
 protected:
@@ -179,7 +187,7 @@ protected:
   const std::shared_ptr< const BoundaryInfoType > boundary_info_;
   const ProblemType& problem_;
 
-  mutable std::map< Pymor::Parameter, std::shared_ptr< VectorType > > cache_;
+  mutable std::map< DSC::Configuration, std::map< Pymor::Parameter, std::shared_ptr< VectorType > > > cache_;
 }; // class CachedDefault
 
 
@@ -202,10 +210,12 @@ public:
   using typename BaseType::TestSpaceType;
   using typename BaseType::AnsatzSpaceType;
   using typename BaseType::VectorType;
+  typedef typename VectorType::ScalarType RangeFieldType;
 
 protected:
   typedef Pymor::LA::AffinelyDecomposedContainer< MatrixType > AffinelyDecomposedMatrixType;
   typedef Pymor::LA::AffinelyDecomposedContainer< VectorType > AffinelyDecomposedVectorType;
+  typedef Stuff::LA::Solver< MatrixType > SolverType;
 
 public:
   static std::string static_id() { return "hdd.linearelliptic.discretizations.containerbased"; }
@@ -299,10 +309,22 @@ public:
     return *(result->second);
   } // ... get_vector(...)
 
+  std::vector< std::string > solver_types() const
+  {
+    return SolverType::types();
+  }
+
+  DSC::Configuration solver_options(const std::string type = "") const
+  {
+    return SolverType::options(type);
+  }
+
   /**
    * \brief solves for u_0
    */
-  void uncached_solve(VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
+  void uncached_solve(const DSC::Configuration options,
+                      VectorType& vector,
+                      const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get(static_id());
     assert_everything_is_ready();
@@ -317,7 +339,7 @@ public:
                                                          : *(matrix.affine_part());
       tmp_system_matrix.unit_row(0);
       tmp_rhs.set_entry(0, 0.0);
-      Stuff::LA::Solver< MatrixType >(tmp_system_matrix).apply(tmp_rhs, vector);
+      SolverType(tmp_system_matrix).apply(tmp_rhs, vector, options);
       vector -= vector.mean();
     } else {
       // compute right hand side vector
@@ -334,10 +356,10 @@ public:
       if (lhsOperator.parametric()) {
         const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
         const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);
-        frozenOperator.apply_inverse(*rhs_vector, vector);
+        frozenOperator.apply_inverse(*rhs_vector, vector, options);
       } else {
         const auto nonparametricOperator = lhsOperator.affine_part();
-        nonparametricOperator.apply_inverse(*rhs_vector, vector);
+        nonparametricOperator.apply_inverse(*rhs_vector, vector, options);
       }
     }
   } // ... uncached_solve(...)

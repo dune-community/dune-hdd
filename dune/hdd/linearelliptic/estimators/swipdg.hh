@@ -54,7 +54,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class LocalNonconformityESV2007
   : public LocalNonconformityESV2007Base
 {
@@ -67,12 +67,12 @@ public:
 /**
  *  \brief computes the local nonconformity estimator as defined in ESV2007
  */
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalNonconformityESV2007Base
   , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
-  typedef LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+  typedef LocalNonconformityESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
     ThisType;
   typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
@@ -195,7 +195,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class LocalResidualESV2007
   : public LocalResidualESV2007Base
 {
@@ -208,12 +208,12 @@ public:
 /**
  *  \brief computes the local residual estimator as defined in ESV2007
  */
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalResidualESV2007Base
   , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
-  typedef LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+  typedef LocalResidualESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
       ThisType;
   typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
@@ -314,6 +314,163 @@ public:
 #endif // HAVE_ALUGRID
 
 
+class LocalResidualESV2007StarBase
+{
+public:
+  static std::string id() { return "eta_R_ESV2007_*"; }
+};
+
+
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
+class LocalResidualESV2007Star
+  : public LocalResidualESV2007StarBase
+{
+public:
+  static const bool available = false;
+};
+
+#if HAVE_ALUGRID
+
+/**
+ *  \brief computes the local residual estimator as defined in ESV2007
+ */
+template< class SpaceType, class VectorType, class ProblemType >
+class LocalResidualESV2007Star< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+  : public LocalResidualESV2007StarBase
+  , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
+{
+  typedef LocalResidualESV2007Star< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
+      ThisType;
+  typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
+public:
+  static const bool available = true;
+
+  typedef std::map< std::string, Pymor::Parameter > ParametersMapType;
+
+  typedef typename FunctorBaseType::GridViewType GridViewType;
+  typedef typename FunctorBaseType::EntityType   EntityType;
+
+  typedef typename ProblemType::RangeFieldType RangeFieldType;
+
+  static const unsigned int dimDomain = SpaceType::dimDomain;
+
+private:
+  typedef GDT::ConstDiscreteFunction< SpaceType, VectorType > ConstDiscreteFunctionType;
+  typedef GDT::Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+  typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
+  typedef typename RTN0DiscreteFunctionType::DivergenceType DivergenceType;
+  typedef typename DivergenceType::DifferenceType DifferenceType;
+
+  typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+  typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+
+  typedef typename Stuff::Functions::ESV2007::Cutoff< DiffusionFactorType, DiffusionTensorType > CutoffFunctionType;
+  typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< CutoffFunctionType > > LocalOperatorType;
+  typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
+
+  static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu)
+  {
+    if (mu.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu is of type " << mu.type() << " and should be of type " << problem.parameter_type()
+                 << "!");
+    if (problem.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
+    if (problem.force()->parametric())
+      DUNE_THROW(NotImplemented, "Not implemented for parametric force!");
+    return problem;
+  } // ... assert_problem(...)
+
+public:
+  static RangeFieldType estimate(const SpaceType& space,
+                                 const VectorType& vector,
+                                 const ProblemType& problem,
+                                 const ParametersMapType parameters = ParametersMapType())
+  {
+    if (problem.diffusion_factor()->parametric() && parameters.find("mu") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
+    const Pymor::Parameter mu = problem.parametric() ? parameters.at("mu") : Pymor::Parameter();
+    ThisType estimator(space, vector, problem, mu);
+    Stuff::Grid::Walker< GridViewType > grid_walker(space.grid_view());
+    grid_walker.add(estimator);
+    grid_walker.walk();
+    return std::sqrt(estimator.result_);
+  } // ... estimate(...)
+
+  LocalResidualESV2007Star(const SpaceType& space,
+                           const VectorType& vector,
+                           const ProblemType& problem,
+                           const Pymor::Parameter mu = Pymor::Parameter())
+    : space_(space)
+    , vector_(vector)
+    , problem_(assert_problem(problem, mu))
+    , problem_mu_(problem_.with_mu(mu))
+    , discrete_solution_(space_, vector_)
+    , rtn0_space_(space_.grid_view())
+    , diffusive_flux_(rtn0_space_)
+    , divergence_(diffusive_flux_.divergence())
+    , difference_(*problem_.force()->affine_part() - divergence_)
+    , cutoff_function_(*problem_.diffusion_factor()->affine_part(),
+                       *problem_.diffusion_tensor()->affine_part())
+    , local_operator_(over_integrate, cutoff_function_)
+    , tmp_local_matrices_({1, local_operator_.numTmpObjectsRequired()}, 1, 1)
+    , prepared_(false)
+    , result_(0.0)
+  {}
+
+  virtual ~LocalResidualESV2007Star() = default;
+
+  virtual void prepare()
+  {
+    if (!prepared_) {
+      const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
+        diffusive_flux_reconstruction(space_.grid_view(),
+                                      *problem_mu_->diffusion_factor()->affine_part(),
+                                      *problem_.diffusion_tensor()->affine_part());
+      diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
+      result_ = 0.0;
+      prepared_ = true;
+    }
+  } // ... prepare(...)
+
+  RangeFieldType compute_locally(const EntityType& entity)
+  {
+    const auto local_difference = difference_.local_function(entity);
+    local_operator_.apply(*local_difference,
+                          *local_difference,
+                          tmp_local_matrices_.matrices()[0][0],
+                          tmp_local_matrices_.matrices()[1]);
+    assert(tmp_local_matrices_.matrices()[0][0].rows() >= 1);
+    assert(tmp_local_matrices_.matrices()[0][0].cols() >= 1);
+    return tmp_local_matrices_.matrices()[0][0][0][0];
+  } // ... compute_locally(...)
+
+  virtual void apply_local(const EntityType &entity)
+  {
+    result_ += compute_locally(entity);
+  }
+
+private:
+  const SpaceType& space_;
+  const VectorType& vector_;
+  const ProblemType& problem_;
+  const std::shared_ptr< typename ProblemType::NonparametricType > problem_mu_;
+  const ConstDiscreteFunctionType discrete_solution_;
+  const RTN0SpaceType rtn0_space_;
+  RTN0DiscreteFunctionType diffusive_flux_;
+  const DivergenceType divergence_;
+  const DifferenceType difference_;
+  const CutoffFunctionType cutoff_function_;
+  const LocalOperatorType local_operator_;
+  TmpStorageProviderType tmp_local_matrices_;
+  bool prepared_;
+public:
+  RangeFieldType result_;
+}; // class LocalResidualESV2007Star< ..., ALUGrid< 2, 2, simplex, conforming >, ... >
+
+#endif // HAVE_ALUGRID
+
+
 class LocalDiffusiveFluxESV2007Base
 {
 public:
@@ -321,7 +478,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class LocalDiffusiveFluxESV2007
   : public LocalDiffusiveFluxESV2007Base
 {
@@ -334,12 +491,12 @@ public:
 /**
  *  \brief computes the local diffusive flux estimator as defined in ESV2007
  */
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public LocalDiffusiveFluxESV2007Base
   , public Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType >
 {
-  typedef LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+  typedef LocalDiffusiveFluxESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
       ThisType;
   typedef Stuff::Grid::Functor::Codim0< typename SpaceType::GridViewType > FunctorBaseType;
 public:
@@ -485,7 +642,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class ESV2007
   : public ESV2007Base
 {
@@ -496,8 +653,8 @@ public:
 
 #if HAVE_ALUGRID
 
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class ESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class ESV2007< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public ESV2007Base
 {
   typedef ALUGrid< 2, 2, simplex, conforming > GridType;
@@ -572,7 +729,7 @@ public:
 };
 
 
-template< class SpaceType, class VectorType, class ProblemType, class GridType/*, class GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType, class GridType >
 class ESV2007AlternativeSummation
   : public ESV2007AlternativeSummationBase
 {
@@ -583,8 +740,8 @@ public:
 
 #if HAVE_ALUGRID
 
-template< class SpaceType, class VectorType, class ProblemType/*, class GridViewType*/ >
-class ESV2007AlternativeSummation< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming >/*, GridViewType*/ >
+template< class SpaceType, class VectorType, class ProblemType >
+class ESV2007AlternativeSummation< SpaceType, VectorType, ProblemType, ALUGrid< 2, 2, simplex, conforming > >
   : public ESV2007AlternativeSummationBase
 {
   typedef ALUGrid< 2, 2, simplex, conforming > GridType;
@@ -758,6 +915,8 @@ private:
       < SpaceType, VectorType, ProblemType, GridType >              LocalNonconformityESV2007Type;
   typedef internal::SWIPDG::LocalResidualESV2007
       < SpaceType, VectorType, ProblemType, GridType >              LocalResidualESV2007Type;
+  typedef internal::SWIPDG::LocalResidualESV2007Star
+      < SpaceType, VectorType, ProblemType, GridType >              LocalResidualESV2007StarType;
   typedef internal::SWIPDG::LocalDiffusiveFluxESV2007
       < SpaceType, VectorType, ProblemType, GridType >              LocalDiffusiveFluxESV2007Type;
   typedef internal::SWIPDG::ESV2007
@@ -771,6 +930,7 @@ public:
     std::vector< std::string > tmp;
     tmp = call_append< LocalNonconformityESV2007Type >(tmp);
     tmp = call_append< LocalResidualESV2007Type >(tmp);
+    tmp = call_append< LocalResidualESV2007StarType >(tmp);
     tmp = call_append< LocalDiffusiveFluxESV2007Type >(tmp);
     tmp = call_append< ESV2007Type >(tmp);
     tmp = call_append< ESV2007AlternativeSummationType >(tmp);
@@ -794,6 +954,8 @@ public:
       return call_estimate< LocalNonconformityESV2007Type >(space, vector, problem);
     else if (call_equals< LocalResidualESV2007Type >(type))
       return call_estimate< LocalResidualESV2007Type >(space, vector, problem);
+    else if (call_equals< LocalResidualESV2007StarType >(type))
+      return call_estimate< LocalResidualESV2007StarType >(space, vector, problem);
     else if (call_equals< LocalDiffusiveFluxESV2007Type >(type))
       return call_estimate< LocalDiffusiveFluxESV2007Type >(space, vector, problem);
     else if (call_equals< ESV2007Type >(type))

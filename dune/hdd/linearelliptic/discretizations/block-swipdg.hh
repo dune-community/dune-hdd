@@ -57,6 +57,7 @@
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 #include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
+#include <dune/gdt/playground/products/swipdgpenalty.hh>
 #include <dune/gdt/products/boundaryl2.hh>
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
@@ -496,6 +497,42 @@ public:
                                                                         over_integrate);
         system_assembler.add(*boundary_l2_product);
       }
+      // * penalty term
+      typedef GDT::Products::SwipdgPenaltyAssemblable
+          < MatrixType, DiffusionFactorType, DiffusionTensorType, TestSpaceType > PenaltyProductType;
+      std::vector< std::unique_ptr< PenaltyProductType > > penalty_products;
+      auto penalty_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end()) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
+          const auto id = penalty_product_matrix->register_component(diffusion_factor->coefficient(qq),
+                                                                     this->test_space()->mapper().size(),
+                                                                     this->ansatz_space()->mapper().size(),
+                                                                     PenaltyProductType::pattern(*this->test_space(),
+                                                                                                 *this->ansatz_space()));
+          penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
+                                                               *this->test_space(),
+                                                               global_grid_view,
+                                                               *this->ansatz_space(),
+                                                               *diffusion_factor->component(qq),
+                                                               *diffusion_tensor->affine_part(),
+                                                               over_integrate));
+        }
+        if (diffusion_factor->has_affine_part()) {
+          penalty_product_matrix->register_affine_part(this->test_space()->mapper().size(),
+                                                       this->ansatz_space()->mapper().size(),
+                                                       PenaltyProductType::pattern(*this->test_space(),
+                                                                                   *this->ansatz_space()));
+          penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
+                                                               *this->test_space(),
+                                                               global_grid_view,
+                                                               *this->ansatz_space(),
+                                                               *diffusion_factor->affine_part(),
+                                                               *diffusion_tensor->affine_part(),
+                                                               over_integrate));
+        }
+        for (auto& product : penalty_products)
+          system_assembler.add(*product);
+      }
 
       // do the actual work
       system_assembler.assemble();
@@ -511,6 +548,8 @@ public:
         this->products_.insert(std::make_pair("elliptic", elliptic_product_matrix));
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end())
         this->products_.insert(std::make_pair("boundary_l2", boundary_l2_product_matrix));
+      if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end())
+        this->products_.insert(std::make_pair("penalty", penalty_product_matrix));
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "energy") != only_these_products_.end())
         this->products_.insert(std::make_pair("energy",
                                               std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
@@ -1498,7 +1537,7 @@ private:
     const LocalAnsatzSpaceType& innerAnsatzSpace_;
     const LocalTestSpaceType& outerTestSpace_;
     const LocalAnsatzSpaceType& outerAnsatzSpace_;
-    const CouplingGridPartType& grid_part_;
+    const CouplingGridPartType grid_part_;
     std::vector< LocalCodim1MatrixAssemblerApplication* > localCodim1MatrixAssemblers_;
   }; // class CouplingAssembler
 
