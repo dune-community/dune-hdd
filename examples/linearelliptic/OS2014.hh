@@ -180,9 +180,9 @@ public:
     DiscreteFunctionType reference_solution(*reference_discretization_.ansatz_space());
     reference_discretization_.solve(reference_solution.vector(), mu);
     // compute error
-    const auto product = reference_discretization_.get_product(type).freeze_parameter(mu_product);
     const auto difference = reference_solution.vector() - fine_solution.vector();
-    return std::sqrt(product.apply2(difference, difference));
+    const auto product = reference_discretization_.get_product(type);
+    return std::sqrt(product.apply2(difference, difference, mu_product));
   } // ... compute_error(...)
 
   RangeFieldType compute_jump_norm(const VectorType& solution_vector,
