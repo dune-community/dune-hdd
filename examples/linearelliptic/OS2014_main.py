@@ -247,9 +247,11 @@ if __name__ == '__main__':
     print('initializing dune module... ')
     example, wrapper = init_dune(dune_config)
 
-    for product, norm in {'l2': 'l2',
-                          ('l2', 'h1_semi'): ('l2', 'h1_semi'),
-                          'energy': 'energy'}.items():
+    for product, norm in ((None, None),
+                          ('l2', 'l2'),
+                          (('l2', 'h1_semi'), ('l2', 'h1_semi')),
+                          ('energy', 'energy'),
+                          (('elliptic', 'penalty'), 'elliptic')):
         cfg = config.copy()
         for kk, vv in dune_config.items():
             assert not cfg.has_key(kk)
