@@ -32,13 +32,13 @@ dune_config = {'dune_partitioning': '[1 1 1]',
                'dune_log_info_level': -1,
                'dune_log_debug_level': -1,
                'dune_log_enable_warnings': True,
-               'dune_linear_solver_options': {'type': 'bicgstab.ilut', 'precision': '1e-4'}}
+               'dune_linear_solver_options': {'type': 'bicgstab.ilut', 'precision': '1e-14'}}
 config = {'num_training_samples': 100,
           'mu_hat_value': 1.0,
           'mu_bar_value': 1.0,
           'greedy_use_estimator': False,
-          'greedy_target_error': 1e-12,
-          'initialize_with_one': False}
+          'greedy_target_error': 1e-14,
+          'initialize_with_one': True}
 
 
 pymor.core.logger.MAX_HIERACHY_LEVEL = 2
