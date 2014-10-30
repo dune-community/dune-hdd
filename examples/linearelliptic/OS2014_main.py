@@ -192,14 +192,17 @@ def run_experiment(example, wrapper, cfg, product, norm):
 
     product, product_name = create_product(products, product)
     norm, norm_name = create_product(products, norm)
-    norm = induced_norm(norm)
+    norm = induced_norm(norm) if norm is not None else None
     cfg['extension_product'] = product_name
     cfg['greedy_error_norm'] = norm_name
 
     new_dataset('greedy', 'OS2014', **cfg)
 
     training_samples = list(discretization.parameter_space.sample_randomly(cfg['num_training_samples']))
-    solution_norms = [norm(discretization.solve(mu)) for mu in training_samples]
+    if norm is not None:
+        solution_norms = [norm(discretization.solve(mu)) for mu in training_samples]
+    else:
+        solution_norms = [discretization.solve(mu).l2_norm()[0] for mu in training_samples]
     logger.info('  range:              [{}, {}]'.format(np.amin(solution_norms), np.amax(solution_norms)))
     logger.info('  median:              {}'.format(np.median(solution_norms)))
     logger.info('  mean:                {}'.format(np.mean(solution_norms)))
@@ -235,7 +238,7 @@ def run_experiment(example, wrapper, cfg, product, norm):
                max_err_mu=greedy_data['max_err_mu'],
                max_errs=greedy_data['max_errs'])
 
-    # this should be the last action
+    # this should be the last action (to really capture all logs)
     add_logfile(logfile)
 
 
