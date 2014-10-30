@@ -21,7 +21,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     dimRange = '1'
     polOrder = '1'
     la_backend = 'Dune::Stuff::LA::ChooseBackend::eigen_sparse'
-    if la_backend is 'Dune::Stuff::LA::ChooseBackend::eigen_sparse':
+    if la_backend == 'Dune::Stuff::LA::ChooseBackend::eigen_sparse':
         MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
         VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
     OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
