@@ -24,6 +24,9 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     if la_backend == 'Dune::Stuff::LA::ChooseBackend::eigen_sparse':
         MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
         VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
+    elif la_backend == 'Dune::Stuff::LA::ChooseBackend::istl_sparse':
+        MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
+        VectorType = 'Dune::Stuff::LA::IstlDenseVector< ' + RangeFieldType + ' >'
     OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
     ProductType = OperatorType
     FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
