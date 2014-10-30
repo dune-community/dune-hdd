@@ -46,6 +46,7 @@ add_dune_alugrid_flags(example_linearelliptic_swipdg)
 add_dune_alugrid_flags(example_linearelliptic_thermalblock)
 add_dune_alugrid_flags(linearellipticexamplecg)
 add_dune_alugrid_flags(linearellipticexamplethermalblock)
+add_dune_alugrid_flags(linearellipticexampleOS2014)
 
 add_dune_superlu_flags(example_linearelliptic_block_swipdg)
 add_dune_superlu_flags(example_linearelliptic_cg)
@@ -53,6 +54,7 @@ add_dune_superlu_flags(example_linearelliptic_swipdg)
 add_dune_superlu_flags(example_linearelliptic_thermalblock)
 add_dune_superlu_flags(linearellipticexamplecg)
 add_dune_superlu_flags(linearellipticexamplethermalblock)
+add_dune_superlu_flags(linearellipticexampleOS2014)
 
 # link spe10 data file if present
 if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
