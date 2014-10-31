@@ -173,12 +173,6 @@ def run_experiment(example, wrapper, cfg, product, norm):
 
     logger, logfile = get_logger()
 
-    discretization = create_discretization(example, wrapper, cfg)
-    discretization = discretization.with_(
-                    parameter_space=CubicParameterSpace(discretization.parameter_type, 0.1, 1.0))
-    logger.info('the discretization has {} DoFs.'.format(discretization.solution_space.dim))
-    logger.info('the parameter type is {}.'.format(discretization.parameter_type))
-    logger.info('')
 
     logger.info('computing solution norms:')
     mu_hat_dune = wrapper.DuneParameter('mu', cfg['mu_hat_value'])
@@ -246,6 +240,12 @@ if __name__ == '__main__':
 
     print('initializing dune module... ')
     example, wrapper = init_dune(dune_config)
+    discretization = create_discretization(example, wrapper, dune_config)
+    discretization = discretization.with_(
+                    parameter_space=CubicParameterSpace(discretization.parameter_type, 0.1, 1.0))
+    print('the discretization has {} DoFs.'.format(discretization.solution_space.dim))
+    print('the parameter type is {}.'.format(discretization.parameter_type))
+    print('')
 
     for product, norm in (('l2', 'l2'),
                           ('energy', 'energy'),
@@ -255,7 +255,7 @@ if __name__ == '__main__':
             assert not cfg.has_key(kk)
             cfg[kk] = vv
 
-        print('')
         print('running experiment with product \'{}\' and norm \'{}\':'.format(product, norm))
-        run_experiment(example, wrapper, cfg, product, norm)
+        run_experiment(example, wrapper, discretization, cfg, product, norm)
+        print('')
 
