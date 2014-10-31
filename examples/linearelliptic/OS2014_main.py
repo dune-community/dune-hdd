@@ -169,12 +169,26 @@ def create_discretization(example, wrapper, cfg):
     return wrapper[discretization].with_(solver_options=dune_linear_solver_options)
 
 
-def run_experiment(example, wrapper, cfg, product, norm):
+def compute_discretization_error(example, wrapper, discretization, norm_type, mu=None, mu_norm=None):
+    U_h = discretization.solve(mu)
+    assert len(U_h) == 1
+    U_h_dune = U_h._list[0]._impl
+    if mu_norm is not None:
+        return example.compute_error(U_h_dune,
+                                     norm_type if norm_type in dune_config['dune_products'] else 'l2',
+                                     wrapper.dune_parameter(mu),
+                                     mu_norm)
+    else:
+        return example.compute_error(U_h_dune,
+                                     norm_type if norm_type in dune_config['dune_products'] else 'l2',
+                                     wrapper.dune_parameter(mu))
+
+
+def run_experiment(example, wrapper, discretization, cfg, product, norm):
 
     logger, logfile = get_logger()
-
-
     logger.info('computing solution norms:')
+
     mu_hat_dune = wrapper.DuneParameter('mu', cfg['mu_hat_value'])
     mu_bar_dune = wrapper.DuneParameter('mu', cfg['mu_bar_value'])
     products = {}
@@ -183,6 +197,10 @@ def run_experiment(example, wrapper, cfg, product, norm):
             products[nm] = pr
         else:
             products[nm] = wrapper[pr._impl.freeze_parameter(mu_bar_dune)]
+
+    mu_norm = None
+    if norm is not None and norm in dune_config['dune_products'] and discretization.products[norm].parametric:
+        mu_norm = mu_bar_dune
 
     product, product_name = create_product(products, product)
     norm, norm_name = create_product(products, norm)
@@ -203,6 +221,23 @@ def run_experiment(example, wrapper, cfg, product, norm):
     logger.info('  standard deviation:  {}'.format(np.std(solution_norms)))
     add_values(training_samples=training_samples,
                solution_norms=solution_norms)
+    logger.info('')
+
+    logger.info('computing some discretization errors ...')
+    less_samples = list(CubicParameterSpace(discretization.parameter_type, 0.1, 1.0).sample_randomly(10))
+    discretization_error_computer = partial(compute_discretization_error,
+                                            example=example,
+                                            wrapper=wrapper,
+                                            discretization=discretization,
+                                            norm_type=norm_name,
+                                            mu_norm=mu_norm)
+    discretization_errors = [discretization_error_computer(mu=mu) for mu in less_samples]
+    logger.info('  range:              [{}, {}]'.format(np.amin(discretization_errors), np.amax(discretization_errors)))
+    logger.info('  median:              {}'.format(np.median(discretization_errors)))
+    logger.info('  mean:                {}'.format(np.mean(discretization_errors)))
+    logger.info('  standard deviation:  {}'.format(np.std(discretization_errors)))
+    add_values(less_samples=less_samples,
+               discretization_errors=discretization_errors)
     logger.info('')
 
     extension_algorithm=partial(gram_schmidt_basis_extension, product=product)
