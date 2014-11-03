@@ -38,7 +38,8 @@ config = {'num_training_samples': 100,
           'mu_bar_value': 1.0,
           'greedy_use_estimator': False,
           'greedy_target_error': 1e-14,
-          'initialize_with_one': True}
+          'initialize_with_one': True,
+          'estimator_return': 'eta_red'}
 
 
 pymor.core.logger.MAX_HIERACHY_LEVEL = 2
@@ -60,45 +61,51 @@ class DetailedEstimator(ImmutableInterface):
         return self._example.estimate(U_h, 'eta_OS2014_*', self._mu_hat, self._mu_bar, mu)
 
 
-class ReducedEstimator(ImmutableInterface):
+class ReducedEstimator(object):
 
-    def __init__(self, discretization, example, wrapper, mu_hat, mu_bar, norm, rc):
+    def __init__(self, discretization, example, wrapper, mu_hat, mu_bar, norm):
         self._discretization = discretization
         self._wrapper = wrapper
         self._estimator = DetailedEstimator(example, wrapper, mu_hat, mu_bar)
         self._norm = norm
-        self._rc = rc
+        self.extension_step = -1
+        self.rc = None
+        self.data = {}
+
+    def add_to_data(self, key, mu, value):
+        if not self.data.has_key(self.extension_step):
+            self.data[self.extension_step] = {}
+        if not self.data[self.extension_step].has_key(key):
+            self.data[self.extension_step][key] = []
+        if not self.data[self.extension_step].has_key(key + '_mus'):
+            self.data[self.extension_step][key + '_mus'] = []
+        self.data[self.extension_step][key].append(value)
+        self.data[self.extension_step][key + '_mus'].append(mu)
 
     def estimate(self, U, mu, discretization):
-        mu_dune = self._wrapper.dune_parameter(mu)
-        # mu_bar_dune = self._estimator._mu_bar
-        # mu_hat_dune = self._estimator._mu_hat
-        # example = self._estimator._example
-        # print('mu     = {}'.format(mu_dune.report()))
-        # print('mu_bar = {}'.format(mu_bar_dune.report()))
-        # print('mu_hat = {}'.format(mu_hat_dune.report()))
-        U_red = self._rc.reconstruct(U)
+        U_red = self.rc.reconstruct(U)
         assert len(U_red) == 1
         U_red_dune = U_red._list[0]._impl
-        # U_h = self._discretization.solve(mu)
-        # assert len(U_h) == 1
-        # U_h_dune = U_h._list[0]._impl
-        # print('    || U(mu) - U_red(mu) ||_mu_bar = {}'.format(example.compute_error(U_red_dune,
-        #                                                                              'elliptic',
-        #                                                                              mu_dune,
-        #                                                                              mu_bar_dune)))
-        # print('    || U(mu) - U_h(mu)   ||_mu_bar = {}'.format(example.compute_error(U_h_dune,
-        #                                                                              'elliptic',
-        #                                                                              mu_dune,
-        #                                                                              mu_bar_dune)))
-        return self._estimator.estimate(U_red_dune, mu_dune)
-        # print('         eta[mu_bar,mu_hat](U_red) = {}'.format(eta))
-        # if self._norm is not None:
-        #     err = self._norm(U_red - U_h)[0]
-        #     print('  || U_h(mu) - U_red(mu) ||_mu_bar = {}'.format(err))
-        #     return err
-        # else:
-        #     return eta
+        U_h = self._discretization.solve(mu)
+        assert len(U_h) == 1
+        U_h_dune = U_h._list[0]._impl
+        # compute errors
+        example = self._estimator._example
+        mu_dune = self._wrapper.dune_parameter(mu)
+        mu_bar_dune = self._estimator._mu_bar
+        mu_hat_dune = self._estimator._mu_hat
+        self.add_to_data('discretization_error', mu, example.compute_error(U_h_dune, 'elliptic', mu_dune, mu_bar_dune))
+        self.add_to_data('full_error', mu, example.compute_error(U_red_dune, 'elliptic', mu_dune, mu_bar_dune))
+        self.add_to_data('model_reduction_error', mu, self._norm(U_red - U_h)[0])
+        # compute estimates
+        self.add_to_data('alpha_mu_mu_bar', mu, example.alpha(mu_dune, mu_bar_dune))
+        self.add_to_data('gamma_mu_mu_bar', mu, example.gamma(mu_dune, mu_bar_dune))
+        self.add_to_data('alpha_mu_mu_hat', mu, example.alpha(mu_dune, mu_hat_dune))
+        self.add_to_data('eta_nc_red', mu, example.estimate(U_red_dune, 'eta_NC_OS2014', mu_hat_dune, mu_bar_dune, mu_dune))
+        self.add_to_data('eta_r_red', mu, example.estimate(U_red_dune, 'eta_R_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune))
+        self.add_to_data('eta_df_red', mu, example.estimate(U_red_dune, 'eta_DF_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune))
+        self.add_to_data('eta_red', mu, example.estimate(U_red_dune, 'eta_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune))
+        return self.data[self.extension_step][config['estimator_return']][-1]
 
 
 def reduce_with_estimator(discretization,
@@ -107,19 +114,16 @@ def reduce_with_estimator(discretization,
                           vector_product=None,
                           disable_caching=True,
                           extends=None,
-                          detailed_discretization=None,
-                          example=None,
-                          wrapper=None,
-                          mu_hat=None,
-                          mu_bar=None,
-                          norm=None):
+                          reduced_estimator=None):
     rd, rc, reduction_data = reduce_generic_rb(discretization,
                                                RB,
                                                operator_product,
                                                vector_product,
                                                disable_caching,
                                                extends)
-    rd = rd.with_(estimator=ReducedEstimator(detailed_discretization, example, wrapper, mu_hat, mu_bar, norm, rc))
+    reduced_estimator.extension_step += 1
+    reduced_estimator.rc = rc
+    rd = rd.with_(estimator=reduced_estimator)
     return rd, rc, reduction_data
 
 
@@ -246,14 +250,10 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
         one = wrapper.vector_array(wrapper[example.project('1')])
         initial_basis = extension_algorithm(initial_basis, one)[0]
 
+    reduced_estimator = ReducedEstimator(discretization, example, wrapper, mu_hat_dune, mu_bar_dune, norm)
     greedy_data = greedy(discretization,
                          partial(reduce_with_estimator,
-                                 detailed_discretization=discretization,
-                                 example=example,
-                                 wrapper=wrapper,
-                                 mu_hat=mu_hat_dune,
-                                 mu_bar=mu_bar_dune,
-                                 norm=norm),
+                                 reduced_estimator=reduced_estimator),
                          training_samples,
                          initial_basis=initial_basis,
                          use_estimator=cfg['greedy_use_estimator'],
@@ -265,7 +265,8 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
                max_err_mus=greedy_data['max_err_mus'],
                extensions=greedy_data['extensions'],
                max_err_mu=greedy_data['max_err_mu'],
-               max_errs=greedy_data['max_errs'])
+               max_errs=greedy_data['max_errs'],
+               estimator_data=reduced_estimator.data)
 
     # this should be the last action (to really capture all logs)
     add_logfile(logfile)
