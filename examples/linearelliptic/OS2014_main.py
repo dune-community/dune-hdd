@@ -282,15 +282,17 @@ if __name__ == '__main__':
     print('the parameter type is {}.'.format(discretization.parameter_type))
     print('')
 
-    for product, norm in (('l2', 'l2'),
-                          ('energy', 'energy'),
-                          (('elliptic', 'penalty'), 'elliptic')):
-        cfg = config.copy()
-        for kk, vv in dune_config.items():
-            assert not cfg.has_key(kk)
-            cfg[kk] = vv
+    # for product, norm in (('l2', 'l2'),
+    #                       ('energy', 'energy'),
+    #                       (('elliptic', 'penalty'), 'elliptic')):
+    product = ('elliptic', 'penalty')
+    norm = 'elliptic'
+    cfg = config.copy()
+    for kk, vv in dune_config.items():
+        assert not cfg.has_key(kk)
+        cfg[kk] = vv
 
-        print('running experiment with product \'{}\' and norm \'{}\':'.format(product, norm))
-        run_experiment(example, wrapper, discretization, cfg, product, norm)
-        print('')
+    print('running experiment with product \'{}\' and norm \'{}\':'.format(product, norm))
+    run_experiment(example, wrapper, discretization, cfg, product, norm)
+    print('')
 
