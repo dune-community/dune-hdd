@@ -231,6 +231,16 @@ public:
                                 {"mu_minimizing", Dune::Pymor::Parameter("mu", 0.1)}});
   } // ... estimate(...)
 
+  RangeFieldType alpha(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2)
+  {
+    return test_case_.problem().diffusion_factor()->alpha(mu_1, mu_2);
+  }
+
+  RangeFieldType gamma(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2)
+  {
+    return test_case_.problem().diffusion_factor()->gamma(mu_1, mu_2);
+  }
+
 public:
   TestCaseType test_case_;
   TestCaseType reference_test_case_;
