@@ -223,22 +223,22 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
                solution_norms=solution_norms)
     logger.info('')
 
-    logger.info('computing some discretization errors ...')
-    less_samples = list(CubicParameterSpace(discretization.parameter_type, 0.1, 1.0).sample_randomly(10))
-    discretization_error_computer = partial(compute_discretization_error,
-                                            example=example,
-                                            wrapper=wrapper,
-                                            discretization=discretization,
-                                            norm_type=norm_name,
-                                            mu_norm=mu_norm)
-    discretization_errors = [discretization_error_computer(mu=mu) for mu in less_samples]
-    logger.info('  range:              [{}, {}]'.format(np.amin(discretization_errors), np.amax(discretization_errors)))
-    logger.info('  median:              {}'.format(np.median(discretization_errors)))
-    logger.info('  mean:                {}'.format(np.mean(discretization_errors)))
-    logger.info('  standard deviation:  {}'.format(np.std(discretization_errors)))
-    add_values(less_samples=less_samples,
-               discretization_errors=discretization_errors)
-    logger.info('')
+    # logger.info('computing some discretization errors ...')
+    # less_samples = list(CubicParameterSpace(discretization.parameter_type, 0.1, 1.0).sample_randomly(10))
+    # discretization_error_computer = partial(compute_discretization_error,
+    #                                         example=example,
+    #                                         wrapper=wrapper,
+    #                                         discretization=discretization,
+    #                                         norm_type=norm_name,
+    #                                         mu_norm=mu_norm)
+    # discretization_errors = [discretization_error_computer(mu=mu) for mu in less_samples]
+    # logger.info('  range:              [{}, {}]'.format(np.amin(discretization_errors), np.amax(discretization_errors)))
+    # logger.info('  median:              {}'.format(np.median(discretization_errors)))
+    # logger.info('  mean:                {}'.format(np.mean(discretization_errors)))
+    # logger.info('  standard deviation:  {}'.format(np.std(discretization_errors)))
+    # add_values(less_samples=less_samples,
+    #            discretization_errors=discretization_errors)
+    # logger.info('')
 
     extension_algorithm=partial(gram_schmidt_basis_extension, product=product)
     initial_basis = discretization.functionals['rhs'].source.empty()
