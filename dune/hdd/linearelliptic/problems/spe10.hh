@@ -11,12 +11,12 @@
 #include <utility>
 #include <sstream>
 
-#include <dune/common/static_assert.hh>
 #include <dune/common/fmatrix.hh>
 
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/fvector.hh>
 #include <dune/stuff/common/float_cmp.hh>
+#include <dune/stuff/common/type_utils.hh>
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/combined.hh>
 #include <dune/stuff/functions/flattop.hh>
