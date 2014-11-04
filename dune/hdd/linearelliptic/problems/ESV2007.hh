@@ -8,11 +8,10 @@
 
 #include <memory>
 
-#include <dune/common/static_assert.hh>
-
+#include <dune/stuff/common/memory.hh>
+#include <dune/stuff/common/type_utils.hh>
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/ESV2007.hh>
-#include <dune/stuff/common/memory.hh>
 
 #include <dune/pymor/functions/default.hh>
 
