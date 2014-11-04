@@ -52,6 +52,13 @@ add_dune_superlu_flags(example_linearelliptic_block_swipdg
                        linearellipticexamplecg
                        linearellipticexamplethermalblock)
 
+add_dune_tbb_flags(example_linearelliptic_block_swipdg
+                   example_linearelliptic_cg
+                   example_linearelliptic_swipdg
+                   example_linearelliptic_thermalblock
+                   linearellipticexamplecg
+                   linearellipticexamplethermalblock)
+
 # link spe10 data file if present
 if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
   set (SPE10MODEL1DATA_TARGET_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/perm_case1.dat")
