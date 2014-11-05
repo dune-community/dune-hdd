@@ -212,7 +212,7 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
     cfg['extension_product'] = product_name
     cfg['greedy_error_norm'] = norm_name
 
-    new_dataset('greedy_OS2014_estimator_study', **cfg)
+    new_dataset('OS2014_greedy_estimator_study', **cfg)
 
     training_samples = list(discretization.parameter_space.sample_randomly(cfg['num_training_samples']))
     if norm is not None:
