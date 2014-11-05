@@ -28,7 +28,7 @@ import linearellipticexampleOS2014 as dune_module
 
 dune_config = {'dune_partitioning': '[1 1 1]',
                'dune_num_refinements': 2,
-               'dune_products': ['l2', 'h1_semi', 'elliptic', 'energy', 'penalty'],
+               'dune_products': ['elliptic', 'penalty'],
                'dune_log_info_level': -1,
                'dune_log_debug_level': -1,
                'dune_log_enable_warnings': True,
