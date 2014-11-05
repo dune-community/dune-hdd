@@ -119,6 +119,99 @@ public:
 }; // class ParametricESV2007< ..., 2, ..., 1 >
 
 
+template< class E, class D, int d, class R, int r = 1 >
+class FiveSpot
+  : public ProblemInterface< E, D, d, R, r >
+{
+  FiveSpot() { static_assert(AlwaysFalse< E >::value, "Not available for dimRange > 1!"); }
+};
+
+
+template< class EntityImp, class DomainFieldImp, class RangeFieldImp >
+class FiveSpot< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
+  : public Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
+{
+  typedef Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >  BaseType;
+  typedef FiveSpot< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ThisType;
+
+  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >    ConstantScalarFunctionType;
+  typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 > ConstantMatrixFunctionType;
+  typedef Pymor::Functions::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
+      ParametricScalarFunctionType;
+  typedef Pymor::Functions::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 >
+      ParametricMatrixFunctionType;
+  typedef Stuff::Functions::Expression< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ExpressionFunctionType;
+  typedef Pymor::Functions::AffinelyDecomposableDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
+      DefaultParametricFunctionType;
+
+  static std::shared_ptr< DefaultParametricFunctionType > create_diffusion_factor(const size_t integration_order)
+  {
+    auto ret = std::make_shared< DefaultParametricFunctionType >(new ExpressionFunctionType(
+                                                                   "x",
+                                                                   "1",
+                                                                   integration_order,
+                                                                   "one"));
+    ret->register_component(new ExpressionFunctionType("x",
+                                                       "-exp(-((x[0]+0.5)*(x[0]+0.5)/(2.0*0.1*0.1)))",
+                                                       integration_order,
+                                                       "left_bump"),
+                            new Pymor::ParameterFunctional("mu", 1, "mu"));
+    ret->register_component(new ExpressionFunctionType("x",
+                                                       "-exp(-((x[0]-0.5)*(x[0]-0.5)/(2.0*0.1*0.1)))",
+                                                       integration_order,
+                                                       "right_bump"),
+                            new Pymor::ParameterFunctional("mu", 1, "1-mu"));
+    return ret;
+  } // ... create_diffusion_factor(...)
+
+public:
+  static const bool available = true;
+
+  static std::string static_id()
+  {
+    return BaseType::BaseType::static_id() + ".OS2014.fivespot";
+  }
+
+  static Stuff::Common::Configuration default_config(const std::string sub_name = "")
+  {
+    Stuff::Common::Configuration config("integration_order", "3");
+    if (sub_name.empty())
+      return config;
+    else {
+      Stuff::Common::Configuration tmp;
+      tmp.add(config, sub_name);
+      return tmp;
+    }
+  } // ... default_config(...)
+
+  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config = default_config(),
+                                            const std::string sub_name = static_id())
+  {
+    const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    return Stuff::Common::make_unique< ThisType >(cfg.get("integration_order",
+                                                          default_config().get< size_t >("integration_order")));
+  } // ... create(...)
+
+  FiveSpot(const size_t integration_order = default_config().get< size_t >("integration_order"))
+    : BaseType(create_diffusion_factor(integration_order),
+               std::make_shared< ParametricMatrixFunctionType >(new ConstantMatrixFunctionType(
+                  DS::Functions::internal::unit_matrix< RangeFieldImp, 2 >(), "diffusion_tensor")),
+               std::make_shared< ParametricScalarFunctionType >(new ExpressionFunctionType(
+                  "x",
+                  "exp(-((x[0]+0.75)*(x[0]+0.75)/(2.0*0.1*0.1))-(((x[1]+0.75)*(x[1]+0.75))/(2.0*0.1*0.1)))+exp(-((x[0]-0.75)*(x[0]-0.75)/(2.0*0.1*0.1))-(((x[1]-0.75)*(x[1]-0.75))/(2.0*0.1*0.1)))+exp(-((x[0]-0.75)*(x[0]-0.75)/(2.0*0.1*0.1))-(((x[1]+0.75)*(x[1]+0.75))/(2.0*0.1*0.1)))+exp(-((x[0]+0.75)*(x[0]+0.75)/(2.0*0.1*0.1))-(((x[1]-0.75)*(x[1]-0.75))/(2.0*0.1*0.1)))-exp(-(x[0]*x[0]/(2.0*0.1*0.1))-((x[1]*x[1])/(2.0*0.1*0.1)))",
+                  integration_order,
+                  "force")),
+               std::make_shared< ParametricScalarFunctionType >(new ConstantScalarFunctionType(0, "dirichlet")),
+               std::make_shared< ParametricScalarFunctionType >(new ConstantScalarFunctionType(0, "neumann")))
+  {}
+
+  virtual std::string type() const override
+  {
+    return BaseType::BaseType::static_id() + ".OS2014.fivespot";
+  }
+}; // class FiveSpot< ..., 2, ..., 1 >
+
+
 } // namespace OS2014
 } // namespace Problems
 } // namespace LinearElliptic
