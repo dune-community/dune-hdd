@@ -67,6 +67,7 @@ public:
   typedef double RangeFieldType;
   typedef Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG< GridType, RangeFieldType, 1 > DiscretizationType;
   typedef typename DiscretizationType::VectorType VectorType;
+  typedef typename TestCaseType::ParametersMapType ParametersMapType;
 
 private:
   typedef Dune::HDD::LinearElliptic::Estimators::BlockSWIPDG< typename DiscretizationType::AnsatzSpaceType,
@@ -75,7 +76,8 @@ private:
                                                               GridType > Estimator;
 
 public:
-  Example(const std::string partitioning = "[1 1 1]",
+  Example(const ParametersMapType& parameter_range,
+          const std::string partitioning = "[1 1 1]",
           const DUNE_STUFF_SSIZE_T num_refinements = 0,
           const std::vector< std::string > products = {},
           const ssize_t info_log_levels  = 0,
@@ -92,16 +94,17 @@ public:
                   info_color,
                   debug_color,
                   warn_color)
-    , test_case_({{"mu", Dune::Pymor::Parameter("mu", 1)},     // <- it does not matter which parameters we give to the
-                  {"mu_hat", Dune::Pymor::Parameter("mu", 1)}, //    test case here, since we use test_case_.problem()
-                  {"mu_bar", Dune::Pymor::Parameter("mu", 1)}, //    (which is the parametric problem) anyway
-                  {"mu_minimizing", Dune::Pymor::Parameter("mu", 1)}},
+    , parameter_range_(parameter_range)
+    , test_case_(merge_parameters({{"mu", Dune::Pymor::Parameter("mu", 1)},     // <- it does not matter which parameters we give to the
+                                   {"mu_hat", Dune::Pymor::Parameter("mu", 1)}, //    test case here, since we use test_case_.problem()
+                                   {"mu_bar", Dune::Pymor::Parameter("mu", 1)}}, //    (which is the parametric problem) anyway
+                                  parameter_range_),
                  partitioning,
                  boost::numeric_cast< size_t >(num_refinements))
-    , reference_test_case_({{"mu", Dune::Pymor::Parameter("mu", 1)},
-                            {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
-                            {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
-                            {"mu_minimizing", Dune::Pymor::Parameter("mu", 1)}},
+    , reference_test_case_(merge_parameters({{"mu", Dune::Pymor::Parameter("mu", 1)},
+                                             {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
+                                             {"mu_bar", Dune::Pymor::Parameter("mu", 1)}},
+                                            parameter_range_),
                            partitioning,
                            boost::numeric_cast< size_t >(num_refinements + 1))
     , discretization_(*test_case_.reference_provider(),
@@ -225,10 +228,10 @@ public:
                                vector,
                                discretization_.problem(),
                                type,
-                               {{"mu_hat",        mu_hat},
-                                {"mu_bar",        mu_bar},
-                                {"mu",            mu},
-                                {"mu_minimizing", Dune::Pymor::Parameter("mu", 0.1)}});
+                               merge_parameters({{"mu_hat", mu_hat},
+                                                 {"mu_bar", mu_bar},
+                                                 {"mu",     mu}},
+                                                parameter_range_));
   } // ... estimate(...)
 
   RangeFieldType alpha(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2)
@@ -241,7 +244,17 @@ public:
     return test_case_.problem().diffusion_factor()->gamma(mu_1, mu_2);
   }
 
-public:
+private:
+  static ParametersMapType merge_parameters(const ParametersMapType& first,
+                                            const ParametersMapType& second)
+  {
+    ParametersMapType ret = first;
+    for (const auto& element : second)
+      ret.insert(element);
+    return ret;
+  }
+
+  const ParametersMapType parameter_range_;
   TestCaseType test_case_;
   TestCaseType reference_test_case_;
   DiscretizationType discretization_;
@@ -252,19 +265,21 @@ public:
 } // namespace internal
 
 
-template< class GridImp >
-class Spe10Model1Example
-  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > >
-{
-  static_assert(GridImp::dimension == 2, "Only available in 2d!");
-  typedef internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > > BaseType;
+//template< class GridImp >
+//class Spe10Model1Example
+//  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > >
+//{
+//  static_assert(GridImp::dimension == 2, "Only available in 2d!");
+//  typedef internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > > BaseType;
 
-public:
-  template< class... Args >
-  Spe10Model1Example(Args&& ...args)
-    : BaseType(std::forward< Args >(args)...)
-  {}
-}; // class Spe10Model1Example
+//public:
+//  template< class... Args >
+//  Spe10Model1Example(Args&& ...args)
+//    : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+//                {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}},
+//               std::forward< Args >(args)...)
+//  {}
+//}; // class Spe10Model1Example
 
 
 template< class GridImp >
@@ -278,9 +293,29 @@ class OS2014Example
 public:
   template< class... Args >
   OS2014Example(Args&& ...args)
-    : BaseType(std::forward< Args >(args)...)
+    : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+                {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}},
+               std::forward< Args >(args)...)
   {}
 }; // class OS2014Example
+
+
+template< class GridImp >
+class FiveSpotExample
+  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2014::FiveSpotBlock< GridImp > >
+{
+  static_assert(GridImp::dimension == 2, "Only available in 2d!");
+  typedef internal::Example
+      < Dune::HDD::LinearElliptic::TestCases::OS2014::FiveSpotBlock< GridImp > > BaseType;
+
+public:
+  template< class... Args >
+  FiveSpotExample(Args&& ...args)
+    : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+                {"parameter_range_max", Dune::Pymor::Parameter("mu", 0.9)}},
+               std::forward< Args >(args)...)
+  {}
+}; // class FiveSpotExample
 
 
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_OS2014_HH
