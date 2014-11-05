@@ -32,10 +32,9 @@ public:
   typedef Dune::HDD::LinearElliptic::DiscreteProblem< GridType > DiscreteProblemType;
   typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = DiscreteProblemType::dimRange;
-  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
-                                                          RangeFieldType, dimRange, 1,
-                                                          Dune::GDT::ChooseSpaceBackend::pdelab,
-                                                          Dune::Stuff::LA::ChooseBackend::istl_sparse > DiscretizationType;
+  typedef Dune::HDD::LinearElliptic::Discretizations::CG
+      < GridType, Dune::Stuff::Grid::ChooseLayer::leaf, RangeFieldType, dimRange, 1,
+        Dune::GDT::ChooseSpaceBackend::fem, Dune::Stuff::LA::ChooseBackend::istl_sparse > DiscretizationType;
 
   static std::string static_id()
   {
