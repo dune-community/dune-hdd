@@ -62,7 +62,7 @@ private:
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >             FunctionWrapperType;
 
 public:
-  static const bool available = false;
+  static const bool available = true;
 
   static std::string static_id()
   {

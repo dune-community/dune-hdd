@@ -186,11 +186,17 @@ private:
   typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< ConstantFunctionType > > LocalOperatorType;
   typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
 
-  static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_minimizing)
+  static const ProblemType& assert_problem(const ProblemType& problem,
+                                           const Pymor::Parameter& mu_min,
+                                           const Pymor::Parameter& mu_max)
   {
-    if (mu_minimizing.type() != problem.parameter_type())
+    if (mu_min.type() != problem.parameter_type())
       DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
-                 "Given mu_minimizing is of type " << mu_minimizing.type() << " and should be of type "
+                 "Given mu_min is of type " << mu_min.type() << " and should be of type "
+                 << problem.parameter_type() << "!");
+    if (mu_max.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu_max is of type " << mu_max.type() << " and should be of type "
                  << problem.parameter_type() << "!");
     if (problem.diffusion_tensor()->parametric())
       DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
@@ -205,14 +211,17 @@ public:
                                  const ProblemType& problem,
                                  const ParametersMapType parameters = ParametersMapType())
   {
-    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
-    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_min") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_min'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_max") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_max'!");
+    const Pymor::Parameter mu_min = problem.parametric() ? parameters.at("parameter_range_min") : Pymor::Parameter();
+    const Pymor::Parameter mu_max = problem.parametric() ? parameters.at("parameter_range_max") : Pymor::Parameter();
     // walk the subdomains
     double eta_r_squared = 0.0;
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
-      ThisType eta_r_T(*local_space, problem, mu_minimizing);
+      ThisType eta_r_T(*local_space, problem, mu_min, mu_max);
       Stuff::Grid::Walker< GridViewType > grid_walker(local_space->grid_view());
       grid_walker.add(eta_r_T);
       grid_walker.walk();
@@ -223,10 +232,12 @@ public:
 
   LocalResidualOS2014(const LocalSpaceType& local_space,
                       const ProblemType& problem,
-                      const Pymor::Parameter mu_minimizing = Pymor::Parameter())
+                      const Pymor::Parameter mu_min = Pymor::Parameter(),
+                      const Pymor::Parameter mu_max = Pymor::Parameter())
     : local_space_(local_space)
-    , problem_(assert_problem(problem, mu_minimizing))
-    , problem_mu_minimizing_(problem_.with_mu(mu_minimizing))
+    , problem_(assert_problem(problem, mu_min, mu_max))
+    , problem_mu_min_(problem_.with_mu(mu_min))
+    , problem_mu_max_(problem_.with_mu(mu_max))
     , p0_space_(local_space_.grid_view())
     , p0_force_(p0_space_)
     , difference_(Stuff::Common::make_unique< DifferenceType >(*problem_.force()->affine_part() - p0_force_))
@@ -256,8 +267,10 @@ public:
     for (int cc = 0; cc < entity.template count< dimDomain >(); ++cc)
       vertices_.push_back(entity.template subEntity< dimDomain >(cc)->geometry().center());
     // compute minimum diffusion
+    // this assumes that the minimum of the diffusion factor is reached for the min or max mu
     const RangeFieldType min_diffusion_value_entity
-        =   internal::compute_minimum(*problem_mu_minimizing_->diffusion_factor()->affine_part(), entity)
+        =   std::min(internal::compute_minimum(*problem_mu_min_->diffusion_factor()->affine_part(), entity),
+                     internal::compute_minimum(*problem_mu_max_->diffusion_factor()->affine_part(), entity))
           * internal::compute_minimum(*problem_.diffusion_tensor()->affine_part(), entity);
     min_diffusion_value_ = std::min(min_diffusion_value_, min_diffusion_value_entity);
     // compute the local product
@@ -297,7 +310,8 @@ public:
 private:
   const LocalSpaceType& local_space_;
   const ProblemType& problem_;
-  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_minimizing_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_min_;
+  const std::shared_ptr< const typename ProblemType::NonparametricType > problem_mu_max_;
   const P0SpaceType p0_space_;
   DiscreteFunctionType p0_force_;
   std::unique_ptr< const DifferenceType > difference_;
@@ -372,11 +386,17 @@ private:
   typedef GDT::LocalOperator::Codim0Integral< GDT::LocalEvaluation::Product< ConstantFunctionType > > LocalOperatorType;
   typedef DSC::TmpMatricesStorage< RangeFieldType > TmpStorageProviderType;
 
-  static const ProblemType& assert_problem(const ProblemType& problem, const Pymor::Parameter& mu_minimizing)
+  static const ProblemType& assert_problem(const ProblemType& problem,
+                                           const Pymor::Parameter& mu_min,
+                                           const Pymor::Parameter& mu_max)
   {
-    if (mu_minimizing.type() != problem.parameter_type())
+    if (mu_min.type() != problem.parameter_type())
       DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
-                 "Given mu_minimizing is of type " << mu_minimizing.type() << " and should be of type "
+                 "Given mu_min is of type " << mu_min.type() << " and should be of type "
+                 << problem.parameter_type() << "!");
+    if (mu_max.type() != problem.parameter_type())
+      DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
+                 "Given mu_max is of type " << mu_max.type() << " and should be of type "
                  << problem.parameter_type() << "!");
     if (problem.diffusion_tensor()->parametric())
       DUNE_THROW(NotImplemented, "Not implemented for parametric diffusion_tensor!");
@@ -391,12 +411,15 @@ public:
                                  const ProblemType& problem,
                                  const ParametersMapType parameters = ParametersMapType())
   {
-    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_min") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_min'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_max") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_max'!");
     if (problem.diffusion_factor()->parametric() && parameters.find("mu") == parameters.end())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu'!");
-    const Pymor::Parameter mu            = problem.parametric() ? parameters.at("mu")            : Pymor::Parameter();
-    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
+    const Pymor::Parameter mu     = problem.parametric() ? parameters.at("mu")                  : Pymor::Parameter();
+    const Pymor::Parameter mu_min = problem.parametric() ? parameters.at("parameter_range_min") : Pymor::Parameter();
+    const Pymor::Parameter mu_max = problem.parametric() ? parameters.at("parameter_range_max") : Pymor::Parameter();
     // compute the diffusive flux reconstruction
     const ConstDiscreteFunctionType discrete_solution(space, vector);
     const RTN0SpaceType rtn0_space(space.grid_view());
@@ -411,7 +434,7 @@ public:
     double eta_r_squared = 0.0;
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
-      ThisType eta_r_T(*local_space, diffusive_flux, problem, mu_minimizing);
+      ThisType eta_r_T(*local_space, diffusive_flux, problem, mu_min, mu_max);
       Stuff::Grid::Walker< GridViewType > grid_walker(local_space->grid_view());
       grid_walker.add(eta_r_T);
       grid_walker.walk();
@@ -423,11 +446,13 @@ public:
   LocalResidualOS2014Star(const LocalSpaceType& local_space,
                           const RTN0DiscreteFunctionType& diffusive_flux,
                           const ProblemType& problem,
-                          const Pymor::Parameter mu_minimizing = Pymor::Parameter())
+                          const Pymor::Parameter mu_min = Pymor::Parameter(),
+                          const Pymor::Parameter mu_max = Pymor::Parameter())
     : local_space_(local_space)
     , diffusive_flux_(diffusive_flux)
-    , problem_(assert_problem(problem, mu_minimizing))
-    , problem_mu_minimizing_(problem_.with_mu(mu_minimizing))
+    , problem_(assert_problem(problem, mu_min, mu_max))
+    , problem_mu_min_(problem_.with_mu(mu_min))
+    , problem_mu_max_(problem_.with_mu(mu_max))
     , divergence_(diffusive_flux_.divergence())
     , difference_(*problem_.force()->affine_part() - divergence_)
     , constant_one_(1)
@@ -454,8 +479,10 @@ public:
     for (int cc = 0; cc < entity.template count< dimDomain >(); ++cc)
       vertices_.push_back(entity.template subEntity< dimDomain >(cc)->geometry().center());
     // compute minimum diffusion
+    // this assumes that the minimum of the diffusion factor is reached for the min or max mu
     const RangeFieldType min_diffusion_value_entity
-        =   internal::compute_minimum(*problem_mu_minimizing_->diffusion_factor()->affine_part(), entity)
+        =   std::min(internal::compute_minimum(*problem_mu_min_->diffusion_factor()->affine_part(), entity),
+                     internal::compute_minimum(*problem_mu_max_->diffusion_factor()->affine_part(), entity))
           * internal::compute_minimum(*problem_.diffusion_tensor()->affine_part(), entity);
     min_diffusion_value_ = std::min(min_diffusion_value_, min_diffusion_value_entity);
     // compute the local product
@@ -496,7 +523,8 @@ private:
   const LocalSpaceType& local_space_;
   const RTN0DiscreteFunctionType& diffusive_flux_;
   const ProblemType& problem_;
-  const std::shared_ptr< typename ProblemType::NonparametricType > problem_mu_minimizing_;
+  const std::shared_ptr< typename ProblemType::NonparametricType > problem_mu_min_;
+  const std::shared_ptr< typename ProblemType::NonparametricType > problem_mu_max_;
   const DivergenceType divergence_;
   const DifferenceType difference_;
   const ConstantFunctionType constant_one_;
@@ -728,8 +756,10 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
     if (problem.diffusion_factor()->parametric() && parameters.find("mu_bar") == parameters.end())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
-    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_min") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_min'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_max") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_max'!");
     if (problem.diffusion_tensor()->parametric())
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
     if (problem.force()->parametric())
@@ -776,8 +806,10 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
     if (problem.diffusion_factor()->parametric() && !parameters.count("mu_bar"))
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
-    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_min") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_min'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_max") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_max'!");
     if (problem.diffusion_tensor()->parametric())
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
     if (problem.force()->parametric())
@@ -786,10 +818,11 @@ public:
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric dirichlet!");
     if (problem.neumann()->parametric())
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric neumann!");
-    const Pymor::Parameter mu            = problem.parametric() ? parameters.at("mu")            : Pymor::Parameter();
-    const Pymor::Parameter mu_hat        = problem.parametric() ? parameters.at("mu_hat")        : Pymor::Parameter();
-    const Pymor::Parameter mu_bar        = problem.parametric() ? parameters.at("mu_bar")        : Pymor::Parameter();
-    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
+    const Pymor::Parameter mu     = problem.parametric() ? parameters.at("mu")                  : Pymor::Parameter();
+    const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat")              : Pymor::Parameter();
+    const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar")              : Pymor::Parameter();
+    const Pymor::Parameter mu_min = problem.parametric() ? parameters.at("parameter_range_min") : Pymor::Parameter();
+    const Pymor::Parameter mu_max = problem.parametric() ? parameters.at("parameter_range_max") : Pymor::Parameter();
     // compute parameter factors
     const double alpha_mu_mu_bar = problem.diffusion_factor()->alpha(mu, mu_bar);
     const double alpha_mu_mu_hat = problem.diffusion_factor()->alpha(mu, mu_hat);
@@ -818,7 +851,7 @@ public:
     // walk the subdomains
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
-      LocalResidualOS2014Type eta_r_T(*local_space, problem, mu_minimizing);
+      LocalResidualOS2014Type eta_r_T(*local_space, problem, mu_min, mu_max);
       eta_r_T.prepare();
       eta_nc.result_ = 0.0;
       eta_df.result_ = 0.0;
@@ -946,8 +979,10 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_hat'!");
     if (problem.diffusion_factor()->parametric() && !parameters.count("mu_bar"))
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_bar'!");
-    if (problem.diffusion_factor()->parametric() && parameters.find("mu_minimizing") == parameters.end())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'mu_minimizing'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_min") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_min'!");
+    if (problem.diffusion_factor()->parametric() && parameters.find("parameter_range_max") == parameters.end())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given parameters are missing 'parameter_range_max'!");
     if (problem.diffusion_tensor()->parametric())
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric diffusion_tensor!");
     if (problem.force()->parametric())
@@ -956,10 +991,11 @@ public:
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric dirichlet!");
     if (problem.neumann()->parametric())
       DUNE_THROW(Stuff::Exceptions::requirements_not_met, "Not implemented for parametric neumann!");
-    const Pymor::Parameter mu            = problem.parametric() ? parameters.at("mu")            : Pymor::Parameter();
-    const Pymor::Parameter mu_hat        = problem.parametric() ? parameters.at("mu_hat")        : Pymor::Parameter();
-    const Pymor::Parameter mu_bar        = problem.parametric() ? parameters.at("mu_bar")        : Pymor::Parameter();
-    const Pymor::Parameter mu_minimizing = problem.parametric() ? parameters.at("mu_minimizing") : Pymor::Parameter();
+    const Pymor::Parameter mu     = problem.parametric() ? parameters.at("mu")                  : Pymor::Parameter();
+    const Pymor::Parameter mu_hat = problem.parametric() ? parameters.at("mu_hat")              : Pymor::Parameter();
+    const Pymor::Parameter mu_bar = problem.parametric() ? parameters.at("mu_bar")              : Pymor::Parameter();
+    const Pymor::Parameter mu_min = problem.parametric() ? parameters.at("parameter_range_min") : Pymor::Parameter();
+    const Pymor::Parameter mu_max = problem.parametric() ? parameters.at("parameter_range_max") : Pymor::Parameter();
     // compute parameter factors
     const double alpha_mu_mu_bar = problem.diffusion_factor()->alpha(mu, mu_bar);
     const double alpha_mu_mu_hat = problem.diffusion_factor()->alpha(mu, mu_hat);
@@ -1005,7 +1041,7 @@ public:
     // walk the subdomains
     for (size_t subdomain = 0; subdomain < space.ms_grid()->size(); ++subdomain) {
       const auto local_space = space.local_spaces()[subdomain];
-      LocalResidualOS2014Type eta_r_T(*local_space, diffusive_flux, problem, mu_minimizing);
+      LocalResidualOS2014Type eta_r_T(*local_space, diffusive_flux, problem, mu_min, mu_max);
       eta_r_T.prepare();
       eta_nc.result_ = 0.0;
       eta_df.result_ = 0.0;
