@@ -102,7 +102,8 @@ private:
 
 public:
   LocalDiscretizationsContainer(const GridProviderType& grid_provider,
-                                const ProblemType& prob)
+                                const ProblemType& prob,
+                                const std::vector< std::string >& only_these_products)
     : zero_boundary_problem_(prob)
     , all_dirichlet_boundary_config_(Stuff::Grid::BoundaryInfos::AllDirichlet< IntersectionType >::default_config())
     , all_neumann_boundary_config_(Stuff::Grid::BoundaryInfos::AllNeumann< IntersectionType >::default_config())
@@ -116,7 +117,8 @@ public:
       local_discretizations_[ss] = std::make_shared< DiscretizationType >(grid_provider,
                                                                           all_neumann_boundary_config_,
                                                                           zero_boundary_problem_,
-                                                                          ss);
+                                                                          ss,
+                                                                          only_these_products);
       local_test_spaces_[ss] = local_discretizations_[ss]->test_space();
       local_ansatz_spaces_[ss] = local_discretizations_[ss]->ansatz_space();
     }
@@ -229,7 +231,7 @@ public:
               const Stuff::Common::Configuration& /*bound_inf_cfg*/,
               const ProblemType& prob,
               const std::vector< std::string >& only_these_products = {})
-    : LocalDiscretizationsBaseType(grid_provider, prob)
+    : LocalDiscretizationsBaseType(grid_provider, prob, only_these_products)
     , BaseType(std::make_shared< TestSpaceType >(grid_provider.ms_grid(), this->local_test_spaces_),
                std::make_shared< AnsatzSpaceType >(grid_provider.ms_grid(), this->local_ansatz_spaces_),
                this->all_dirichlet_boundary_config_,
@@ -597,6 +599,30 @@ public:
       local_vector.set_entry(ii, global_vector.get_entry(this->ansatz_space()->mapper().mapToGlobal(ss, ii)));
     return local_vector;
   } // ... localize_vetor(...)
+
+  VectorType globalize_vectors(const std::vector< VectorType >& local_vectors) const
+  {
+    if (local_vectors.size() != num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "Given local_vectors has wrong size (is " << local_vectors.size() << ", should be "
+                 << num_subdomains() << ")!");
+    VectorType ret(this->ansatz_space()->mapper().size());
+    for (size_t ss = 0; ss < num_subdomains(); ++ss) {
+      const auto& local_vector = local_vectors[ss];
+      if (local_vector.size() != this->local_discretizations_[ss]->ansatz_space()->mapper().size())
+        DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                   "Given local_vectors[" << ss << "] has wrong size (is "
+                   << local_vector.size() << ", should be "
+                   << this->local_discretizations_[ss]->ansatz_space()->mapper().size() << ")!");
+      copy_local_to_global_vector(local_vector, ss, ret);
+    }
+    return ret;
+  }
+
+  VectorType* globalize_vectors_and_return_ptr(const std::vector< VectorType >& local_vectors) const
+  {
+    return new VectorType(globalize_vectors(local_vectors));
+  }
 
   VectorType* localize_vector_and_return_ptr(const VectorType& global_vector, const DUNE_STUFF_SSIZE_T ss) const
   {
@@ -1001,10 +1027,12 @@ public:
   } // ... estimate_local(...)
 #endif // 0
 
+#if 0
   VectorType* create_ones() const
   {
     return new VectorType(this->ansatz_space()->mapper().size(), 1.0);
   }
+#endif // 0
 
 #if 0
   void visualize_information(const std::vector< VectorType >& local_vectors,
