@@ -258,6 +258,7 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
                          initial_basis=initial_basis,
                          use_estimator=cfg['greedy_use_estimator'],
                          error_norm=norm,
+                         extension_algorithm=extension_algorithm,
                          max_extensions=len(training_samples)+1,
                          target_error=cfg['greedy_target_error'])
     add_values(time=greedy_data['time'],
