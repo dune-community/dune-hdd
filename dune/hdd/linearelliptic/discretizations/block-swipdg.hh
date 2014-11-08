@@ -1027,10 +1027,12 @@ public:
   } // ... estimate_local(...)
 #endif // 0
 
+#if 0
   VectorType* create_ones() const
   {
     return new VectorType(this->ansatz_space()->mapper().size(), 1.0);
   }
+#endif // 0
 
 #if 0
   void visualize_information(const std::vector< VectorType >& local_vectors,
