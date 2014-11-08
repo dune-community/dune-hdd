@@ -11,13 +11,16 @@ from tempfile import NamedTemporaryFile
 from functools import partial
 import numpy as np
 
-from pymor.algorithms import greedy, gram_schmidt_basis_extension
+from pymor.algorithms import greedy
 import pymor.core
 from pymor.core import getLogger, ImmutableInterface
 from pymor.la import induced_norm
 from pymor.parameters import CubicParameterSpace, Parametric
 from pymor.operators import LincombOperator
 from pymor.reductors import reduce_generic_rb
+from pymor.playground.la import BlockVectorArray
+from pymor.playground.algorithms import gram_schmidt_block_basis_extension, trivial_block_basis_extension
+from pymor.playground.reductors import GenericBlockRBReconstructor
 
 from dune.pymor.core import wrap_module
 
@@ -85,10 +88,12 @@ class ReducedEstimator(object):
     def estimate(self, U, mu, discretization):
         U_red = self.rc.reconstruct(U)
         assert len(U_red) == 1
-        U_red_dune = U_red._list[0]._impl
+        U_red_global = self._discretization.globalize_vectors(U_red)
+        U_red_dune = U_red_global._list[0]._impl
         U_h = self._discretization.solve(mu)
-        assert len(U_h) == 1
-        U_h_dune = U_h._list[0]._impl
+        U_h_global = self._discretization.globalize_vectors(U_h)
+        assert len(U_h_global) == 1
+        U_h_dune = U_h_global._list[0]._impl
         # compute errors
         example = self._estimator._example
         mu_dune = self._wrapper.dune_parameter(mu)
@@ -125,12 +130,13 @@ def reduce_with_estimator(discretization,
                           disable_caching=True,
                           extends=None,
                           reduced_estimator=None):
-    rd, rc, reduction_data = reduce_generic_rb(discretization,
+    rd, _, reduction_data = reduce_generic_rb(discretization,
                                                RB,
                                                operator_product,
                                                vector_product,
                                                disable_caching,
                                                extends)
+    rc = GenericBlockRBReconstructor(RB)
     reduced_estimator.extension_step += 1
     reduced_estimator.rc = rc
     rd = rd.with_(estimator=reduced_estimator)
@@ -175,12 +181,13 @@ def create_product(products, product_type):
 
 def create_discretization(example, wrapper, cfg):
 
-    discretization = example.discretization()
-    linear_solver_options = cfg['dune_linear_solver_options']
-    dune_linear_solver_options = discretization.solver_options(linear_solver_options['type'])
-    for kk, vv in linear_solver_options.items():
-        dune_linear_solver_options.set(kk, vv, True)
-    return wrapper[discretization].with_(solver_options=dune_linear_solver_options)
+    return wrapper[example.discretization()]
+    # discretization = example.discretization()
+    # linear_solver_options = cfg['dune_linear_solver_options']
+    # dune_linear_solver_options = discretization.solver_options(linear_solver_options['type'])
+    # for kk, vv in linear_solver_options.items():
+    #     dune_linear_solver_options.set(kk, vv, True)
+    # return wrapper[discretization].with_(solver_options=dune_linear_solver_options)
 
 
 def compute_discretization_error(example, wrapper, discretization, norm_type, mu=None, mu_norm=None):
@@ -205,24 +212,38 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
 
     mu_hat_dune = wrapper.DuneParameter('mu', cfg['mu_hat_value'])
     mu_bar_dune = wrapper.DuneParameter('mu', cfg['mu_bar_value'])
-    products = {}
+    mu_hat = wrapper[mu_hat_dune]
+    mu_bar = wrapper[mu_bar_dune]
+    all_global_products = {}
+    all_local_products = [{} for ss in np.arange(discretization.num_subdomains)]
     for nm, pr in discretization.products.items():
         if not pr.parametric:
-            products[nm] = pr
+            all_global_products[nm] = pr
         else:
-            products[nm] = wrapper[pr._impl.freeze_parameter(mu_bar_dune)]
+            all_global_products[nm] = pr.assemble(mu=wrapper[mu_bar_dune])
+        for ss in np.arange(discretization.num_subdomains):
+            pr = discretization.local_product(ss, nm)
+            if pr.parametric:
+                all_local_products[ss][nm] = pr.assemble(mu=mu_bar)
+            else:
+                all_local_products[ss][nm] = pr
 
     mu_norm = None
     if norm is not None and norm in dune_config['dune_products'] and discretization.products[norm].parametric:
         mu_norm = mu_bar_dune
 
-    product, product_name = create_product(products, product)
-    norm, norm_name = create_product(products, norm)
+    global_product, global_product_name = create_product(all_global_products, product)
+    local_products, local_products_name = map(list,
+                                              zip(*[create_product(all_local_pr, product)
+                                                    for all_local_pr in all_local_products]))
+    assert all(nm == local_products_name[0] for nm in local_products_name)
+    local_products_name = local_products_name[0]
+    norm, norm_name = create_product(all_global_products, norm)
     norm = induced_norm(norm) if norm is not None else None
-    cfg['extension_product'] = product_name
+    cfg['extension_product'] = local_products_name
     cfg['greedy_error_norm'] = norm_name
 
-    new_dataset('OS2014_greedy_estimator_study', **cfg)
+    new_dataset('OS2014_lrbms_greedy_estimator_study', **cfg)
 
     training_samples = list(discretization.parameter_space.sample_randomly(cfg['num_training_samples']))
     if norm is not None:
@@ -254,11 +275,13 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
     #            discretization_errors=discretization_errors)
     # logger.info('')
 
-    extension_algorithm=partial(gram_schmidt_basis_extension, product=product)
-    initial_basis = discretization.functionals['rhs'].source.empty()
+    extension_algorithm=partial(gram_schmidt_block_basis_extension, product=local_products)
+    initial_basis = discretization.functionals['rhs'].source.empty()._blocks
     if cfg['initialize_with_one']:
         one = wrapper.vector_array(wrapper[example.project('1')])
-        initial_basis = extension_algorithm(initial_basis, one)[0]
+        one = BlockVectorArray([discretization.localize_vector(one, ss)
+                                for ss in np.arange(discretization.num_subdomains)])
+        initial_basis, _ = extension_algorithm(initial_basis, one)
 
     reduced_estimator = ReducedEstimator(discretization, example, wrapper, mu_hat_dune, mu_bar_dune, norm)
     greedy_data = greedy(discretization,
