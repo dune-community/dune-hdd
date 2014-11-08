@@ -8,8 +8,8 @@ import sys
 from pybindgen import param, retval
 
 from dune.pymor.core import prepare_python_bindings, inject_lib_dune_pymor, finalize_python_bindings
-from dune.pymor.discretizations import inject_StationaryDiscretizationImplementation
-#from dune.pymor.discretizations import inject_StationaryMultiscaleDiscretizationImplementation
+# from dune.pymor.discretizations import inject_StationaryDiscretizationImplementation
+from dune.pymor.discretizations import inject_StationaryMultiscaleDiscretizationImplementation
 
 
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
@@ -36,15 +36,15 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                               + RangeFieldType + ', '
                               + dimRange + ', ' + polOrder + ', '
                               + la_backend + '>')
-    #discretization = inject_StationaryMultiscaleDiscretizationImplementation(
-    discretization = inject_StationaryDiscretizationImplementation(
-        module, exceptions, interfaces, CONFIG_H,
-        DiscretizationName,
-        Traits={'VectorType': VectorType,
-                'OperatorType': OperatorType,
-                'FunctionalType': FunctionalType,
-                'ProductType': ProductType},
-        template_parameters=[GridType, RangeFieldType, dimRange, polOrder, la_backend])
+    # discretization = inject_StationaryDiscretizationImplementation(
+    inject_StationaryMultiscaleDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
+                                                            DiscretizationName,
+                                                            Traits={'VectorType': VectorType,
+                                                                    'OperatorType': OperatorType,
+                                                                    'FunctionalType': FunctionalType,
+                                                                    'ProductType': ProductType},
+                                                            template_parameters=[GridType, RangeFieldType,
+                                                                                 dimRange, polOrder, la_backend])
     # then add the example
     def add_example(name):
         Example = module.add_class(name, template_parameters=[GridType], custom_name=name)
