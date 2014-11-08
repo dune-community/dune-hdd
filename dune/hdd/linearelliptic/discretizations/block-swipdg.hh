@@ -600,6 +600,30 @@ public:
     return local_vector;
   } // ... localize_vetor(...)
 
+  VectorType globalize_vectors(const std::vector< VectorType >& local_vectors) const
+  {
+    if (local_vectors.size() != num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "Given local_vectors has wrong size (is " << local_vectors.size() << ", should be "
+                 << num_subdomains() << ")!");
+    VectorType ret(this->ansatz_space()->mapper().size());
+    for (size_t ss = 0; ss < num_subdomains(); ++ss) {
+      const auto& local_vector = local_vectors[ss];
+      if (local_vector.size() != this->local_discretizations_[ss]->ansatz_space()->mapper().size())
+        DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                   "Given local_vectors[" << ss << "] has wrong size (is "
+                   << local_vector.size() << ", should be "
+                   << this->local_discretizations_[ss]->ansatz_space()->mapper().size() << ")!");
+      copy_local_to_global_vector(local_vector, ss, ret);
+    }
+    return ret;
+  }
+
+  VectorType* globalize_vectors_and_return_ptr(const std::vector< VectorType >& local_vectors) const
+  {
+    return new VectorType(globalize_vectors(local_vectors));
+  }
+
   VectorType* localize_vector_and_return_ptr(const VectorType& global_vector, const DUNE_STUFF_SSIZE_T ss) const
   {
     return new VectorType(localize_vector(global_vector, boost::numeric_cast< size_t >(ss)));
