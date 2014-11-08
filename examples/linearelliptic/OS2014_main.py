@@ -98,13 +98,23 @@ class ReducedEstimator(object):
         self.add_to_data('full_error', mu, example.compute_error(U_red_dune, 'elliptic', mu_dune, mu_bar_dune))
         self.add_to_data('model_reduction_error', mu, self._norm(U_red - U_h)[0])
         # compute estimates
-        self.add_to_data('alpha_mu_mu_bar', mu, example.alpha(mu_dune, mu_bar_dune))
-        self.add_to_data('gamma_mu_mu_bar', mu, example.gamma(mu_dune, mu_bar_dune))
-        self.add_to_data('alpha_mu_mu_hat', mu, example.alpha(mu_dune, mu_hat_dune))
-        self.add_to_data('eta_nc_red', mu, example.estimate(U_red_dune, 'eta_NC_OS2014', mu_hat_dune, mu_bar_dune, mu_dune))
-        self.add_to_data('eta_r_red', mu, example.estimate(U_red_dune, 'eta_R_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune))
-        self.add_to_data('eta_df_red', mu, example.estimate(U_red_dune, 'eta_DF_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune))
-        self.add_to_data('eta_red', mu, example.estimate(U_red_dune, 'eta_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune))
+        alpha_mu_mu_bar = example.alpha(mu_dune, mu_bar_dune)
+        gamma_mu_mu_bar = example.gamma(mu_dune, mu_bar_dune)
+        alpha_mu_mu_hat = example.alpha(mu_dune, mu_hat_dune)
+        self.add_to_data('alpha_mu_mu_bar', mu, alpha_mu_mu_bar)
+        self.add_to_data('gamma_mu_mu_bar', mu, gamma_mu_mu_bar)
+        self.add_to_data('alpha_mu_mu_hat', mu, alpha_mu_mu_hat)
+        eta_nc_red = example.estimate(U_red_dune, 'eta_NC_OS2014', mu_hat_dune, mu_bar_dune, mu_dune)
+        eta_r_red  = example.estimate(U_red_dune, 'eta_R_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune)
+        eta_df_red = example.estimate(U_red_dune, 'eta_DF_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune)
+        eta_red = (1.0/np.sqrt(alpha_mu_mu_bar))*(np.sqrt(gamma_mu_mu_bar)*eta_nc_red
+                                                  + eta_r_red
+                                                  + (1.0/np.sqrt(alpha_mu_mu_hat))*eta_df_red)
+        self.add_to_data('eta_nc_red', mu, eta_nc_red)
+        self.add_to_data('eta_r_red',  mu, eta_r_red)
+        self.add_to_data('eta_df_red', mu, eta_df_red)
+        self.add_to_data('eta_red',    mu, eta_red)
+        # self.add_to_data('eta_red', mu, example.estimate(U_red_dune, 'eta_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune))
         return self.data[self.extension_step][config['estimator_return']][-1]
 
 
