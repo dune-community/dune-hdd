@@ -44,6 +44,7 @@ config = {'num_training_samples': 10,
           'greedy_target_error': 1e-14,
           'initialize_with_one': True,
           'estimator_return': 'eta_red'}
+DATASET_ID = dune_config['dune_example'] + '_oversampling_test'
 
 
 pymor.core.logger.MAX_HIERACHY_LEVEL = 2
@@ -246,7 +247,7 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
     cfg['extension_product'] = local_products_name
     cfg['greedy_error_norm'] = norm_name
 
-    new_dataset('OS2014_lrbms_greedy_estimator_study', **cfg)
+    new_dataset(DATASET_ID, **cfg)
 
     training_samples = list(discretization.parameter_space.sample_randomly(cfg['num_training_samples']))
     if norm is not None:
