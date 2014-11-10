@@ -140,6 +140,14 @@ public:
     return new DiscretizationType(discretization_);
   }
 
+  void visualize(const std::string& filename_prefix) const
+  {
+    test_case_.reference_provider()->visualize(filename_prefix + ".grid", /*coupling=*/ false);
+    test_case_.problem().visualize(test_case_.reference_provider()->leaf_view(),
+                                   filename_prefix + ".problem",
+                                   /*subsampling=*/ false);
+  } // ... visualize(...)
+
   VectorType project(const std::string expression) const
   {
     using namespace Dune;
