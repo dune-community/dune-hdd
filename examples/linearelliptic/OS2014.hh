@@ -79,6 +79,7 @@ public:
   Example(const ParametersMapType& parameter_range,
           const std::string partitioning = "[1 1 1]",
           const DUNE_STUFF_SSIZE_T num_refinements = 0,
+          const ssize_t oversampling_layers = 0,
           const std::vector< std::string > products = {},
           const ssize_t info_log_levels  = 0,
           const ssize_t debug_log_levels = -1,
@@ -100,7 +101,8 @@ public:
                                    {"mu_bar", Dune::Pymor::Parameter("mu", 1)}}, //    (which is the parametric problem) anyway
                                   parameter_range_),
                  partitioning,
-                 boost::numeric_cast< size_t >(num_refinements))
+                 boost::numeric_cast< size_t >(num_refinements),
+                 boost::numeric_cast< size_t >(oversampling_layers))
     , reference_test_case_(merge_parameters({{"mu",     Dune::Pymor::Parameter("mu", 1)},
                                              {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
                                              {"mu_bar", Dune::Pymor::Parameter("mu", 1)}},

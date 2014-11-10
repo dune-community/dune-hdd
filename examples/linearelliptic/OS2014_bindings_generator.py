@@ -50,6 +50,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         Example = module.add_class(name, template_parameters=[GridType], custom_name=name)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
@@ -61,6 +62,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
@@ -71,6 +73,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
@@ -80,6 +83,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
@@ -88,6 +92,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels'),
@@ -95,27 +100,40 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'debug_log_levels')],
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'info_log_levels')],
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers'),
                                  param('const std::vector< std::string >', 'products')],
                                 throw=exceptions)
         Example.add_constructor([param('const std::string', 'partitioning'),
+                                 param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements'),
+                                 param('const size_t', 'oversampling_layers')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string', 'partitioning'),
                                  param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'num_refinements')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string', 'partitioning')],
                                 throw=exceptions)
         Example.add_constructor([], throw=exceptions)
         Example.add_method('discretization_and_return_ptr',
                            retval(DiscretizationFullName + ' *', caller_owns_return=True),
                            [], is_const=True, throw=exceptions,
                            custom_name='discretization')
+        Example.add_method('visualize',
+                           None,
+                           [param('const std::string&', 'filename_prefix')],
+                           is_const=True, throw=exceptions)
         Example.add_method('project',
                            retval(VectorType),
                            [param('const std::string', 'expression')], is_const=True, throw=exceptions)
