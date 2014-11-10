@@ -95,13 +95,13 @@ public:
                   debug_color,
                   warn_color)
     , parameter_range_(parameter_range)
-    , test_case_(merge_parameters({{"mu", Dune::Pymor::Parameter("mu", 1)},     // <- it does not matter which parameters we give to the
-                                   {"mu_hat", Dune::Pymor::Parameter("mu", 1)}, //    test case here, since we use test_case_.problem()
+    , test_case_(merge_parameters({{"mu",     Dune::Pymor::Parameter("mu", 1)},  // <- it does not matter which parameters we give to the
+                                   {"mu_hat", Dune::Pymor::Parameter("mu", 1)},  //    test case here, since we use test_case_.problem()
                                    {"mu_bar", Dune::Pymor::Parameter("mu", 1)}}, //    (which is the parametric problem) anyway
                                   parameter_range_),
                  partitioning,
                  boost::numeric_cast< size_t >(num_refinements))
-    , reference_test_case_(merge_parameters({{"mu", Dune::Pymor::Parameter("mu", 1)},
+    , reference_test_case_(merge_parameters({{"mu",     Dune::Pymor::Parameter("mu", 1)},
                                              {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
                                              {"mu_bar", Dune::Pymor::Parameter("mu", 1)}},
                                             parameter_range_),
