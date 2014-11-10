@@ -317,7 +317,8 @@ if __name__ == '__main__':
     discretization = create_discretization(example, wrapper, dune_config)
     discretization = discretization.with_(
                     parameter_space=CubicParameterSpace(discretization.parameter_type, 0.1, 1.0))
-    print('the discretization has {} DoFs.'.format(discretization.solution_space.dim))
+    print('the discretization has {} DoFs and {} subdomains.'.format(discretization.solution_space.dim,
+                                                                     discretization.num_subdomains))
     print('the parameter type is {}.'.format(discretization.parameter_type))
     print('')
 
