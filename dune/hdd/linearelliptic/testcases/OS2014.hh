@@ -301,13 +301,15 @@ class ParametricBlockConvergence
   typedef internal::ParametricConvergenceBase< GridType > ParametricConvergenceBaseType;
   typedef MultiscaleCubeBase< GridType >   TestCaseBaseType;
 
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
+                                                       const size_t oversampling_layers)
   {
     Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
     grid_cfg["lower_left"] = "-1";
     grid_cfg["upper_right"] = "1";
     grid_cfg["num_elements"] = "4";
     grid_cfg["num_partitions"] = num_partitions;
+    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
@@ -319,9 +321,12 @@ public:
 
   ParametricBlockConvergence(const ParametersMapType parameters,
                              const std::string num_partitions = "[1 1 1]",
-                             const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
+                             const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_,
+                             const size_t oversampling_layers = 0)
     : ParametricConvergenceBaseType(parameters)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions), ParametricConvergenceBaseType::initial_refinements(), num_refinements)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
+                       ParametricConvergenceBaseType::initial_refinements(),
+                       num_refinements)
   {
     this->check_parameters(ParametricConvergenceBaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
@@ -337,13 +342,15 @@ class FiveSpotBlock
   typedef internal::FiveSpotBase< GridType > FiveSpotBaseType;
   typedef MultiscaleCubeBase< GridType >     TestCaseBaseType;
 
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
+                                                       const size_t oversampling_layers)
   {
     Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
     grid_cfg["lower_left"] = "-1";
     grid_cfg["upper_right"] = "1";
     grid_cfg["num_elements"] = "4";
     grid_cfg["num_partitions"] = num_partitions;
+    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
@@ -355,9 +362,12 @@ public:
 
   FiveSpotBlock(const ParametersMapType parameters,
                 const std::string num_partitions = "[1 1 1]",
-                const size_t num_refinements = FiveSpotBaseType::default_num_refinements_)
+                const size_t num_refinements = FiveSpotBaseType::default_num_refinements_,
+                const size_t oversampling_layers = 0)
     : FiveSpotBaseType(parameters)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions), FiveSpotBaseType::initial_refinements(), num_refinements)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
+                       FiveSpotBaseType::initial_refinements(),
+                       num_refinements)
   {
     this->check_parameters(FiveSpotBaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
