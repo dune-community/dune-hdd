@@ -273,21 +273,21 @@ private:
 } // namespace internal
 
 
-//template< class GridImp >
-//class Spe10Model1Example
-//  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > >
-//{
-//  static_assert(GridImp::dimension == 2, "Only available in 2d!");
-//  typedef internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > > BaseType;
+template< class GridImp >
+class Spe10Model1Example
+  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > >
+{
+  static_assert(GridImp::dimension == 2, "Only available in 2d!");
+  typedef internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > > BaseType;
 
-//public:
-//  template< class... Args >
-//  Spe10Model1Example(Args&& ...args)
-//    : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
-//                {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}},
-//               std::forward< Args >(args)...)
-//  {}
-//}; // class Spe10Model1Example
+public:
+  template< class... Args >
+  Spe10Model1Example(Args&& ...args)
+    : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+                {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}},
+               std::forward< Args >(args)...)
+  {}
+}; // class Spe10Model1Example
 
 
 template< class GridImp >
