@@ -160,6 +160,8 @@ public:
     }
     if (!exists) {
       logger.info() << "solving";
+      if (options.has_key("type"))
+        logger.info() << " with '" << options.get< std::string >("type") << "'";
       if (!mu.empty())
         logger.info() << " for mu = " << mu;
       logger.info() << "... " << std::endl;
