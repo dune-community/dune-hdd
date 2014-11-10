@@ -31,7 +31,7 @@ import linearellipticexampleOS2014 as dune_module
 
 dune_config = {'dune_partitioning': '[1 1 1]',
                'dune_num_refinements': 2,
-               'dune_products': ['elliptic', 'penalty'],
+               'dune_products': ['l2', 'h1_semi', 'elliptic'],
                'dune_log_info_level': -1,
                'dune_log_debug_level': -1,
                'dune_log_enable_warnings': True,
@@ -322,10 +322,7 @@ if __name__ == '__main__':
     print('the parameter type is {}.'.format(discretization.parameter_type))
     print('')
 
-    # for product, norm in (('l2', 'l2'),
-    #                       ('energy', 'energy'),
-    #                       (('elliptic', 'penalty'), 'elliptic')):
-    product = ('elliptic', 'penalty')
+    product = ('l2', 'h1_semi')
     norm = 'elliptic'
     cfg = config.copy()
     for kk, vv in dune_config.items():
