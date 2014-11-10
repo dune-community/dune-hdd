@@ -35,7 +35,8 @@ dune_config = {'dune_partitioning': '[1 1 1]',
                'dune_log_info_level': -1,
                'dune_log_debug_level': -1,
                'dune_log_enable_warnings': True,
-               'dune_linear_solver_options': {'type': 'bicgstab.ilut', 'precision': '1e-14'}}
+               'dune_linear_solver_options': {'type': 'bicgstab.ilut', 'precision': '1e-14'},
+               'dune_example': 'OS2014Example'}
 config = {'num_training_samples': 10,
           'mu_hat_value': 0.1,
           'mu_bar_value': 0.1,
@@ -152,14 +153,16 @@ def get_logger():
 
 
 def init_dune(cfg):
-    example = dune_module.OS2014Example(partitioning=cfg['dune_partitioning'],
-                                        num_refinements=cfg['dune_num_refinements'],
-                                        products=cfg['dune_products'],
-                                        info_log_levels=cfg['dune_log_info_level'],
-                                        debug_log_levels=cfg['dune_log_debug_level'],
-                                        enable_warnings=cfg['dune_log_enable_warnings'],
-                                        enable_colors=True,
-                                        info_color='blue')
+    Example = dune_module.__dict__[cfg['dune_example']]
+    example = Example(partitioning=cfg['dune_partitioning'],
+                      num_refinements=cfg['dune_num_refinements'],
+                      oversampling_layers=cfg['dune_oversampling_layers'],
+                      products=cfg['dune_products'],
+                      info_log_levels=cfg['dune_log_info_level'],
+                      debug_log_levels=cfg['dune_log_debug_level'],
+                      enable_warnings=cfg['dune_log_enable_warnings'],
+                      enable_colors=True,
+                      info_color='blue')
     _, wrapper = wrap_module(dune_module)
     return example, wrapper
 
