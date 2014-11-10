@@ -29,8 +29,9 @@ from simdb.run import new_dataset, add_values, add_data, add_logfile
 import linearellipticexampleOS2014 as dune_module
 
 
-dune_config = {'dune_partitioning': '[1 1 1]',
+dune_config = {'dune_partitioning': '[3 3 1]',
                'dune_num_refinements': 2,
+               'dune_oversampling_layers': 21,
                'dune_products': ['l2', 'h1_semi', 'elliptic'],
                'dune_log_info_level': -1,
                'dune_log_debug_level': -1,
