@@ -392,6 +392,14 @@ protected:
     return ret;
   } // ... initial_refinements()
 
+  static ParametersMapType add_parameter_range(const ParametersMapType& parameters)
+  {
+    ParametersMapType ret = parameters;
+    ret["parameter_range_min"] = Pymor::Parameter("mu", 0.1);
+    ret["parameter_range_max"] = Pymor::Parameter("mu", 1.0);
+    return ret;
+  } // ... add_parameter_range(...)
+
   static Stuff::Common::Configuration configuration(const std::string filename)
   {
     auto config = parametric_model1_problem_cfg();
@@ -405,12 +413,11 @@ public:
   {
     return ParameterTypesMapType({{"mu",            Pymor::ParameterType("mu", 1)},
                                   {"mu_bar",        Pymor::ParameterType("mu", 1)},
-                                  {"mu_hat",        Pymor::ParameterType("mu", 1)},
-                                  {"mu_minimizing", Pymor::ParameterType("mu", 1)}});
+                                  {"mu_hat",        Pymor::ParameterType("mu", 1)}});
   }
 
   ParametricModel1Base(const ParametersMapType parameters, const std::string filename)
-    : parameters_(parameters)
+    : parameters_(add_parameter_range(parameters))
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , problem_(ProblemType::create(configuration(filename)))
     , exact_solution_(0)
