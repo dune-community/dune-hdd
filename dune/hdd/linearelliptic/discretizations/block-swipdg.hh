@@ -602,12 +602,12 @@ public:
 
   VectorType globalize_vectors(const std::vector< VectorType >& local_vectors) const
   {
-    if (local_vectors.size() != num_subdomains())
+    if (local_vectors.size() != boost::numeric_cast< size_t >(num_subdomains()))
       DUNE_THROW(Stuff::Exceptions::wrong_input_given,
                  "Given local_vectors has wrong size (is " << local_vectors.size() << ", should be "
                  << num_subdomains() << ")!");
     VectorType ret(this->ansatz_space()->mapper().size());
-    for (size_t ss = 0; ss < num_subdomains(); ++ss) {
+    for (size_t ss = 0; ss < boost::numeric_cast< size_t >(num_subdomains()); ++ss) {
       const auto& local_vector = local_vectors[ss];
       if (local_vector.size() != this->local_discretizations_[ss]->ansatz_space()->mapper().size())
         DUNE_THROW(Stuff::Exceptions::wrong_input_given,
