@@ -39,6 +39,7 @@ dune_config = {'dune_partitioning': '[3 3 1]',
                'dune_linear_solver_options': {'type': 'bicgstab.ilut', 'precision': '1e-14'},
                'dune_example': 'OS2014Example'}
 config = {'num_training_samples': 10,
+          'greedy_max_extensions': 11,
           'mu_hat_value': 0.1,
           'mu_bar_value': 0.1,
           'greedy_use_estimator': True,
@@ -297,7 +298,7 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
                          use_estimator=cfg['greedy_use_estimator'],
                          error_norm=norm,
                          extension_algorithm=extension_algorithm,
-                         max_extensions=len(training_samples)+1,
+                         max_extensions=cfg['greedy_max_extensions'],
                          target_error=cfg['greedy_target_error'])
     add_values(time=greedy_data['time'],
                max_err=greedy_data['max_err'],
