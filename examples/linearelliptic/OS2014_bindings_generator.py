@@ -181,6 +181,23 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            [param('const ' + VectorType + '&', 'vector'),
                             param('const std::string', 'type')],
                            is_const=True, throw=exceptions)
+        Example.add_method('available_local_estimators',
+                           retval('std::vector< std::string >'),
+                           [],
+                           is_const=True, throw=exceptions)
+        Example.add_method('estimate_local',
+                           retval('std::vector< ' + RangeFieldType + ' >'),
+                           [param('const ' + VectorType + '&', 'vector'),
+                            param('const std::string', 'type'),
+                            param('const Dune::Pymor::Parameter', 'mu_hat'),
+                            param('const Dune::Pymor::Parameter', 'mu_bar'),
+                            param('const Dune::Pymor::Parameter', 'mu')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('estimate_local',
+                           retval('std::vector< ' + RangeFieldType + ' >'),
+                           [param('const ' + VectorType + '&', 'vector'),
+                            param('const std::string', 'type')],
+                           is_const=True, throw=exceptions)
         Example.add_method('alpha',
                            retval(RangeFieldType),
                            [param('const Dune::Pymor::Parameter&', 'mu_1'),

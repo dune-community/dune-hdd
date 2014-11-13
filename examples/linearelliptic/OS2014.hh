@@ -244,6 +244,35 @@ public:
                                                 parameter_range_));
   } // ... estimate(...)
 
+  std::vector< std::string > available_local_estimators() const
+  {
+    return Estimator::available_local();
+  }
+
+  std::vector< RangeFieldType > estimate_local(const VectorType& vector,
+                                               const std::string type,
+                                               const Dune::Pymor::Parameter mu_hat = Dune::Pymor::Parameter(),
+                                               const Dune::Pymor::Parameter mu_bar = Dune::Pymor::Parameter(),
+                                               const Dune::Pymor::Parameter mu     = Dune::Pymor::Parameter())
+  {
+    return Estimator::estimate_local(*discretization_.ansatz_space(),
+                                     vector,
+                                     discretization_.problem(),
+                                     type,
+                                     merge_parameters({{"mu_hat", mu_hat},
+                                                       {"mu_bar", mu_bar},
+                                                       {"mu",     mu}},
+                                                      parameter_range_));
+  } // ... estimate_local(...)
+
+  VectorType solve_for_local_correction(const std::vector< VectorType >& local_vectors,
+                                        const ssize_t subdomain,
+                                        const Dune::Pymor::Parameter mu = Dune::Pymor::Parameter()) const
+  {
+    const size_t ss = boost::numeric_cast< size_t >(subdomain);
+    return discretization_.solve_for_local_correction(local_vectors, ss, mu);
+  }
+
   RangeFieldType alpha(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2)
   {
     return test_case_.problem().diffusion_factor()->alpha(mu_1, mu_2);
