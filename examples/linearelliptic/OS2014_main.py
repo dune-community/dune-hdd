@@ -14,6 +14,7 @@ import numpy as np
 from pymor.algorithms import greedy
 import pymor.core
 from pymor.core import getLogger, ImmutableInterface
+from pymor.core.exceptions import ExtensionError
 from pymor.la import induced_norm
 from pymor.parameters import CubicParameterSpace, Parametric
 from pymor.operators import LincombOperator
@@ -45,8 +46,11 @@ config = {'num_training_samples': 10,
           'greedy_use_estimator': True,
           'greedy_target_error': 1e-14,
           'initialize_with_one': True,
-          'estimator_return': 'eta_red'}
-DATASET_ID = dune_config['dune_example'] + '_oversampling_test'
+          'estimator_return': 'eta_red',
+          'num_test_samples': 20,
+          'online_target_error': 0.275,
+          'doerfler_marking_theta': 0.3}
+DATASET_ID = dune_config['dune_example'] + '_online_enrichment_test'
 
 
 pymor.core.logger.MAX_HIERACHY_LEVEL = 2
@@ -211,6 +215,15 @@ def compute_discretization_error(example, wrapper, discretization, norm_type, mu
                                      wrapper.dune_parameter(mu))
 
 
+def doerfler_marking(indicators, theta):
+    indices = list(range(len(indicators)))
+    indicators, indices = [list(x) for x in zip(*sorted(zip(indicators, indices), key=lambda pair: pair[0]))]
+    total = np.sum(indicators)
+    sums = np.array([np.sum(indicators[:ii+1]) for ii in np.arange(len(indicators))])
+    threshhold = np.argmax(sums > theta*total)
+    return indices[:threshhold]
+
+
 def run_experiment(example, wrapper, discretization, cfg, product, norm):
 
     logger, logfile = get_logger()
@@ -307,6 +320,85 @@ def run_experiment(example, wrapper, discretization, cfg, product, norm):
                max_err_mu=greedy_data['max_err_mu'],
                max_errs=greedy_data['max_errs'],
                estimator_data=reduced_estimator.data)
+    rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
+    basis, basis_mus = greedy_data['basis'], greedy_data['max_err_mus']
+
+    # perform the 'online phase'
+    num_test_samples = cfg['num_test_samples']
+    target_error = cfg['online_target_error']
+    print('')
+    logger.info('Starting online phase for {} test parameters to reach a target error of {}:'.format(num_test_samples,
+                                                                                                     target_error))
+    test_samples = list(discretization.parameter_space.sample_randomly(num_test_samples))
+    for mu in test_samples:
+        mu_dune = wrapper.dune_parameter(mu)
+        mu_in_basis = mu in basis_mus
+        logger.info('Solving for {} (is {}in the basis) ...'.format(mu, 'already ' if mu_in_basis else 'not '))
+        U_red = rd.solve(mu)
+        logger.info('  Estimating ...')
+        error = reduced_estimator.estimate(U_red, mu, discretization)
+        if error > target_error:
+            if mu_in_basis:
+                logger.error('Error ({}) is larger than target_error ({}), ' \
+                             + 'but ({}) is already in the basis: aborting!'.format(error, target_error, mu))
+                break
+            else:
+                failure = False
+                logger.info('Error ({}) is too large, starting intermediate offline phase:'.format(error))
+                while error > target_error:
+                    logger.info('  Estimating local error contributions ...')
+                    U_red_h = rc.reconstruct(U_red)
+                    assert len(U_red_h) == 1
+                    U_red_global = discretization.globalize_vectors(U_red_h)
+                    U_red_dune = U_red_global._list[0]._impl
+                    local_indicators = list(example.estimate_local(U_red_dune,
+                                                                   'eta_OS2014_*',
+                                                                   mu_hat_dune,
+                                                                   mu_bar_dune,
+                                                                   mu_dune))
+                    # marked_subdomains = doerfler_marking(local_indicators, cfg['doerfler_marking_theta'])
+                    marked_subdomains = list(np.arange(discretization.num_subdomains))
+                    logger.info('  Solving on {} subdomain{} ...'.format(len(marked_subdomains),
+                                                                         '' if len(marked_subdomains) == 1 else 's'))
+                    local_solutions = [None for ii in np.arange(len(marked_subdomains))]
+                    for ii, subdomain in enumerate(marked_subdomains):
+                        local_solutions[ii] = wrapper.vector_array(wrapper[example.solve_for_local_correction(
+                                [U._list[0]._impl for U in U_red_h._blocks],
+                                subdomain,
+                                mu_dune)])
+                    # local_solutions = discretization.solve(mu)._blocks
+                    # local_solutions = [local_solutions[ss] for ss in marked_subdomains]
+                    logger.info('  Enriching local bases on {} subdomain{}...'.format(
+                        len(marked_subdomains), '' if len(marked_subdomains) == 1 else 's'))
+                    try:
+                        extended_bases, _ = gram_schmidt_block_basis_extension(
+                                [basis[ss] for ss in marked_subdomains],
+                                BlockVectorArray(local_solutions, copy=False),
+                                product=[local_products[ss] for ss in marked_subdomains])
+                    except ExtensionError:
+                        logger.error('Enrichment failed on all subdomains, aborting!')
+                        failure = True
+                        break
+                    assert len(extended_bases) == len(marked_subdomains)
+                    for ii, subdomain in enumerate(marked_subdomains):
+                        basis[subdomain] = extended_bases[ii]
+                    logger.info('  Reducing ...')
+                    rd, _, _ = reduce_generic_rb(discretization, basis)
+                    rc = GenericBlockRBReconstructor(basis)
+                    reduced_estimator.rc = rc
+                    reduced_estimator.extension_step += 1
+                    U_red = rd.solve(mu)
+                    logger.info('  Estimating ...')
+                    new_error = example.estimate(discretization.globalize_vectors(rc.reconstruct(U_red))._list[0]._impl, 'eta_OS2014_*', mu_hat_dune, mu_bar_dune, mu_dune)
+                    # new_error = reduced_estimator.estimate(U_red, mu, discretization)
+                    if new_error > error:
+                        logger.error('Error increased, aborting!')
+                        failure = True
+                        break
+                    error = new_error
+                if failure:
+                    break
+                logger.info('  Error ({}) is below the target error, continuing ...'.format(error))
 
     # this should be the last action (to really capture all logs)
     add_logfile(logfile)
