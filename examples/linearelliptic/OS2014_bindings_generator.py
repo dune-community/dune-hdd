@@ -198,6 +198,17 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            [param('const ' + VectorType + '&', 'vector'),
                             param('const std::string', 'type')],
                            is_const=True, throw=exceptions)
+        Example.add_method('solve_for_local_correction',
+                           retval(VectorType),
+                           [param('std::vector< ' + VectorType + ' >&', 'local_vectors'),
+                            param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'subdomain'),
+                            param('const Dune::Pymor::Parameter', 'mu')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('solve_for_local_correction',
+                           retval(VectorType),
+                           [param('std::vector< ' + VectorType + ' >&', 'local_vectors'),
+                            param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'subdomain')],
+                           is_const=True, throw=exceptions)
         Example.add_method('alpha',
                            retval(RangeFieldType),
                            [param('const Dune::Pymor::Parameter&', 'mu_1'),
