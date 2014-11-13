@@ -216,12 +216,19 @@ def compute_discretization_error(example, wrapper, discretization, norm_type, mu
 
 
 def doerfler_marking(indicators, theta):
+    assert 0.0 < theta <= 1.0
     indices = list(range(len(indicators)))
-    indicators, indices = [list(x) for x in zip(*sorted(zip(indicators, indices), key=lambda pair: pair[0]))]
+    # indicators = [ii**2 for ii in indicators]
+    indicators, indices = [list(x) for x in zip(*sorted(zip(indicators, indices),
+                                                        key=lambda pair: pair[0],
+                                                        reverse=True))]
     total = np.sum(indicators)
     sums = np.array([np.sum(indicators[:ii+1]) for ii in np.arange(len(indicators))])
-    threshhold = np.argmax(sums > theta*total)
-    return indices[:threshhold]
+    where = sums > theta*total
+    if np.any(where):
+        return indices[:np.argmax(where)+1]
+    else:
+        return indices
 
 
 def run_experiment(example, wrapper, discretization, cfg, product, norm):
