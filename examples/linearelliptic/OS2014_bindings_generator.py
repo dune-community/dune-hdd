@@ -196,11 +196,6 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            retval(RangeFieldType),
                            [param('const ' + VectorType + '&', 'solution')],
                            is_const=True, throw=exceptions)
-        Example.add_method('compute_jump_norm',
-                           retval(RangeFieldType),
-                           [param('const ' + VectorType + '&', 'solution_vector'),
-                            param('const Dune::Pymor::Parameter', 'mu_product')],
-                           is_const=True, throw=exceptions)
         Example.add_method('available_estimators',
                            retval('std::vector< std::string >'),
                            [],
