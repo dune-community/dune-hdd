@@ -198,30 +198,74 @@ public:
     return std::sqrt(product.apply2(difference, difference, mu_product));
   } // ... compute_error(...)
 
-  RangeFieldType compute_jump_norm(const VectorType& solution_vector,
-                                   const Dune::Pymor::Parameter mu_product = Dune::Pymor::Parameter())
+  VectorType* pb_project_global_to_oversampled(const VectorType& global_vector, const ssize_t subdomain) const
   {
     using namespace Dune;
-    typedef typename DiscretizationType::AnsatzSpaceType AnsatzSpaceType;
-    typedef GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
-    ConstDiscreteFunctionType solution(*discretization_.ansatz_space(), solution_vector);
-    const auto diffusion_factor = discretization_.problem().diffusion_factor()->with_mu(mu_product);
-    const auto diffusion_tensor = discretization_.problem().diffusion_tensor()->with_mu(mu_product);
-    typedef GDT::Products::EllipticSWIPDGPenaltyLocalizable
-        < typename DiscretizationType::GridViewType,
-          typename DiscretizationType::ProblemType::DiffusionFactorType::NonparametricType,
-          ConstDiscreteFunctionType,
-          ConstDiscreteFunctionType,
-          RangeFieldType,
-          typename DiscretizationType::ProblemType::DiffusionTensorType::NonparametricType > ProductType;
-    ProductType penalty_product(discretization_.grid_view(),
-                                solution,
-                                solution,
-                                *diffusion_factor,
-                                *diffusion_tensor,
-                                2);
-    return std::sqrt(penalty_product.apply2());
-  } // ... compute_jump_norm(...)
+    size_t ss = std::numeric_limits< size_t >::max();
+    try {
+      ss = boost::numeric_cast< size_t >(subdomain);
+    } catch (boost::bad_numeric_cast& ee) {
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "There was an error in boost converting " << subdomain << " to "
+                 << Stuff::Common::Typename< size_t >::value() << ": \n\n" << ee.what());
+    }
+    const GDT::ConstDiscreteFunction< typename DiscretizationType::AnsatzSpaceType, VectorType >
+        global_function(*discretization_.ansatz_space(), global_vector);
+    const auto oversampled_discretization = discretization_.get_oversampled_discretization(subdomain, "dirichlet");
+    GDT::DiscreteFunction< typename DiscretizationType::OversampledDiscretizationType::AnsatzSpaceType, VectorType >
+        oversampled_function(*oversampled_discretization.ansatz_space());
+    const GDT::Operators::Projection< typename DiscretizationType::OversampledDiscretizationType::GridViewType >
+        projection_operator(oversampled_discretization.grid_view());
+    projection_operator.apply(global_function, oversampled_function);
+    return new VectorType(oversampled_function.vector());
+  } // ... pb_project_global_to_oversampled(...)
+
+  VectorType* pb_project_global_to_local(const VectorType& global_vector, const ssize_t subdomain) const
+  {
+    using namespace Dune;
+    size_t ss = std::numeric_limits< size_t >::max();
+    try {
+      ss = boost::numeric_cast< size_t >(subdomain);
+    } catch (boost::bad_numeric_cast& ee) {
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "There was an error in boost converting " << subdomain << " to "
+                 << Stuff::Common::Typename< size_t >::value() << ": \n\n" << ee.what());
+    }
+    const GDT::ConstDiscreteFunction< typename DiscretizationType::AnsatzSpaceType, VectorType >
+        global_function(*discretization_.ansatz_space(), global_vector);
+    const auto local_discretization = discretization_.get_local_discretization(subdomain);
+    GDT::DiscreteFunction< typename DiscretizationType::LocalDiscretizationType::AnsatzSpaceType, VectorType >
+        local_function(*local_discretization.ansatz_space());
+    const GDT::Operators::Projection< typename DiscretizationType::LocalDiscretizationType::GridViewType >
+        projection_operator(local_discretization.grid_view());
+    projection_operator.apply(global_function, local_function);
+    return new VectorType(local_function.vector());
+  } // ... pb_project_global_to_local(...)
+
+  VectorType* pb_project_oversampled_to_local(const VectorType& oversampled_vector, const ssize_t subdomain) const
+  {
+    using namespace Dune;
+    size_t ss = std::numeric_limits< size_t >::max();
+    try {
+      ss = boost::numeric_cast< size_t >(subdomain);
+    } catch (boost::bad_numeric_cast& ee) {
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "There was an error in boost converting " << subdomain << " to "
+                 << Stuff::Common::Typename< size_t >::value() << ": \n\n" << ee.what());
+    }
+    const auto oversampled_discretization = discretization_.get_oversampled_discretization(subdomain, "dirichlet");
+    const GDT::ConstDiscreteFunction
+        < typename DiscretizationType::OversampledDiscretizationType::AnsatzSpaceType, VectorType >
+        oversampled_function(*oversampled_discretization.ansatz_space(), oversampled_vector);
+    const auto local_discretization = discretization_.get_local_discretization(subdomain);
+    const auto& local_space = *local_discretization.ansatz_space();
+    GDT::DiscreteFunction< typename DiscretizationType::LocalDiscretizationType::AnsatzSpaceType, VectorType >
+        local_function(local_space);
+    const GDT::Operators::Projection< typename DiscretizationType::LocalDiscretizationType::GridViewType >
+        projection_operator(local_space.grid_view());
+    projection_operator.apply(oversampled_function, local_function);
+    return new VectorType(local_function.vector());
+  } // ... pb_project_oversampled_to_local(...)
 
   std::vector< std::string > available_estimators() const
   {
