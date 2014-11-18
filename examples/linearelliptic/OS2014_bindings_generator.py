@@ -13,6 +13,7 @@ from dune.pymor.discretizations import inject_StationaryMultiscaleDiscretization
 
 
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
+    ssize_t = CONFIG_H['DUNE_STUFF_SSIZE_T']
     '''injects the user code into the module'''
     # first the discretization
     GridType = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
@@ -230,6 +231,24 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            [param('const ' + VectorType + '&', 'vector'),
                             param('const std::string', 'type')],
                            is_const=True, throw=exceptions)
+        Example.add_method('pb_project_global_to_oversampled',
+                           retval(VectorType + '*', caller_owns_return=True),
+                           [param('const ' + VectorType + '&', 'global_vector'),
+                            param('const ' + ssize_t, 'subdomain')],
+                           is_const=True, throw=exceptions,
+                           custom_name='project_global_to_oversampled')
+        Example.add_method('pb_project_global_to_local',
+                           retval(VectorType + '*', caller_owns_return=True),
+                           [param('const ' + VectorType + '&', 'global_vector'),
+                            param('const ' + ssize_t, 'subdomain')],
+                           is_const=True, throw=exceptions,
+                           custom_name='project_global_to_local')
+        Example.add_method('pb_project_oversampled_to_local',
+                           retval(VectorType + '*', caller_owns_return=True),
+                           [param('const ' + VectorType + '&', 'oversampled_vector'),
+                            param('const ' + ssize_t, 'subdomain')],
+                           is_const=True, throw=exceptions,
+                           custom_name='project_oversampled_to_local')
         Example.add_method('solve_for_local_correction',
                            retval(VectorType),
                            [param('std::vector< ' + VectorType + ' >&', 'local_vectors'),
