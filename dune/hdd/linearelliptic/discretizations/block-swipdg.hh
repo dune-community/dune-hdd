@@ -751,6 +751,28 @@ public:
     return local_solution.vector();
   } // ... solve_for_local_correction(...)
 
+  LocalDiscretizationType get_local_discretization(const size_t subdomain) const
+  {
+    if (subdomain >= this->grid_provider_.num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "Given subdomain " << subdomain << " too large (has to be smaller than "
+                 << this->grid_provider_.num_subdomains() << "!");
+    return *(this->local_discretizations_[subdomain]);
+  } // ... get_local_discretization(...)
+
+  LocalDiscretizationType* pb_get_local_discretization(const ssize_t subdomain) const
+  {
+    size_t ss = std::numeric_limits< size_t >::max();
+    try {
+      ss = boost::numeric_cast< size_t >(subdomain);
+    } catch (boost::bad_numeric_cast& ee) {
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "There was an error in boost converting " << subdomain << " to "
+                 << Stuff::Common::Typename< size_t >::value() << ":\n\n" << ee.what());
+    }
+    return new LocalDiscretizationType(get_local_discretization(ss));
+  } // ... pb_get_local_discretization(...)
+
 private:
   class CouplingAssembler
   {
