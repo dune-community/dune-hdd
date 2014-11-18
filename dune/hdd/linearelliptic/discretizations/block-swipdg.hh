@@ -92,6 +92,8 @@ class LocalDiscretizationsContainer
 public:
   typedef SWIPDG< GridType, Stuff::Grid::ChooseLayer::local, RangeFieldType, dimRange
                 , polOrder, GDT::ChooseSpaceBackend::fem, la_backend > DiscretizationType;
+  typedef SWIPDG< GridType, Stuff::Grid::ChooseLayer::local_oversampled, RangeFieldType, dimRange
+                , polOrder, GDT::ChooseSpaceBackend::fem, la_backend > OversampledDiscretizationType;
   typedef typename DiscretizationType::ProblemType     ProblemType;
   typedef typename DiscretizationType::TestSpaceType   TestSpaceType;
   typedef typename DiscretizationType::AnsatzSpaceType AnsatzSpaceType;
@@ -109,6 +111,8 @@ public:
     , all_neumann_boundary_config_(Stuff::Grid::BoundaryInfos::AllNeumann< IntersectionType >::default_config())
     , multiscale_boundary_config_(Stuff::Grid::BoundaryInfoConfigs::IdBased::default_config())
     , local_discretizations_(grid_provider.num_subdomains(), nullptr)
+    , oversampled_discretizations_dirichlet_(grid_provider.num_subdomains(), nullptr)
+    , oversampled_discretizations_neumann_(grid_provider.num_subdomains(), nullptr)
     , local_test_spaces_(grid_provider.num_subdomains(), nullptr)
     , local_ansatz_spaces_(grid_provider.num_subdomains(), nullptr)
   {
@@ -130,6 +134,8 @@ protected:
   const Stuff::Common::Configuration all_neumann_boundary_config_;
   Stuff::Common::Configuration multiscale_boundary_config_;
   std::vector< std::shared_ptr< DiscretizationType > > local_discretizations_;
+  mutable std::vector< std::shared_ptr< OversampledDiscretizationType > > oversampled_discretizations_dirichlet_;
+  mutable std::vector< std::shared_ptr< OversampledDiscretizationType > > oversampled_discretizations_neumann_;
   std::vector< std::shared_ptr< const TestSpaceType > > local_test_spaces_;
   std::vector< std::shared_ptr< const AnsatzSpaceType > > local_ansatz_spaces_;
 }; // class LocalDiscretizationsContainer
@@ -202,7 +208,8 @@ public:
   typedef typename GridProviderType::GridType   GridType;
   typedef typename GridProviderType::MsGridType MsGridType;
 
-  typedef typename Traits::LocalDiscretizationsContainerType::DiscretizationType LocalDiscretizationType;
+  typedef typename Traits::LocalDiscretizationsContainerType::DiscretizationType            LocalDiscretizationType;
+  typedef typename Traits::LocalDiscretizationsContainerType::OversampledDiscretizationType OversampledDiscretizationType;
   typedef typename TestSpaceType::PatternType PatternType;
 
 private:
@@ -771,6 +778,71 @@ public:
                  << Stuff::Common::Typename< size_t >::value() << ":\n\n" << ee.what());
     }
     return new LocalDiscretizationType(get_local_discretization(ss));
+  } // ... pb_get_local_discretization(...)
+
+  OversampledDiscretizationType get_oversampled_discretization(const size_t subdomain,
+                                                               const std::string boundary_value_type) const
+  {
+    if (subdomain >= this->grid_provider_.num_subdomains())
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "Given subdomain " << subdomain << " too large (has to be smaller than "
+                 << this->grid_provider_.num_subdomains() << "!");
+    if (boundary_value_type == "dirichlet") {
+      if (!this->oversampled_discretizations_dirichlet_[subdomain]) {
+        this->oversampled_discretizations_dirichlet_[subdomain] = std::make_shared< OversampledDiscretizationType >(
+                                                                    grid_provider_,
+                                                                    this->all_dirichlet_boundary_config_,
+                                                                    this->zero_boundary_problem_,
+                                                                    subdomain,
+                                                                    only_these_products_);
+        this->oversampled_discretizations_dirichlet_[subdomain]->init();
+      }
+      return *(this->oversampled_discretizations_dirichlet_[subdomain]);
+    } else if (boundary_value_type == "neumann") {
+      if (!this->oversampled_discretizations_neumann_[subdomain]) {
+        this->oversampled_discretizations_neumann_[subdomain] = std::make_shared< OversampledDiscretizationType >(
+                                                                  grid_provider_,
+                                                                  this->all_neumann_boundary_config_,
+                                                                  this->zero_boundary_problem_,
+                                                                  subdomain,
+                                                                  only_these_products_);
+        this->oversampled_discretizations_neumann_[subdomain]->init();
+      }
+      return *(this->oversampled_discretizations_neumann_[subdomain]);
+    } else {
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "Unknown boundary_value_type given (has to be dirichlet or neumann): " << boundary_value_type);
+      return *(this->oversampled_discretizations_dirichlet_[subdomain]);
+    }
+  } // ... get_oversampled_discretization(...)
+
+  OversampledDiscretizationType* pb_get_oversampled_discretization(const ssize_t subdomain,
+                                                                   const std::string boundary_value_type) const
+  {
+    size_t ss = std::numeric_limits< size_t >::max();
+    try {
+      ss = boost::numeric_cast< size_t >(subdomain);
+    } catch (boost::bad_numeric_cast& ee) {
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "There was an error in boost converting " << subdomain << " to "
+                 << Stuff::Common::Typename< size_t >::value() << ":\n\n" << ee.what());
+    }
+    return new OversampledDiscretizationType(get_oversampled_discretization(ss, boundary_value_type));
+  } // ... pb_get_local_discretization(...)
+
+  OversampledDiscretizationType* pb_get_oversampled_discretization(const ssize_t subdomain,
+                                                                   const std::string boundary_value_type,
+                                                                   const VectorType& boundary_values) const
+  {
+    size_t ss = std::numeric_limits< size_t >::max();
+    try {
+      ss = boost::numeric_cast< size_t >(subdomain);
+    } catch (boost::bad_numeric_cast& ee) {
+      DUNE_THROW(Stuff::Exceptions::index_out_of_range,
+                 "There was an error in boost converting " << subdomain << " to "
+                 << Stuff::Common::Typename< size_t >::value() << ":\n\n" << ee.what());
+    }
+    return new OversampledDiscretizationType(get_oversampled_discretization(ss, boundary_value_type, boundary_values));
   } // ... pb_get_local_discretization(...)
 
 private:
