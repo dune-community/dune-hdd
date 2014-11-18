@@ -357,4 +357,22 @@ public:
 }; // class FiveSpotExample
 
 
+template< class GridImp >
+class LocalThermalblockExample
+  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2014::LocalThermalblockBlock< GridImp > >
+{
+  static_assert(GridImp::dimension == 2, "Only available in 2d!");
+  typedef internal::Example
+      < Dune::HDD::LinearElliptic::TestCases::OS2014::LocalThermalblockBlock< GridImp > > BaseType;
+
+public:
+  template< class... Args >
+  LocalThermalblockExample(Args&& ...args)
+    : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+                {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}},
+               std::forward< Args >(args)...)
+  {}
+}; // class LocalThermalblockExample
+
+
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_OS2014_HH

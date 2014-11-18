@@ -222,6 +222,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     add_example('Spe10Model1Example')
     add_example('OS2014Example')
     add_example('FiveSpotExample')
+    add_example('LocalThermalblockExample')
 
 
 if __name__ == '__main__':
