@@ -260,6 +260,19 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            [param('std::vector< ' + VectorType + ' >&', 'local_vectors'),
                             param('const ' + CONFIG_H['DUNE_STUFF_SSIZE_T'], 'subdomain')],
                            is_const=True, throw=exceptions)
+        Example.add_method('solve_oversampled',
+                           retval(VectorType),
+                           [param('const ' + ssize_t, 'subdomain'),
+                            param('const std::string&', 'boundary_value_type'),
+                            param('const ' + VectorType + '&', 'boundary_value_type'),
+                            param('const Dune::Pymor::Parameter', 'mu')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('solve_oversampled',
+                           retval(VectorType),
+                           [param('const ' + ssize_t, 'subdomain'),
+                            param('const std::string&', 'boundary_value_type'),
+                            param('const ' + VectorType + '&', 'boundary_value_type')],
+                           is_const=True, throw=exceptions)
         Example.add_method('alpha',
                            retval(RangeFieldType),
                            [param('const Dune::Pymor::Parameter&', 'mu_1'),
