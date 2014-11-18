@@ -254,6 +254,114 @@ protected:
 }; // class FiveSpotBase
 
 
+template< class GridType >
+class LocalThermalblockBase
+{
+  static_assert(GridType::dimension == 2, "This test case is only available in 2d!");
+public:
+  typedef typename GridType::template Codim< 0 >::Entity EntityType;
+  typedef typename GridType::ctype                       DomainFieldType;
+  static const unsigned int                              dimDomain = GridType::dimension;
+  typedef double            RangeFieldType;
+  static const unsigned int dimRange = 1;
+public:
+  typedef Problems::OS2014::LocalThermalblock
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef Stuff::Functions::Constant
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ExactSolutionType;
+  typedef typename ProblemType::FunctionType::NonparametricType            FunctionType;
+
+  typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
+  typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
+
+protected:
+  static const size_t default_num_refinements_ = 3;
+
+  static int initial_refinements()
+  {
+    int ret = 1;
+#if HAVE_ALUGRID
+    if (std::is_same< GridType, ALUConformGrid< 2, 2 > >::value
+        || std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
+      ret += 1;
+#endif // HAVE_ALUGRID
+    return ret;
+  } // ... initial_refinements()
+
+  static ParametersMapType add_parameter_range(const ParametersMapType& parameters)
+  {
+    ParametersMapType ret = parameters;
+    ret["parameter_range_min"] = Pymor::Parameter("mu", 0.1);
+    ret["parameter_range_max"] = Pymor::Parameter("mu", 1.0);
+    return ret;
+  } // ... add_parameter_range(...)
+
+public:
+  static ParameterTypesMapType required_parameters()
+  {
+    return ParameterTypesMapType({{"mu",     Pymor::ParameterType("mu", 1)},
+                                  {"mu_bar", Pymor::ParameterType("mu", 1)},
+                                  {"mu_hat", Pymor::ParameterType("mu", 1)}});
+  }
+
+  LocalThermalblockBase(const ParametersMapType parameters)
+    : parameters_(add_parameter_range(parameters))
+    , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
+    , problem_()
+    , exact_solution_(0)
+  {}
+
+  void print_header(std::ostream& out = std::cout) const
+  {
+    out << "+===============================================================================+\n"
+        << "|+=============================================================================+|\n"
+        << "||  Testcase OS2014: (parametric) local Thermalblock                           ||\n"
+        << "|+-----------------------------------------------------------------------------+|\n"
+        << "||  domain = [0, 1] x [0, 1]                                                   ||\n"
+        << "||  diffusion = mu in [1/6, 2/6) x [1/6, 2/6)]                                 ||\n"
+        << "||              1  else                                                        ||\n"
+        << "||  force     = 1                                                              ||\n"
+        << "||  dirichlet = 0                                                              ||\n"
+        << "||  reference solution: discrete solution on finest grid                       ||\n"
+        << "||  parameter: mu in [0.1, 1.0]                                                ||\n"
+        << "|+=============================================================================+|\n"
+        << "+===============================================================================+" << std::endl;
+  } // ... print_header(...)
+
+  const Stuff::Common::Configuration& boundary_info() const
+  {
+    return boundary_info_cfg_;
+  }
+
+  const ProblemType& problem() const
+  {
+    return problem_;
+  }
+
+  bool provides_exact_solution() const
+  {
+    return false;
+  }
+
+  const ExactSolutionType& exact_solution() const
+  {
+    DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
+               "Do not call exact_solution() if provides_exact_solution() is false!");
+  }
+
+  const ParametersMapType& parameters() const
+  {
+    return parameters_;
+  }
+
+protected:
+  const ParametersMapType parameters_;
+  const Stuff::Common::Configuration boundary_info_cfg_;
+  const ProblemType problem_;
+  const ExactSolutionType exact_solution_;
+}; // class LocalThermalblockBase
+
+
 } // namespace internal
 
 
@@ -373,6 +481,47 @@ public:
     this->inherit_parameter_type(this->problem_, "problem");
   }
 }; // class FiveSpotBlock
+
+
+template< class GridType >
+class LocalThermalblockBlock
+  : public internal::LocalThermalblockBase< GridType >
+  , public MultiscaleCubeBase< GridType >
+{
+  typedef internal::LocalThermalblockBase< GridType > LocalThermalblockBaseType;
+  typedef MultiscaleCubeBase< GridType >              TestCaseBaseType;
+
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
+                                                       const size_t oversampling_layers)
+  {
+    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
+    grid_cfg["lower_left"] = "0";
+    grid_cfg["upper_right"] = "1";
+    grid_cfg["num_elements"] = "6";
+    grid_cfg["num_partitions"] = num_partitions;
+    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
+    return grid_cfg;
+  } // ... initial_grid_cfg(...)
+
+public:
+  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
+
+  using LocalThermalblockBaseType::required_parameters;
+  using LocalThermalblockBaseType::parameters;
+
+  LocalThermalblockBlock(const ParametersMapType parameters,
+                         const std::string num_partitions = "[1 1 1]",
+                         const size_t num_refinements = LocalThermalblockBaseType::default_num_refinements_,
+                         const size_t oversampling_layers = 0)
+    : LocalThermalblockBaseType(parameters)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
+                       LocalThermalblockBaseType::initial_refinements(),
+                       num_refinements)
+  {
+    this->check_parameters(LocalThermalblockBaseType::required_parameters(), parameters);
+    this->inherit_parameter_type(this->problem_, "problem");
+  }
+}; // class LocalThermalblockBlock
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE
