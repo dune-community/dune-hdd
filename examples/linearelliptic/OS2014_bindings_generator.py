@@ -8,7 +8,7 @@ import sys
 from pybindgen import param, retval
 
 from dune.pymor.core import prepare_python_bindings, inject_lib_dune_pymor, finalize_python_bindings
-# from dune.pymor.discretizations import inject_StationaryDiscretizationImplementation
+from dune.pymor.discretizations import inject_StationaryDiscretizationImplementation
 from dune.pymor.discretizations import inject_StationaryMultiscaleDiscretizationImplementation
 
 
@@ -27,6 +27,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     elif la_backend == 'Dune::Stuff::LA::ChooseBackend::istl_sparse':
         MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
         VectorType = 'Dune::Stuff::LA::IstlDenseVector< ' + RangeFieldType + ' >'
+    space_backend = 'Dune::GDT::ChooseSpaceBackend::fem'
     OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
     ProductType = OperatorType
     FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
@@ -36,15 +37,51 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                               + RangeFieldType + ', '
                               + dimRange + ', ' + polOrder + ', '
                               + la_backend + '>')
+    LocalDiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::SWIPDG'
+    local_layer = 'Dune::Stuff::Grid::ChooseLayer::local'
+    LocalDiscretizationFullName = (LocalDiscretizationName
+                                   + '< ' + GridType + ', '
+                                   + local_layer + ', '
+                                   + RangeFieldType + ', '
+                                   + dimRange + ', ' + polOrder + ', '
+                                   + space_backend + ', '
+                                   + la_backend + ' >')
+    inject_StationaryDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
+                                                  LocalDiscretizationName,
+                                                  Traits={'VectorType': VectorType,
+                                                          'OperatorType': OperatorType,
+                                                          'FunctionalType': FunctionalType,
+                                                          'ProductType': ProductType},
+                                                  template_parameters=[GridType, local_layer, RangeFieldType,
+                                                                       dimRange, polOrder, space_backend, la_backend])
+    oversampled_layer = 'Dune::Stuff::Grid::ChooseLayer::local_oversampled'
+    OversampledDiscretizationFullName = (LocalDiscretizationName
+                                         + '< ' + GridType + ', '
+                                         + oversampled_layer + ', '
+                                         + RangeFieldType + ', '
+                                         + dimRange + ', ' + polOrder + ', '
+                                         + space_backend + ', '
+                                         + la_backend + ' >')
+    inject_StationaryDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
+                                                  LocalDiscretizationName,
+                                                  Traits={'VectorType': VectorType,
+                                                          'OperatorType': OperatorType,
+                                                          'FunctionalType': FunctionalType,
+                                                          'ProductType': ProductType},
+                                                  template_parameters=[GridType, oversampled_layer, RangeFieldType,
+                                                                       dimRange, polOrder, space_backend, la_backend])
     # discretization = inject_StationaryDiscretizationImplementation(
-    inject_StationaryMultiscaleDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
-                                                            DiscretizationName,
-                                                            Traits={'VectorType': VectorType,
-                                                                    'OperatorType': OperatorType,
-                                                                    'FunctionalType': FunctionalType,
-                                                                    'ProductType': ProductType},
-                                                            template_parameters=[GridType, RangeFieldType,
-                                                                                 dimRange, polOrder, la_backend])
+    inject_StationaryMultiscaleDiscretizationImplementation(
+            module, exceptions, interfaces, CONFIG_H,
+            DiscretizationName,
+            Traits={'VectorType': VectorType,
+                    'OperatorType': OperatorType,
+                    'FunctionalType': FunctionalType,
+                    'ProductType': ProductType,
+                    'LocalDiscretizationType': LocalDiscretizationFullName,
+                    'OversampledDiscretizationType': OversampledDiscretizationFullName},
+            template_parameters=[GridType, RangeFieldType,
+                                 dimRange, polOrder, la_backend])
     # then add the example
     def add_example(name):
         Example = module.add_class(name, template_parameters=[GridType], custom_name=name)
