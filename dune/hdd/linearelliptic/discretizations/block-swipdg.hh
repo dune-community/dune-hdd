@@ -686,6 +686,7 @@ public:
                                         const size_t subdomain,
                                         const Pymor::Parameter mu = Pymor::Parameter()) const
   {
+    DUNE_THROW(Stuff::Exceptions::internal_error, "Do not call this method, I do not trust it!");
     using namespace GDT;
 
     if (mu.type() != this->parameter_type())
@@ -705,10 +706,10 @@ public:
       copy_local_to_global_vector(local_vectors[ss], ss, vector);
     }
 
-    const std::string prefix = "subdomain_" + DSC::toString(subdomain) + "_";
+//    const std::string prefix = "subdomain_" + DSC::toString(subdomain) + "_";
 
     const ConstDiscreteFunction< AnsatzSpaceType, VectorType > current_global_solution(*this->ansatz_space(), vector);
-    current_global_solution.visualize(prefix + "current_solution_global");
+//    current_global_solution.visualize(prefix + "current_solution_global");
 
     typedef SWIPDG< typename MsGridType::GridType, Stuff::Grid::ChooseLayer::local_oversampled, RangeFieldType, dimRange
                   , 1, GDT::ChooseSpaceBackend::fem, la_backend > OversampledDiscretizationType;
@@ -721,9 +722,9 @@ public:
     DiscreteFunction< typename OversampledDiscretizationType::AnsatzSpaceType, VectorType >
         current_oversampled_solution(*oversampled_discretization.ansatz_space());
     const Operators::Projection< typename OversampledDiscretizationType::GridViewType >
-        oversampled_projection_operator(*oversampled_discretization.grid_view());
+        oversampled_projection_operator(oversampled_discretization.grid_view());
     oversampled_projection_operator.apply(current_global_solution, current_oversampled_solution);
-    current_oversampled_solution.visualize(prefix + "current_solution_oversampled");
+//    current_oversampled_solution.visualize(prefix + "current_solution_oversampled");
 
     if (!oversampled_discretization.rhs()->has_affine_part())
       oversampled_discretization.rhs()->register_affine_part(oversampled_discretization.test_space()->mapper().size());
@@ -738,14 +739,14 @@ public:
     }
 
     oversampled_discretization.solve(current_oversampled_solution.vector(), mu);
-    current_oversampled_solution.visualize(prefix + "correction_oversampled");
+//    current_oversampled_solution.visualize(prefix + "correction_oversampled");
 
     DiscreteFunction< typename LocalDiscretizationType::AnsatzSpaceType, VectorType >
         local_solution(*this->local_discretizations_[subdomain]->ansatz_space());
     const Operators::Projection< typename LocalDiscretizationType::GridViewType >
-        local_projection_operator(*this->local_discretizations_[subdomain]->grid_view());
+        local_projection_operator(this->local_discretizations_[subdomain]->grid_view());
     local_projection_operator.apply(current_oversampled_solution, local_solution);
-    local_solution.visualize(prefix + "correction_local");
+//    local_solution.visualize(prefix + "correction_local");
 
     return local_solution.vector();
   } // ... solve_for_local_correction(...)
