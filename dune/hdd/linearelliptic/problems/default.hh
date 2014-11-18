@@ -249,6 +249,21 @@ protected:
 }; // class Default
 
 
+template< class P >
+class ConvertToDefault
+{
+  typedef typename P::EntityType E;
+  typedef typename P::DomainFieldType D;
+  static const unsigned int d = P::dimDomain;
+  typedef typename P::RangeFieldType R;
+  static const unsigned int r = P::dimRange;
+  static_assert(std::is_base_of< ProblemInterface< E, D, d, R, r >, P >::value,
+                "P has to be derived from ProblemInterface!");
+public:
+  typedef Default< E, D, d, R, r > Type;
+}; // class ConvertToDefault
+
+
 } // namespace Problems
 } // namespace LinearElliptic
 } // namespace HDD
