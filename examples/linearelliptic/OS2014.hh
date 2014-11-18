@@ -317,6 +317,46 @@ public:
     return discretization_.solve_for_local_correction(local_vectors, ss, mu);
   }
 
+  VectorType solve_oversampled(const ssize_t subdomain,
+                               const std::string& boundary_value_type,
+                               const VectorType& boundary_values,
+                               const Dune::Pymor::Parameter mu = Dune::Pymor::Parameter()) const
+  {
+    using namespace Dune;
+    const size_t ss = boost::numeric_cast< size_t >(subdomain);
+    DSC::Configuration boundary_cfg;
+    if (boundary_value_type == "dirichlet")
+      boundary_cfg = Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config();
+    else if (boundary_value_type == "neumann")
+      boundary_cfg = Stuff::Grid::BoundaryInfoConfigs::AllNeumann::default_config();
+    else
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Unknown boundary_value_type given: " << boundary_value_type);
+    // we need this one temporarily for the space
+    const auto tmp_oversampled_discretization = discretization_.get_oversampled_discretization(ss,
+                                                                                               boundary_value_type);
+    const auto oversampled_space = tmp_oversampled_discretization.ansatz_space();
+    typedef typename DiscretizationType::OversampledDiscretizationType OversampledDiscretizationType;
+    typedef typename HDD::LinearElliptic::Problems::ConvertToDefault< typename TestCaseType::ProblemType >::Type
+                                                                       OversampledProblemType;
+    typedef typename OversampledDiscretizationType::AnsatzSpaceType    OversampledAnsatzSpaceType;
+    auto bv_function = std::make_shared< GDT::ConstDiscreteFunction< OversampledAnsatzSpaceType, VectorType > >(
+          *oversampled_space, boundary_values, "boundary_values");
+    auto nonparametric_problem = test_case_.problem().with_mu(mu);
+    const OversampledProblemType oversampled_problem(nonparametric_problem->diffusion_factor()->affine_part(),
+                                                     nonparametric_problem->diffusion_tensor()->affine_part(),
+                                                     nonparametric_problem->force()->affine_part(),
+                                                     bv_function,
+                                                     bv_function);
+    OversampledDiscretizationType discretization(*test_case_.reference_provider(),
+                                                 boundary_cfg,
+                                                 oversampled_problem,
+                                                 ss);
+    discretization.init();
+    VectorType solution = discretization.create_vector();
+    discretization.solve(solution);
+    return solution;
+  } // ... solve_oversampled(...)
+
   RangeFieldType alpha(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2)
   {
     return test_case_.problem().diffusion_factor()->alpha(mu_1, mu_2);
