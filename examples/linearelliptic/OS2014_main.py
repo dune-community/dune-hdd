@@ -332,6 +332,12 @@ def online_phase(cfg, detailed_data, offline_data):
                             marked_subdomains = doerfler_marking(local_indicators, cfg['doerfler_marking_theta'])
                         else:
                             raise ConfigurationError('Unknown marking_strategy given: {}'.format(cfg['local_indicators']))
+                        if 'neighbours' in cfg['marking_strategy']:
+                            for ss in list(marked_subdomains):
+                                neighbours = (list(discretization._impl.neighbouring_subdomains(ss)))
+                                for nn in neighbours:
+                                    marked_subdomains.append(nn)
+                            marked_subdomains = set(marked_subdomains)
                         logger.info('  {} subdomains marked, computing local solutions ...'.format(len(marked_subdomains)))
                         # compute updated local solution
                         local_solutions = [None for ss in np.arange(discretization.num_subdomains)]
