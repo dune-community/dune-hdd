@@ -284,8 +284,6 @@ def online_phase(cfg, detailed_data, offline_data):
     target_error = cfg['online_target_error']
 
     logger.info('Started online phase for {} samples'.format(num_test_samples))
-    logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
-                                                          np.max([len(bb) for bb in basis])))
     test_samples = list(discretization.parameter_space.sample_randomly(num_test_samples))
     for mu in test_samples:
         mu_dune = wrapper.dune_parameter(mu)
