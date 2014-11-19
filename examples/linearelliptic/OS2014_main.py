@@ -52,16 +52,16 @@ config = {'dune_partitioning': '[8 8 1]',
           'mu_bar_value': 1,
           'greedy_target_error': 1e-10,
           'greedy_use_estimator': True,
-          'estimator_compute': 'eta_red',
-          'estimator_return': 'eta_red',
+          'estimator_compute': 'model_reduction_error',
+          'estimator_return': 'model_reduction_error',
           'num_test_samples': 10,
-          'local_indicators': 'eta_red',
+          'local_indicators': 'model_reduction_error',
           'marking_strategy': 'doerfler',
-          'doerfler_marking_theta': 1.0,
+          'doerfler_marking_theta': 0.75,
           'local_boundary_values': 'dirichlet',
-          'online_target_error': 0.015,
+          'online_target_error': 1e-4,
           'online_max_tries': 3,
-          'online_max_reduction_factor': 0.95}
+          'online_max_reduction_factor': 0.90}
 DATASET_ID = config['dune_example'] + '_online_enrichment_test'
 
           # 'estimator_compute': ('discretization_error',
