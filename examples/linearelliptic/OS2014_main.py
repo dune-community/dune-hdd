@@ -392,8 +392,9 @@ def online_phase(cfg, detailed_data, offline_data):
                     logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                           np.max([len(bb) for bb in basis])))
                 print('')
-        logger.info('Error ({}) is below the target error, continuing ...'.format(error))
-        print('')
+        else:
+            logger.info('Error ({}) is below the target error, continuing ...'.format(error))
+            print('')
 
     logger.info('Adaptive online phase finished.')
     logger.info('Final Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
