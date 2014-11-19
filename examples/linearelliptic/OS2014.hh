@@ -323,7 +323,6 @@ public:
                                const Dune::Pymor::Parameter mu = Dune::Pymor::Parameter()) const
   {
     using namespace Dune;
-    const size_t ss = boost::numeric_cast< size_t >(subdomain);
     DSC::Configuration boundary_cfg;
     if (boundary_value_type == "dirichlet")
       boundary_cfg = Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config();
@@ -332,7 +331,7 @@ public:
     else
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Unknown boundary_value_type given: " << boundary_value_type);
     // we need this one temporarily for the space
-    const auto tmp_oversampled_discretization = discretization_.get_oversampled_discretization(ss,
+    const auto tmp_oversampled_discretization = discretization_.get_oversampled_discretization(boost::numeric_cast< size_t >(subdomain),
                                                                                                boundary_value_type);
     const auto oversampled_space = tmp_oversampled_discretization.ansatz_space();
     typedef typename DiscretizationType::OversampledDiscretizationType OversampledDiscretizationType;
@@ -350,7 +349,7 @@ public:
     OversampledDiscretizationType discretization(*test_case_.reference_provider(),
                                                  boundary_cfg,
                                                  oversampled_problem,
-                                                 ss);
+                                                 boost::numeric_cast< int >(subdomain));
     discretization.init();
     VectorType solution = discretization.create_vector();
     discretization.solve(solution);
