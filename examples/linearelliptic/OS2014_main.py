@@ -60,7 +60,8 @@ config = {'dune_partitioning': '[8 8 1]',
           'doerfler_marking_theta': 1.0,
           'local_boundary_values': 'dirichlet',
           'online_target_error': 1e-4,
-          'online_max_tries': 3}
+          'online_max_tries': 3,
+          'online_max_reduction_factor': 0.95}
 DATASET_ID = config['dune_example'] + '_online_enrichment_test'
 
           # 'estimator_compute': ('discretization_error',
@@ -373,7 +374,7 @@ def online_phase(cfg, detailed_data, offline_data):
                         if new_error > error:
                             logger.warn('Error increased (from {} to {}) after enrichment!'.format(error, new_error))
                             enrichment_tries += 1
-                        elif factor > 0.9:
+                        elif factor > cfg['online_max_reduction_factor']:
                             logger.warn('Error decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
                             enrichment_tries += 1
                         else:
