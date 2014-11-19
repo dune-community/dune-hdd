@@ -1033,9 +1033,6 @@ public:
     LocalDiffusiveFluxOS2014StarType eta_df(space, vector, problem, mu, mu_hat);
     eta_nc.prepare();
     eta_df.prepare();
-    RangeFieldType eta_nc_squared = 0.0;
-    RangeFieldType eta_r_squared  = 0.0;
-    RangeFieldType eta_df_squared = 0.0;
     Stuff::LA::CommonDenseVector< RangeFieldType > indicators(space.ms_grid()->size(), 0.0);
 
     // walk the subdomains
@@ -1057,21 +1054,10 @@ public:
       const RangeFieldType eta_r_T_squared  = eta_r_T.result_;
       const RangeFieldType eta_df_T_squared = eta_df.result_;
       // compute indicators
-      indicators[subdomain] = 3.0/std::sqrt(alpha_mu_mu_bar) * (std::sqrt(gamma_mu_mu_bar)*eta_nc_T_squared
-                                                                + eta_r_T_squared
-                                                                + std::sqrt(alpha_mu_mu_hat)*eta_df_T_squared);
-      eta_nc_squared += eta_nc_T_squared;
-      eta_r_squared  += eta_r_T_squared;
-      eta_df_squared += eta_df_T_squared;
+      indicators[subdomain] = std::sqrt(3.0/std::sqrt(alpha_mu_mu_bar) * (std::sqrt(gamma_mu_mu_bar)*eta_nc_T_squared
+                                                                          + eta_r_T_squared
+                                                                          + std::sqrt(alpha_mu_mu_hat)*eta_df_T_squared));
     } // walk the subdomains
-    const RangeFieldType eta_squared
-        = std::pow(1.0/std::sqrt(alpha_mu_mu_bar) * (std::sqrt(gamma_mu_mu_bar)*std::sqrt(eta_nc_squared)
-                                                     + std::sqrt(eta_r_squared)
-                                                     + std::sqrt(alpha_mu_mu_hat)*std::sqrt(eta_df_squared)),
-                   2);
-    // scale
-    for (auto& element : indicators)
-      element /= eta_squared;
     return indicators;
   } // ... estimate_local(...)
 }; // class OS2014Star
