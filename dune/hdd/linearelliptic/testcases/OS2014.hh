@@ -430,11 +430,13 @@ public:
   ParametricBlockConvergence(const ParametersMapType parameters,
                              const std::string num_partitions = "[1 1 1]",
                              const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_,
-                             const size_t oversampling_layers = 0)
+                             const size_t oversampling_layers = 0,
+                             const bool H_with_h = false)
     : ParametricConvergenceBaseType(parameters)
     , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
                        ParametricConvergenceBaseType::initial_refinements(),
-                       num_refinements)
+                       num_refinements,
+                       H_with_h)
   {
     this->check_parameters(ParametricConvergenceBaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
