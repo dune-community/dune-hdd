@@ -124,6 +124,26 @@ TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decompo
 } // TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable)
 
 
+TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable_with_fixed_H_over_h)
+{
+  using Pymor::Parameter;
+  const SmoothTestCaseType test_case({{"mu_hat", Parameter("mu", 1)},
+                                      {"mu_bar", Parameter("mu", 1)},
+                                      {"mu",     Parameter("mu", 1)}},
+                                     "[2 2 1]",
+                                     3,
+                                     0,
+                                     true);
+  test_case.print_header(DSC_LOG_INFO);
+  print_parameter_information(test_case);
+  SmoothStudyType study(test_case,
+                        {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                        {},
+                        /*visualization_prefix=*/"");
+  Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
+} // TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable_with_fixed_H_over_h)
+
+
 TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
 {
   const std::string partitioning = "[4 4 1]";
