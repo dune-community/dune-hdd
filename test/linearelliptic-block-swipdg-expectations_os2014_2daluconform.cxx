@@ -134,17 +134,45 @@ public:
                  && mu_bar        == 1
                  && mu_hat        == 1) {
         if (type == "energy_mu")
-          return {};
+          return {3.28e-01, 1.60e-01, 7.78e-02, 3.47e-02};
         else if (type == "eta_NC_OS2014")
-          return {};
-        else if (type == "eta_R_OS2014")
-          return {};
-        else if (type == "eta_DF_OS2014")
-          return {};
-        else if (type == "eta_OS2014")
-          return {};
-        else if (type == "eff_OS2014_mu")
-          return {};
+          return {1.66e-01, 7.89e-02, 3.91e-02, 1.95e-02};
+        else if (type == "eta_R_OS2014_*")
+          return {1.02e+00, 5.09e-01, 2.55e-01, 1.28e-01};
+        else if (type == "eta_DF_OS2014_*")
+          return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
+        else if (type == "eta_OS2014_*")
+          return {1.54e+00, 7.64e-01, 3.81e-01, 1.91e-01};
+        else if (type == "eff_OS2014_*_mu")
+          return {4.69e+00, 4.76e+00, 4.90e+00, 5.49e+00};
+        else
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
+      } else
+        EXPECT_TRUE(false) << "test results missing for parameters: mu = " << mu << "\n"
+                           << "                                     mu_bar = " << mu_bar << "\n"
+                           << "                                     mu_hat = " << mu_hat;
+    } else if (test_case.partitioning() == "[2 2 1]") {
+      if (mu == 1 && mu_bar == 1 && mu_hat == 1) {
+        if (type == "eta_R_OS2014_*")
+          return {5.08e-01, 2.55e-01, 1.27e-01, 6.38e-02};
+        else if (type == "eta_OS2014_*")
+          return {1.03e+00, 5.09e-01, 2.54e-01, 1.27e-01};
+        else if (type == "eff_OS2014_*_mu")
+          return {3.14e+00, 3.17e+00, 3.26e+00, 3.65e+00};
+        else
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
+      } else
+        EXPECT_TRUE(false) << "test results missing for parameters: mu = " << mu << "\n"
+                           << "                                     mu_bar = " << mu_bar << "\n"
+                           << "                                     mu_hat = " << mu_hat;
+    } else if (test_case.partitioning() == "[2 2 1]_H_with_h") {
+      if (mu == 1 && mu_bar == 1 && mu_hat == 1) {
+        if (type == "eta_R_OS2014_*")
+          return {5.08e-01, 1.27e-01, 3.11e-02, 6.71e-03};
+        else if (type == "eta_OS2014_*")
+          return {1.03e+00, 3.82e-01, 1.57e-01, 6.97e-02};
+        else if (type == "eff_OS2014_*_mu")
+          return {3.14e+00, 2.38e+00, 2.02e+00, 2.01e+00};
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else
@@ -198,19 +226,28 @@ public:
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (mu == 1 && mu_bar == 1 && mu_hat == 1) {
-        if (type == "eff_OS2014_*_mu")
-          return {2.36e+00, 2.38e+00, 2.44e+00, 2.73e+00};
-        else if (type == "eff_OS2014_mu")
-          return {2.36e+00, 2.38e+00, 2.44e+00, 2.73e+00};
-        else if (type == "eta_DF_OS2014")
-          return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
-        else if (type == "eta_DF_OS2014_*")
-          return {3.55e-01, 1.76e-01, 8.73e-02, 4.35e-02};
-        else if (type == "eta_OS2014")
-          return {7.74e-01, 3.82e-01, 1.90e-01, 9.49e-02};
+        if (type == "eta_R_OS2014_*")
+          return {2.54e-01, 1.27e-01, 6.37e-02, 3.19e-02};
         else if (type == "eta_OS2014_*")
           return {7.74e-01, 3.82e-01, 1.90e-01, 9.49e-02};
+        else if (type == "eff_OS2014_*_mu")
+          return {2.36e+00, 2.38e+00, 2.44e+00, 2.73e+00};
         else
+          EXPECT_TRUE(false) << "test results missing for type: " << type;
+      } else
+        EXPECT_TRUE(false) << "test results missing for parameters: mu = " << mu << "\n"
+                           << "                                     mu_bar = " << mu_bar << "\n"
+                           << "                                     mu_hat = " << mu_hat;
+    } else if (test_case.partitioning() == "[8 8 1]") {
+      if (mu == 1 && mu_bar == 1 && mu_hat == 1) {
+        if (mu == 1 && mu_bar == 1 && mu_hat == 1) {
+          if (type == "eta_R_OS2014_*")
+            return {1.09e-01, 5.90e-02, 3.11e-02, 1.58e-02};
+          else if (type == "eta_OS2014_*")
+            return {6.29e-01, 3.14e-01, 1.57e-01, 7.89e-02};
+          else if (type == "eff_OS2014_*_mu")
+            return {1.92e+00, 1.95e+00, 2.02e+00, 2.27e+00};
+        } else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else
         EXPECT_TRUE(false) << "test results missing for parameters: mu = " << mu << "\n"
