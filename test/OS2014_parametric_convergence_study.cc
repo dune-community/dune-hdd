@@ -89,6 +89,41 @@ void run_eoc_study(const std::string partitioning,
 } // ... run_eoc_study(...)
 
 
+TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable)
+{
+  using Pymor::Parameter;
+  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[1 1 1]",
+                                                       {"energy_mu", "eta_NC_OS2014", "eta_R_OS2014_*",
+                                                        "eta_DF_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                                                       {{"mu_hat", Parameter("mu", 1)},
+                                                        {"mu_bar", Parameter("mu", 1)},
+                                                        {"mu",     Parameter("mu", 1)}},
+                                                       /*print_header=*/true,
+                                                       /*visualization_prefix=*/"");
+  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[2 2 1]",
+                                                       {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                                                       {{"mu_hat", Parameter("mu", 1)},
+                                                        {"mu_bar", Parameter("mu", 1)},
+                                                        {"mu",     Parameter("mu", 1)}},
+                                                       /*print_header=*/false,
+                                                       /*visualization_prefix=*/"");
+  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[4 4 1]",
+                                                       {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                                                       {{"mu_hat", Parameter("mu", 1)},
+                                                        {"mu_bar", Parameter("mu", 1)},
+                                                        {"mu",     Parameter("mu", 1)}},
+                                                       /*print_header=*/false,
+                                                       /*visualization_prefix=*/"");
+  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[8 8 1]",
+                                                       {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                                                       {{"mu_hat", Parameter("mu", 1)},
+                                                        {"mu_bar", Parameter("mu", 1)},
+                                                        {"mu",     Parameter("mu", 1)}},
+                                                       /*print_header=*/false,
+                                                       /*visualization_prefix=*/"");
+} // TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable)
+
+
 TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
 {
   const std::string partitioning = "[4 4 1]";
