@@ -62,8 +62,7 @@ void print_parameter_information(const TestCaseType& test_case)
   EXPECT_FALSE(neumann.parametric());
   DSC_LOG_INFO << "| mu            = " << parameters.at("mu") << "\n"
                << "| mu_bar        = " << parameters.at("mu_bar") << "\n"
-               << "| mu_hat        = " << parameters.at("mu_hat") << "\n"
-               << "| mu_minimizing = " << parameters.at("mu_minimizing") << "\n";
+               << "| mu_hat        = " << parameters.at("mu_hat") << "\n";
   const double alpha = diffusion_factor.alpha(parameters.at("mu"), parameters.at("mu_hat"));
   const double gamma = diffusion_factor.gamma(parameters.at("mu"), parameters.at("mu_hat"));
   DSC_LOG_INFO << "| alpha(mu, mu_hat)^-1/2    = " << std::setprecision(2) << std::scientific
@@ -106,8 +105,7 @@ TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
                                                            only_these_norms,
                                                            {{"mu_hat",        mu_hat},
                                                             {"mu_bar",        mu_bar},
-                                                            {"mu",            mu},
-                                                            {"mu_minimizing", Pymor::Parameter("mu", 0.1)}},
+                                                            {"mu",            mu}},
                                                            print_header,
                                                            visualization_prefix);
       if (print_header)
@@ -132,8 +130,7 @@ TEST(OS2014_parametric_convergence_study, multiscale)
                                                                    only_these_norms,
                                                                    {{"mu_hat",        mu_hat},
                                                                     {"mu_bar",        mu_bar},
-                                                                    {"mu",            mu},
-                                                                    {"mu_minimizing", Pymor::Parameter("mu", 0.1)}},
+                                                                    {"mu",            mu}},
                                                                    print_header,
                                                                    visualization_prefix);
       if (print_header)
