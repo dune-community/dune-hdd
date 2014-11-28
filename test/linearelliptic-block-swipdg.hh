@@ -312,7 +312,7 @@ private:
 
   virtual double estimate(const VectorType& vector, const std::string type) const override final
   {
-    // process all efficitvities
+    // process all effectivities
     for (auto id : effectivities()) {
       if (type.substr(0, ("eff_" + id).size()) == "eff_" + id) {
         if (this->test_case_.parametric()
