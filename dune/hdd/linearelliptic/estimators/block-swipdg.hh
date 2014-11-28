@@ -254,7 +254,8 @@ public:
   virtual void prepare()
   {
     if (!prepared_) {
-      const GDT::Operators::Projection< GridViewType > projection_operator(local_space_.grid_view());
+      const GDT::Operators::Projection< GridViewType > projection_operator(local_space_.grid_view(),
+                                                                           SWIPDG::over_integrate);
       projection_operator.apply(*problem_.force()->affine_part(), p0_force_);
       result_ = 0.0;
       prepared_ = true;
@@ -428,7 +429,8 @@ public:
     const GDT::Operators::DiffusiveFluxReconstruction< GlobalGridViewType, DiffusionFactorType, DiffusionTensorType >
       diffusive_flux_reconstruction(space.grid_view(),
                                     *problem_mu->diffusion_factor()->affine_part(),
-                                    *problem.diffusion_tensor()->affine_part());
+                                    *problem.diffusion_tensor()->affine_part(),
+                                    SWIPDG::over_integrate);
     diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
     // walk the subdomains
     double eta_r_squared = 0.0;
@@ -677,7 +679,8 @@ public:
       const GDT::Operators::DiffusiveFluxReconstruction< GridViewType, DiffusionFactorType, DiffusionTensorType >
         diffusive_flux_reconstruction(space_.grid_view(),
                                       *problem_mu_->diffusion_factor()->affine_part(),
-                                      *problem_.diffusion_tensor()->affine_part());
+                                      *problem_.diffusion_tensor()->affine_part(),
+                                      SWIPDG::over_integrate);
       diffusive_flux_reconstruction.apply(discrete_solution_, diffusive_flux_);
       result_ = 0.0;
       prepared_ = true;
@@ -1018,7 +1021,8 @@ public:
     const GDT::Operators::DiffusiveFluxReconstruction< GlobalGridViewType, DiffusionFactorType, DiffusionTensorType >
       diffusive_flux_reconstruction(space.grid_view(),
                                     *problem_mu->diffusion_factor()->affine_part(),
-                                    *problem.diffusion_tensor()->affine_part());
+                                    *problem.diffusion_tensor()->affine_part(),
+                                    SWIPDG::over_integrate);
     diffusive_flux_reconstruction.apply(discrete_solution, diffusive_flux);
 
     typedef LocalNonconformityOS2014
