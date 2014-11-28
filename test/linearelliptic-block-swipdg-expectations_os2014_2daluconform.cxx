@@ -36,12 +36,10 @@ public:
     const auto mu = test_case.parameters().at("mu");
     const auto mu_bar = test_case.parameters().at("mu_bar");
     const auto mu_hat = test_case.parameters().at("mu_hat");
-    const auto mu_minimizing = test_case.parameters().at("mu_minimizing");
     if (test_case.partitioning() == "[1 1 1]") {
       if (   mu            == 0.1
           && mu_bar        == 0.1
-          && mu_hat        == 0.1
-          && mu_minimizing == 0.1) {
+          && mu_hat        == 0.1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_DF_OS2014")
@@ -60,8 +58,7 @@ public:
           EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (   mu            == 0.3
                  && mu_bar        == 0.3
-                 && mu_hat        == 0.1
-                 && mu_minimizing == 0.1) {
+                 && mu_hat        == 0.1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_DF_OS2014")
@@ -80,8 +77,7 @@ public:
           EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (   mu            == 0.5
                  && mu_bar        == 0.5
-                 && mu_hat        == 0.1
-                 && mu_minimizing == 0.1) {
+                 && mu_hat        == 0.1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_DF_OS2014")
@@ -100,8 +96,7 @@ public:
           EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (   mu            == 0.1
                  && mu_bar        == 0.1
-                 && mu_hat        == 1
-                 && mu_minimizing == 0.1) {
+                 && mu_hat        == 1) {
         if (type == "eta_DF_OS2014")
           return {1.01e+00, 1.21e+00, 1.35e+00, 1.41e+00};
         else if (type == "eta_DF_OS2014_*")
@@ -118,8 +113,7 @@ public:
           EXPECT_TRUE(false) << "test results missing for type: " << type;
 //      } else if (   mu            == Parameter("mu", )
 //                 && mu_bar        == Parameter("mu", )
-//                 && mu_hat        == Parameter("mu", )
-//                 && mu_minimizing == Parameter("mu", )) {
+//                 && mu_hat        == Parameter("mu", )) {
 //        if (type == "energy_mu")
 //          return {};
 //        else if (type == "eta_DF_OS2014")
@@ -138,8 +132,7 @@ public:
 //          EXPECT_TRUE(false) << "test results missing for type: " << type;
       } else if (   mu            == 1
                  && mu_bar        == 1
-                 && mu_hat        == 1
-                 && mu_minimizing == 1) {
+                 && mu_hat        == 1) {
         if (type == "energy_mu")
           return {};
         else if (type == "eta_NC_OS2014")
@@ -157,10 +150,9 @@ public:
       } else
         EXPECT_TRUE(false) << "test results missing for parameters: mu = " << mu << "\n"
                            << "                                     mu_bar = " << mu_bar << "\n"
-                           << "                                     mu_hat = " << mu_hat << "\n"
-                           << "                                     mu_minimizing = " << mu_minimizing;
+                           << "                                     mu_hat = " << mu_hat;
     } else if (test_case.partitioning() == "[4 4 1]") {
-      if (mu == 0.1 && mu_bar == 0.1 && mu_hat == 0.1 && mu_minimizing == 0.1) {
+      if (mu == 0.1 && mu_bar == 0.1 && mu_hat == 0.1) {
         if (type == "eff_OS2014_*_mu")
           return {2.24e+00, 2.22e+00, 2.27e+00, 2.49e+00};
         else if (type == "eff_OS2014_mu")
@@ -175,7 +167,7 @@ public:
           return {1.97e+00, 1.18e+00, 5.71e-01, 2.71e-01};
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
-      } else if (mu == 1 && mu_bar == 1 && mu_hat == 0.1 && mu_minimizing == 0.1) {
+      } else if (mu == 1 && mu_bar == 1 && mu_hat == 0.1) {
         if (type == "eff_OS2014_*_mu")
           return {1.68e+00, 1.69e+00, 1.73e+00, 1.94e+00};
         else if (type == "eff_OS2014_mu")
@@ -190,7 +182,7 @@ public:
           return {5.50e-01, 2.71e-01, 1.35e-01, 6.74e-02};
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
-      } else if (mu == 0.1 && mu_bar == 0.1 && mu_hat == 1 && mu_minimizing == 0.1) {
+      } else if (mu == 0.1 && mu_bar == 0.1 && mu_hat == 1) {
         if (type == "eff_OS2014_*_mu")
           return {4.99e+00, 4.94e+00, 5.01e+00, 5.53e+00};
         else if (type == "eff_OS2014_mu")
@@ -205,7 +197,7 @@ public:
           return {4.39e+00, 2.63e+00, 1.26e+00, 6.01e-01};
         else
           EXPECT_TRUE(false) << "test results missing for type: " << type;
-      } else if (mu == 1 && mu_bar == 1 && mu_hat == 1 && mu_minimizing == 0.1) {
+      } else if (mu == 1 && mu_bar == 1 && mu_hat == 1) {
         if (type == "eff_OS2014_*_mu")
           return {2.36e+00, 2.38e+00, 2.44e+00, 2.73e+00};
         else if (type == "eff_OS2014_mu")
@@ -223,8 +215,7 @@ public:
       } else
         EXPECT_TRUE(false) << "test results missing for parameters: mu = " << mu << "\n"
                            << "                                     mu_bar = " << mu_bar << "\n"
-                           << "                                     mu_hat = " << mu_hat << "\n"
-                           << "                                     mu_minimizing = " << mu_minimizing;
+                           << "                                     mu_hat = " << mu_hat;
     } else
       EXPECT_TRUE(false) << "test results missing for partitioning: " << test_case.partitioning();
     return {};
