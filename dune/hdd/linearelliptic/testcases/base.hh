@@ -149,8 +149,11 @@ public:
 
   MultiscaleCubeBase(const Stuff::Common::Configuration& grid_cfg,
                      const int initial_refinements,
-                     const size_t num_refinements)
-    : partitions_(grid_cfg.get< std::string >("num_partitions"))
+                     const size_t num_refinements,
+                     const bool H_with_h = false)
+    : partitions_(H_with_h
+                  ? grid_cfg.get< std::string >("num_partitions") + "_H_with_h"
+                  : grid_cfg.get< std::string >("num_partitions"))
   {
 #ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
     std::cerr << Stuff::Common::Colors::red
@@ -168,10 +171,14 @@ public:
     for (size_t rr = 0; rr <= num_refinements; ++rr) {
       auto grid_ptr = GridProviderType(lower_left, upper_right, num_elements).grid_ptr();
       grid_ptr->globalRefine(boost::numeric_cast< int >(initial_refinements + rr*refine_steps_for_half));
+      std::vector< size_t > actual_partitions = num_partitions;
+      if (H_with_h)
+        for (auto& element : actual_partitions)
+          element *= std::pow(2, rr);
       level_providers_.emplace_back(new MsGridProviderType(grid_ptr,
                                                            lower_left,
                                                            upper_right,
-                                                           num_partitions,
+                                                           actual_partitions,
                                                            num_oversampling_layers));
     }
     auto grid_ptr = GridProviderType(lower_left, upper_right, num_elements).grid_ptr();
