@@ -66,27 +66,25 @@ template< class TestCaseType, int polOrder >
 class BlockSWIPDGStudyExpectationsBase
 {
 public:
-  static size_t rate(const TestCaseType& /*test_case*/, const std::string type)
+  static size_t rate(const TestCaseType& test_case, const std::string type)
   {
+    const auto partitioning = test_case.partitioning();
     if (type == "L2")
       return polOrder + 1;
-    else if (type == "H1_semi")
-      return polOrder;
-    else if (type.substr(0, 6) == "energy")
+    else if (type == "H1_semi" || type.substr(0, 6) == "energy")
       return polOrder;
     else if (type == "eta_NC_OS2014")
       return polOrder;
-    else if (type.substr(0, 12) == "eta_R_OS2014")
-      return polOrder + 1;
-    else if (type.substr(0, 13) == "eta_DF_OS2014")
+    else if (type.substr(0, 12) == "eta_R_OS2014") {
+      if (partitioning.size() >= 8 && partitioning.substr(partitioning.size() - 8) == "H_with_h")
+        return polOrder + 1;
+      else
+        return polOrder;
+    } else if (type.substr(0, 13) == "eta_DF_OS2014")
       return polOrder;
-    else if (type == "eta_OS2014")
-      return polOrder;
-    else if (type == "eta_OS2014_*")
+    else if (type.substr(0, 10) == "eta_OS2014")
       return polOrder;
     else if (type.substr(0, 10) == "eff_OS2014")
-      return 0;
-    else if (type.substr(0, 12) == "eff_OS2014_*")
       return 0;
     else
       EXPECT_TRUE(false) << "expected rate missing for type: " << type;
