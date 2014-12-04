@@ -160,6 +160,7 @@ public:
               << "warning: running a multiscale testcase!\n"
               << "      => the boundaryinfo is set to AllDirichlet and all boundary values are set to zero!\n"
               << "         please manually check the testcase for compliance!\n"
+              << "         define DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING to disable this warning!\n"
               << Stuff::Common::StreamModifiers::normal << std::endl;
 #endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
     const auto lower_left = grid_cfg.get< DomainType >("lower_left");
