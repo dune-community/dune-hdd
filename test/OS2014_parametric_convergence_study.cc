@@ -3,23 +3,21 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_STUFF_TEST_MAIN_CATCH_EXCEPTIONS
-# define DUNE_STUFF_TEST_MAIN_CATCH_EXCEPTIONS 1
-#endif
 #ifndef DUNE_STUFF_TEST_MAIN_ENABLE_INFO_LOGGING
 # define DUNE_STUFF_TEST_MAIN_ENABLE_INFO_LOGGING 1
 #endif
-
-#define DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
+#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
+# define DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
+#endif
 
 // This one has to come first (includes the config.h)!
 #include <dune/stuff/test/main.hxx>
 
-#include <vector>
-#include <string>
-#include <map>
-
 #if HAVE_ALUGRID
+# include <vector>
+# include <string>
+# include <map>
+
 # include <dune/grid/alugrid.hh>
 
 # include <dune/pymor/parameters/base.hh>
@@ -36,13 +34,10 @@ using namespace HDD;
 
 typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 
-typedef LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridType > SmoothTestCaseType;
-typedef LinearElliptic::Tests::BlockSWIPDGStudy< SmoothTestCaseType >             SmoothStudyType;
+typedef LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridType > TestCaseType;
+typedef LinearElliptic::Tests::BlockSWIPDGStudy< TestCaseType >                   StudyType;
 
-typedef LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridType > MultiscaleTestCaseType;
-typedef LinearElliptic::Tests::BlockSWIPDGStudy< MultiscaleTestCaseType >   MultiscaleStudyType;
 
-template< class TestCaseType >
 void print_parameter_information(const TestCaseType& test_case)
 {
   const auto& parameters = test_case.parameters();
@@ -63,24 +58,32 @@ void print_parameter_information(const TestCaseType& test_case)
   DSC_LOG_INFO << "| mu            = " << parameters.at("mu") << "\n"
                << "| mu_bar        = " << parameters.at("mu_bar") << "\n"
                << "| mu_hat        = " << parameters.at("mu_hat") << "\n";
-  const double alpha = diffusion_factor.alpha(parameters.at("mu"), parameters.at("mu_hat"));
-  const double gamma = diffusion_factor.gamma(parameters.at("mu"), parameters.at("mu_hat"));
-  DSC_LOG_INFO << "| alpha(mu, mu_hat)^-1/2    = " << std::setprecision(2) << std::scientific
-                                                   << 1.0/std::sqrt(alpha) << "\n"
-               << "| gamma_tilde(mu, mu_hat)^2 = " << std::setprecision(2) << std::scientific
-                                                   << std::max(std::sqrt(gamma), 1.0/std::sqrt(alpha)) << "\n"
-               << "+\n";
+  const double alpha_bar = diffusion_factor.alpha(parameters.at("mu"), parameters.at("mu_bar"));
+  const double alpha_hat = diffusion_factor.alpha(parameters.at("mu"), parameters.at("mu_hat"));
+  const double gamma_bar = diffusion_factor.gamma(parameters.at("mu"), parameters.at("mu_bar"));
+  DSC_LOG_INFO << "| alpha(mu, mu_bar)^-1/2 = " << std::setprecision(2) << std::scientific
+                                                << 1.0/std::sqrt(alpha_bar) << "\n"
+               << "| alpha(mu, mu_hat)^-1/2 = " << std::setprecision(2) << std::scientific
+                                                << 1.0/std::sqrt(alpha_hat) << "\n"
+               << "| gamma(mu, mu_bar)^1/2  = " << std::setprecision(2) << std::scientific
+                                                << std::sqrt(gamma_bar) << "\n"
+               << "+-------------------------\n"
+               << "| ";
 } // ... print_parameter_information(...)
 
 
-template< class TestCaseType, class StudyType >
 void run_eoc_study(const std::string partitioning,
                    const std::vector< std::string >& only_these_norms,
                    const std::map< std::string, Pymor::Parameter >& parameters,
                    const bool print_header,
-                   const std::string visualization)
+                   const std::string visualization,
+                   const bool H_with_h)
 {
-  const TestCaseType test_case(parameters, partitioning);
+  const TestCaseType test_case(parameters,
+                               partitioning,
+                               3,
+                               0,
+                               H_with_h);
   if (print_header)
     test_case.print_header(DSC_LOG_INFO);
   print_parameter_information(test_case);
@@ -89,121 +92,72 @@ void run_eoc_study(const std::string partitioning,
 } // ... run_eoc_study(...)
 
 
-TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable)
+TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable)
 {
   using Pymor::Parameter;
-  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[1 1 1]",
-                                                       {"energy_mu", "eta_NC_OS2014", "eta_R_OS2014_*",
-                                                        "eta_DF_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
-                                                       {{"mu_hat", Parameter("mu", 1)},
-                                                        {"mu_bar", Parameter("mu", 1)},
-                                                        {"mu",     Parameter("mu", 1)}},
-                                                       /*print_header=*/true,
-                                                       /*visualization_prefix=*/"");
-  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[2 2 1]",
-                                                       {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
-                                                       {{"mu_hat", Parameter("mu", 1)},
-                                                        {"mu_bar", Parameter("mu", 1)},
-                                                        {"mu",     Parameter("mu", 1)}},
-                                                       /*print_header=*/false,
-                                                       /*visualization_prefix=*/"");
-  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[4 4 1]",
-                                                       {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
-                                                       {{"mu_hat", Parameter("mu", 1)},
-                                                        {"mu_bar", Parameter("mu", 1)},
-                                                        {"mu",     Parameter("mu", 1)}},
-                                                       /*print_header=*/false,
-                                                       /*visualization_prefix=*/"");
-  run_eoc_study< SmoothTestCaseType, SmoothStudyType >("[8 8 1]",
-                                                       {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
-                                                       {{"mu_hat", Parameter("mu", 1)},
-                                                        {"mu_bar", Parameter("mu", 1)},
-                                                        {"mu",     Parameter("mu", 1)}},
-                                                       /*print_header=*/false,
-                                                       /*visualization_prefix=*/"");
-} // TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable)
+  run_eoc_study("[1 1 1]",
+                {"energy_mu", "eta_NC_OS2014", "eta_R_OS2014_*", "eta_DF_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                {{"mu_hat", Parameter("mu", 1)},
+                 {"mu_bar", Parameter("mu", 1)},
+                 {"mu",     Parameter("mu", 1)}},
+                true,
+                "",
+                false);
+} // TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable)
 
 
-TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable_with_fixed_H_over_h)
+TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h)
 {
   using Pymor::Parameter;
-  const SmoothTestCaseType test_case({{"mu_hat", Parameter("mu", 1)},
-                                      {"mu_bar", Parameter("mu", 1)},
-                                      {"mu",     Parameter("mu", 1)}},
-                                     "[2 2 1]",
-                                     3,
-                                     0,
-                                     true);
-  test_case.print_header(DSC_LOG_INFO);
-  print_parameter_information(test_case);
-  SmoothStudyType study(test_case,
-                        {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
-                        {},
-                        /*visualization_prefix=*/"");
-  Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
-} // TEST(OS2014_parametric_convergence_study, optimal_but_not_offline_online_decomposable_with_fixed_H_over_h)
+  run_eoc_study("[2 2 1]",
+                {"eta_R_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                {{"mu_hat", Parameter("mu", 1)},
+                 {"mu_bar", Parameter("mu", 1)},
+                 {"mu",     Parameter("mu", 1)}},
+                true,
+                "",
+                true);
+} // TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h)
 
 
-TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
+TEST(OS2014_parametric_convergence_study, offline_online_decomposable)
 {
-  const std::string partitioning = "[4 4 1]";
-  const std::vector< std::string > only_these_norms = {"eta_DF_OS2014", "eta_DF_OS2014_*", "eta_OS2014",
-                                                       "eta_OS2014_*", "eff_OS2014_mu", "eff_OS2014_*_mu"};
-  const std::string visualization_prefix = ""; //"OS2014_parametric_block_convergence_study_eta_DF_comparison";
-  bool print_header = true;
-  for (auto mu_hat_value : {0.1/*, 0.5*/, 1.0}) {
-    const auto mu_hat = Pymor::Parameter("mu", mu_hat_value);
-    for (auto mu_value : {0.1/*, 0.3, 0.5, 0.75*/, 1.0}) {
-      const auto mu = Pymor::Parameter("mu", mu_value);
-      const auto mu_bar = mu;
-      run_eoc_study< SmoothTestCaseType, SmoothStudyType >(partitioning,
-                                                           only_these_norms,
-                                                           {{"mu_hat",        mu_hat},
-                                                            {"mu_bar",        mu_bar},
-                                                            {"mu",            mu}},
-                                                           print_header,
-                                                           visualization_prefix);
-      if (print_header)
-        print_header = false;
-    }
-  }
-} // TEST(OS2014_parametric_convergence_study, eta_DF_comparison)
+  using Pymor::Parameter;
+  run_eoc_study("[2 2 1]",
+                {"eta_DF_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
+                {{"mu_hat", Parameter("mu", 0.1)},
+                 {"mu_bar", Parameter("mu", 1)},
+                 {"mu",     Parameter("mu", 1)}},
+                true,
+                "",
+                true);
+} // TEST(OS2014_parametric_convergence_study, offline_online_decomposable)
 
 
-TEST(OS2014_parametric_convergence_study, multiscale)
+TEST(OS2014_parametric_convergence_study, offline_online_decomposable_with_fixed_norm)
 {
-  const std::string partitioning = "[20 4 1]";
-  const std::vector< std::string > only_these_norms = {"energy_mu", "eta_OS2014", "eta_OS2014_*"};
-  const std::string visualization_prefix = ""; //"OS2014_parametric_block_convergence_study_spe10_model1";
-  bool print_header = true;
-  for (auto mu_hat_value : {0.1/*, 0.5*/, 1.0}) {
-    const auto mu_hat = Pymor::Parameter("mu", mu_hat_value);
-    for (auto mu_value : {0.1/*, 0.3, 0.5, 0.75*/, 1.0}) {
-      const auto mu = Pymor::Parameter("mu", mu_value);
-      const auto mu_bar = mu;
-      run_eoc_study< MultiscaleTestCaseType, MultiscaleStudyType >(partitioning,
-                                                                   only_these_norms,
-                                                                   {{"mu_hat",        mu_hat},
-                                                                    {"mu_bar",        mu_bar},
-                                                                    {"mu",            mu}},
-                                                                   print_header,
-                                                                   visualization_prefix);
-      if (print_header)
-        print_header = false;
-    }
-  }
-} // TEST(OS2014_parametric_convergence_study, multiscale)
+  using Pymor::Parameter;
+  run_eoc_study("[2 2 1]",
+                {"energy_mu_bar", "eta_NC_OS2014", "eta_DF_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu_bar"},
+                {{"mu_hat", Parameter("mu", 0.1)},
+                 {"mu_bar", Parameter("mu", 0.1)},
+                 {"mu",     Parameter("mu", 1)}},
+                true,
+                "",
+                true);
+} // TEST(OS2014_parametric_convergence_study, offline_online_decomposable_with_fixed_norm)
 
 
-extern template class Dune::HDD::LinearElliptic::Tests::BlockSWIPDGStudyExpectations< SmoothTestCaseType >;
-extern template class Dune::HDD::LinearElliptic::Tests::BlockSWIPDGStudyExpectations< MultiscaleTestCaseType >;
+extern template class Dune::HDD::LinearElliptic::Tests::BlockSWIPDGStudyExpectations< TestCaseType >;
 
 
 #else // HAVE_ALUGRID
 
 
-TEST(DISABLED_OS2014_parametric_convergence_study, eta_DF_comparison) {}
-TEST(DISABLED_OS2014_parametric_convergence_study, multiscale) {}
+TEST(DISABLED_OS2014_parametric_convergence_study, not_offline_online_decomposable) {}
+TEST(DISABLED_OS2014_parametric_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h) {}
+TEST(DISABLED_OS2014_parametric_convergence_study, offline_online_decomposable) {}
+TEST(DISABLED_OS2014_parametric_convergence_study, offline_online_decomposable_with_fixed_norm) {}
 
 
 #endif // HAVE_ALUGRID
