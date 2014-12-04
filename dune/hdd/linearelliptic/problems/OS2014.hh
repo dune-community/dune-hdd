@@ -7,9 +7,11 @@
 #define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_OS2014_HH
 
 #include <memory>
+#include <cmath>
 
 #include <dune/stuff/playground/functions/indicator.hh>
 #include <dune/stuff/functions/constant.hh>
+#include <dune/stuff/functions/global.hh>
 #include <dune/stuff/functions/expression.hh>
 #include <dune/stuff/functions/ESV2007.hh>
 
@@ -47,7 +49,7 @@ class ParametricESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
       ParametricMatrixFunctionType;
 
   typedef Stuff::Functions::ESV2007::Testcase1Force< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ForceType;
-  typedef Stuff::Functions::Expression< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ExpressionFunctionType;
+  typedef Stuff::GlobalLambdaFunction< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > LambdaFunctionType;
   typedef Pymor::Functions::AffinelyDecomposableDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
       DefaultParametricFunctionType;
 
@@ -63,15 +65,19 @@ class ParametricESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
 
   static std::shared_ptr< DefaultParametricFunctionType > create_diffusion_factor(const size_t integration_order)
   {
-    auto ret = std::make_shared< DefaultParametricFunctionType >(new ExpressionFunctionType(
-                                                                   "x",
-                                                                   "1+0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
-                                                                   integration_order,
-                                                                   "affine_part"));
-    ret->register_component(new ExpressionFunctionType("x",
-                                                       "-0.75*(sin(4*pi*(x[0]+0.5*x[1])))",
-                                                       integration_order,
-                                                       "component_0"),
+    auto ret = std::make_shared< DefaultParametricFunctionType >("diffusion_factor");
+    ret->register_affine_part(new LambdaFunctionType(
+                                [](const typename LambdaFunctionType::DomainType& xx) {
+                                  return 1.0 + (std::cos(0.5*M_PIl*xx[0])*std::cos(0.5*M_PIl*xx[1]));
+                                },
+                                integration_order,
+                                "affine_part"));
+    ret->register_component(new LambdaFunctionType(
+                              [](const typename LambdaFunctionType::DomainType& xx){
+                                return -1.0*(std::cos(0.5*M_PIl*xx[0])*std::cos(0.5*M_PIl*xx[1]));
+                              },
+                              integration_order,
+                              "component_0"),
                             new Pymor::ParameterFunctional("mu", 1, "mu"));
     return ret;
   } // ... create_diffusion_factor(...)
