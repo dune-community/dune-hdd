@@ -91,19 +91,19 @@ public:
 
   void print_header(std::ostream& out = std::cout) const
   {
-    out << "+==================================================================+\n"
-        << "|+================================================================+|\n"
-        << "||  Testcase OS2014: (parametric) estimator convergence study     ||\n"
-        << "||  (see Ohlberger, Schindler, 2014)                              ||\n"
-        << "|+----------------------------------------------------------------+|\n"
-        << "||  domain = [-1, 1] x [-1, 1]                                    ||\n"
-        << "||  diffusion = 1 + (1 - mu) 3/4 sin(4 pi (x + 1/2 y))            ||\n"
-        << "||  force     = 1/2 pi^2 cos(1/2 pi x) cos(1/2 pi y)              ||\n"
-        << "||  dirichlet = 0                                                 ||\n"
-        << "||  reference solution: discrete solution on finest grid          ||\n"
-        << "||  parameter: mu in [0.1, 1]                                     ||\n"
-        << "|+================================================================+|\n"
-        << "+==================================================================+" << std::endl;
+    out << "+==========================================================+\n"
+        << "|+========================================================+|\n"
+        << "||  Testcase OS2014: (parametric) ESV2007                 ||\n"
+        << "||  (see Ohlberger, Schindler, 2014)                      ||\n"
+        << "|+--------------------------------------------------------+|\n"
+        << "||  domain = [-1, 1] x [-1, 1]                            ||\n"
+        << "||  diffusion = 1 + (1 - mu) cos(1/2 pi x) cos(1/2 pi y)  ||\n"
+        << "||  force     = 1/2 pi^2 cos(1/2 pi x) cos(1/2 pi y)      ||\n"
+        << "||  dirichlet = 0                                         ||\n"
+        << "||  reference solution: discrete solution on finest grid  ||\n"
+        << "||  parameter: mu in [0.1, 1]                             ||\n"
+        << "|+========================================================+|\n"
+        << "+==========================================================+" << std::endl;
   } // ... print_header(...)
 
   const Stuff::Common::Configuration& boundary_info() const
