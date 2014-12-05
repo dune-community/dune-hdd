@@ -9,9 +9,18 @@
 
 #include "config.h"
 
+#if HAVE_DUNE_FEM
+# include <dune/fem/misc/mpimanager.hh>
+#endif
 
-int main(int /*argc*/, char** /*argv*/)
+using namespace Dune;
+
+
+int main(int argc, char** argv)
 {
+#if HAVE_DUNE_FEM
+  Fem::MPIManager::initialize(argc, argv);
+#endif
 
   return 0;
 } // ... main(...)
