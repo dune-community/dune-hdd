@@ -1401,6 +1401,18 @@ private:
 }; // BlockSWIPDG
 
 
+template< Stuff::LA::ChooseBackend la, class G, class R, int r = 1, int p = 1 >
+BlockSWIPDG< G, R, r, p, la > make_block_swipdg(const grid::Multiscale::ProviderInterface< G >& grid_provider,
+                                                const DSC::Configuration& boundary_info,
+                                                const ProblemInterface< typename G::template Codim< 0 >::Entity,
+                                                                        typename G::ctype, G::dimension,
+                                                                        R, r >& problem,
+                                                const std::vector< std::string >& only_these_products = {})
+{
+  return BlockSWIPDG< G, R, r, p, la >(grid_provider, boundary_info, problem, only_these_products);
+}
+
+
 } // namespace Discretizations
 } // namespace LinearElliptic
 } // namespace HDD
