@@ -223,10 +223,8 @@ def offline_phase(cfg, data):
                          max_extensions=cfg['greedy_max_extensions'],
                          target_error=cfg['greedy_target_error'])
     add_values(time=greedy_data['time'],
-               max_err=greedy_data['max_err'],
                max_err_mus=greedy_data['max_err_mus'],
                extensions=greedy_data['extensions'],
-               max_err_mu=greedy_data['max_err_mu'],
                max_errs=greedy_data['max_errs'],
                offline_estimator_data=reduced_estimator.data)
     rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
