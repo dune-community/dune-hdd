@@ -593,11 +593,13 @@ public:
                         const std::string num_partitions = "[1 1 1]",
                         const size_t num_refinements = Model1BaseType::default_num_refinements_,
                         const size_t oversampling_layers = 0,
+                        const bool H_with_h = false,
                         const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
     : Model1BaseType(parameters, filename)
     , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
                        Model1BaseType::initial_refinements(),
-                       num_refinements)
+                       num_refinements,
+                       H_with_h)
   {
     this->check_parameters(Model1BaseType::required_parameters(), parameters);
     this->inherit_parameter_type(*this->problem_, "problem");
