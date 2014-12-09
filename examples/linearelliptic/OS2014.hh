@@ -33,8 +33,8 @@ namespace internal {
 class Initializer
 {
 public:
-  Initializer(const ssize_t info_log_levels,
-              const ssize_t debug_log_levels,
+  Initializer(const DUNE_STUFF_SSIZE_T info_log_levels,
+              const DUNE_STUFF_SSIZE_T debug_log_levels,
               const bool enable_warnings,
               const bool enable_colors,
               const std::string info_color,
@@ -79,10 +79,10 @@ public:
   Example(const ParametersMapType& parameter_range,
           const std::string partitioning = "[1 1 1]",
           const DUNE_STUFF_SSIZE_T num_refinements = 0,
-          const ssize_t oversampling_layers = 0,
+          const DUNE_STUFF_SSIZE_T oversampling_layers = 0,
           const std::vector< std::string > products = {},
-          const ssize_t info_log_levels  = 0,
-          const ssize_t debug_log_levels = -1,
+          const DUNE_STUFF_SSIZE_T info_log_levels  = 0,
+          const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
           const bool enable_warnings = true,
           const bool enable_colors   = true,
           const std::string info_color  = DSC::TimedLogging::default_info_color(),
@@ -198,7 +198,7 @@ public:
     return std::sqrt(product.apply2(difference, difference, mu_product));
   } // ... compute_error(...)
 
-  VectorType* pb_project_global_to_oversampled(const VectorType& global_vector, const ssize_t subdomain) const
+  VectorType* pb_project_global_to_oversampled(const VectorType& global_vector, const DUNE_STUFF_SSIZE_T subdomain) const
   {
     using namespace Dune;
     size_t ss = std::numeric_limits< size_t >::max();
@@ -220,7 +220,7 @@ public:
     return new VectorType(oversampled_function.vector());
   } // ... pb_project_global_to_oversampled(...)
 
-  VectorType* pb_project_global_to_local(const VectorType& global_vector, const ssize_t subdomain) const
+  VectorType* pb_project_global_to_local(const VectorType& global_vector, const DUNE_STUFF_SSIZE_T subdomain) const
   {
     using namespace Dune;
     size_t ss = std::numeric_limits< size_t >::max();
@@ -242,7 +242,7 @@ public:
     return new VectorType(local_function.vector());
   } // ... pb_project_global_to_local(...)
 
-  VectorType* pb_project_oversampled_to_local(const VectorType& oversampled_vector, const ssize_t subdomain) const
+  VectorType* pb_project_oversampled_to_local(const VectorType& oversampled_vector, const DUNE_STUFF_SSIZE_T subdomain) const
   {
     using namespace Dune;
     size_t ss = std::numeric_limits< size_t >::max();
@@ -310,14 +310,14 @@ public:
   } // ... estimate_local(...)
 
   VectorType solve_for_local_correction(const std::vector< VectorType >& local_vectors,
-                                        const ssize_t subdomain,
+                                        const DUNE_STUFF_SSIZE_T subdomain,
                                         const Dune::Pymor::Parameter mu = Dune::Pymor::Parameter()) const
   {
     const size_t ss = boost::numeric_cast< size_t >(subdomain);
     return discretization_.solve_for_local_correction(local_vectors, ss, mu);
   }
 
-  VectorType solve_oversampled(const ssize_t subdomain,
+  VectorType solve_oversampled(const DUNE_STUFF_SSIZE_T subdomain,
                                const std::string& boundary_value_type,
                                const VectorType& boundary_values,
                                const Dune::Pymor::Parameter mu = Dune::Pymor::Parameter()) const
