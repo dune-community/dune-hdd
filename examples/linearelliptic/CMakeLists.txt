@@ -35,6 +35,11 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
                       dunehdd-linearelliptic-thermalblock
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
+ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
+               "OS2014_spe10_visualization.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_OS2014_spe10_visualization
+                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+
 add_python_bindings(linearellipticexamplecg cg_bindings_generator.py cg.hh dunehdd-linearelliptic-cg)
 add_python_bindings(linearellipticexamplethermalblock thermalblock_bindings_generator.py thermalblock.hh dunehdd-linearelliptic-thermalblock)
 add_python_bindings(linearellipticexampleOS2014 OS2014_bindings_generator.py OS2014_bindings_generator.hh "")
@@ -43,6 +48,7 @@ add_dune_alugrid_flags(example_linearelliptic_block_swipdg
                        example_linearelliptic_cg
                        example_linearelliptic_swipdg
                        example_linearelliptic_thermalblock
+                       example_linearelliptic_OS2014_spe10_visualization
                        linearellipticexamplecg
                        linearellipticexamplethermalblock
                        linearellipticexampleOS2014)
@@ -51,6 +57,7 @@ add_dune_superlu_flags(example_linearelliptic_block_swipdg
                        example_linearelliptic_cg
                        example_linearelliptic_swipdg
                        example_linearelliptic_thermalblock
+                       example_linearelliptic_OS2014_spe10_visualization
                        linearellipticexamplecg
                        linearellipticexamplethermalblock
                        linearellipticexampleOS2014)
@@ -59,6 +66,7 @@ add_dune_tbb_flags(example_linearelliptic_block_swipdg
                    example_linearelliptic_cg
                    example_linearelliptic_swipdg
                    example_linearelliptic_thermalblock
+                   example_linearelliptic_OS2014_spe10_visualization
                    linearellipticexamplecg
                    linearellipticexamplethermalblock
                    linearellipticexampleOS2014)
