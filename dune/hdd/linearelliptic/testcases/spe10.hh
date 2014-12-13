@@ -383,7 +383,7 @@ protected:
 
   static int initial_refinements()
   {
-    int ret = 0;
+    int ret = 1;
 #if HAVE_ALUGRID
     if (std::is_same< GridType, ALUConformGrid< 2, 2 > >::value
         || std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
