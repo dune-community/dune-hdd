@@ -321,7 +321,7 @@ def online_phase(cfg, detailed_data, offline_data):
                 break
             else:
                 try:
-                    logger.info('Error ({}) is too large, starting intermediate offline phase:'.format(error))
+                    logger.info('Error ({}) is too large, starting local enrichment phase:'.format(error))
                     num_extensions = 0
 
                     intermediate_basis = [bb.copy() for bb in basis]
@@ -408,7 +408,8 @@ def online_phase(cfg, detailed_data, offline_data):
                         reduced_estimator.rc = rc
                         reduced_estimator.extension_step += 1
                         U_red = rd.solve(mu)
-                        logger.info('  Estimating:')
+                        logger.info('  Estimating (total basis size: {})'.format(
+                            sum(len(bb) for bb in intermediate_basis)))
                         new_error = reduced_estimator.estimate(U_red, mu, discretization)
                         order = np.log(new_error/error)/np.log(old_basis_size/new_basis_size)
                         logger.info('              {} (order: {})'.format(new_error, order))
