@@ -186,9 +186,7 @@ def offline_phase(cfg, data):
         else:
             solution_norms = [discretization.solve(mu).l2_norm()[0] for mu in training_samples]
         logger.info('  range:              [{}, {}]'.format(np.amin(solution_norms), np.amax(solution_norms)))
-        logger.info('  median:              {}'.format(np.median(solution_norms)))
         logger.info('  mean:                {}'.format(np.mean(solution_norms)))
-        logger.info('  standard deviation:  {}'.format(np.std(solution_norms)))
         add_values(solution_norms=solution_norms)
 
     extension_algorithm=partial(gram_schmidt_block_basis_extension, product=local_products)
