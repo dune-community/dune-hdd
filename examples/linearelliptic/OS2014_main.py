@@ -418,7 +418,7 @@ def online_phase(cfg, detailed_data, offline_data):
                             logger.warn('Error increased (from {} to {}) after enrichment!'.format(error, new_error))
                         elif order < 1:
                             logger.warn('Error decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
-                        if num_extensions >= cfg['online_max_extensions']:
+                        if num_extensions >= cfg['online_max_extensions'] and new_error > cfg['online_target_error']:
                             basis = intermediate_basis
                             raise EnrichmentError('Reached maximum number of {} extensions!'.format(
                                 cfg['online_max_extensions']))
