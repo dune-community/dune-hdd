@@ -57,7 +57,7 @@ config = {'dune_partitioning': '[8 8 1]',
           'num_test_samples': 10,
           'estimate_some_errors': False,
           'local_indicators': 'model_reduction_error',
-          'marking_strategy': 'doerfler',
+          'marking_strategy': 'doerfler_and_age',
           'doerfler_marking_theta': 0.75,
           'local_boundary_values': 'dirichlet',
           'online_target_error': 1e-4,
@@ -306,6 +306,7 @@ def online_phase(cfg, detailed_data, offline_data):
 
     failures = 0
     successes = 0
+    age = np.ones(discretization.num_subdomains)
     for mu in test_samples:
         mu_dune = wrapper.dune_parameter(mu)
         mu_in_basis = mu in basis_mus
@@ -351,7 +352,7 @@ def online_phase(cfg, detailed_data, offline_data):
                             raise ConfigurationError('Unknown local_indicators given: {}'.format(cfg['local_indicators']))
                         # mark subdomains
                         if 'doerfler' in cfg['marking_strategy']:
-                            marked_subdomains = doerfler_marking(local_indicators, cfg['doerfler_marking_theta'])
+                            marked_subdomains = set(doerfler_marking(local_indicators, cfg['doerfler_marking_theta']))
                         else:
                             raise ConfigurationError('Unknown marking_strategy given: {}'.format(cfg['local_indicators']))
                         if 'neighbours' in cfg['marking_strategy']:
@@ -360,7 +361,21 @@ def online_phase(cfg, detailed_data, offline_data):
                                 for nn in neighbours:
                                     marked_subdomains.append(nn)
                             marked_subdomains = set(marked_subdomains)
-                        logger.info('  {} subdomains marked, computing local solutions ...'.format(len(marked_subdomains)))
+                        if 'age' in cfg['marking_strategy']:
+                            only_marked = len(marked_subdomains)
+                            too_old = np.where(age > cfg['marking_max_age'])[0]
+                            for ss in too_old:
+                                marked_subdomains.add(ss)
+                            logger.info('  {} subdomains marked ({} bc. of age), computing local solutions ...'.format(
+                                len(marked_subdomains), len(marked_subdomains) - only_marked))
+                        else:
+                            logger.info('  {} subdomains marked, computing local solutions ...'.format(
+                                len(marked_subdomains)))
+                        for ss in np.arange(discretization.num_subdomains):
+                            if ss in marked_subdomains:
+                                age[ss] = 0
+                            else:
+                                age[ss] += 1
                         # compute updated local solution
                         local_solutions = [None for ss in np.arange(discretization.num_subdomains)]
                         for subdomain in marked_subdomains:
