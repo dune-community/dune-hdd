@@ -27,7 +27,7 @@ from dune.pymor.core import wrap_module
 
 from simdb.run import new_dataset, add_values, add_data, add_logfile
 
-from OS2014_estimators import ReducedEstimator, reduce_with_estimator
+from OS2014_estimators import DetailedEstimator, ReducedEstimator, reduce_with_estimator
 
 import linearellipticexampleOS2014 as dune_module
 
@@ -55,6 +55,7 @@ config = {'dune_partitioning': '[8 8 1]',
           'estimator_compute': 'model_reduction_error',
           'estimator_return': 'model_reduction_error',
           'num_test_samples': 10,
+          'estimate_some_errors': False,
           'local_indicators': 'model_reduction_error',
           'marking_strategy': 'doerfler',
           'doerfler_marking_theta': 0.75,
@@ -287,6 +288,22 @@ def online_phase(cfg, detailed_data, offline_data):
 
     logger.info('Started online phase for {} samples'.format(num_test_samples))
     test_samples = list(discretization.parameter_space.sample_randomly(num_test_samples))
+
+    if cfg['estimate_some_errors'] and len(test_samples) > 0:
+        logger.info('Estimating discretization errors:')
+        detailed_estimator = DetailedEstimator(example, wrapper, mu_hat_dune, mu_bar_dune)
+        estimates = [detailed_estimator.estimate(
+                         discretization.globalize_vectors(discretization.solve(mu))._list[0]._impl,
+                         wrapper.dune_parameter(mu)) for mu in test_samples]
+        max_error = np.amax(estimates)
+        logger.info('  range:              [{}, {}]'.format(np.amin(estimates), max_error))
+        logger.info('  mean:                {}'.format(np.mean(estimates)))
+        add_values(estimates=estimates)
+        if max_error > cfg['online_target_error']:
+            logger.warn('Given target error of {} is below the worst discretization error {}!'.format(
+                cfg['online_target_error'], max_error))
+        print('')
+
     for mu in test_samples:
         mu_dune = wrapper.dune_parameter(mu)
         mu_in_basis = mu in basis_mus
