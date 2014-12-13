@@ -304,6 +304,8 @@ def online_phase(cfg, detailed_data, offline_data):
                 cfg['online_target_error'], max_error))
         print('')
 
+    failures = 0
+    successes = 0
     for mu in test_samples:
         mu_dune = wrapper.dune_parameter(mu)
         mu_in_basis = mu in basis_mus
@@ -317,6 +319,7 @@ def online_phase(cfg, detailed_data, offline_data):
                              + 'but {} is already in the basis: aborting!').format(
                                  error, target_error, mu))
                 logger.error('This usually means that the tolerances are poorly chosen!')
+                failures += 1
                 break
             else:
                 try:
@@ -407,6 +410,7 @@ def online_phase(cfg, detailed_data, offline_data):
                             raise EnrichmentError('Error increased, aborting!')
                         error = new_error
                     logger.info('  Error ({}) is below the target error, continuing ...'.format(error))
+                    successes += 1
                     basis = intermediate_basis
                     logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                           np.max([len(bb) for bb in basis])))
@@ -415,12 +419,24 @@ def online_phase(cfg, detailed_data, offline_data):
                         max_tries))
                     logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                           np.max([len(bb) for bb in basis])))
+                    failures += 1
                 print('')
         else:
             logger.info('Error ({}) is below the target error, continuing ...'.format(error))
+            successes += 1
             print('')
 
     logger.info('Adaptive online phase finished.')
+    if failures == 0 and len(test_samples) > 0:
+        logger.info('  Target error could be reached for all {} parameters.'.format(len(test_samples)))
+    elif successes == 0 and len(test_samples) > 0:
+        logger.warn('  Target error could not be reached for any of the {} parameters!'.format(len(test_samples)))
+    else:
+        if successes > 0:
+            logger.info('  Target error could be reached for {} out of {} parameters.'.format(successes, len(test_samples)))
+        if failures > 0:
+            logger.info('  Target error could not be reached for {} out of {} parameters.'.format(failures,
+                                                                                              len(test_samples)))
     logger.info('Final Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                 np.max([len(bb) for bb in basis])))
     example.visualize_on_coarse_grid([len(bb) for bb in basis], 'final_basis_sizes', 'local_basis_size')
