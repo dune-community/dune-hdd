@@ -90,6 +90,11 @@ class EnrichmentError(Exception):
 def prepare(cfg):
     logger = getLogger('.OS2014.prepare')
     logger.setLevel('INFO')
+    reference_needed = ((cfg['greedy_use_estimator'] or cfg['estimate_some_errors'])
+                         and ('discretization_error' in cfg['estimator_compute']
+                              or 'full_error' in cfg['estimator_compute']
+                              or 'model_reduction_error' in cfg['estimator_compute'])
+                        or cfg['local_indicators'] == 'model_reduction_error')
 
     logger.info('Initializing DUNE module ({}):'.format(cfg['dune_example']))
     Example = dune_module.__dict__[cfg['dune_example']]
@@ -97,6 +102,7 @@ def prepare(cfg):
                       num_refinements=cfg['dune_num_refinements'],
                       oversampling_layers=cfg['dune_oversampling_layers'],
                       products=cfg['dune_products'],
+                      with_reference=reference_needed,
                       info_log_levels=cfg['dune_log_info_level'],
                       debug_log_levels=cfg['dune_log_debug_level'],
                       enable_warnings=cfg['dune_log_enable_warnings'],

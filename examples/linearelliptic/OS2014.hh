@@ -12,7 +12,10 @@
 
 #include <dune/fem/misc/mpimanager.hh>
 
+#include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/common/memory.hh>
+#include <dune/stuff/common/ranges.hh>
 #include <dune/stuff/functions/expression.hh>
 
 #include <dune/pymor/parameters/base.hh>
@@ -21,6 +24,7 @@
 #include <dune/gdt/operators/projections.hh>
 #include <dune/gdt/operators/prolongations.hh>
 #include <dune/gdt/playground/products/elliptic-swipdg.hh>
+#include <dune/gdt/playground/spaces/finitevolume/default.hh>
 
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/linearelliptic/testcases/spe10.hh>
@@ -81,6 +85,7 @@ public:
           const DUNE_STUFF_SSIZE_T num_refinements = 0,
           const DUNE_STUFF_SSIZE_T oversampling_layers = 0,
           const std::vector< std::string > products = {},
+          const bool with_reference = true,
           const DUNE_STUFF_SSIZE_T info_log_levels  = 0,
           const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
           const bool enable_warnings = true,
@@ -95,7 +100,8 @@ public:
                   info_color,
                   debug_color,
                   warn_color)
-    , parameter_range_(parameter_range)
+    , with_reference_(with_reference),
+      parameter_range_(parameter_range)
     , test_case_(merge_parameters({{"mu",     Dune::Pymor::Parameter("mu", 1)},  // <- it does not matter which parameters we give to the
                                    {"mu_hat", Dune::Pymor::Parameter("mu", 1)},  //    test case here, since we use test_case_.problem()
                                    {"mu_bar", Dune::Pymor::Parameter("mu", 1)}}, //    (which is the parametric problem) anyway
@@ -103,25 +109,30 @@ public:
                  partitioning,
                  boost::numeric_cast< size_t >(num_refinements),
                  boost::numeric_cast< size_t >(oversampling_layers))
-    , reference_test_case_(merge_parameters({{"mu",     Dune::Pymor::Parameter("mu", 1)},
-                                             {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
-                                             {"mu_bar", Dune::Pymor::Parameter("mu", 1)}},
-                                            parameter_range_),
-                           partitioning,
-                           boost::numeric_cast< size_t >(num_refinements + 1))
+    , reference_test_case_(with_reference_
+                           ? new TestCaseType(merge_parameters({{"mu",     Dune::Pymor::Parameter("mu", 1)},
+                                                                {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
+                                                                {"mu_bar", Dune::Pymor::Parameter("mu", 1)}},
+                                                               parameter_range_),
+                                              partitioning,
+                                              boost::numeric_cast< size_t >(num_refinements + 1))
+                           : nullptr)
     , discretization_(*test_case_.reference_provider(),
                       test_case_.boundary_info(),
                       test_case_.problem(),
                       products)
-    , reference_discretization_(*reference_test_case_.reference_provider(),
-                                reference_test_case_.boundary_info(),
-                                reference_test_case_.problem(),
-                                products)
+    , reference_discretization_(with_reference_
+                                ? new DiscretizationType(*reference_test_case_->reference_provider(),
+                                                         reference_test_case_->boundary_info(),
+                                                         reference_test_case_->problem(),
+                                                         products)
+                                : nullptr)
   {
     auto logger = DSC::TimedLogger().get("OS2014.example");
     logger.info() << "initializing discretization... " << std::flush;
     discretization_.init();
-    reference_discretization_.init();
+    if (with_reference_)
+      reference_discretization_->init();
     logger.info() << "done (grid has " << discretization_.grid_view().indexSet().size(0)
                   << " elements, discretization has " << discretization_.ansatz_space()->mapper().size() << " DoFs)"
                   << std::endl;
@@ -175,8 +186,11 @@ public:
                                const Dune::Pymor::Parameter mu = Dune::Pymor::Parameter(),
                                const Dune::Pymor::Parameter mu_product = Dune::Pymor::Parameter())
   {
-    const std::string type = (product_type.empty() && reference_discretization_.available_products().size() == 1)
-                             ? reference_discretization_.available_products()[0]
+    if (!with_reference_)
+      DUNE_THROW(Dune::Stuff::Exceptions::you_are_using_this_wrong,
+                 "Do not call compute error() if with_reference is false!");
+    const std::string type = (product_type.empty() && reference_discretization_->available_products().size() == 1)
+                             ? reference_discretization_->available_products()[0]
                              : product_type;
     // wrap solution into a discrete function
     using namespace Dune;
@@ -185,16 +199,16 @@ public:
     ConstDiscreteFunctionType coarse_solution(*discretization_.ansatz_space(), solution);
     // prolong to reference grid view
     typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
-    DiscreteFunctionType fine_solution(*reference_discretization_.ansatz_space());
+    DiscreteFunctionType fine_solution(*reference_discretization_->ansatz_space());
     GDT::Operators::Prolongation< typename DiscretizationType::GridViewType >
-        prolongation_operator(reference_discretization_.grid_view());
+        prolongation_operator(reference_discretization_->grid_view());
     prolongation_operator.apply(coarse_solution, fine_solution);
     // compute reference solution
-    DiscreteFunctionType reference_solution(*reference_discretization_.ansatz_space());
-    reference_discretization_.solve(reference_solution.vector(), mu);
+    DiscreteFunctionType reference_solution(*reference_discretization_->ansatz_space());
+    reference_discretization_->solve(reference_solution.vector(), mu);
     // compute error
     const auto difference = reference_solution.vector() - fine_solution.vector();
-    const auto product = reference_discretization_.get_product(type);
+    const auto product = reference_discretization_->get_product(type);
     return std::sqrt(product.apply2(difference, difference, mu_product));
   } // ... compute_error(...)
 
@@ -400,11 +414,12 @@ private:
     return ret;
   }
 
+  const bool with_reference_;
   const ParametersMapType parameter_range_;
   TestCaseType test_case_;
-  TestCaseType reference_test_case_;
+  std::unique_ptr< TestCaseType > reference_test_case_;
   DiscretizationType discretization_;
-  DiscretizationType reference_discretization_;
+  std::unique_ptr< DiscretizationType > reference_discretization_;
 }; // class Example
 
 
