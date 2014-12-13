@@ -7,77 +7,17 @@
 
 from __future__ import division, print_function
 
-from tempfile import NamedTemporaryFile
-from functools import partial
 import numpy as np
 
-from pymor.algorithms import greedy
-import pymor.core
 from pymor.core import getLogger
-from pymor.core.exceptions import ExtensionError
 from pymor.la import induced_norm
-from pymor.operators import LincombOperator
-from pymor.parameters import CubicParameterSpace, Parametric
 from pymor.reductors import reduce_generic_rb
-from pymor.playground.algorithms import gram_schmidt_block_basis_extension, trivial_block_basis_extension
-from pymor.playground.la import BlockVectorArray
+from pymor.playground.algorithms import gram_schmidt_block_basis_extension
 from pymor.playground.reductors import GenericBlockRBReconstructor
 
-from dune.pymor.core import wrap_module
+from simdb.run import add_values
 
-from simdb.run import new_dataset, add_values, add_data, add_logfile
-
-from OS2014_estimators import DetailedEstimator, ReducedEstimator, reduce_with_estimator
-
-import linearellipticexampleOS2014 as dune_module
-
-
-config = {'dune_partitioning': '[8 8 1]',
-          'dune_num_refinements': 4,
-          'dune_oversampling_layers': 32,
-          'dune_products': ['elliptic', 'penalty'],
-          'dune_log_info_level': -1,
-          'dune_log_debug_level': -1,
-          'dune_log_enable_warnings': True,
-          'dune_linear_solver_options': {'type': 'bicgstab.ilut', 'precision': '1e-14'},
-          'dune_example': 'OS2014Example',
-          'parameter_range': (0.1, 1.0),
-          'compute_some_solution_norms': False,
-          'initialize_basis_with': 1,
-          'num_training_samples': 0,
-          'greedy_max_extensions': 0,
-          'extension_product': ('elliptic', 'penalty'),
-          'greedy_error_norm': 'elliptic',
-          'mu_hat_value': 0.1,
-          'mu_bar_value': 0.1,
-          'greedy_target_error': 1e-10,
-          'greedy_use_estimator': True,
-          'estimator_compute': 'eta_red',
-          'estimator_return': 'eta_red',
-          'num_test_samples': 10,
-          'estimate_some_errors': False,
-          'local_indicators': 'eta_red',
-          'marking_strategy': 'doerfler_and_age',
-          'marking_max_age': 4,
-          'doerfler_marking_theta': 0.75,
-          'local_boundary_values': 'dirichlet',
-          'online_target_error': 0.05,
-          'online_max_extensions': 20}
-DATASET_ID = config['dune_example'] + '_online_enrichment_test'
-
-          # 'estimator_compute': ('discretization_error',
-          #                       'full_error',
-          #                       'model_reduction_error',
-          #                       'eta_nc_red',
-          #                       'eta_r_red',
-          #                       'eta_df_red',
-          #                       'eta_red'),
-
-
-pymor.core.logger.MAX_HIERACHY_LEVEL = 2
-getLogger('pymor.WrappedDiscretization').setLevel('WARN')
-getLogger('pymor.algorithms').setLevel('INFO')
-getLogger('dune.pymor.discretizations').setLevel('WARN')
+from OS2014_estimators import DetailedEstimator, ReducedEstimator
 
 
 class ConfigurationError(Exception):
@@ -86,163 +26,6 @@ class ConfigurationError(Exception):
 
 class EnrichmentError(Exception):
     """Raised when the enrichment failed."""
-
-
-def prepare(cfg):
-    logger = getLogger('.OS2014.prepare')
-    logger.setLevel('INFO')
-    reference_needed = ((cfg['greedy_use_estimator'] or cfg['estimate_some_errors'])
-                         and ('discretization_error' in cfg['estimator_compute']
-                              or 'full_error' in cfg['estimator_compute']
-                              or 'model_reduction_error' in cfg['estimator_compute'])
-                        or cfg['local_indicators'] == 'model_reduction_error')
-
-    logger.info('Initializing DUNE module ({}):'.format(cfg['dune_example']))
-    Example = dune_module.__dict__[cfg['dune_example']]
-    example = Example(partitioning=cfg['dune_partitioning'],
-                      num_refinements=cfg['dune_num_refinements'],
-                      oversampling_layers=cfg['dune_oversampling_layers'],
-                      products=cfg['dune_products'],
-                      with_reference=reference_needed,
-                      info_log_levels=cfg['dune_log_info_level'],
-                      debug_log_levels=cfg['dune_log_debug_level'],
-                      enable_warnings=cfg['dune_log_enable_warnings'],
-                      enable_colors=True,
-                      info_color='blue')
-    _, wrapper = wrap_module(dune_module)
-    discretization = wrapper[example.discretization()]
-    logger.info('  grid has {} subdomain{}'.format(discretization.num_subdomains,
-                                                   '' if discretization.num_subdomains == 1 else 's'))
-    logger.info('  discretization has {} DoFs'.format(discretization.solution_space.dim))
-    discretization = discretization.with_(
-            parameter_space=CubicParameterSpace(discretization.parameter_type,
-                                                cfg['parameter_range'][0],
-                                                cfg['parameter_range'][1]))
-    logger.info('  parameter type is {}'.format(discretization.parameter_type))
-
-    def create_product(products, product_type):
-        if product_type is None:
-            return None, 'None'
-        if not isinstance(product_type, tuple):
-            return products[product_type], product_type
-        else:
-            prods = [products[tt] for tt in product_type]
-            product_name = product_type[0]
-            for ii in np.arange(1, len(product_type)):
-                product_name += '_plus_' + product_type[ii]
-            return LincombOperator(operators=prods, coefficients=[1 for pp in prods]), product_name
-
-    logger.info('Preparing products and norms ...')
-    mu_hat_dune = wrapper.DuneParameter('mu', cfg['mu_hat_value'])
-    mu_bar_dune = wrapper.DuneParameter('mu', cfg['mu_bar_value'])
-    all_global_products = {}
-    all_local_products = [{} for ss in np.arange(discretization.num_subdomains)]
-    # get all products from the discretization and assemble the parametric ones
-    for nm, pr in discretization.products.items():
-        if not pr.parametric:
-            all_global_products[nm] = pr
-        else:
-            all_global_products[nm] = pr.assemble(mu=wrapper[mu_bar_dune])
-        for ss in np.arange(discretization.num_subdomains):
-            pr = discretization.local_product(ss, nm)
-            if pr.parametric:
-                all_local_products[ss][nm] = pr.assemble(mu=wrapper[mu_bar_dune])
-            else:
-                all_local_products[ss][nm] = pr
-    # combine products (if necessarry)
-    global_product, _ = create_product(all_global_products, cfg['extension_product'])
-    local_products, _ = map(list,
-            zip(*[create_product(all_local_pr, cfg['extension_product']) for all_local_pr in all_local_products]))
-    # assert all(nm == local_products_name[0] for nm in local_products_name)
-    # local_products_name = local_products_name[0]
-    norm, _ = create_product(all_global_products, cfg['greedy_error_norm'])
-    norm = induced_norm(norm) if norm is not None else None
-    return {'example': example,
-            'discretization': discretization,
-            'local_products': local_products,
-            'norm': norm,
-            'mu_bar_dune': mu_bar_dune,
-            'mu_hat_dune': mu_hat_dune,
-            'wrapper': wrapper}
-
-
-def offline_phase(cfg, data):
-    logger = getLogger('.OS2014.offline_phase')
-    logger.setLevel('INFO')
-
-    discretization = data['discretization']
-    example        = data['example']
-    local_products = data['local_products']
-    norm           = data['norm']
-    mu_bar_dune    = data['mu_bar_dune']
-    mu_hat_dune    = data['mu_hat_dune']
-    wrapper        = data['wrapper']
-
-    training_samples = list(discretization.parameter_space.sample_randomly(cfg['num_training_samples']))
-    add_values(training_samples=training_samples)
-    if cfg['compute_some_solution_norms'] and len(training_samples) > 0:
-        logger.info('Computing solution norms:')
-        if norm is not None:
-            solution_norms = [norm(discretization.solve(mu)) for mu in training_samples]
-        else:
-            solution_norms = [discretization.solve(mu).l2_norm()[0] for mu in training_samples]
-        logger.info('  range:              [{}, {}]'.format(np.amin(solution_norms), np.amax(solution_norms)))
-        logger.info('  mean:                {}'.format(np.mean(solution_norms)))
-        add_values(solution_norms=solution_norms)
-
-    extension_algorithm=partial(gram_schmidt_block_basis_extension, product=local_products)
-    initial_basis = discretization.functionals['rhs'].source.empty()._blocks
-    if cfg['initialize_basis_with'] >= 0:
-        logger.info('Initializing local bases of up to order {} ...'.format(cfg['initialize_basis_with']))
-        one = wrapper.vector_array(wrapper[example.project('1')])
-        one = BlockVectorArray([discretization.localize_vector(one, ss)
-                                for ss in np.arange(discretization.num_subdomains)])
-        initial_basis, _ = extension_algorithm(initial_basis, one)
-    if cfg['initialize_basis_with'] >= 1:
-        xx = wrapper.vector_array(wrapper[example.project('x[0]')])
-        xx = BlockVectorArray([discretization.localize_vector(xx, ss)
-                               for ss in np.arange(discretization.num_subdomains)])
-        initial_basis, _ = extension_algorithm(initial_basis, xx)
-        yy = wrapper.vector_array(wrapper[example.project('x[1]')])
-        yy = BlockVectorArray([discretization.localize_vector(yy, ss)
-                               for ss in np.arange(discretization.num_subdomains)])
-        initial_basis, _ = extension_algorithm(initial_basis, yy)
-        xy = wrapper.vector_array(wrapper[example.project('x[0]*x[1]')])
-        xy = BlockVectorArray([discretization.localize_vector(xy, ss)
-                               for ss in np.arange(discretization.num_subdomains)])
-        initial_basis, _ = extension_algorithm(initial_basis, xy)
-    if cfg['initialize_basis_with'] >= 2:
-        logger.warn('Ignoring initialize_basis_with higher than 1: {}'.format(cfg['initialize_basis_with']))
-    logger.info('')
-
-    reduced_estimator = ReducedEstimator(
-            discretization, example, wrapper, mu_hat_dune, mu_bar_dune, norm, cfg['estimator_compute'], cfg['estimator_return'])
-    greedy_data = greedy(discretization,
-                         partial(reduce_with_estimator,
-                                 reduced_estimator=reduced_estimator),
-                         training_samples,
-                         initial_basis=initial_basis,
-                         use_estimator=cfg['greedy_use_estimator'],
-                         error_norm=norm,
-                         extension_algorithm=extension_algorithm,
-                         max_extensions=cfg['greedy_max_extensions'],
-                         target_error=cfg['greedy_target_error'])
-    add_values(time=greedy_data['time'],
-               max_err_mus=greedy_data['max_err_mus'],
-               extensions=greedy_data['extensions'],
-               max_errs=greedy_data['max_errs'],
-               offline_estimator_data=reduced_estimator.data)
-    rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
-    basis, basis_mus = greedy_data['basis'], greedy_data['max_err_mus']
-
-    print('')
-    logger.info('Offline phase finished.')
-    logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
-                                                          np.max([len(bb) for bb in basis])))
-    return {'basis': basis,
-            'basis_mus': basis_mus,
-            'rc': rc,
-            'rd': rd}
 
 
 def online_phase(cfg, detailed_data, offline_data):
@@ -319,7 +102,7 @@ def online_phase(cfg, detailed_data, offline_data):
                                  error, target_error, mu))
                 logger.error('This usually means that the tolerances are poorly chosen!')
                 failures += 1
-                break
+                print('')
             else:
                 try:
                     logger.info('Error ({}) is too large, starting local enrichment phase:'.format(error))
@@ -453,21 +236,7 @@ def online_phase(cfg, detailed_data, offline_data):
                                                                                               len(test_samples)))
     logger.info('Final Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                 np.max([len(bb) for bb in basis])))
-    example.visualize_on_coarse_grid([len(bb) for bb in basis], 'final_basis_sizes', 'local_basis_size')
-
-
-if __name__ == '__main__':
-
-    logfile = NamedTemporaryFile(delete=False).name
-    pymor.core.logger.FILENAME = logfile
-    new_dataset(DATASET_ID, **config)
-
-    detailed_data = prepare(config)
-    print('')
-    offline_data  = offline_phase(config, detailed_data)
-    print('')
-    _             = online_phase(config, detailed_data, offline_data)
-
-    # this should be the last action (to really capture all logs)
-    add_logfile(logfile)
+    final_basis_sizes = [len(bb) for bb in basis]
+    add_values(final_basis_sizes=final_basis_sizes)
+    example.visualize_on_coarse_grid(final_basis_sizes, 'final_basis_sizes', 'local_basis_size')
 
