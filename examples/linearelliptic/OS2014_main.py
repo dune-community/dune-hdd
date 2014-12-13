@@ -61,8 +61,7 @@ config = {'dune_partitioning': '[8 8 1]',
           'doerfler_marking_theta': 0.75,
           'local_boundary_values': 'dirichlet',
           'online_target_error': 1e-4,
-          'online_max_tries': 3,
-          'online_max_reduction_factor': 0.90}
+          'online_max_extensions': 20}
 DATASET_ID = config['dune_example'] + '_online_enrichment_test'
 
           # 'estimator_compute': ('discretization_error',
@@ -277,8 +276,6 @@ def online_phase(cfg, detailed_data, offline_data):
     rd        = offline_data['rd']
     rc        = offline_data['rc']
 
-    max_tries = cfg['online_max_tries']
-
     reduced_estimator = ReducedEstimator(
             discretization, example, wrapper, mu_hat_dune, mu_bar_dune, norm, cfg['estimator_compute'], cfg['estimator_return'])
     reduced_estimator.extension_step += 1
@@ -325,13 +322,13 @@ def online_phase(cfg, detailed_data, offline_data):
             else:
                 try:
                     logger.info('Error ({}) is too large, starting intermediate offline phase:'.format(error))
-                    enrichment_tries = 0
+                    num_extensions = 0
 
                     intermediate_basis = [bb.copy() for bb in basis]
                     if cfg['local_indicators'] == 'model_reduction_error':
                         U_h = discretization.solve(mu)
                         assert len(U_h) == 1
-                    while error > target_error:
+                    while error > target_error and num_extensions < cfg['online_max_extensions']:
                         logger.info('  Estimating local error contributions ...')
                         U_red_h = rc.reconstruct(U_red)
                         assert len(U_red_h) == 1
@@ -395,6 +392,7 @@ def online_phase(cfg, detailed_data, offline_data):
                         # extend local bases
                         logger.info('  Extending bases on {} subdomain{}...'.format(
                             len(marked_subdomains), '' if len(marked_subdomains) == 1 else 's'))
+                        old_basis_size = sum([len(bb) for bb in intermediate_basis])
                         extended_bases, _ = gram_schmidt_block_basis_extension(
                                 [intermediate_basis[ss] for ss in marked_subdomains],
                                 [local_solutions[ss] for ss in marked_subdomains],
@@ -402,6 +400,8 @@ def online_phase(cfg, detailed_data, offline_data):
                         assert len(extended_bases) == len(marked_subdomains)
                         for ii, subdomain in enumerate(marked_subdomains):
                             intermediate_basis[subdomain] = extended_bases[ii]
+                        new_basis_size = sum([len(bb) for bb in intermediate_basis])
+                        num_extensions += 1
                         logger.info('  Reducing ...')
                         rd, _, _ = reduce_generic_rb(discretization, intermediate_basis)
                         rc = GenericBlockRBReconstructor(intermediate_basis)
@@ -410,19 +410,16 @@ def online_phase(cfg, detailed_data, offline_data):
                         U_red = rd.solve(mu)
                         logger.info('  Estimating:')
                         new_error = reduced_estimator.estimate(U_red, mu, discretization)
-                        logger.info('              {}'.format(new_error))
-                        factor = new_error/error
+                        order = np.log(new_error/error)/np.log(old_basis_size/new_basis_size)
+                        logger.info('              {} (order: {})'.format(new_error, order))
                         if new_error > error:
                             logger.warn('Error increased (from {} to {}) after enrichment!'.format(error, new_error))
-                            enrichment_tries += 1
-                        elif factor > cfg['online_max_reduction_factor']:
+                        elif order < 1:
                             logger.warn('Error decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
-                            enrichment_tries += 1
-                        else:
-                            enrichment_tries = 0
-                        if enrichment_tries >= max_tries:
+                        if num_extensions >= cfg['online_max_extensions']:
                             basis = intermediate_basis
-                            raise EnrichmentError('Error increased, aborting!')
+                            raise EnrichmentError('Reached maximum number of {} extensions!'.format(
+                                cfg['online_max_extensions']))
                         error = new_error
                     logger.info('  Error ({}) is below the target error, continuing ...'.format(error))
                     successes += 1
@@ -430,10 +427,10 @@ def online_phase(cfg, detailed_data, offline_data):
                     logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                           np.max([len(bb) for bb in basis])))
                 except EnrichmentError, ee:
-                    logger.critical('Enrichment failed after {} tries, continuing with the next parameter ...'.format(
-                        max_tries))
+                    logger.critical('Enrichment stopped because: {}'.format(ee))
                     logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                           np.max([len(bb) for bb in basis])))
+                    logger.info('Continuing with the next parameter ...')
                     failures += 1
                 print('')
         else:
