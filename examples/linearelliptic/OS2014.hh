@@ -356,6 +356,30 @@ public:
     return solution;
   } // ... solve_oversampled(...)
 
+  void visualize_on_coarse_grid(const std::vector< double >& vector,
+                                const std::string& filename,
+                                const std::string& name)
+  {
+    using namespace Dune;
+    const auto ms_grid = discretization_.ansatz_space()->ms_grid();
+    const auto& grid_view = discretization_.grid_view();
+    if (vector.size() != ms_grid->size())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given,
+                 "Given vector has wrong lenght!\n"
+                 << "  expected: " << ms_grid->size() << "\n"
+                 << "  actual:   " << vector.size() << "\n");
+    if (filename.empty())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given filename must not be empty!");
+    if (name.empty())
+      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given name must not be empty!");
+    GDT::Spaces::FiniteVolume::Default< typename std::remove_reference< decltype(grid_view) >::type, RangeFieldType, 1 >
+        fv_space(grid_view);
+    auto visualization = GDT::make_discrete_function< VectorType >(fv_space, name);
+    for (const auto& entity : Stuff::Common::entityRange(grid_view))
+      visualization.vector().set_entry(grid_view.indexSet().index(entity), vector[ms_grid->subdomainOf(entity)]);
+    visualization.visualize(filename);
+  } // ... visualize_on_coarse_grid(...)
+
   RangeFieldType alpha(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2)
   {
     return test_case_.problem().diffusion_factor()->alpha(mu_1, mu_2);

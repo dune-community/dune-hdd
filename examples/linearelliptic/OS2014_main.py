@@ -402,6 +402,7 @@ def online_phase(cfg, detailed_data, offline_data):
     logger.info('Adaptive online phase finished.')
     logger.info('Final Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
                                                                 np.max([len(bb) for bb in basis])))
+    example.visualize_on_coarse_grid([len(bb) for bb in basis], 'final_basis_sizes', 'local_basis_size')
 
 
 if __name__ == '__main__':

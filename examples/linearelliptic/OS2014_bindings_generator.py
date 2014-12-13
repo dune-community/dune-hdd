@@ -273,6 +273,12 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             param('const std::string&', 'boundary_value_type'),
                             param('const ' + VectorType + '&', 'boundary_value_type')],
                            is_const=True, throw=exceptions)
+        Example.add_method('visualize_on_coarse_grid',
+                           None,
+                           [param('const std::vector< double >&', 'vector'),
+                            param('const std::string&', 'filename'),
+                            param('const std::string&', 'name')],
+                           is_const=True, throw=exceptions)
         Example.add_method('alpha',
                            retval(RangeFieldType),
                            [param('const Dune::Pymor::Parameter&', 'mu_1'),
