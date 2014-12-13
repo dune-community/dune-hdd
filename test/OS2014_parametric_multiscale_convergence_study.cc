@@ -80,7 +80,7 @@ void run_eoc_study(const std::string partitioning,
 {
   const TestCaseType test_case(parameters,
                                partitioning,
-                               2,
+                               3,
                                0,
                                H_with_h);
   if (print_header)
