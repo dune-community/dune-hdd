@@ -97,7 +97,7 @@ def online_phase(cfg, detailed_data, offline_data):
         error = reduced_estimator.estimate(U_red, mu, discretization)
         if error > target_error:
             if mu_in_basis:
-                logger.error(('Error ({}) is larger than the target_error ({}), '
+                logger.error(('The error ({}) is larger than the target_error ({}), '
                              + 'but {} is already in the basis: aborting!').format(
                                  error, target_error, mu))
                 logger.error('This usually means that the tolerances are poorly chosen!')
@@ -105,7 +105,7 @@ def online_phase(cfg, detailed_data, offline_data):
                 print('')
             else:
                 try:
-                    logger.info('Error ({}) is too large, starting local enrichment phase:'.format(error))
+                    logger.info('The error ({}) is too large, starting local enrichment phase:'.format(error))
                     num_extensions = 0
 
                     intermediate_basis = [bb.copy() for bb in basis]
@@ -198,15 +198,15 @@ def online_phase(cfg, detailed_data, offline_data):
                         order = np.log(new_error/error)/np.log(old_basis_size/new_basis_size)
                         logger.info('              {} (order: {})'.format(new_error, order))
                         if new_error > error:
-                            logger.warn('Error increased (from {} to {}) after enrichment!'.format(error, new_error))
+                            logger.warn('The error has increased (from {} to {}) after enrichment!'.format(error, new_error))
                         elif order < 1:
-                            logger.warn('Error decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
+                            logger.warn('The error has decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
                         if num_extensions >= cfg['online_max_extensions'] and new_error > cfg['online_target_error']:
                             basis = intermediate_basis
                             raise EnrichmentError('Reached maximum number of {} extensions!'.format(
                                 cfg['online_max_extensions']))
                         error = new_error
-                    logger.info('  Error ({}) is below the target error, continuing ...'.format(error))
+                    logger.info('  The error ({}) is below the target error, continuing ...'.format(error))
                     successes += 1
                     basis = intermediate_basis
                     logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
@@ -219,7 +219,7 @@ def online_phase(cfg, detailed_data, offline_data):
                     failures += 1
                 print('')
         else:
-            logger.info('Error ({}) is below the target error, continuing ...'.format(error))
+            logger.info('The error ({}) is below the target error, continuing ...'.format(error))
             successes += 1
             print('')
 
