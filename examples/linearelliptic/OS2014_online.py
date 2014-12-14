@@ -131,9 +131,15 @@ def online_phase(cfg, detailed_data, offline_data):
                                                                            mu_dune))
                         else:
                             raise ConfigurationError('Unknown local_indicators given: {}'.format(cfg['local_indicators']))
+                        with open('indicators_mu_{}_extension_{}.txt'.format(mu['mu'][0], num_extensions), 'w') as ff:
+                            for ii in local_indicators:
+                                ff.write('{} '.format(ii))
                         # mark subdomains
                         if 'doerfler' in cfg['marking_strategy']:
-                            marked_subdomains = set(doerfler_marking(local_indicators, cfg['doerfler_marking_theta']))
+                            if num_extensions <= 1 and mu == test_samples[0]:
+                                marked_subdomains = set(doerfler_marking(local_indicators, 1))
+                            else:
+                                marked_subdomains = set(doerfler_marking(local_indicators, cfg['doerfler_marking_theta']))
                         else:
                             raise ConfigurationError('Unknown marking_strategy given: {}'.format(cfg['local_indicators']))
                         if 'neighbours' in cfg['marking_strategy']:

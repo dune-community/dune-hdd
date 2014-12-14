@@ -21,7 +21,7 @@ from OS2014_online  import online_phase
 
 config = {'dune_partitioning': '[25 5 1]',
           'dune_num_refinements': 0,
-          'dune_oversampling_layers': 16,
+          'dune_oversampling_layers': 8,
           'dune_products': ['elliptic', 'penalty'],
           'dune_log_info_level': -1,
           'dune_log_debug_level': -1,
@@ -46,11 +46,11 @@ config = {'dune_partitioning': '[25 5 1]',
           'estimate_some_errors': True,
           'local_indicators': 'eta_red',
           'marking_strategy': 'doerfler_and_age',
-          'marking_max_age': 4,
-          'doerfler_marking_theta': 0.66,
+          'marking_max_age': 3,
+          'doerfler_marking_theta': 0.5,
           'local_boundary_values': 'dirichlet',
           'online_target_error': 5,
-          'online_max_extensions': 20}
+          'online_max_extensions': 50}
 DATASET_ID = config['dune_example'] + '_online_enrichment_test'
 
 pymor.core.logger.MAX_HIERACHY_LEVEL = 2
