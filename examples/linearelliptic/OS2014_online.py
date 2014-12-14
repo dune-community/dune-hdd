@@ -87,10 +87,10 @@ def online_phase(cfg, detailed_data, offline_data):
 
     failures = 0
     successes = 0
-    age = np.ones(discretization.num_subdomains)
     for mu in test_samples:
         mu_dune = wrapper.dune_parameter(mu)
         mu_in_basis = mu in basis_mus
+        age = np.ones(discretization.num_subdomains)
         logger.info('Solving for {} ...'.format(mu))
         U_red = rd.solve(mu)
         logger.info('Estimating (mu is {}in the basis) ...'.format('already ' if mu_in_basis else 'not '))
