@@ -238,5 +238,5 @@ def online_phase(cfg, detailed_data, offline_data):
                                                                 np.max([len(bb) for bb in basis])))
     final_basis_sizes = [len(bb) for bb in basis]
     add_values(final_basis_sizes=final_basis_sizes)
-    example.visualize_on_coarse_grid(final_basis_sizes, 'final_basis_sizes', 'local_basis_size')
+    example.visualize_on_coarse_grid(final_basis_sizes, cfg['dune_example'] + '.final_basis_sizes', 'local_basis_size')
 
