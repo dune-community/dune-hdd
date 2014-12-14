@@ -47,9 +47,9 @@ config = {'dune_partitioning': '[25 5 1]',
           'local_indicators': 'eta_red',
           'marking_strategy': 'doerfler_and_age',
           'marking_max_age': 4,
-          'doerfler_marking_theta': 1,
+          'doerfler_marking_theta': 0.66,
           'local_boundary_values': 'dirichlet',
-          'online_target_error': 0.125,
+          'online_target_error': 5,
           'online_max_extensions': 20}
 DATASET_ID = config['dune_example'] + '_online_enrichment_test'
 
@@ -73,4 +73,4 @@ if __name__ == '__main__':
 
     # this should be the last action (to really capture all logs)
     add_logfile(logfile)
-uniform
+
