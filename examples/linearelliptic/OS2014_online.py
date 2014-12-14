@@ -154,7 +154,7 @@ def online_phase(cfg, detailed_data, offline_data):
                                 len(marked_subdomains)))
                         for ss in np.arange(discretization.num_subdomains):
                             if ss in marked_subdomains:
-                                age[ss] = 0
+                                age[ss] = 1
                             else:
                                 age[ss] += 1
                         # compute updated local solution
