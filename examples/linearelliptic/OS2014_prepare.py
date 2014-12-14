@@ -52,6 +52,8 @@ def prepare(cfg):
                                                 cfg['parameter_range'][1]))
     logger.info('  parameter type is {}'.format(discretization.parameter_type))
 
+    example.visualize(cfg['dune_example'])
+
     def create_product(products, product_type):
         if product_type is None:
             return None, 'None'
