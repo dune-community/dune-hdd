@@ -88,146 +88,155 @@ def online_phase(cfg, detailed_data, offline_data):
     failures = 0
     successes = 0
     for mu in test_samples:
-        mu_dune = wrapper.dune_parameter(mu)
-        mu_in_basis = mu in basis_mus
-        age = np.ones(discretization.num_subdomains)
-        logger.info('Solving for {} ...'.format(mu))
-        U_red = rd.solve(mu)
-        logger.info('Estimating (mu is {}in the basis) ...'.format('already ' if mu_in_basis else 'not '))
-        error = reduced_estimator.estimate(U_red, mu, discretization)
-        if error > target_error:
-            if mu_in_basis:
-                logger.error(('The error ({}) is larger than the target_error ({}), '
-                             + 'but {} is already in the basis: aborting!').format(
-                                 error, target_error, mu))
-                logger.error('This usually means that the tolerances are poorly chosen!')
-                failures += 1
-                print('')
-            else:
-                try:
-                    logger.info('The error ({}) is too large, starting local enrichment phase:'.format(error))
-                    num_extensions = 0
-
-                    intermediate_basis = [bb.copy() for bb in basis]
-                    if cfg['local_indicators'] == 'model_reduction_error':
-                        U_h = discretization.solve(mu)
-                        assert len(U_h) == 1
-                    while error > target_error and num_extensions < cfg['online_max_extensions']:
-                        logger.info('  Estimating local error contributions ...')
-                        U_red_h = rc.reconstruct(U_red)
-                        assert len(U_red_h) == 1
-                        U_red_global = discretization.globalize_vectors(U_red_h)
-                        U_red_dune = U_red_global._list[0]._impl
-                        # compute local error indicators
-                        if cfg['local_indicators'] == 'model_reduction_error':
-                            difference = U_h - U_red_h
-                            local_indicators = [induced_norm(local_products[ss])(difference._blocks[ss])
-                                                for ss in np.arange(discretization.num_subdomains)]
-                        elif cfg['local_indicators'] == 'eta_red':
-                            local_indicators = list(example.estimate_local(U_red_dune,
-                                                                           'eta_OS2014_*',
-                                                                           mu_hat_dune,
-                                                                           mu_bar_dune,
-                                                                           mu_dune))
-                        else:
-                            raise ConfigurationError('Unknown local_indicators given: {}'.format(cfg['local_indicators']))
-                        with open('indicators_mu_{}_extension_{}.txt'.format(mu['mu'][0], num_extensions), 'w') as ff:
-                            for ii in local_indicators:
-                                ff.write('{} '.format(ii))
-                        # mark subdomains
-                        if 'doerfler' in cfg['marking_strategy']:
-                            if num_extensions <= 1 and mu == test_samples[0]:
-                                marked_subdomains = set(doerfler_marking(local_indicators, 1))
-                            else:
-                                marked_subdomains = set(doerfler_marking(local_indicators, cfg['doerfler_marking_theta']))
-                        else:
-                            raise ConfigurationError('Unknown marking_strategy given: {}'.format(cfg['local_indicators']))
-                        if 'neighbours' in cfg['marking_strategy']:
-                            for ss in list(marked_subdomains):
-                                neighbours = (list(discretization._impl.neighbouring_subdomains(ss)))
-                                for nn in neighbours:
-                                    marked_subdomains.append(nn)
-                            marked_subdomains = set(marked_subdomains)
-                        if 'age' in cfg['marking_strategy']:
-                            only_marked = len(marked_subdomains)
-                            too_old = np.where(age > cfg['marking_max_age'])[0]
-                            for ss in too_old:
-                                marked_subdomains.add(ss)
-                            logger.info('  {} subdomains marked ({} bc. of age), computing local solutions ...'.format(
-                                len(marked_subdomains), len(marked_subdomains) - only_marked))
-                        else:
-                            logger.info('  {} subdomains marked, computing local solutions ...'.format(
-                                len(marked_subdomains)))
-                        for ss in np.arange(discretization.num_subdomains):
-                            if ss in marked_subdomains:
-                                age[ss] = 0
-                            else:
-                                age[ss] += 1
-                        # compute updated local solution
-                        local_solutions = [None for ss in np.arange(discretization.num_subdomains)]
-                        for subdomain in marked_subdomains:
-                            local_boundary_values = cfg['local_boundary_values']
-                            if not (local_boundary_values == 'dirichlet' or local_boundary_values == 'neumann'):
-                                raise ConfigurationError('Unknown local_boundary_values given: {}'.format(local_boundary_values))
-                            oversampled_discretization = discretization.get_oversampled_discretization(
-                                    subdomain, local_boundary_values)
-                            local_discretization = discretization.get_local_discretization(subdomain)
-                            U_red_oversampled_dune = example.project_global_to_oversampled(U_red_dune, subdomain)
-                            U_h_improved_oversampled_dune = example.solve_oversampled(
-                                    subdomain, local_boundary_values, U_red_oversampled_dune, mu_dune)
-                            U_h_improved_local_dune = example.project_oversampled_to_local(
-                                    U_h_improved_oversampled_dune, subdomain)
-                            U_h_improved_local = wrapper.vector_array(wrapper[U_h_improved_local_dune])
-                            local_solutions[subdomain] = U_h_improved_local
-                        # extend local bases
-                        logger.info('  Extending bases on {} subdomain{}...'.format(
-                            len(marked_subdomains), '' if len(marked_subdomains) == 1 else 's'))
-                        old_basis_size = sum([len(bb) for bb in intermediate_basis])
-                        extended_bases, _ = gram_schmidt_block_basis_extension(
-                                [intermediate_basis[ss] for ss in marked_subdomains],
-                                [local_solutions[ss] for ss in marked_subdomains],
-                                product=[local_products[ss] for ss in marked_subdomains])
-                        assert len(extended_bases) == len(marked_subdomains)
-                        for ii, subdomain in enumerate(marked_subdomains):
-                            intermediate_basis[subdomain] = extended_bases[ii]
-                        new_basis_size = sum([len(bb) for bb in intermediate_basis])
-                        num_extensions += 1
-                        logger.info('  Reducing ...')
-                        rd, _, _ = reduce_generic_rb(discretization, intermediate_basis)
-                        rc = GenericBlockRBReconstructor(intermediate_basis)
-                        reduced_estimator.rc = rc
-                        reduced_estimator.extension_step += 1
-                        U_red = rd.solve(mu)
-                        logger.info('  Estimating (total basis size: {})'.format(
-                            sum(len(bb) for bb in intermediate_basis)))
-                        new_error = reduced_estimator.estimate(U_red, mu, discretization)
-                        order = np.log(new_error/error)/np.log(old_basis_size/new_basis_size)
-                        logger.info('              {} (order: {})'.format(new_error, order))
-                        if new_error > error:
-                            logger.warn('The error has increased (from {} to {}) after enrichment!'.format(error, new_error))
-                        elif order < 1:
-                            logger.warn('The error has decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
-                        if num_extensions >= cfg['online_max_extensions'] and new_error > cfg['online_target_error']:
-                            basis = intermediate_basis
-                            raise EnrichmentError('Reached maximum number of {} extensions!'.format(
-                                cfg['online_max_extensions']))
-                        error = new_error
-                    logger.info('  The error ({}) is below the target error, continuing ...'.format(error))
-                    successes += 1
-                    basis = intermediate_basis
-                    logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
-                                                                          np.max([len(bb) for bb in basis])))
-                except EnrichmentError, ee:
-                    logger.critical('Enrichment stopped because: {}'.format(ee))
-                    logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
-                                                                          np.max([len(bb) for bb in basis])))
-                    logger.info('Continuing with the next parameter ...')
+        with open('output_mu_{}.txt'.format(mu['mu'][0]), 'w') as gg:
+            mu_dune = wrapper.dune_parameter(mu)
+            mu_in_basis = mu in basis_mus
+            age = np.ones(discretization.num_subdomains)
+            logger.info('Solving for {} ...'.format(mu))
+            U_red = rd.solve(mu)
+            logger.info('Estimating (mu is {}in the basis) ...'.format('already ' if mu_in_basis else 'not '))
+            error = reduced_estimator.estimate(U_red, mu, discretization)
+            gg.write('{} \t'.format(error))
+            if error > target_error:
+                if mu_in_basis:
+                    logger.error(('The error ({}) is larger than the target_error ({}), '
+                                + 'but {} is already in the basis: aborting!').format(
+                                    error, target_error, mu))
+                    logger.error('This usually means that the tolerances are poorly chosen!')
                     failures += 1
+                    print('')
+                else:
+                    try:
+                        logger.info('The error ({}) is too large, starting local enrichment phase:'.format(error))
+                        num_extensions = 0
+
+                        intermediate_basis = [bb.copy() for bb in basis]
+                        if cfg['local_indicators'] == 'model_reduction_error':
+                            U_h = discretization.solve(mu)
+                            assert len(U_h) == 1
+                        while error > target_error and num_extensions < cfg['online_max_extensions']:
+                            logger.info('  Estimating local error contributions ...')
+                            U_red_h = rc.reconstruct(U_red)
+                            assert len(U_red_h) == 1
+                            U_red_global = discretization.globalize_vectors(U_red_h)
+                            U_red_dune = U_red_global._list[0]._impl
+                            # compute local error indicators
+                            if cfg['local_indicators'] == 'model_reduction_error':
+                                difference = U_h - U_red_h
+                                local_indicators = [induced_norm(local_products[ss])(difference._blocks[ss])
+                                                    for ss in np.arange(discretization.num_subdomains)]
+                            elif cfg['local_indicators'] == 'eta_red':
+                                local_indicators = list(example.estimate_local(U_red_dune,
+                                                                            'eta_OS2014_*',
+                                                                            mu_hat_dune,
+                                                                            mu_bar_dune,
+                                                                            mu_dune))
+                            else:
+                                raise ConfigurationError('Unknown local_indicators given: {}'.format(cfg['local_indicators']))
+                            with open('indicators_mu_{}_extension_{}.txt'.format(mu['mu'][0], num_extensions), 'w') as ff:
+                                for ii in local_indicators:
+                                    ff.write('{} '.format(ii))
+                            # mark subdomains
+                            if 'doerfler' in cfg['marking_strategy']:
+
+                                if (num_extensions < cfg['doerfler_num_initial']
+                                    and mu in test_samples[:cfg['doerfler_num_mu_initial']]):
+                                    marked_subdomains = set(doerfler_marking(local_indicators, cfg['doerfler_initial_marking_theta']))
+                                else:
+                                    marked_subdomains = set(doerfler_marking(local_indicators, cfg['doerfler_marking_theta']))
+                            else:
+                                raise ConfigurationError('Unknown marking_strategy given: {}'.format(cfg['local_indicators']))
+                            if 'neighbours' in cfg['marking_strategy']:
+                                for ss in list(marked_subdomains):
+                                    neighbours = (list(discretization._impl.neighbouring_subdomains(ss)))
+                                    for nn in neighbours:
+                                        marked_subdomains.append(nn)
+                                marked_subdomains = set(marked_subdomains)
+                            if 'age' in cfg['marking_strategy']:
+                                only_marked = len(marked_subdomains)
+                                too_old = np.where(age > cfg['marking_max_age'])[0]
+                                for ss in too_old:
+                                    marked_subdomains.add(ss)
+                                logger.info('  {} subdomains marked ({} bc. of age), computing local solutions ...'.format(
+                                    len(marked_subdomains), len(marked_subdomains) - only_marked))
+                                gg.write('{} \t({}) \t'.format(len(marked_subdomains),
+                                                           len(marked_subdomains) - only_marked))
+                            else:
+                                logger.info('  {} subdomains marked, computing local solutions ...'.format(
+                                    len(marked_subdomains)))
+                                gg.write('{} \t(0) \t'.format(len(marked_subdomains)))
+                            for ss in np.arange(discretization.num_subdomains):
+                                if ss in marked_subdomains:
+                                    age[ss] = 1
+                                else:
+                                    age[ss] += 1
+                            # compute updated local solution
+                            local_solutions = [None for ss in np.arange(discretization.num_subdomains)]
+                            for subdomain in marked_subdomains:
+                                local_boundary_values = cfg['local_boundary_values']
+                                if not (local_boundary_values == 'dirichlet' or local_boundary_values == 'neumann'):
+                                    raise ConfigurationError('Unknown local_boundary_values given: {}'.format(local_boundary_values))
+                                oversampled_discretization = discretization.get_oversampled_discretization(
+                                        subdomain, local_boundary_values)
+                                local_discretization = discretization.get_local_discretization(subdomain)
+                                U_red_oversampled_dune = example.project_global_to_oversampled(U_red_dune, subdomain)
+                                U_h_improved_oversampled_dune = example.solve_oversampled(
+                                        subdomain, local_boundary_values, U_red_oversampled_dune, mu_dune)
+                                U_h_improved_local_dune = example.project_oversampled_to_local(
+                                        U_h_improved_oversampled_dune, subdomain)
+                                U_h_improved_local = wrapper.vector_array(wrapper[U_h_improved_local_dune])
+                                local_solutions[subdomain] = U_h_improved_local
+                            # extend local bases
+                            logger.info('  Extending bases on {} subdomain{}...'.format(
+                                len(marked_subdomains), '' if len(marked_subdomains) == 1 else 's'))
+                            old_basis_size = sum([len(bb) for bb in intermediate_basis])
+                            extended_bases, _ = gram_schmidt_block_basis_extension(
+                                    [intermediate_basis[ss] for ss in marked_subdomains],
+                                    [local_solutions[ss] for ss in marked_subdomains],
+                                    product=[local_products[ss] for ss in marked_subdomains])
+                            assert len(extended_bases) == len(marked_subdomains)
+                            for ii, subdomain in enumerate(marked_subdomains):
+                                intermediate_basis[subdomain] = extended_bases[ii]
+                            new_basis_size = sum([len(bb) for bb in intermediate_basis])
+                            num_extensions += 1
+                            logger.info('  Reducing ...')
+                            rd, _, _ = reduce_generic_rb(discretization, intermediate_basis)
+                            rc = GenericBlockRBReconstructor(intermediate_basis)
+                            reduced_estimator.rc = rc
+                            reduced_estimator.extension_step += 1
+                            U_red = rd.solve(mu)
+                            logger.info('  Estimating (total basis size: {})'.format(
+                                sum(len(bb) for bb in intermediate_basis)))
+                            gg.write('{}\n'.format(sum(len(bb) for bb in intermediate_basis)))
+                            new_error = reduced_estimator.estimate(U_red, mu, discretization)
+                            gg.write('{} \t'.format(new_error))
+                            order = np.log(new_error/error)/np.log(old_basis_size/new_basis_size)
+                            logger.info('              {} (order: {})'.format(new_error, order))
+                            if new_error > error:
+                                logger.warn('The error has increased (from {} to {}) after enrichment!'.format(error, new_error))
+                            elif order < 1:
+                                logger.warn('The error has decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
+                            if num_extensions >= cfg['online_max_extensions'] and new_error > cfg['online_target_error']:
+                                basis = intermediate_basis
+                                raise EnrichmentError('Reached maximum number of {} extensions!'.format(
+                                    cfg['online_max_extensions']))
+                            error = new_error
+                        logger.info('  The error ({}) is below the target error, continuing ...'.format(error))
+                        successes += 1
+                        basis = intermediate_basis
+                        logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
+                                                                            np.max([len(bb) for bb in basis])))
+                    except EnrichmentError, ee:
+                        logger.critical('Enrichment stopped because: {}'.format(ee))
+                        logger.info('Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
+                                                                            np.max([len(bb) for bb in basis])))
+                        logger.info('Continuing with the next parameter ...')
+                        failures += 1
+                    print('')
+            else:
+                logger.info('The error ({}) is below the target error, continuing ...'.format(error))
+                successes += 1
                 print('')
-        else:
-            logger.info('The error ({}) is below the target error, continuing ...'.format(error))
-            successes += 1
-            print('')
 
     logger.info('Adaptive online phase finished.')
     if failures == 0 and len(test_samples) > 0:
