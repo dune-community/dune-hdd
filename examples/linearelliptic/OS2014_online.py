@@ -113,50 +113,62 @@ def online_phase(cfg, detailed_data, offline_data):
                         U_h = discretization.solve(mu)
                         assert len(U_h) == 1
                     while error > target_error and num_extensions < cfg['online_max_extensions']:
-                        logger.info('  Estimating local error contributions ...')
                         U_red_h = rc.reconstruct(U_red)
                         assert len(U_red_h) == 1
                         U_red_global = discretization.globalize_vectors(U_red_h)
                         U_red_dune = U_red_global._list[0]._impl
-                        # compute local error indicators
-                        if cfg['local_indicators'] == 'model_reduction_error':
-                            difference = U_h - U_red_h
-                            local_indicators = [induced_norm(local_products[ss])(difference._blocks[ss])
-                                                for ss in np.arange(discretization.num_subdomains)]
-                        elif cfg['local_indicators'] == 'eta_red':
-                            local_indicators = list(example.estimate_local(U_red_dune,
-                                                                           'eta_OS2014_*',
-                                                                           mu_hat_dune,
-                                                                           mu_bar_dune,
-                                                                           mu_dune))
+                        if (cfg['uniform_enrichment_factor'] > 0
+                            and error/target_error > cfg['uniform_enrichment_factor']):
+                            logger.info('- Enriching on all subdomains, since error/target_error = {}'.format(
+                                error/target_error))
+                            marked_subdomains = range(discretization.num_subdomains)
+                            if 'age' in cfg['marking_strategy']:
+                                age = np.ones(discretization.num_subdomains)
                         else:
-                            raise ConfigurationError('Unknown local_indicators given: {}'.format(cfg['local_indicators']))
-                        # mark subdomains
-                        if 'doerfler' in cfg['marking_strategy']:
-                            marked_subdomains = set(doerfler_marking(local_indicators, cfg['doerfler_marking_theta']))
-                        else:
-                            raise ConfigurationError('Unknown marking_strategy given: {}'.format(cfg['local_indicators']))
-                        if 'neighbours' in cfg['marking_strategy']:
-                            for ss in list(marked_subdomains):
-                                neighbours = (list(discretization._impl.neighbouring_subdomains(ss)))
-                                for nn in neighbours:
-                                    marked_subdomains.append(nn)
-                            marked_subdomains = set(marked_subdomains)
-                        if 'age' in cfg['marking_strategy']:
-                            only_marked = len(marked_subdomains)
-                            too_old = np.where(age > cfg['marking_max_age'])[0]
-                            for ss in too_old:
-                                marked_subdomains.add(ss)
-                            logger.info('  {} subdomains marked ({} bc. of age), computing local solutions ...'.format(
-                                len(marked_subdomains), len(marked_subdomains) - only_marked))
-                        else:
-                            logger.info('  {} subdomains marked, computing local solutions ...'.format(
-                                len(marked_subdomains)))
-                        for ss in np.arange(discretization.num_subdomains):
-                            if ss in marked_subdomains:
-                                age[ss] = 1
+                            logger.info('- Estimating local error contributions ...')
+                            # compute local error indicators
+                            if cfg['local_indicators'] == 'model_reduction_error':
+                                difference = U_h - U_red_h
+                                local_indicators = [induced_norm(local_products[ss])(difference._blocks[ss])
+                                                    for ss in np.arange(discretization.num_subdomains)]
+                            elif cfg['local_indicators'] == 'eta_red':
+                                local_indicators = list(example.estimate_local(U_red_dune,
+                                                                               'eta_OS2014_*',
+                                                                               mu_hat_dune,
+                                                                               mu_bar_dune,
+                                                                               mu_dune))
                             else:
-                                age[ss] += 1
+                                raise ConfigurationError('Unknown local_indicators given: {}'.format(
+                                    cfg['local_indicators']))
+                            # mark subdomains
+                            if 'doerfler' in cfg['marking_strategy']:
+                                marked_subdomains = set(doerfler_marking(local_indicators,
+                                                                         cfg['doerfler_marking_theta']))
+                            else:
+                                raise ConfigurationError('Unknown marking_strategy given: {}'.format(
+                                    cfg['local_indicators']))
+                            if 'neighbours' in cfg['marking_strategy']:
+                                for ss in list(marked_subdomains):
+                                    neighbours = (list(discretization._impl.neighbouring_subdomains(ss)))
+                                    for nn in neighbours:
+                                        marked_subdomains.append(nn)
+                                marked_subdomains = set(marked_subdomains)
+                            if 'age' in cfg['marking_strategy']:
+                                only_marked = len(marked_subdomains)
+                                too_old = np.where(age > cfg['marking_max_age'])[0]
+                                for ss in too_old:
+                                    marked_subdomains.add(ss)
+                                logger.info(('  {} subdomains marked ({} bc. of age), '
+                                             + 'computing local solutions ...').format(
+                                                 len(marked_subdomains), len(marked_subdomains) - only_marked))
+                            else:
+                                logger.info('  {} subdomains marked, computing local solutions ...'.format(
+                                    len(marked_subdomains)))
+                            for ss in np.arange(discretization.num_subdomains):
+                                if ss in marked_subdomains:
+                                    age[ss] = 1
+                                else:
+                                    age[ss] += 1
                         # compute updated local solution
                         local_solutions = [None for ss in np.arange(discretization.num_subdomains)]
                         for subdomain in marked_subdomains:
