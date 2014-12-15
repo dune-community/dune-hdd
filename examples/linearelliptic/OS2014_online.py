@@ -60,8 +60,8 @@ def online_phase(cfg, detailed_data, offline_data):
     rd        = offline_data['rd']
     rc        = offline_data['rc']
 
-    reduced_estimator = ReducedEstimator(
-            discretization, example, wrapper, mu_hat_dune, mu_bar_dune, norm, cfg['estimator_compute'], cfg['estimator_return'])
+    reduced_estimator = ReducedEstimator(discretization, example, wrapper, mu_hat_dune, mu_bar_dune,
+                                         norm, cfg['estimator_compute'], cfg['estimator_return'])
     reduced_estimator.extension_step += 1
     reduced_estimator.rc = rc
     num_test_samples = cfg['num_test_samples']
@@ -77,8 +77,8 @@ def online_phase(cfg, detailed_data, offline_data):
                          discretization.globalize_vectors(discretization.solve(mu))._list[0]._impl,
                          wrapper.dune_parameter(mu)) for mu in test_samples]
         max_error = np.amax(estimates)
-        logger.info('  range:              [{}, {}]'.format(np.amin(estimates), max_error))
-        logger.info('  mean:                {}'.format(np.mean(estimates)))
+        logger.info('  range: [{}, {}]'.format(np.amin(estimates), max_error))
+        logger.info('  mean:   {}'.format(np.mean(estimates)))
         add_values(estimates=estimates)
         if max_error > cfg['online_target_error']:
             logger.warn('Given target error of {} is below the worst discretization error {}!'.format(
@@ -162,7 +162,8 @@ def online_phase(cfg, detailed_data, offline_data):
                         for subdomain in marked_subdomains:
                             local_boundary_values = cfg['local_boundary_values']
                             if not (local_boundary_values == 'dirichlet' or local_boundary_values == 'neumann'):
-                                raise ConfigurationError('Unknown local_boundary_values given: {}'.format(local_boundary_values))
+                                raise ConfigurationError('Unknown local_boundary_values given: {}'.format(
+                                    local_boundary_values))
                             oversampled_discretization = discretization.get_oversampled_discretization(
                                     subdomain, local_boundary_values)
                             local_discretization = discretization.get_local_discretization(subdomain)
@@ -196,11 +197,13 @@ def online_phase(cfg, detailed_data, offline_data):
                             sum(len(bb) for bb in intermediate_basis)))
                         new_error = reduced_estimator.estimate(U_red, mu, discretization)
                         order = np.log(new_error/error)/np.log(old_basis_size/new_basis_size)
-                        logger.info('              {} (order: {})'.format(new_error, order))
+                        logger.info('              {} (relative improvement: {})'.format(new_error, order))
                         if new_error > error:
-                            logger.warn('The error has increased (from {} to {}) after enrichment!'.format(error, new_error))
+                            logger.warn('The error has increased (from {} to {}) after enrichment!'.format(error,
+                                                                                                           new_error))
                         elif order < 1:
-                            logger.warn('The error has decreased only slightly (from {} to {}) after enrichment!'.format(error, new_error))
+                            logger.warn(('The error has decreased only slightly '
+                                         + '(from {} to {}) after enrichment!').format(error, new_error))
                         if num_extensions >= cfg['online_max_extensions'] and new_error > cfg['online_target_error']:
                             basis = intermediate_basis
                             raise EnrichmentError('Reached maximum number of {} extensions!'.format(
@@ -230,13 +233,15 @@ def online_phase(cfg, detailed_data, offline_data):
         logger.warn('  Target error could not be reached for any of the {} parameters!'.format(len(test_samples)))
     else:
         if successes > 0:
-            logger.info('  Target error could be reached for {} out of {} parameters.'.format(successes, len(test_samples)))
+            logger.info('  Target error could be reached for {} out of {} parameters.'.format(successes,
+                                                                                              len(test_samples)))
         if failures > 0:
             logger.info('  Target error could not be reached for {} out of {} parameters.'.format(failures,
                                                                                               len(test_samples)))
-    logger.info('Final Basis sizes range from {} to {}.'.format(np.min([len(bb) for bb in basis]),
-                                                                np.max([len(bb) for bb in basis])))
     final_basis_sizes = [len(bb) for bb in basis]
+    logger.info('Final global basis size is {}'.format(sum(final_basis_sizes)))
+    logger.info('Final local basis sizes range from {} to {}.'.format(np.min([final_basis_sizes]),
+                                                                      np.max([final_basis_sizes])))
     add_values(final_basis_sizes=final_basis_sizes)
     example.visualize_on_coarse_grid(final_basis_sizes, cfg['dune_example'] + '.final_basis_sizes', 'local_basis_size')
 
