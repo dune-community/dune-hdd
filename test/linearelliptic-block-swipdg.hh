@@ -135,7 +135,6 @@ public:
     const_cast< ThisType& >(*this).compute_on_current_refinement();
     assert(this->last_computed_refinement_ == this->current_refinement_);
     assert(this->current_solution_vector_);
-    typedef typename StudyBaseType::DiscreteFunctionType      DiscreteFunctionType;
     typedef typename StudyBaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
     const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
                                                      *this->current_solution_vector_,
