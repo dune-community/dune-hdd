@@ -164,7 +164,7 @@ public:
                std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
                bound_inf_cfg,
                prob)
-    , beta_(GDT::LocalEvaluation::SWIPDG::internal::default_beta(dimDomain))
+    , beta_(GDT::LocalEvaluation::SIPDG::internal::default_beta(dimDomain))
     , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::ansatz_space())))
     , only_these_products_(only_these_products)
   {
@@ -185,7 +185,7 @@ public:
                std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
                bound_inf_cfg,
                prob)
-    , beta_(GDT::LocalEvaluation::SWIPDG::internal::default_beta(dimDomain))
+    , beta_(GDT::LocalEvaluation::SIPDG::internal::default_beta(dimDomain))
     , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::ansatz_space())))
     , only_these_products_(only_these_products)
   {
