@@ -78,7 +78,7 @@ void run_parametric_localization_study(const std::string partitioning,
                                        const bool print_header,
                                        const std::string visualization)
 {
-  const TestCaseType test_case(parameters, partitioning);
+  TestCaseType test_case(parameters, partitioning);
   if (print_header)
     test_case.print_header(DSC_LOG_INFO);
   print_parameter_information(test_case);
@@ -88,7 +88,7 @@ void run_parametric_localization_study(const std::string partitioning,
 
 
 TEST(OS2014_nonparametric_localization_study, SWIPDG_fine_triangulation) {
-  const NonparametricTestCaseType test_case;
+  NonparametricTestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
   DSC_LOG_INFO << std::endl;
   NonparametricStudyType study(test_case,
@@ -100,7 +100,7 @@ TEST(OS2014_nonparametric_localization_study, SWIPDG_fine_triangulation) {
 
 
 TEST(OS2014_nonparametric_localization_study, Block_SWIPDG_80_subdomains) {
-  const NonparametricBlockTestCaseType test_case("[20 4 1]");
+  NonparametricBlockTestCaseType test_case("[20 4 1]");
   NonparametricBlockStudyType study(test_case,
                                     {},
                                     {"eta_OS2014"},

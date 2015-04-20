@@ -41,7 +41,7 @@ struct linearelliptic_BlockSWIPDG_discretization
   template< Stuff::LA::ChooseBackend la_backend >
   static void eoc_study(const std::string partitioning = "[1 1 1]")
   {
-    const TestCaseType test_case(partitioning, 2);
+    TestCaseType test_case(partitioning, 2);
     test_case.print_header(DSC_LOG_INFO);
     DSC_LOG_INFO << std::endl;
     LinearElliptic::Tests::BlockSWIPDGStudy< TestCaseType, 1, la_backend > eoc_study(test_case);

@@ -83,7 +83,7 @@ class SWIPDGStudy
   typedef typename StudyBaseType::VectorType   VectorType;
 
 public:
-  SWIPDGStudy(const TestCaseType& test_case,
+  SWIPDGStudy(TestCaseType& test_case,
               const std::vector< std::string > only_these_norms = {},
               const std::vector< std::string > only_these_local_norms = {},
               const std::string visualize_prefix = "")

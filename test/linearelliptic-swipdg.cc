@@ -39,7 +39,7 @@ struct linearelliptic_SWIPDG_discretization
   template< GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
   static void eoc_study()
   {
-    const TestCaseType test_case;
+    TestCaseType test_case;
     test_case.print_header(DSC_LOG_INFO);
     DSC_LOG_INFO << std::endl;
     LinearElliptic::Tests::SWIPDGStudy< TestCaseType, 1, space_backend, la_backend > eoc_study(test_case);

@@ -15,7 +15,7 @@
 
 void nonparametric_convergence_study(const std::string visualization)
 {
-  const NonparametricEocTestCaseType test_case;
+  NonparametricEocTestCaseType test_case;
   test_case.print_header(DSC_LOG_INFO);
   DSC_LOG_INFO << std::endl;
   NonparametricEocStudyType study(test_case,
@@ -29,7 +29,7 @@ void nonparametric_convergence_study(const std::string visualization)
 
 void nonparametric_convergence_study_alternative_summation()
 {
-  const NonparametricEocTestCaseType test_case;
+  NonparametricEocTestCaseType test_case;
   NonparametricEocStudyType study(test_case,
                                   {"energy", "eta_ESV2007", "eff_ESV2007", "eta_ESV2007_alt", "eff_ESV2007_alt"});
   Stuff::Test::check_eoc_study_for_success(study, study.run_eoc(DSC_LOG_INFO));
@@ -38,7 +38,7 @@ void nonparametric_convergence_study_alternative_summation()
 
 void nonparametric_block_convergence_study(const std::string& partitioning)
 {
-  const NonparametricBlockEocTestCaseType test_case(partitioning);
+  NonparametricBlockEocTestCaseType test_case(partitioning);
   NonparametricBlockEocStudyType study(test_case,
                                        {"energy", "eta_NC_OS2014", "eta_R_OS2014", "eta_DF_OS2014", "eta_OS2014",
                                         "eff_OS2014"});

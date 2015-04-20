@@ -71,7 +71,7 @@ class BlockSWIPDGStudy
   typedef typename StudyBaseType::VectorType        VectorType;
 
 public:
-  BlockSWIPDGStudy(const TestCaseType& test_case,
+  BlockSWIPDGStudy(TestCaseType& test_case,
                    const std::vector< std::string > only_these_norms = std::vector< std::string >(),
                    const std::vector< std::string > only_these_local_indicators = std::vector< std::string >(),
                    const std::string visualize_prefix = "")
