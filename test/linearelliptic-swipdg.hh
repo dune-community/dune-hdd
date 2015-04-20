@@ -16,7 +16,7 @@
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/elliptic.hh>
-#include <dune/gdt/playground/spaces/finitevolume/default.hh>
+#include <dune/gdt/spaces/fv/default.hh>
 #include <dune/gdt/discretefunction/default.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
@@ -320,7 +320,7 @@ private:
                             const std::string name,
                             const std::string filename) const
   {
-    typedef GDT::Spaces::FiniteVolume::Default< GV, typename VV::ScalarType, 1 > FVSpaceType;
+    typedef GDT::Spaces::FV::Default< GV, typename VV::ScalarType, 1 > FVSpaceType;
     const FVSpaceType fv_space(grid_view);
     GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
     discrete_function.visualize(filename);

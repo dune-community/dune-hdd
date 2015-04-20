@@ -351,7 +351,7 @@ private:
       const size_t subdomain = ms_grid.subdomainOf(entity);
       fine_vector[index] = vector[subdomain];
     }
-    typedef GDT::Spaces::FiniteVolume::Default< typename MSG::GlobalGridViewType, typename VV::ScalarType, 1 >
+    typedef GDT::Spaces::FV::Default< typename MSG::GlobalGridViewType, typename VV::ScalarType, 1 >
         FVSpaceType;
     const FVSpaceType fv_space(grid_view);
     GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, fine_vector, name);

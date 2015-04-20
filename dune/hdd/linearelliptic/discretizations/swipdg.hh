@@ -41,13 +41,13 @@
 #include <dune/gdt/playground/operators/elliptic-swipdg.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
 #include <dune/gdt/playground/products/swipdgpenalty.hh>
-#include <dune/gdt/playground/spaces/finitevolume/default.hh>
-#include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
+#include <dune/gdt/spaces/fv/default.hh>
+#include <dune/gdt/spaces/rt/pdelab.hh>
 #include <dune/gdt/products/boundaryl2.hh>
 #include <dune/gdt/products/elliptic.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/l2.hh>
-#include <dune/gdt/spaces/discontinuouslagrange.hh>
+#include <dune/gdt/spaces/dg.hh>
 
 #include "base.hh"
 
@@ -91,8 +91,7 @@ public:
   static const unsigned int polOrder = polynomialOrder;
 
 private:
-  typedef GDT::Spaces::DiscontinuousLagrangeProvider< GridType, layer, space_backend,
-                                                      polOrder, RangeFieldType, dimRange > SpaceProvider;
+  typedef GDT::Spaces::DGProvider< GridType, layer, space_backend, polOrder, RangeFieldType, dimRange > SpaceProvider;
 
   friend class SWIPDG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend >;
 

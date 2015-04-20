@@ -24,7 +24,7 @@
 #include <dune/gdt/operators/projections.hh>
 #include <dune/gdt/operators/prolongations.hh>
 #include <dune/gdt/playground/products/elliptic-swipdg.hh>
-#include <dune/gdt/playground/spaces/finitevolume/default.hh>
+#include <dune/gdt/spaces/fv/default.hh>
 
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/linearelliptic/testcases/spe10.hh>
@@ -386,7 +386,7 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given filename must not be empty!");
     if (name.empty())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given name must not be empty!");
-    GDT::Spaces::FiniteVolume::Default< typename std::remove_reference< decltype(grid_view) >::type, RangeFieldType, 1 >
+    GDT::Spaces::FV::Default< typename std::remove_reference< decltype(grid_view) >::type, RangeFieldType, 1 >
         fv_space(grid_view);
     auto visualization = GDT::make_discrete_function< VectorType >(fv_space, name);
     for (const auto& entity : Stuff::Common::entityRange(grid_view))

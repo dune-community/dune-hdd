@@ -172,7 +172,7 @@ private:
 
   typedef typename BlockSpaceType::LocalSpaceType LocalSpaceType;
 
-  typedef GDT::Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+  typedef GDT::Spaces::FV::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
   typedef GDT::DiscreteFunction< P0SpaceType, VectorType > DiscreteFunctionType;
   typedef typename DiscreteFunctionType::DifferenceType DifferenceType;
 
@@ -372,7 +372,7 @@ private:
 
   typedef GDT::ConstDiscreteFunction< BlockSpaceType, VectorType > ConstDiscreteFunctionType;
   typedef typename BlockSpaceType::GridViewType GlobalGridViewType;
-  typedef GDT::Spaces::RaviartThomas::PdelabBased< GlobalGridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+  typedef GDT::Spaces::RT::PdelabBased< GlobalGridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
   typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
   typedef typename RTN0DiscreteFunctionType::DivergenceType DivergenceType;
   typedef typename DivergenceType::DifferenceType DifferenceType;
@@ -600,7 +600,7 @@ public:
 
 private:
   typedef GDT::ConstDiscreteFunction< BlockSpaceType, VectorType > ConstDiscreteFunctionType;
-  typedef GDT::Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+  typedef GDT::Spaces::RT::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
   typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
 
   typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -1009,7 +1009,7 @@ public:
     // compute the diffusive flux reconstruction
     typedef GDT::ConstDiscreteFunction< BlockSpaceType, VectorType > ConstDiscreteFunctionType;
     typedef typename BlockSpaceType::GridViewType                    GlobalGridViewType;
-    typedef GDT::Spaces::RaviartThomas::PdelabBased
+    typedef GDT::Spaces::RT::PdelabBased
         < GlobalGridViewType, 0, RangeFieldType, dimDomain >         RTN0SpaceType;
     typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType >       RTN0DiscreteFunctionType;
     const ConstDiscreteFunctionType discrete_solution(space, vector);

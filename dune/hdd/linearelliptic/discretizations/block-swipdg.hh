@@ -48,14 +48,14 @@
 
 #include <dune/pymor/common/exceptions.hh>
 
-#include <dune/gdt/spaces/discontinuouslagrange.hh>
+#include <dune/gdt/spaces/dg.hh>
 #include <dune/gdt/playground/spaces/block.hh>
 #include <dune/gdt/playground/localevaluation/swipdg.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/operators/oswaldinterpolation.hh>
 #include <dune/gdt/operators/projections.hh>
-#include <dune/gdt/playground/spaces/finitevolume/default.hh>
-#include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
+#include <dune/gdt/spaces/fv/default.hh>
+#include <dune/gdt/spaces/rt/pdelab.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
 #include <dune/gdt/playground/products/swipdgpenalty.hh>
 #include <dune/gdt/products/boundaryl2.hh>

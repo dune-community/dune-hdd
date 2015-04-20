@@ -22,7 +22,7 @@
 
 # include <dune/gdt/operators/prolongations.hh>
 # include <dune/gdt/playground/operators/fluxreconstruction.hh>
-# include <dune/gdt/playground/spaces/finitevolume/default.hh>
+# include <dune/gdt/spaces/fv/default.hh>
 # include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
 # include <dune/gdt/products/elliptic.hh>
 
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
     pressure_mu_max.visualize("pressure_mu_max");
 
     logger.info() << "reconstructing diffusive fluxes ..." << std::endl;
-    Spaces::RaviartThomas::PdelabBased< typename std::remove_reference< decltype(disc) >::type::GridViewType,
+    Spaces::RT::PdelabBased< typename std::remove_reference< decltype(disc) >::type::GridViewType,
                                         0, double, 2 > rt_space(disc.grid_view());
     auto reconstruction_mu_min = GDT::Operators::make_diffusive_flux_reconstruction(disc.grid_view(),
                                                                                     *problem_mu_min->diffusion_factor()->affine_part(),
@@ -230,7 +230,7 @@ int main(int argc, char** argv)
                                      *problem_mu_bar->diffusion_tensor()->affine_part());
 
     logger.info() << "visualizing local errors and indicators ..." << std::endl;
-    Spaces::FiniteVolume::Default< typename std::remove_reference< decltype(disc) >::type::GridViewType,
+    Spaces::FV::Default< typename std::remove_reference< decltype(disc) >::type::GridViewType,
                                    double, 1 > fv_space(disc.grid_view());
     auto indicator_visualization_mu_min = make_discrete_function< VectorType >(fv_space, "distribution");
     auto indicator_visualization_mu_max = make_discrete_function< VectorType >(fv_space, "distribution");
