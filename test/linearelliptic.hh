@@ -225,7 +225,7 @@ public:
       ++current_refinement_;
   } // ... refine()
 
-  virtual std::vector< double > expected_results(const std::string type) const = 0;
+  virtual std::vector< double > expected_results(const std::string type) const override = 0;
 
   std::map< std::string, std::vector< double > > run(std::ostream& out, const bool print_timings = false)
   {
@@ -488,7 +488,7 @@ public:
       ++current_refinement_;
   } // ... refine()
 
-  virtual std::vector< double > expected_results(const std::string type) const = 0;
+  virtual std::vector< double > expected_results(const std::string type) const override = 0;
 
   std::map< std::string, std::vector< double > > run(std::ostream& out, const bool print_timings = false)
   {

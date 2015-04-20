@@ -130,7 +130,7 @@ public:
     return SWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 
-  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const
+  virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const override final
   {
     typedef typename TestCaseType::ProblemType ProblemType;
     typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
@@ -222,12 +222,12 @@ public:
     }
   } // ... compute_reference_indicators(...)
 
-  virtual std::vector< std::string > provided_indicators() const
+  virtual std::vector< std::string > provided_indicators() const override final
   {
     return EstimatorType::available_local();
   }
 
-  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const
+  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const override final
   {
     // get current solution
     assert(this->current_refinement_ <= this->num_refinements());

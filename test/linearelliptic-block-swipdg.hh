@@ -205,12 +205,12 @@ public:
     } // this->test_case_.provides_exact_solution()
   } // ... compute_reference_indicators(...)
 
-  virtual std::vector< std::string > provided_indicators() const
+  virtual std::vector< std::string > provided_indicators() const override final
   {
     return EstimatorType::available_local();
   }
 
-  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const
+  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const override final
   {
     // get current solution
     const_cast< ThisType& >(*this).compute_on_current_refinement();
