@@ -44,32 +44,19 @@ add_python_bindings(linearellipticexamplecg cg_bindings_generator.py cg.hh duneh
 add_python_bindings(linearellipticexamplethermalblock thermalblock_bindings_generator.py thermalblock.hh dunehdd-linearelliptic-thermalblock)
 add_python_bindings(linearellipticexampleOS2014 OS2014_bindings_generator.py OS2014_bindings_generator.hh "")
 
-add_dune_alugrid_flags(example_linearelliptic_block_swipdg
-                       example_linearelliptic_cg
-                       example_linearelliptic_swipdg
-                       example_linearelliptic_thermalblock
-                       example_linearelliptic_OS2014_spe10_visualization
-                       linearellipticexamplecg
-                       linearellipticexamplethermalblock
-                       linearellipticexampleOS2014)
-
-add_dune_superlu_flags(example_linearelliptic_block_swipdg
-                       example_linearelliptic_cg
-                       example_linearelliptic_swipdg
-                       example_linearelliptic_thermalblock
-                       example_linearelliptic_OS2014_spe10_visualization
-                       linearellipticexamplecg
-                       linearellipticexamplethermalblock
-                       linearellipticexampleOS2014)
-
-add_dune_tbb_flags(example_linearelliptic_block_swipdg
-                   example_linearelliptic_cg
-                   example_linearelliptic_swipdg
-                   example_linearelliptic_thermalblock
-                   example_linearelliptic_OS2014_spe10_visualization
-                   linearellipticexamplecg
-                   linearellipticexamplethermalblock
-                   linearellipticexampleOS2014)
+foreach(_target
+        example_linearelliptic_block_swipdg
+        example_linearelliptic_cg
+        example_linearelliptic_swipdg
+        example_linearelliptic_thermalblock
+        example_linearelliptic_OS2014_spe10_visualization
+        linearellipticexamplecg
+        linearellipticexamplethermalblock
+        linearellipticexampleOS2014)
+  add_dune_alugrid_flags(${_target})
+  add_dune_superlu_flags(${_target})
+  add_dune_tbb_flags(${_target})
+endforeach(_target)
 
 # link spe10 data file if present
 if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
