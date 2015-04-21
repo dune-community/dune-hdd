@@ -10,10 +10,10 @@ from __future__ import division, print_function
 import numpy as np
 
 import pymor.core
-from pymor.core import getLogger
-from pymor.la import induced_norm
-from pymor.operators import LincombOperator
-from pymor.parameters import CubicParameterSpace
+from pymor.core.logger import getLogger
+from pymor.operators.constructions import induced_norm
+from pymor.operators.constructions import LincombOperator
+from pymor.parameters.spaces import CubicParameterSpace
 
 from dune.pymor.core import wrap_module
 

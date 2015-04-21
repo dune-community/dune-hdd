@@ -9,11 +9,11 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from pymor.core import getLogger
-from pymor.la import induced_norm
-from pymor.reductors import reduce_generic_rb
-from pymor.playground.algorithms import gram_schmidt_block_basis_extension
-from pymor.playground.reductors import GenericBlockRBReconstructor
+from pymor.core.logger             import getLogger
+from pymor.operators.constructions import induced_norm
+from pymor.reductors.stationary    import reduce_generic_rb
+from pymor.playground.algorithms   import gram_schmidt_block_basis_extension
+from pymor.playground.reductors    import GenericBlockRBReconstructor
 
 from simdb.run import add_values
 

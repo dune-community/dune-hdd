@@ -11,9 +11,9 @@ from functools import partial
 import numpy as np
 
 from pymor.algorithms import greedy
-from pymor.core import getLogger
+from pymor.core.logger import getLogger
 from pymor.playground.algorithms import gram_schmidt_block_basis_extension
-from pymor.playground.la import BlockVectorArray
+from pymor.vectorarrays.block import BlockVectorArray
 
 from simdb.run import add_values
 

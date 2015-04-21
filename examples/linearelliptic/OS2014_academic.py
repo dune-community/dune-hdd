@@ -10,7 +10,7 @@ from __future__ import division, print_function
 from tempfile import NamedTemporaryFile
 
 import pymor.core
-from pymor.core import getLogger
+from pymor.core.logger import getLogger
 
 from simdb.run import new_dataset, add_logfile
 

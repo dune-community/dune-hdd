@@ -9,8 +9,8 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from pymor.core                 import ImmutableInterface
-from pymor.reductors            import reduce_generic_rb
+from pymor.core.interfaces      import ImmutableInterface
+from pymor.reductors.stationary import reduce_generic_rb
 from pymor.playground.reductors import GenericBlockRBReconstructor
 
 
