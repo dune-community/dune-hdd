@@ -87,7 +87,7 @@ public:
     // mpi
     assert(arguments.size() < std::numeric_limits< int >::max());
     int argc = boost::numeric_cast< int >(arguments.size());
-    char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
+    char** argv = Stuff::Common::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
 #else
@@ -274,7 +274,7 @@ public:
   {
     // mpi
     int argc = boost::numeric_cast< int >(arguments.size());
-    char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
+    char** argv = Stuff::Common::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
 #else
