@@ -19,7 +19,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     RangeFieldType = 'double'
     dimRange = '1'
     polOrder = '1'
-    SpaceBackendType = 'Dune::GDT::ChooseSpaceBackend::pdelab'
+    SpaceBackendType = 'Dune::GDT::ChooseSpaceBackend::fem'
     LaBackendType = 'Dune::Stuff::LA::ChooseBackend::istl_sparse'
     if 'istl_sparse' in LaBackendType:
         MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
@@ -47,16 +47,16 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                                custom_name='LinearellipticExampleCG')
     LinearellipticExampleCG.add_method('static_id',
                                        retval('std::string'),
-                                       [], is_const=True, throw=[exceptions['Exception']])
+                                       [], is_const=True, throw=exceptions)
     LinearellipticExampleCG.add_method('write_config_file',
-                                       None, [], is_const=True, throw=[exceptions['Exception']])
-    LinearellipticExampleCG.add_constructor([], throw=[exceptions['Exception']])
+                                       None, [], is_const=True, throw=exceptions)
+    LinearellipticExampleCG.add_constructor([], throw=exceptions)
     LinearellipticExampleCG.add_method('initialize', None,
                                        [param('const std::vector< std::string >', 'arguments')],
-                                       is_const=True, throw=[exceptions['Exception']])
+                                       is_const=True, throw=exceptions)
     LinearellipticExampleCG.add_method('discretization_and_return_ptr',
                                        retval(DiscretizationFullName + ' *', caller_owns_return=True),
-                                       [], is_const=True, throw=[exceptions['Exception']],
+                                       [], is_const=True, throw=exceptions,
                                        custom_name='discretization')
 
 if __name__ == '__main__':
