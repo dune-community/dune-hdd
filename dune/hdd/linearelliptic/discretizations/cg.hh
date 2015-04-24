@@ -115,7 +115,7 @@ public:
 private:
   typedef typename Traits::SpaceProvider SpaceProvider;
 
-  typedef Stuff::Grid::ConstProviderInterface< GridType > GridProviderType;
+  typedef Stuff::Grid::ProviderInterface< GridType >      GridProviderType;
 #if HAVE_DUNE_GRID_MULTISCALE
   typedef grid::Multiscale::ProviderInterface< GridType > MsGridProviderType;
 #endif
@@ -133,7 +133,7 @@ public:
     return DiscretizationInterface< Traits >::static_id() + ".cg";
   }
 
-  CG(const GridProviderType& grid_provider,
+  CG(GridProviderType& grid_provider,
      const Stuff::Common::Configuration& bound_inf_cfg,
      const ProblemType& prob,
      const int level = 0)
