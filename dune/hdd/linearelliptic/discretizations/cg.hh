@@ -366,10 +366,11 @@ public:
           const std::string expression = "(" + matrix.coefficient(pp)->expression()
                                          + ")*(" + dirichlet_vector->coefficient(qq)->expression() + ")";
           const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
-                                                    new Pymor::ParameterFunctional(param,
-                                                                                   expression));
-          matrix.component(pp)->mv(*(dirichlet_vector->component(qq)), tmp);
-          *(rhs.component(ind)) -= tmp;
+                                                    new Pymor::ParameterFunctional(param, expression));
+          const auto& matrix_component = *matrix.component(pp);
+          const auto& dirichlet_component = *dirichlet_vector->component(qq);
+          auto& rhs_component = *rhs.component(ind);
+          rhs_component -= matrix_component * dirichlet_component;
         }
       }
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
