@@ -71,9 +71,9 @@ private:
 public:
   static std::string static_id() { return "hdd.linearelliptic.discretizations.cached"; }
 
-  CachedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
-                const std::shared_ptr< const AnsatzSpaceType > ansatz_spc,
-                const Stuff::Common::Configuration& bnd_inf_cfg,
+  CachedDefault(TestSpaceType test_spc,
+                AnsatzSpaceType ansatz_spc,
+                Stuff::Common::Configuration bnd_inf_cfg,
                 const ProblemType& prb)
     : BaseType(prb)
     , test_space_(test_spc)
@@ -87,19 +87,19 @@ public:
 
   ThisType& operator=(const ThisType& other) = delete;
 
-  const std::shared_ptr< const TestSpaceType >& test_space() const
+  const TestSpaceType& test_space() const
   {
     return test_space_;
   }
 
-  const std::shared_ptr< const AnsatzSpaceType >& ansatz_space() const
+  const AnsatzSpaceType& ansatz_space() const
   {
     return test_space_;
   }
 
   const GridViewType& grid_view() const
   {
-    return test_space_->grid_view();
+    return test_space_.grid_view();
   }
 
   const Stuff::Common::Configuration& boundary_info_cfg() const
@@ -119,7 +119,7 @@ public:
 
   VectorType create_vector() const
   {
-    return VectorType(ansatz_space_->mapper().size());
+    return VectorType(ansatz_space_.mapper().size());
   }
 
   void visualize(const VectorType& vector,
@@ -142,7 +142,7 @@ public:
         tmp = *(dirichlet_vector.affine_part());
       tmp += vector;
     }
-    const GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >function(*(ansatz_space()), tmp, name);
+    const GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >function(ansatz_space_, tmp, name);
     function.visualize(filename);
   } // ... visualize(...)
 
@@ -183,8 +183,8 @@ public:
   }
 
 protected:
-  const std::shared_ptr< const TestSpaceType > test_space_;
-  const std::shared_ptr< const AnsatzSpaceType > ansatz_space_;
+  const TestSpaceType test_space_;
+  const AnsatzSpaceType ansatz_space_;
   const Stuff::Common::Configuration boundary_info_cfg_;
   const std::shared_ptr< const BoundaryInfoType > boundary_info_;
   const ProblemType& problem_;
@@ -222,8 +222,8 @@ protected:
 public:
   static std::string static_id() { return "hdd.linearelliptic.discretizations.containerbased"; }
 
-  ContainerBasedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
-                        const std::shared_ptr< const AnsatzSpaceType >& ansatz_spc,
+  ContainerBasedDefault(TestSpaceType test_spc,
+                        AnsatzSpaceType ansatz_spc,
                         const Stuff::Common::Configuration& bnd_inf_cfg,
                         const ProblemType& prb)
     : BaseType(test_spc, ansatz_spc, bnd_inf_cfg, prb)
