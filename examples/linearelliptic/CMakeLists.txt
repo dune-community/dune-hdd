@@ -11,10 +11,6 @@ add_library(dunehdd-linearelliptic-swipdg
             STATIC
             "swipdg.cc")
 
-add_library(dunehdd-linearelliptic-thermalblock
-            STATIC
-            "thermalblock.cc")
-
 
 ADD_EXECUTABLE(example_linearelliptic_block_swipdg "block-swipdg_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_block_swipdg
@@ -32,7 +28,6 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_swipdg
 
 ADD_EXECUTABLE(example_linearelliptic_thermalblock "thermalblock_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
-                      dunehdd-linearelliptic-thermalblock
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
@@ -40,9 +35,18 @@ ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
 TARGET_LINK_LIBRARIES(example_linearelliptic_OS2014_spe10_visualization
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-add_python_bindings(linearellipticexamplecg cg_bindings_generator.py cg.hh dunehdd-linearelliptic-cg)
-add_python_bindings(linearellipticexamplethermalblock thermalblock_bindings_generator.py thermalblock.hh dunehdd-linearelliptic-thermalblock)
-add_python_bindings(linearellipticexampleOS2014 OS2014_bindings_generator.py OS2014_bindings_generator.hh "")
+add_python_bindings(linearellipticexamplecg
+                    cg_bindings_generator.py
+                    cg.hh
+                    dunehdd-linearelliptic-cg)
+add_python_bindings(linearellipticexamplethermalblock
+                    thermalblock_bindings_generator.py
+                    thermalblock_bindings_generator.hh
+                    "")
+add_python_bindings(linearellipticexampleOS2014
+                    OS2014_bindings_generator.py
+                    OS2014_bindings_generator.hh
+                    "")
 
 foreach(_target
         example_linearelliptic_block_swipdg
