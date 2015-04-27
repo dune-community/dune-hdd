@@ -12,6 +12,8 @@
 # include <dune/fem/misc/mpimanager.hh>
 #endif
 
+#include <dune/common/parallel/mpihelper.hh>
+
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/memory.hh>
@@ -36,13 +38,15 @@ public:
               const std::string debug_color,
               const std::string warn_color)
   {
-#if HAVE_DUNE_FEM
     try {
       int argc = 0;
       char** argv = new char* [0];
+#if HAVE_DUNE_FEM
       Dune::Fem::MPIManager::initialize(argc, argv);
+#else
+      Dune::MPIHelper::instance(argc, argv);
+#endif
     } catch (...) {}
-#endif // HAVE_DUNE_FEM
     DSC::TimedLogger().create(info_log_levels,
                               debug_log_levels,
                               enable_warnings,
