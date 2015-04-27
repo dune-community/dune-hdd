@@ -8,77 +8,32 @@
 #include <string>
 #include <vector>
 
-# include "thermalblock.hh"
-#include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
+#include <boost/exception/exception.hpp>
 
-#include <boost/filesystem.hpp>
+#include <dune/grid/yaspgrid.hh>
 
-int main(int argc, char** argv)
+#include "thermalblock.hh"
+
+using namespace Dune;
+
+
+int main(int /*argc*/, char** /*argv*/)
 {
   try {
-    // create empty example
-    typedef ThermalblockExample< Dune::SGrid< 2, 2 > > ExampleType;
-
-    // read or write config file
-    const std::string config_file_name = ExampleType::static_id() + ".cfg";
-    if (!boost::filesystem::exists(config_file_name)) {
-      std::cout << "Writing default configuration to '" << config_file_name << "'... " << std::flush;
-      ExampleType::write_config_file(config_file_name);
-      std::cout << "done.\n"
-                << "Please review the configuration and start me again!" << std::endl;
-    } else {
-
-      // init discrete problem and discretization
-      ExampleType example;
-      example.initialize(std::vector< std::string >(argv, argv + argc));
-      const auto& discreteProblem = example.discrete_problem();
-      auto& info = DSC_LOG_INFO;
-      Dune::Timer timer;
-
-      const auto& discretization = example.discretization();
-      auto solution = discretization.create_vector();
-
-      // solve
-      if (discretization.parametric()) {
-        info << "discretization is parametric with parameter_type:" << std::endl;
-        info << "  " << discretization.parameter_type() << std::endl;
-        const auto& config = discreteProblem.config();
-        if (config.has_sub("parameter")) {
-          const auto parameters = config.sub("parameter");
-          size_t pp = 0;
-          while (parameters.has_sub(Dune::Stuff::Common::toString(pp))) {
-            const auto parameter = parameters.sub(Dune::Stuff::Common::toString(pp));
-            Dune::Pymor::Parameter mu;
-            for (std::string key : parameter.getValueKeys())
-              mu.set(key, parameter.get< std::vector< double > >(key));
-            info << "solving for mu = " << mu << "... " << std::flush;
-            timer.reset();
-            discretization.solve(solution, mu);
-            info << " done (took " << timer.elapsed() << "s)" << std::endl;
-            discretization.visualize(solution,
-                                     example.static_id() + ".solution_to_parameter_" + Dune::Stuff::Common::toString(pp),
-                                     "solution to parameter " + Dune::Stuff::Common::toString(pp));
-            ++pp;
-          }
-        } else
-          info << "doing nothing, since there is no 'parameter' specified in the config!" << std::endl;
-      } else {
-        info << "discretization is not parametric, solving... " << std::flush;
-        timer.reset();
-        discretization.solve(solution, Dune::Pymor::Parameter());
-        info << " done (took " << timer.elapsed() << "s)" << std::endl;
-        discretization.visualize(solution, example.static_id() + ".solution", "solution");
-      }
-
-    } // read or write config file
+    typedef CgExample< YaspGrid< 2 >, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >
+        ExampleType;
+    ExampleType example;
 
     // if we came that far we can as well be happy about it
     return 0;
   } catch (Dune::Exception& e) {
-    std::cerr << "\nDune reported error: " << e.what() << std::endl;
+    std::cerr << "\nDune reported error: " << e << std::endl;
+    std::abort();
+  } catch (boost::exception& e) {
+    std::cerr << "\nboost reported error!" << std::endl;
     std::abort();
   } catch (std::exception& e) {
-    std::cerr << "\n" << e.what() << std::endl;
+    std::cerr << "\nstl reported error: " << e.what() << std::endl;
     std::abort();
   } catch (...) {
     std::cerr << "Unknown exception thrown!" << std::endl;

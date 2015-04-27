@@ -6,90 +6,120 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
 
-#include "config.h" // <- here for the python bindings!
+#include <boost/numeric/conversion/cast.hpp>
 
-#include <memory>
+#if HAVE_DUNE_FEM
+# include <dune/fem/misc/mpimanager.hh>
+#endif
 
-#include <dune/stuff/common/disable_warnings.hh>
-# include <dune/grid/sgrid.hh>
-#include <dune/stuff/common/reenable_warnings.hh>
-
+#include <dune/stuff/common/exceptions.hh>
+#include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/memory.hh>
+#include <dune/stuff/common/ranges.hh>
+#include <dune/stuff/grid/boundaryinfo.hh>
+#include <dune/stuff/grid/provider/cube.hh>
 
-#include <dune/hdd/linearelliptic/problems/thermalblock.hh>
-#include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
+#include <dune/hdd/linearelliptic/testcases/thermalblock.hh>
+#include <dune/hdd/linearelliptic/discretizations/cg.hh>
+
+namespace internal {
 
 
-template< class GridImp >
-class ThermalblockExample
+class Initializer
 {
 public:
-  typedef GridImp GridType;
-  typedef Dune::HDD::LinearElliptic::DiscreteProblems::ThermalblockMultiScale< GridType > DiscreteProblemType;
-  typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
-  static const unsigned int dimRange = DiscreteProblemType::dimRange;
-  typedef Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG
-      < GridType, RangeFieldType, dimRange, 1, Dune::Stuff::LA::ChooseBackend::eigen_sparse > DiscretizationType;
-
-  static std::string static_id()
+  Initializer(const DUNE_STUFF_SSIZE_T info_log_levels,
+              const DUNE_STUFF_SSIZE_T debug_log_levels,
+              const bool enable_warnings,
+              const bool enable_colors,
+              const std::string info_color,
+              const std::string debug_color,
+              const std::string warn_color)
   {
-    return "linearelliptic.thermalblock";
+#if HAVE_DUNE_FEM
+    try {
+      int argc = 0;
+      char** argv = new char* [0];
+      Dune::Fem::MPIManager::initialize(argc, argv);
+    } catch (...) {}
+#endif // HAVE_DUNE_FEM
+    DSC::TimedLogger().create(info_log_levels,
+                              debug_log_levels,
+                              enable_warnings,
+                              enable_colors,
+                              info_color,
+                              debug_color,
+                              warn_color);
+    DSC::TimedLogger().get("cg.thermalblock.example").info() << "creating grid and problem... " << std::endl;
   }
+}; // class Initializer
 
-  static void write_config_file(const std::string filename = static_id() + ".cfg")
-  {
-    DiscreteProblemType::write_config(filename, static_id());
-  }
 
-  void initialize(const std::vector< std::string > arguments)
-  {
-    using namespace Dune;
-    if (!discrete_problem_) {
-      discrete_problem_ = Stuff::Common::make_unique< DiscreteProblemType >(static_id(), arguments);
-      const bool debug_logging = discrete_problem_->debug_logging();
-      auto& info = DSC_LOG_INFO;
-      auto& debug = DSC_LOG_DEBUG;
-      discretization_ = Stuff::Common::make_unique< DiscretizationType >(discrete_problem_->grid_provider(),
-                                                                         discrete_problem_->boundary_info(),
-                                                                         discrete_problem_->problem());
-      info << "initializing discretization";
-      if (debug_logging)
-        info << ":" << std::endl;
-      else
-        info << "... " << std::flush;
-      Dune::Timer timer;
-      discretization_->init(debug, "  ");
-      if (!debug_logging)
-        info << "done (took " << timer.elapsed() << "s)" << std::endl;
-    } else
-      DSC_LOG_INFO << "initialize has already been called" << std::endl;
-  } // ... initialize(...)
+} // namespace internal
 
-  const DiscreteProblemType& discrete_problem() const
-  {
-    return *discrete_problem_;
-  }
 
-  const DiscretizationType& discretization() const
-  {
-    return *discretization_;
-  }
+template< class GridImp, Dune::GDT::ChooseSpaceBackend space_backend, Dune::Stuff::LA::ChooseBackend la_backend >
+class CgExample
+  : internal::Initializer
+{
+  typedef GridImp                                        GridType;
+  typedef typename GridType::template Codim< 0 >::Entity EntityType;
+  static const size_t                                    dimDomain = GridType::dimension;
+  typedef typename GridType::ctype                       DomainFieldType;
+  typedef double                                         RangeFieldType;
+  static const size_t                                    dimRange = 1;
+  typedef Dune::HDD::LinearElliptic::Problems::Thermalblock
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 > ProblemType;
+  typedef Dune::Stuff::Grid::Providers::Cube< GridType >            GridProviderType;
+public:
+  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
+                                                          RangeFieldType, dimRange, 1,
+                                                          space_backend, la_backend > DiscretizationType;
 
-  DiscretizationType* discretization_and_return_ptr() const
+  CgExample(const std::string& num_blocks        = "[2 2 2]",
+            const std::string& num_grid_elements = "[32 32 32]",
+            const DUNE_STUFF_SSIZE_T info_log_levels  = 0,
+            const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
+            const bool enable_warnings = true,
+            const bool enable_colors   = true,
+            const std::string info_color  = DSC::TimedLogging::default_info_color(),
+            const std::string debug_color = DSC::TimedLogging::default_debug_color(),
+            const std::string warn_color  = DSC::TimedLogging::default_warning_color())
+    : Initializer(info_log_levels,
+                  debug_log_levels,
+                  enable_warnings,
+                  enable_colors,
+                  info_color,
+                  debug_color,
+                  warn_color)
+    , problem_(ProblemType::create(ProblemType::default_config().add(DSC::Configuration("diffusion_factor.num_elements",
+                                                                                        num_blocks),
+                                                                     "",
+                                                                     true)))
+    , grid_provider_(GridProviderType::create(GridProviderType::default_config().add(DSC::Configuration("num_elements",
+                                                                                                        num_grid_elements),
+                                                                                     "",
+                                                                                     true)))
+    , discretization_(*grid_provider_, Dune::Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config(), *problem_)
   {
-    return new DiscretizationType(*discretization_);
+    auto logger = DSC::TimedLogger().get("cg.thermalblock.example");
+    logger.info() << "initializing discretization... " << std::flush;
+    discretization_.init();
+    logger.info() << "done (grid has " << discretization_.grid_view().indexSet().size(0)
+                  << " elements, discretization has " << discretization_.ansatz_space().mapper().size() << " DoFs)"
+                  << std::endl;
+  } // ... CgExample(...)
+
+  DiscretizationType& discretization()
+  {
+    return discretization_;
   }
 
 private:
-  std::unique_ptr< DiscreteProblemType > discrete_problem_;
-  std::unique_ptr< DiscretizationType > discretization_;
-}; // class ThermalblockExample
+  std::unique_ptr< ProblemType > problem_;
+  std::unique_ptr< GridProviderType > grid_provider_;
+  DiscretizationType discretization_;
+}; // class CgExample
 
-
-extern template class ThermalblockExample< Dune::SGrid< 1, 1 > >;
-extern template class ThermalblockExample< Dune::SGrid< 2, 2 > >;
-extern template class ThermalblockExample< Dune::SGrid< 3, 3 > >;
-
-#include <dune/stuff/common/disable_warnings.hh> // <- here for the python bindings!
 
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH

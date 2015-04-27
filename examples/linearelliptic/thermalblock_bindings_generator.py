@@ -9,53 +9,129 @@ from pybindgen import param, retval
 
 from dune.pymor.core import prepare_python_bindings, inject_lib_dune_pymor, finalize_python_bindings
 from dune.pymor.discretizations import inject_StationaryDiscretizationImplementation
-from dune.pymor.discretizations import inject_StationaryMultiscaleDiscretizationImplementation
 
 
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
     '''injects the user code into the module'''
-    # first the discretization
-    #GridType = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
-    GridType = 'Dune::SGrid< 2, 2 >'
-    RangeFieldType = 'double'
-    dimRange = '1'
-    polOrder = '1'
-    MatrixType = 'Dune::Stuff::LA::EigenRowMajorSparseMatrix< ' + RangeFieldType + ' >'
-    VectorType = 'Dune::Stuff::LA::EigenDenseVector< ' + RangeFieldType + ' >'
-    OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
-    ProductType = OperatorType
-    FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
-    DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG'
-    DiscretizationFullName = (DiscretizationName + '< '
-                              + GridType + ', '
+    ssize_t = CONFIG_H['DUNE_STUFF_SSIZE_T']
+    HAVE_DUNE_PDELAB = CONFIG_H['HAVE_DUNE_PDELAB']
+    HAVE_DUNE_FEM    = CONFIG_H['HAVE_DUNE_FEM']
+    HAVE_DUNE_ISTL   = CONFIG_H['HAVE_DUNE_ISTL']
+    HAVE_EIGEN       = CONFIG_H['HAVE_EIGEN']
+    def add_example(GridType, space_backend, la_backend, name):
+        # build all types needed for the discretization
+        RangeFieldType = 'double'
+        dimRange = '1'
+        polOrder = '1'
+        grid_layer = 'Dune::Stuff::Grid::ChooseLayer::leaf'
+        MatrixType = 'Dune::Stuff::LA::'
+        VectorType = 'Dune::Stuff::LA::'
+        if 'eigen_sparse' in la_backend:
+            MatrixType += 'EigenRowMajorSparseMatrix'
+            VectorType += 'EigenDenseVector'
+        elif 'istl_sparse' in la_backend:
+            MatrixType += 'IstlRowMajorSparseMatrix'
+            VectorType += 'IstlDenseVector'
+        MatrixType += '< ' + RangeFieldType + ' >'
+        VectorType += '< ' + RangeFieldType + ' >'
+        OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
+        ProductType = OperatorType
+        FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
+        DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::CG'
+        DiscretizationType = (DiscretizationName + '< '
+                              + GridType + ', ' + grid_layer + ', '
                               + RangeFieldType + ', '
                               + dimRange + ', ' + polOrder + ', '
-                              + 'Dune::Stuff::LA::ChooseBackend::eigen_sparse >')
-    discretization = inject_StationaryMultiscaleDiscretizationImplementation(
-        module, exceptions, interfaces, CONFIG_H,
-        DiscretizationName,
-        Traits={'VectorType': VectorType,
-                'OperatorType': OperatorType,
-                'FunctionalType': FunctionalType,
-                'ProductType': ProductType},
-        template_parameters=[GridType, RangeFieldType, dimRange, polOrder, 'Dune::Stuff::LA::ChooseBackend::eigen_sparse'])
-    # then add the example
-    ThermalblockExample = module.add_class('ThermalblockExample',
-                                           template_parameters=[GridType],
-                                           custom_name='ThermalblockExample')
-    ThermalblockExample.add_method('static_id',
-                                       retval('std::string'),
-                                       [], is_const=True, throw=[exceptions['Exception']])
-    ThermalblockExample.add_method('write_config_file',
-                                       None, [], is_const=True, throw=[exceptions['Exception']])
-    ThermalblockExample.add_constructor([], throw=[exceptions['Exception']])
-    ThermalblockExample.add_method('initialize', None,
-                                       [param('const std::vector< std::string >', 'arguments')],
-                                       is_const=True, throw=[exceptions['Exception']])
-    ThermalblockExample.add_method('discretization_and_return_ptr',
-                                       retval(DiscretizationFullName + ' *', caller_owns_return=True),
-                                       [], is_const=True, throw=[exceptions['Exception']],
-                                       custom_name='discretization')
+                              + space_backend + ', ' + la_backend + '>')
+        inject_StationaryDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
+                                                      DiscretizationName,
+                                                      Traits={'VectorType': VectorType,
+                                                              'OperatorType': OperatorType,
+                                                              'FunctionalType': FunctionalType,
+                                                              'ProductType': ProductType},
+                                                      template_parameters=[GridType, grid_layer, RangeFieldType,
+                                                                           dimRange, polOrder, space_backend, la_backend])
+        # then create the example
+        Example = module.add_class('PbCgExample', template_parameters=[GridType, space_backend, la_backend], custom_name=name)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements'),
+                                 param('const ' + ssize_t, 'info_log_levels'),
+                                 param('const ' + ssize_t, 'debug_log_levels'),
+                                 param('const bool', 'enable_warnings'),
+                                 param('const bool', 'enable_colors'),
+                                 param('const std::string', 'info_color'),
+                                 param('const std::string', 'debug_color'),
+                                 param('const std::string', 'warn_color')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements'),
+                                 param('const ' + ssize_t, 'info_log_levels'),
+                                 param('const ' + ssize_t, 'debug_log_levels'),
+                                 param('const bool', 'enable_warnings'),
+                                 param('const bool', 'enable_colors'),
+                                 param('const std::string', 'info_color'),
+                                 param('const std::string', 'debug_color')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements'),
+                                 param('const ' + ssize_t, 'info_log_levels'),
+                                 param('const ' + ssize_t, 'debug_log_levels'),
+                                 param('const bool', 'enable_warnings'),
+                                 param('const bool', 'enable_colors'),
+                                 param('const std::string', 'info_color')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements'),
+                                 param('const ' + ssize_t, 'info_log_levels'),
+                                 param('const ' + ssize_t, 'debug_log_levels'),
+                                 param('const bool', 'enable_warnings'),
+                                 param('const bool', 'enable_colors')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements'),
+                                 param('const ' + ssize_t, 'info_log_levels'),
+                                 param('const ' + ssize_t, 'debug_log_levels'),
+                                 param('const bool', 'enable_warnings')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements'),
+                                 param('const ' + ssize_t, 'info_log_levels'),
+                                 param('const ' + ssize_t, 'debug_log_levels')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements'),
+                                 param('const ' + ssize_t, 'info_log_levels')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks'),
+                                 param('const std::string&', 'num_grid_elements')],
+                                throw=exceptions)
+        Example.add_constructor([param('const std::string&', 'num_blocks')],
+                                throw=exceptions)
+        Example.add_constructor([],
+                                throw=exceptions)
+        Example.add_method('pb_discretization_and_return_ptr',
+                           retval(DiscretizationType + ' *', caller_owns_return=True),
+                           [], is_const=True, throw=exceptions,
+                           custom_name='discretization')
+    YaspGrid2d = 'Dune::YaspGrid< 2 >'
+    YaspGrid3d = 'Dune::YaspGrid< 3 >'
+    la_backend_eigen = 'Dune::Stuff::LA::ChooseBackend::eigen_sparse'
+    la_backend_istl  = 'Dune::Stuff::LA::ChooseBackend::istl_sparse'
+    space_backend_pdelab = 'Dune::GDT::ChooseSpaceBackend::pdelab'
+    space_backend_fem    = 'Dune::GDT::ChooseSpaceBackend::fem'
+    if HAVE_DUNE_PDELAB and HAVE_DUNE_ISTL:
+        add_example(YaspGrid2d, space_backend_pdelab, la_backend_istl, 'CG_Thermalblock_2dYaspGrid_pdelab_istl')
+        add_example(YaspGrid3d, space_backend_pdelab, la_backend_istl, 'CG_Thermalblock_3dYaspGrid_pdelab_istl')
+    if HAVE_DUNE_PDELAB and HAVE_EIGEN:
+        add_example(YaspGrid2d, space_backend_pdelab, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_pdelab_eigen')
+        add_example(YaspGrid3d, space_backend_pdelab, la_backend_eigen, 'CG_Thermalblock_3dYaspGrid_pdelab_eigen')
+    if HAVE_DUNE_FEM and HAVE_DUNE_ISTL:
+        add_example(YaspGrid2d, space_backend_fem, la_backend_istl, 'CG_Thermalblock_2dYaspGrid_fem_istl')
+        add_example(YaspGrid3d, space_backend_fem, la_backend_istl, 'CG_Thermalblock_3dYaspGrid_fem_istl')
+    if HAVE_DUNE_FEM and HAVE_EIGEN:
+        add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_fem_eigen')
+        add_example(YaspGrid3d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_3dYaspGrid_fem_eigen')
+
 
 if __name__ == '__main__':
     # prepare the module
