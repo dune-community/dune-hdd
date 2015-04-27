@@ -21,7 +21,7 @@
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
 
-#include <dune/gdt/spaces/continuouslagrange.hh>
+#include <dune/gdt/spaces/cg.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
 #include <dune/gdt/operators/projections.hh>
@@ -77,8 +77,7 @@ public:
   static const unsigned int polOrder = polynomialOrder;
 
 private:
-  typedef GDT::Spaces::ContinuousLagrangeProvider< GridType, layer, space_backend,
-                                                   polOrder, RangeFieldType, dimRange > SpaceProvider;
+  typedef GDT::Spaces::CGProvider< GridType, layer, space_backend, polOrder, RangeFieldType, dimRange > SpaceProvider;
 
   friend class CG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend >;
 
@@ -134,14 +133,14 @@ public:
   }
 
   CG(GridProviderType& grid_provider,
-     const Stuff::Common::Configuration& bound_inf_cfg,
+     Stuff::Common::Configuration bound_inf_cfg,
      const ProblemType& prob,
      const int level = 0)
-    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
-               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
+    : BaseType(SpaceProvider::create(grid_provider, level),
+               SpaceProvider::create(grid_provider, level),
                bound_inf_cfg,
                prob)
-    , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
+    , pattern_(EllipticOperatorType::pattern(this->test_space(), this->test_space()))
   {
     // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
     if (this->problem_.diffusion_tensor()->parametric())
@@ -151,15 +150,16 @@ public:
   } // CG(...)
 
 #if HAVE_DUNE_GRID_MULTISCALE
+
   CG(const MsGridProviderType& grid_provider,
      const Stuff::Common::Configuration& bound_inf_cfg,
      const ProblemType& prob,
      const int level = 0)
-    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
-               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
+    : BaseType(SpaceProvider::create(grid_provider, level),
+               SpaceProvider::create(grid_provider, level),
                bound_inf_cfg,
                prob)
-    , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
+    , pattern_(EllipticOperatorType::pattern(this->test_space(), this->test_space()))
   {
     // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
     if (this->problem_.diffusion_tensor()->parametric())
@@ -167,6 +167,7 @@ public:
     if (!this->problem_.diffusion_tensor()->has_affine_part())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // CG(...)
+
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
   const PatternType& pattern() const
@@ -182,7 +183,7 @@ public:
 
       auto& matrix = *(this->matrix_);
       auto& rhs = *(this->rhs_);
-      const auto& space = *(this->test_space_);
+      const auto& space = this->test_space_;
       const auto& grid_view = space.grid_view();
       const auto& boundary_info = *(this->boundary_info_);
 
