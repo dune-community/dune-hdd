@@ -13,7 +13,9 @@
 #include <dune/common/static_assert.hh>
 #include <dune/common/timer.hh>
 
-#include <dune/grid/multiscale/provider/cube.hh>
+#if HAVE_DUNE_GRID_MULTISCALE
+# include <dune/grid/multiscale/provider/cube.hh>
+#endif
 
 #include <dune/stuff/common/string.hh>
 #include <dune/stuff/common/memory.hh>
@@ -389,6 +391,9 @@ private:
 }; // class Thermalblock
 
 
+#if HAVE_DUNE_GRID_MULTISCALE
+
+
 template< class GridImp >
 class ThermalblockMultiScale
 {
@@ -701,6 +706,9 @@ private:
   Stuff::Common::Configuration boundary_info_;
   std::unique_ptr< const ProblemType > problem_;
 }; // class LocalThermalblockMultiScale
+
+
+#endif
 
 
 } // namespace DiscreteProblems
