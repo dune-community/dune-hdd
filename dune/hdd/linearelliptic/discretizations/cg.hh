@@ -406,7 +406,7 @@ public:
 
       // finalize
       this->products_.insert(std::make_pair("l2", l2_product_matrix));
-      this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
+      this->products_.insert(std::make_pair("h1", h1_product_matrix));
       this->products_.insert(std::make_pair("energy", energy_product_matrix));
       this->vectors_.insert(std::make_pair("dirichlet", dirichlet_vector));
 
