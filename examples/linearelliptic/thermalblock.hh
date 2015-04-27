@@ -19,7 +19,7 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/grid/provider/cube.hh>
 
-#include <dune/hdd/linearelliptic/testcases/thermalblock.hh>
+#include <dune/hdd/linearelliptic/problems/thermalblock.hh>
 #include <dune/hdd/linearelliptic/discretizations/cg.hh>
 
 namespace internal {
