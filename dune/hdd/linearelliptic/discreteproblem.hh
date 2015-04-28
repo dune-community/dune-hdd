@@ -11,14 +11,17 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
-#include <dune/stuff/common/disable_warnings.hh>
+#include <dune/common/version.hh>
+#if DUNE_VERSION_NEWER(DUNE_COMMON, 3, 9) //EXADUNE
+# include <dune/common/parallel/mpihelper.hh>
+#else
 # include <dune/common/mpihelper.hh>
-# include <dune/common/timer.hh>
+#endif
+#include <dune/common/timer.hh>
 
-# if HAVE_DUNE_FEM
-#   include <dune/fem/misc/mpimanager.hh>
-# endif
-#include <dune/stuff/common/reenable_warnings.hh>
+#if HAVE_DUNE_FEM
+# include <dune/fem/misc/mpimanager.hh>
+#endif
 
 #if HAVE_DUNE_GRID_MULTISCALE
 # include <dune/grid/multiscale/provider.hh>
