@@ -299,13 +299,24 @@ public:
       L2ProductType l2_product(*(l2_product_matrix->affine_part()), space);
       system_assembler.add(l2_product);
       // * H1 semi
-      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1ProductType;
+      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1SemiProductType;
+      auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      h1_semi_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
+                                                                  space.mapper().size(),
+                                                                  H1SemiProductType::pattern(space)));
+      H1SemiProductType h1_semi_product(*(h1_semi_product_matrix->affine_part()), space);
+      system_assembler.add(h1_semi_product);
+      // * H1 (we can not just add L2 and H1 semi since += is not available for all matrix backends; so this is a
+      //       crude hack, don't copy!)
       auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       h1_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
                                                              space.mapper().size(),
-                                                             H1ProductType::pattern(space)));
-      H1ProductType h1_product(*(h1_product_matrix->affine_part()), space);
-      system_assembler.add(h1_product);
+                                                             H1SemiProductType::pattern(space)));
+      L2ProductType     h1_prodcut_l2_part(*(h1_product_matrix->affine_part()), space);
+      H1SemiProductType h1_product_semi_part(*(h1_product_matrix->affine_part()), space);
+      system_assembler.add(h1_prodcut_l2_part);
+      system_assembler.add(h1_product_semi_part);
+
       // * energy
       typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
       auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
@@ -405,10 +416,11 @@ public:
       this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
 
       // finalize
-      this->products_.insert(std::make_pair("l2", l2_product_matrix));
-      this->products_.insert(std::make_pair("h1", h1_product_matrix));
-      this->products_.insert(std::make_pair("energy", energy_product_matrix));
-      this->vectors_.insert(std::make_pair("dirichlet", dirichlet_vector));
+      this->products_.insert(std::make_pair("l2",        l2_product_matrix));
+      this->products_.insert(std::make_pair("h1_semi",   h1_semi_product_matrix));
+      this->products_.insert(std::make_pair("h1",        h1_product_matrix));
+      this->products_.insert(std::make_pair("energy",    energy_product_matrix));
+      this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
       this->container_based_initialized_ = true;
     } // if (!this->container_based_initialized_)
