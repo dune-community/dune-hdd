@@ -12,7 +12,7 @@
 #include <boost/numeric/conversion/cast.hpp>
 
 #include <dune/stuff/common/disable_warnings.hh>
-# include <dune/common/mpihelper.hh>
+# include <dune/common/parallel/mpihelper.hh>
 # include <dune/common/timer.hh>
 
 # if HAVE_DUNE_FEM
