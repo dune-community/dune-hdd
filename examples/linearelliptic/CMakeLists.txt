@@ -48,7 +48,7 @@ add_python_bindings(linearellipticexampleOS2014
                     OS2014_bindings_generator.hh
                     "")
 
-foreach(_target
+foreach(target
         example_linearelliptic_block_swipdg
         example_linearelliptic_cg
         example_linearelliptic_swipdg
@@ -57,9 +57,12 @@ foreach(_target
         linearellipticexamplecg
         linearellipticexamplethermalblock
         linearellipticexampleOS2014)
-  add_dune_alugrid_flags(${_target})
-  add_dune_superlu_flags(${_target})
-  add_dune_tbb_flags(${_target})
+  add_dune_parmetis_flags(${target})
+  add_dune_superlu_flags(${target})
+  add_dune_umfpack_flags(${target})
+  add_dune_tbb_flags(${target})
+  add_dune_alugrid_flags(${target})
+  add_dune_mpi_flags(${target})
 endforeach(_target)
 
 # link spe10 data file if present
