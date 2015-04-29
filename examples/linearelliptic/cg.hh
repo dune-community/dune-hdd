@@ -91,9 +91,9 @@ private:
 }; // class LinearellipticExampleCG
 
 
-extern template class LinearellipticExampleCG< Dune::SGrid< 1, 1 > >;
-extern template class LinearellipticExampleCG< Dune::SGrid< 2, 2 > >;
-extern template class LinearellipticExampleCG< Dune::SGrid< 3, 3 > >;
+extern template class LinearellipticExampleCG< Dune::YaspGrid< 1 > >;
+extern template class LinearellipticExampleCG< Dune::YaspGrid< 2 > >;
+extern template class LinearellipticExampleCG< Dune::YaspGrid< 3 > >;
 
 #   include <dune/stuff/common/disable_warnings.hh>
 #if HAVE_ALUGRID

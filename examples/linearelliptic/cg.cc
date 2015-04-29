@@ -9,16 +9,16 @@
 # if HAVE_ALUGRID
 #   include <dune/grid/alugrid.hh>
 # endif // HAVE_ALUGRID
-# include <dune/grid/sgrid.hh>
+# include <dune/grid/yaspgrid.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
 
 #include "cg.hh"
 #include <dune/stuff/common/reenable_warnings.hh> // <- here for the python bindings!
 
 
-template class LinearellipticExampleCG< Dune::SGrid< 1, 1 > >;
-template class LinearellipticExampleCG< Dune::SGrid< 2, 2 > >;
-template class LinearellipticExampleCG< Dune::SGrid< 3, 3 > >;
+template class LinearellipticExampleCG< Dune::YaspGrid< 1 > >;
+template class LinearellipticExampleCG< Dune::YaspGrid< 2 > >;
+template class LinearellipticExampleCG< Dune::YaspGrid< 3 > >;
 
 #if HAVE_ALUGRID
 
