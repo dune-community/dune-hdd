@@ -6,6 +6,11 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_BINDINGS_GENERATOR_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_BINDINGS_GENERATOR_HH
 
+#ifdef ENABLE_MPI
+# undef ENABLE_MPI
+#endif
+#define ENABLE_MPI 0
+
 #include <dune/stuff/common/disable_warnings.hh>
 # include "config.h"
 
