@@ -7,33 +7,33 @@ add_library(dunehdd-linearelliptic-cg
             STATIC
             "cg.cc")
 
-add_library(dunehdd-linearelliptic-swipdg
-            STATIC
-            "swipdg.cc")
+#add_library(dunehdd-linearelliptic-swipdg
+#            STATIC
+#            "swipdg.cc")
 
 
-ADD_EXECUTABLE(example_linearelliptic_block_swipdg "block-swipdg_main.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(example_linearelliptic_block_swipdg
-                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+#ADD_EXECUTABLE(example_linearelliptic_block_swipdg "block-swipdg_main.cc" ${COMMON_HEADER})
+#TARGET_LINK_LIBRARIES(example_linearelliptic_block_swipdg
+#                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 ADD_EXECUTABLE(example_linearelliptic_cg "cg_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_cg
                       dunehdd-linearelliptic-cg
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-ADD_EXECUTABLE(example_linearelliptic_swipdg "swipdg_main.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(example_linearelliptic_swipdg
-                      dunehdd-linearelliptic-swipdg
-                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+#ADD_EXECUTABLE(example_linearelliptic_swipdg "swipdg_main.cc" ${COMMON_HEADER})
+#TARGET_LINK_LIBRARIES(example_linearelliptic_swipdg
+#                      dunehdd-linearelliptic-swipdg
+#                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 ADD_EXECUTABLE(example_linearelliptic_thermalblock "thermalblock_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
-               "OS2014_spe10_visualization.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(example_linearelliptic_OS2014_spe10_visualization
-                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+#ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
+#               "OS2014_spe10_visualization.cc" ${COMMON_HEADER})
+#TARGET_LINK_LIBRARIES(example_linearelliptic_OS2014_spe10_visualization
+#                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 add_python_bindings(linearellipticexamplecg
                     cg_bindings_generator.py
@@ -43,20 +43,20 @@ add_python_bindings(linearellipticexamplethermalblock
                     thermalblock_bindings_generator.py
                     thermalblock_bindings_generator.hh
                     "")
-add_python_bindings(linearellipticexampleOS2014
-                    OS2014_bindings_generator.py
-                    OS2014_bindings_generator.hh
-                    "")
+#add_python_bindings(linearellipticexampleOS2014
+#                    OS2014_bindings_generator.py
+#                    OS2014_bindings_generator.hh
+#                    "")
 
+#        example_linearelliptic_block_swipdg
+#        example_linearelliptic_OS2014_spe10_visualization
+#        example_linearelliptic_swipdg
+#        example_linearelliptic_thermalblock
+#        linearellipticexampleOS2014)
 foreach(target
-        example_linearelliptic_block_swipdg
         example_linearelliptic_cg
-        example_linearelliptic_swipdg
-        example_linearelliptic_thermalblock
-        example_linearelliptic_OS2014_spe10_visualization
         linearellipticexamplecg
-        linearellipticexamplethermalblock
-        linearellipticexampleOS2014)
+        linearellipticexamplethermalblock)
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})
   add_dune_umfpack_flags(${target})
@@ -73,8 +73,8 @@ if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
   endif(NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
 endif (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
 
-foreach(_file "cg_main.py" "OS2014_academic.py" "OS2014_estimators.py" "OS2014_offline.py" "OS2014_online.py" "OS2014_prepare.py" "OS2014_spe10.py" "thermalblock_main.py")
-  if (NOT EXISTS ${_file})
-    execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${_file}" "${CMAKE_CURRENT_BINARY_DIR}//${_file}")
-  endif (NOT EXISTS ${_file})
-endforeach(_file)
+#foreach(_file "cg_main.py" "OS2014_academic.py" "OS2014_estimators.py" "OS2014_offline.py" "OS2014_online.py" "OS2014_prepare.py" "OS2014_spe10.py" "thermalblock_main.py")
+#  if (NOT EXISTS ${_file})
+#    execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${_file}" "${CMAKE_CURRENT_BINARY_DIR}//${_file}")
+#  endif (NOT EXISTS ${_file})
+#endforeach(_file)
