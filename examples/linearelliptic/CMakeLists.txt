@@ -26,9 +26,9 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_cg
 #                      dunehdd-linearelliptic-swipdg
 #                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-ADD_EXECUTABLE(example_linearelliptic_thermalblock "thermalblock_main.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
-                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+#ADD_EXECUTABLE(example_linearelliptic_thermalblock "thermalblock_main.cc" ${COMMON_HEADER})
+#TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
+#                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 #ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
 #               "OS2014_spe10_visualization.cc" ${COMMON_HEADER})
