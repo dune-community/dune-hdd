@@ -14,11 +14,13 @@
 #include <dune/stuff/common/disable_warnings.hh>
 # include "config.h"
 
-# include "thermalblock.hh"
-
 # if HAVE_ALUGRID
 #   include <dune/grid/alugrid.hh>
 # endif
+# include <dune/grid/yaspgrid.hh>
+
+# include "thermalblock.hh"
+
 
 template< class G, Dune::GDT::ChooseSpaceBackend s, Dune::Stuff::LA::ChooseBackend l >
 class PbCgExample
