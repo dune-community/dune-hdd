@@ -21,6 +21,12 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_cg
                       dunehdd-linearelliptic-cg
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
+ADD_EXECUTABLE(mpi_example_linearelliptic_cg "cg_mpi.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(mpi_example_linearelliptic_cg
+                      dunehdd-linearelliptic-cg
+                      ${COMMON_LIBS} )
+
+
 #ADD_EXECUTABLE(example_linearelliptic_swipdg "swipdg_main.cc" ${COMMON_HEADER})
 #TARGET_LINK_LIBRARIES(example_linearelliptic_swipdg
 #                      dunehdd-linearelliptic-swipdg
@@ -54,6 +60,7 @@ add_python_bindings(linearellipticexamplethermalblock
 #        example_linearelliptic_thermalblock
 #        linearellipticexampleOS2014)
 foreach(target
+        mpi_example_linearelliptic_cg
         example_linearelliptic_cg
         linearellipticexamplecg
         linearellipticexamplethermalblock)
