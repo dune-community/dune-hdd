@@ -56,13 +56,15 @@ public:
       Dune::MPIHelper::instance(argc, argv);
 #endif
     } catch (...) {}
-    DSC::TimedLogger().create(info_log_levels,
-                              debug_log_levels,
-                              enable_warnings,
-                              enable_colors,
-                              info_color,
-                              debug_color,
-                              warn_color);
+    try {
+      DSC::TimedLogger().create(info_log_levels,
+                                debug_log_levels,
+                                enable_warnings,
+                                enable_colors,
+                                info_color,
+                                debug_color,
+                                warn_color);
+    } catch (Dune::Stuff::Exceptions::you_are_using_this_wrong&) {}
     DSC::TimedLogger().get("cg.thermalblock.example").info() << "creating grid and problem... " << std::endl;
     grid_provider_ = GridProviderType::create(GridProviderType::default_config().add(DSC::Configuration("num_elements",
                                                                                                         num_grid_elements),
