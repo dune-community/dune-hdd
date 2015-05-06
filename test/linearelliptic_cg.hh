@@ -39,44 +39,11 @@ class CGStudyExpectations
 public:
   static size_t rate(const TestCaseType& /*test_case*/, const std::string type)
   {
-    if (type == "L2")
-      return polOrder + 1;
-    else if (type == "H1_semi")
-      return polOrder;
-    else if (type == "energy")
-      return polOrder;
-    else if (type == "eta_NC_ESV2007")
-      return polOrder;
-    else if (type.substr(0, 14) == "eta_R_ESV2007")
-      return polOrder + 1;
-    else if (type == "eta_DF_ESV2007")
-      return polOrder;
-    else if (type == "eta_ESV2007")
-      return polOrder;
-    else if (type == "eff_ESV2007")
-      return 0;
-    else if (type == "eta_ESV2007_alt")
-      return polOrder;
-    else if (type == "eff_ESV2007_alt")
-      return 0;
-    else
-      EXPECT_TRUE(false) << "expected rate missing for type: " << type;
-    return 0;
+    return type == "L2" ? polOrder + 1 : polOrder;
   } // ... rate(...)
 
   static std::vector< double > results(const TestCaseType& /*test_case*/, const std::string type)
   {
-    EXPECT_TRUE(false) << "Please record the expected results for\n"
-                       << "TestCaseType: " << Stuff::Common::Typename< TestCaseType >::value() << "\n"
-                       << "polOrder: " << polOrder << "\n"
-                       << "type: " << type << "\n"
-                       << "Please put an appropriate specialiaztion of CGStudyExpectations for this TestCaseType "
-                       << "in a separate object file (see examples below) or add\n"
-                       << "  'template class CGStudyExpectations< TestCaseType, " << polOrder << " >'\n"
-                       << "for this polOrder in the appropriate object file!\n\n"
-                       << "Oh: and do not forget to add\n"
-                       << "  'extern template class CGStudyExpectations< ... >'\n"
-                       << "to each test source using these results!";
     return {};
   } // ... results(...)
 }; // CGStudyExpectations

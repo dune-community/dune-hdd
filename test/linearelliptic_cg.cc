@@ -40,10 +40,10 @@ struct linearelliptic_CG_discretization
   static void eoc_study()
   {
     TestCaseType test_case;
-    test_case.print_header(DSC_LOG_INFO);
+    test_case.print_header(DSC_LOG_INFO_0);
     DSC_LOG_INFO << std::endl;
     LinearElliptic::Tests::CGStudy< TestCaseType, 1, space_backend, la_backend > eoc_study(test_case);
-    Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run_eoc(DSC_LOG_INFO));
+    Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run_eoc(DSC_LOG_INFO_0));
   } // ... eoc_study()
 
 #if HAVE_DUNE_FEM
@@ -128,23 +128,4 @@ TEST(DISABLED_linearelliptic_CG_discretization, eoc_study_using_fem_and_eigen) {
 #endif // HAVE_DUNE_FEM && (HAVE_DUNE_ISTL || HAVE_EIGEN)
 
 
-namespace Dune {
-namespace HDD {
-namespace LinearElliptic {
-namespace Tests {
-
-#if HAVE_ALUGRID
-
-
-extern template class CGStudyExpectations< TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
-
-extern template class CGStudyExpectations< TestCases::Spe10::Model1< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
-
-
-#endif // HAVE_ALUGRID
-
-} // namespace Tests
-} // namespace LinearElliptic
-} // namespace HDD
-} // namespace Dune
 
