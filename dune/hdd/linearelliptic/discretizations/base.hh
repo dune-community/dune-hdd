@@ -6,6 +6,10 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_DEFAULT_HH
 #define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_DEFAULT_HH
 
+#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
+# define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING 0
+#endif
+
 #include <map>
 #include <algorithm>
 
@@ -151,6 +155,7 @@ public:
   void solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get(static_id());
+#if !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
     const auto options_in_cache = cache_.find(options);
     bool exists = (options_in_cache != cache_.end());
     typename std::map< Pymor::Parameter, std::shared_ptr< VectorType > >::const_iterator options_and_mu_in_cache;
@@ -159,6 +164,7 @@ public:
       exists = (options_and_mu_in_cache != options_in_cache->second.end());
     }
     if (!exists) {
+#endif // !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
       logger.info() << "solving";
       if (options.has_key("type"))
         logger.info() << " with '" << options.get< std::string >("type") << "'";
@@ -166,6 +172,7 @@ public:
         logger.info() << " for mu = " << mu;
       logger.info() << "... " << std::endl;
       uncached_solve(options, vector, mu);
+#if !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
       cache_[options][mu] = Stuff::Common::make_unique< VectorType >(vector.copy());
     } else {
       logger.info() << "retrieving solution ";
@@ -175,6 +182,7 @@ public:
       const auto& result = *(options_and_mu_in_cache->second);
       vector = result;
     }
+#endif // !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
   } // ... solve(...)
 
   void uncached_solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu) const
