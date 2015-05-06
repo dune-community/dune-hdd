@@ -49,7 +49,7 @@ protected:
 
   static int initial_refinements()
   {
-    int ret = 1;
+    int ret = 3;
 #if HAVE_ALUGRID
     if (std::is_same< GridType, ALUConformGrid< 2, 2 > >::value
         || std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
@@ -65,7 +65,7 @@ public:
     , exact_solution_(2, problem_.static_id() + ".exact_solution")
   {}
 
-  void print_header(std::ostream& out = std::cout) const
+  void print_header(std::ostream& out = DSC_LOG_INFO_0) const
   {
     out << "+==================================================================+\n"
         << "|+================================================================+|\n"
