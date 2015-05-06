@@ -123,7 +123,8 @@ public:
   {
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
-    return test_case_.grid().size(level, 0);
+    auto size = test_case_.grid().size(level, 0);
+    return test_case_.grid().comm().sum(size);
   } // ... current_grid_size(...)
 
   virtual double current_grid_width() const override final
@@ -385,7 +386,8 @@ public:
     assert(current_refinement_ <= num_refinements());
     const auto grid_part
         = test_case_.level_provider(current_refinement_)->template global< Stuff::Grid::ChoosePartView::part >();
-    return grid_part.gridView().size(0);
+    auto size = grid_part.gridView().size(0);
+    return grid_part.gridView().grid().comm().sum(size);
   } // ... current_grid_size(...)
 
   virtual double current_grid_width() const override final
