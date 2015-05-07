@@ -15,6 +15,8 @@
 #include <dune/stuff/test/common.hh>
 #include <dune/stuff/common/convergence-study.hh>
 #include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/linearelliptic/testcases/spe10.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/test/linearelliptic_cg.hh>
 
 void run_example(int argc, char** argv)
@@ -80,11 +82,15 @@ void run_eoc_study(int argc, char** argv)
 {
   using namespace Dune;
   using namespace Dune::HDD;
-  typedef Dune::SPGrid< double, 2 > SPG;
-  typedef LinearElliptic::TestCases::ESV2007< SPG > TT; TT test_case;
+  typedef Dune::SPGrid< double, 3 > SPG3;
+  typedef Dune::SPGrid< double, 2 > SPG2;
+//  typedef LinearElliptic::TestCases::ESV2007< SPG2 > TT; TT test_case;
+
+  typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TT; TT test_case;
   test_case.print_header(DSC_LOG_INFO_0);
   DSC_LOG_INFO << std::endl;
-  LinearElliptic::Tests::CGStudy< TT, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse > eoc_study(test_case);
+  LinearElliptic::Tests::CGStudy< TT, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >
+      eoc_study(test_case, {},  {}, "cg_study_");
   const auto fr = eoc_study.run_eoc(DSC_LOG_INFO_0);
   Stuff::Test::print_collected_eoc_study_results(fr, std::cout);
 }
