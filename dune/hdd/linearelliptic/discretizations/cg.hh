@@ -312,29 +312,29 @@ public:
       system_assembler.add(h1_prodcut_l2_part);
       system_assembler.add(h1_product_semi_part);
 
-      // * energy
-      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
-      auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      std::vector< std::unique_ptr< EnergyProductType > > energy_products;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-        const size_t id = energy_product_matrix->register_component(new MatrixType(space.mapper().size(),
-                                                                                   space.mapper().size(),
-                                                                                   EnergyProductType::pattern(space)),
-                                                                    diffusion_factor.coefficient(qq));
-        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->component(id)),
-                                                           space,
-                                                           *(diffusion_factor.component(qq))));
-      }
-      if (diffusion_factor.has_affine_part()) {
-        energy_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                                   space.mapper().size(),
-                                                                   EnergyProductType::pattern(space)));
-        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->affine_part()),
-                                                           space,
-                                                           *(diffusion_factor.affine_part())));
-      }
-      for (auto& energy_product : energy_products)
-        system_assembler.add(*energy_product);
+//      // * energy
+//      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
+//      auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+//      std::vector< std::unique_ptr< EnergyProductType > > energy_products;
+//      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+//        const size_t id = energy_product_matrix->register_component(new MatrixType(space.mapper().size(),
+//                                                                                   space.mapper().size(),
+//                                                                                   EnergyProductType::pattern(space)),
+//                                                                    diffusion_factor.coefficient(qq));
+//        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->component(id)),
+//                                                           space,
+//                                                           *(diffusion_factor.component(qq))));
+//      }
+//      if (diffusion_factor.has_affine_part()) {
+//        energy_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
+//                                                                   space.mapper().size(),
+//                                                                   EnergyProductType::pattern(space)));
+//        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->affine_part()),
+//                                                           space,
+//                                                           *(diffusion_factor.affine_part())));
+//      }
+//      for (auto& energy_product : energy_products)
+//        system_assembler.add(*energy_product);
 
       // do the actual assembling
       system_assembler.walk();
@@ -414,7 +414,7 @@ public:
       this->products_.insert(std::make_pair("l2",        l2_product_matrix));
       this->products_.insert(std::make_pair("h1_semi",   h1_semi_product_matrix));
       this->products_.insert(std::make_pair("h1",        h1_product_matrix));
-      this->products_.insert(std::make_pair("energy",    energy_product_matrix));
+//      this->products_.insert(std::make_pair("energy",    energy_product_matrix));
       this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
       this->container_based_initialized_ = true;
