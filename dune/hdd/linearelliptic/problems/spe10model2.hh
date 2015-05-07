@@ -11,7 +11,7 @@
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/type_utils.hh>
 #include <dune/stuff/functions/constant.hh>
-#include <dune/stuff/functions/spe10.hh>
+#include <dune/stuff/functions/spe10model2.hh>
 
 #include <dune/pymor/functions/default.hh>
 
