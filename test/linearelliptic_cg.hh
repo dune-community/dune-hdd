@@ -82,7 +82,7 @@ class CGStudy
                                                                  la_backend >::Type > StudyBaseType;
   typedef Stuff::Common::LocalizationStudy                                            LocalizationBaseType;
   typedef CGStudy< TestCaseType, polOrder, space_backend, la_backend >            ThisType;
-
+public:
   typedef typename StudyBaseType::DiscretizationType DiscretizationType;
   typedef typename StudyBaseType::GridViewType GridViewType;
   typedef typename StudyBaseType::FunctionType FunctionType;

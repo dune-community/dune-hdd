@@ -65,7 +65,10 @@ protected:
   static std::shared_ptr< GridType > create_initial_grid(const int refinements)
   {
     auto grid = Stuff::Grid::Providers::Cube< GridType >::create(configuration(""))->grid_ptr();
+    grid->preAdapt();
     grid->globalRefine(refinements);
+    grid->postAdapt();
+    grid->loadBalance();
     return grid;
   } // ... create_initial_grid(...)
 

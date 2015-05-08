@@ -93,7 +93,7 @@ public:
   static NeumannFunctionType* make_neumann() {
     typedef typename std::remove_const<decltype(Spe10FunctionType::default_upper_right)>::type UR;
     typedef typename NeumannFunctionType::DomainType DomainType;
-    auto lmb = [](DomainType x) { return default_config().get<UR>("upper_right")[2] == x[2];};
+    auto lmb = [](DomainType x) { return DSC::FloatCmp::eq(default_config().get<UR>("upper_right")[1], x[1]) ? 1 : 0;};
     return new NeumannFunctionType(lmb, 0 /*order = constant on element*/, "neumann");
   }
 
