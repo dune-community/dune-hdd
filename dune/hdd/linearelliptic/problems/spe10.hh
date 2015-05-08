@@ -162,9 +162,10 @@ private:
       typedef Pymor::Functions::NonparametricDefault< E, D, 2, R, 2, 2 >     MatrixWrapper;
       typedef Pymor::Functions::AffinelyDecomposableDefault< E, D, 2, R, 1 > ParametricFunctionType;
       auto diffusion_factor = std::make_shared< ParametricFunctionType >("diffusion_factor");
+      auto minus_one = std::make_shared< ConstantFunctionType >(-1, "minus_one");
       diffusion_factor->register_affine_part(Stuff::Functions::make_sum(one, channel));
-      diffusion_factor->register_component(channel,
-                                           new Pymor::ParameterFunctional("mu", 1, "-1.0*mu"));
+      diffusion_factor->register_component(Stuff::Functions::make_prodcut(minus_one, channel),
+                                           new Pymor::ParameterFunctional("mu", 1, "mu[0]"));
       return BaseType(diffusion_factor,
                       std::make_shared< MatrixWrapper >(diffusion_tensor),
                       std::make_shared< ScalarWrapper >(force),
