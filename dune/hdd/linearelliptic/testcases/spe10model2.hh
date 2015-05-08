@@ -57,7 +57,7 @@ protected:
   static Stuff::Common::Configuration configuration(const std::string filename)
   {
     Stuff::Common::Configuration config = ProblemType::default_config();
-    config["num_elements"] = "[100 20 ]";
+    config.set("num_elements", ProblemType::Spe10Model2::Spe10FunctionType::num_elements);
     config["filename"] = filename;
     return config;
   } // ... configuration()
@@ -72,19 +72,24 @@ protected:
 public:
   Model2(std::string filename = "",  size_t num_refinements = 0)
     : BaseType(create_initial_grid(initial_refinements()), num_refinements)
-    , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
+    , boundary_info_cfg_()
     , problem_(ProblemType::create(configuration(filename)))
     , exact_solution_(0)
-  {}
+  {
+    boundary_info_cfg_["type"] = Stuff::Grid::BoundaryInfoConfigs::NormalBased::static_id();
+    boundary_info_cfg_["default"] = "neumann";
+    boundary_info_cfg_["compare_tolerance"] = "1e-10";
+    boundary_info_cfg_["dirichlet.0"] = "[0.0 -1.0 0.0]";
+  }
 
   void print_header(std::ostream& out = std::cout) const
   {
     out << "+==========================================================+\n"
         << "|+========================================================+|\n"
-        << "||  Testcase: SPE10, Model2                              ||\n"
+        << "||  Testcase: SPE10, Model2                               ||\n"
         << "||  (see http://www.spe.org/web/csp/datasets/set01.htm)   ||\n"
         << "|+--------------------------------------------------------+|\n"
-        << "||  domain = [0, 5] x [0, 1]                              ||\n"
+        << "||  domain = [0, 365.76] x [0, 670.56] x [0, 51.816]      ||\n"
         << "||  diffusion: spe10 model 1 scalar data                  ||\n"
         << "||         |  2000 in [0.55, 0.70] x [0.70, 0.85]         ||\n"
         << "||  force: | -1000 in [3.00, 3.15] x [0.77, 0.90]         ||\n"
@@ -118,7 +123,7 @@ public:
   }
 
 protected:
-  const Stuff::Common::Configuration boundary_info_cfg_;
+  Stuff::Common::Configuration boundary_info_cfg_;
   const std::unique_ptr< const ProblemType > problem_;
   const ExactSolutionType exact_solution_;
 }; // class Spe10Model1Base

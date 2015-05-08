@@ -11,6 +11,7 @@
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/type_utils.hh>
 #include <dune/stuff/functions/constant.hh>
+#include <dune/stuff/functions/global.hh>
 #include <dune/stuff/functions/spe10model2.hh>
 
 #include <dune/pymor/functions/default.hh>
@@ -45,6 +46,7 @@ public:
   typedef Pymor::Functions::NonparametricDefault< EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3 >  MatrixFunctionType;
 
   typedef Stuff::Functions::Spe10::Model2< EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3> Spe10FunctionType;
+  typedef Stuff::GlobalLambdaFunction< EntityImp, DomainFieldImp, 3, RangeFieldImp, 1> NeumannFunctionType;
 public:
   static const bool available = true;
 
@@ -56,6 +58,8 @@ public:
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
     Stuff::Common::Configuration config("integration_order", "3");
+    config["lower_left"] = "[0 0 0]";
+    config.set("upper_right", Spe10FunctionType::default_upper_right);
     if (sub_name.empty())
       return config;
     else {
@@ -76,14 +80,21 @@ public:
   Spe10Model2(const size_t integration_order = default_config().get< size_t >("integration_order"))
     : BaseType(std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(1, "diffusion_factor")),
                std::make_shared< MatrixFunctionType >(new Spe10FunctionType()),
-               std::make_shared< ScalarFunctionType >(new ForceType(integration_order,  "force")),
+               std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(0, "force")),
                std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(0, "dirichlet")),
-               std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(0, "neumann")))
+               std::make_shared< ScalarFunctionType >(make_neumann()))
   {}
 
   virtual std::string type() const override
   {
     return BaseType::BaseType::static_id() + ".Spe10Model2";
+  }
+
+  static NeumannFunctionType* make_neumann() {
+    typedef typename std::remove_const<decltype(Spe10FunctionType::default_upper_right)>::type UR;
+    typedef typename NeumannFunctionType::DomainType DomainType;
+    auto lmb = [](DomainType x) { return default_config().get<UR>("upper_right")[2] == x[2];};
+    return new NeumannFunctionType(lmb, 0 /*order = constant on element*/, "neumann");
   }
 
 private:
@@ -97,6 +108,7 @@ private:
     matrix[2][2] = RangeFieldImp(1);
     return matrix;
   }
+
 }; // class Spe10Model2< ..., 1 >
 
 

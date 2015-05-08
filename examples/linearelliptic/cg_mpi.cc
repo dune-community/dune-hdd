@@ -15,7 +15,7 @@
 #include <dune/stuff/test/common.hh>
 #include <dune/stuff/common/convergence-study.hh>
 #include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
-#include <dune/hdd/linearelliptic/testcases/spe10.hh>
+#include <dune/hdd/linearelliptic/testcases/spe10model2.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/test/linearelliptic_cg.hh>
 
@@ -89,10 +89,24 @@ void run_eoc_study(int argc, char** argv)
   typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TT; TT test_case;
   test_case.print_header(DSC_LOG_INFO_0);
   DSC_LOG_INFO << std::endl;
-  LinearElliptic::Tests::CGStudy< TT, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >
-      eoc_study(test_case, {},  {}, "cg_study_");
-  const auto fr = eoc_study.run_eoc(DSC_LOG_INFO_0);
-  Stuff::Test::print_collected_eoc_study_results(fr, std::cout);
+  LinearElliptic::Tests::CGStudy< TT, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::eigen_sparse >
+      ::DiscretizationType  disc(test_case,
+            test_case.boundary_info(),
+            test_case.problem(),
+            test_case.level_of(0));
+  disc.init();
+  auto options = disc.solver_options();
+  options["verbose"] = "666";
+  options["precision"] = "1e-6";
+
+//  typedef typename std::remove_reference<decltype(disc.solve(options))>::type Solution;
+  auto solution = disc.create_vector();
+  try {
+    disc.solve(options, solution);
+  }
+   catch (Dune::Stuff::Exceptions::linear_solver_failed) {
+    disc.visualize(solution, "spe10_solution", "solution");
+  }
 }
 
 int main(int argc, char** argv)
