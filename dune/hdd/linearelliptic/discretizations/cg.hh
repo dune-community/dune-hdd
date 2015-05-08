@@ -172,253 +172,253 @@ public:
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
-    if (!this->container_based_initialized_) {
-      Dune::Timer timer;
-      auto dirichlet_vector = std::make_shared< AffinelyDecomposedVectorType >();
+    if (this->container_based_initialized_)
+      return;
+    Dune::Timer timer;
+    auto dirichlet_vector = std::make_shared< AffinelyDecomposedVectorType >();
 
-      auto& matrix = *(this->matrix_);
-      auto& rhs = *(this->rhs_);
-      const auto& space = this->test_space_;
-      const auto& grid_view = space.grid_view();
-      const auto& boundary_info = *(this->boundary_info_);
+    auto& matrix = *(this->matrix_);
+    auto& rhs = *(this->rhs_);
+    const auto& space = this->test_space_;
+    const auto& grid_view = space.grid_view();
+    const auto& boundary_info = *(this->boundary_info_);
 
-      out << prefix << "assembling... " << std::flush;
-      timer.reset();
-      GDT::SystemAssembler< TestSpaceType > system_assembler(space);
+    out << prefix << "assembling... " << std::flush;
+    timer.reset();
+    GDT::SystemAssembler< TestSpaceType > system_assembler(space);
 
-      // project dirichlet boundary values
-      typedef typename ProblemType::FunctionType::NonparametricType DirichletType;
-      const auto& dirichlet = *(this->problem_.dirichlet());
-      typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
-      typedef GDT::Operators::DirichletProjectionLocalizable< GridViewType, DirichletType, DiscreteFunctionType >
-          DirichletProjectionOperator;
-      std::vector< std::unique_ptr< DiscreteFunctionType > > dirichlet_projections;
-      std::vector< std::unique_ptr< DirichletProjectionOperator > > dirichlet_projection_operators;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet.num_components(); ++qq) {
-        const size_t id = dirichlet_vector->register_component(new VectorType(space.mapper().size()),
-                                                               dirichlet.coefficient(qq));
-        dirichlet_projections.emplace_back(new DiscreteFunctionType(space, *(dirichlet_vector->component(id))));
-        dirichlet_projection_operators.emplace_back(
-              new DirichletProjectionOperator(grid_view,
-                                              boundary_info,
-                                              *(dirichlet.component(qq)),
-                                              *(dirichlet_projections[dirichlet_projections.size() - 1])));
-      }
-      if (dirichlet.has_affine_part()) {
-        dirichlet_vector->register_affine_part(new VectorType(space.mapper().size()));
-        dirichlet_projections.emplace_back(new DiscreteFunctionType(space, *(dirichlet_vector->affine_part())));
-        dirichlet_projection_operators.emplace_back(
-              new DirichletProjectionOperator(grid_view,
-                                              boundary_info,
-                                              *(dirichlet.affine_part()),
-                                              *(dirichlet_projections[dirichlet_projections.size() - 1])));
-      }
-      for (auto& projection_operator : dirichlet_projection_operators)
-        system_assembler.add(*projection_operator, new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+    // project dirichlet boundary values
+    typedef typename ProblemType::FunctionType::NonparametricType DirichletType;
+    const auto& dirichlet = *(this->problem_.dirichlet());
+    typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
+    typedef GDT::Operators::DirichletProjectionLocalizable< GridViewType, DirichletType, DiscreteFunctionType >
+        DirichletProjectionOperator;
+    std::vector< std::unique_ptr< DiscreteFunctionType > > dirichlet_projections;
+    std::vector< std::unique_ptr< DirichletProjectionOperator > > dirichlet_projection_operators;
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet.num_components(); ++qq) {
+      const size_t id = dirichlet_vector->register_component(new VectorType(space.mapper().size()),
+                                                             dirichlet.coefficient(qq));
+      dirichlet_projections.emplace_back(new DiscreteFunctionType(space, *(dirichlet_vector->component(id))));
+      dirichlet_projection_operators.emplace_back(
+            new DirichletProjectionOperator(grid_view,
+                                            boundary_info,
+                                            *(dirichlet.component(qq)),
+                                            *(dirichlet_projections[dirichlet_projections.size() - 1])));
+    }
+    if (dirichlet.has_affine_part()) {
+      dirichlet_vector->register_affine_part(new VectorType(space.mapper().size()));
+      dirichlet_projections.emplace_back(new DiscreteFunctionType(space, *(dirichlet_vector->affine_part())));
+      dirichlet_projection_operators.emplace_back(
+            new DirichletProjectionOperator(grid_view,
+                                            boundary_info,
+                                            *(dirichlet.affine_part()),
+                                            *(dirichlet_projections[dirichlet_projections.size() - 1])));
+    }
+    for (auto& projection_operator : dirichlet_projection_operators)
+      system_assembler.add(*projection_operator, new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
 
-      // lhs operator
-      const auto& diffusion_factor = *(this->problem_.diffusion_factor());
-      const auto& diffusion_tensor = *(this->problem_.diffusion_tensor());
-      assert(!diffusion_tensor.parametric());
-      assert(diffusion_tensor.has_affine_part());
-      std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-        const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
-                                                                   space.mapper().size(),
-                                                                   pattern_),
-                                                    diffusion_factor.coefficient(qq));
-        elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
-                                                                 *(diffusion_tensor.affine_part()),
-                                                                 *(matrix.component(id)),
-                                                                 space));
-      }
-      if (diffusion_factor.has_affine_part()) {
-        matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
-        elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
-                                                                 *(diffusion_tensor.affine_part()),
-                                                                 *(matrix.affine_part()),
-                                                                 space));
-      }
-      for (auto& elliptic_operator : elliptic_operators)
-        system_assembler.add(*elliptic_operator);
+    // lhs operator
+    const auto& diffusion_factor = *(this->problem_.diffusion_factor());
+    const auto& diffusion_tensor = *(this->problem_.diffusion_tensor());
+    assert(!diffusion_tensor.parametric());
+    assert(diffusion_tensor.has_affine_part());
+    std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+      const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
+                                                                 space.mapper().size(),
+                                                                 pattern_),
+                                                  diffusion_factor.coefficient(qq));
+      elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
+                                                               *(diffusion_tensor.affine_part()),
+                                                               *(matrix.component(id)),
+                                                               space));
+    }
+    if (diffusion_factor.has_affine_part()) {
+      matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
+      elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
+                                                               *(diffusion_tensor.affine_part()),
+                                                               *(matrix.affine_part()),
+                                                               space));
+    }
+    for (auto& elliptic_operator : elliptic_operators)
+      system_assembler.add(*elliptic_operator);
 
-      // rhs functional
-      // * force
-      typedef typename ProblemType::FunctionType::NonparametricType ForceType;
-      const auto& force = *(this->problem_.force());
-      typedef GDT::Functionals::L2Volume< ForceType, VectorType, TestSpaceType > L2VolumeFunctionalType;
-      std::vector< std::unique_ptr< L2VolumeFunctionalType > > force_functionals;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < force.num_components(); ++qq) {
-        const size_t id = rhs.register_component(new VectorType(space.mapper().size()), force.coefficient(qq));
-        force_functionals.emplace_back(new L2VolumeFunctionalType(*(force.component(qq)),
-                                                                  *(rhs.component(id)),
-                                                                  space));
-      }
-      if (force.has_affine_part()) {
+    // rhs functional
+    // * force
+    typedef typename ProblemType::FunctionType::NonparametricType ForceType;
+    const auto& force = *(this->problem_.force());
+    typedef GDT::Functionals::L2Volume< ForceType, VectorType, TestSpaceType > L2VolumeFunctionalType;
+    std::vector< std::unique_ptr< L2VolumeFunctionalType > > force_functionals;
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < force.num_components(); ++qq) {
+      const size_t id = rhs.register_component(new VectorType(space.mapper().size()), force.coefficient(qq));
+      force_functionals.emplace_back(new L2VolumeFunctionalType(*(force.component(qq)),
+                                                                *(rhs.component(id)),
+                                                                space));
+    }
+    if (force.has_affine_part()) {
+      rhs.register_affine_part(new VectorType(space.mapper().size()));
+      force_functionals.emplace_back(new L2VolumeFunctionalType(*(force.affine_part()),
+                                                                *(rhs.affine_part()),
+                                                                space));
+    }
+    for (auto& force_functional : force_functionals)
+      system_assembler.add(*force_functional);
+    // * neumann
+    typedef typename ProblemType::FunctionType::NonparametricType NeumannType;
+    const auto& neumann = *(this->problem_.neumann());
+    typedef GDT::Functionals::L2Face< NeumannType, VectorType, TestSpaceType > L2FaceFunctionalType;
+    std::vector< std::unique_ptr< L2FaceFunctionalType > > neumann_functionals;
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < neumann.num_components(); ++qq) {
+      const size_t id = rhs.register_component(new VectorType(space.mapper().size()), neumann.coefficient(qq));
+      neumann_functionals.emplace_back(new L2FaceFunctionalType(*(neumann.component(qq)),
+                                                                *(rhs.component(id)),
+                                                                space));
+    }
+    if (neumann.has_affine_part()) {
+      if (!rhs.has_affine_part())
         rhs.register_affine_part(new VectorType(space.mapper().size()));
-        force_functionals.emplace_back(new L2VolumeFunctionalType(*(force.affine_part()),
-                                                                  *(rhs.affine_part()),
-                                                                  space));
-      }
-      for (auto& force_functional : force_functionals)
-        system_assembler.add(*force_functional);
-      // * neumann
-      typedef typename ProblemType::FunctionType::NonparametricType NeumannType;
-      const auto& neumann = *(this->problem_.neumann());
-      typedef GDT::Functionals::L2Face< NeumannType, VectorType, TestSpaceType > L2FaceFunctionalType;
-      std::vector< std::unique_ptr< L2FaceFunctionalType > > neumann_functionals;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < neumann.num_components(); ++qq) {
-        const size_t id = rhs.register_component(new VectorType(space.mapper().size()), neumann.coefficient(qq));
-        neumann_functionals.emplace_back(new L2FaceFunctionalType(*(neumann.component(qq)),
-                                                                  *(rhs.component(id)),
-                                                                  space));
-      }
-      if (neumann.has_affine_part()) {
-        if (!rhs.has_affine_part())
-          rhs.register_affine_part(new VectorType(space.mapper().size()));
-        neumann_functionals.emplace_back(new L2FaceFunctionalType(*(neumann.affine_part()),
-                                                                  *(rhs.affine_part()),
-                                                                  space));
-      }
-      for (auto& neumann_functional : neumann_functionals)
-        system_assembler.add(*neumann_functional,
-                             new Stuff::Grid::ApplyOn::NeumannIntersections< GridViewType >(boundary_info));
+      neumann_functionals.emplace_back(new L2FaceFunctionalType(*(neumann.affine_part()),
+                                                                *(rhs.affine_part()),
+                                                                space));
+    }
+    for (auto& neumann_functional : neumann_functionals)
+      system_assembler.add(*neumann_functional,
+                           new Stuff::Grid::ApplyOn::NeumannIntersections< GridViewType >(boundary_info));
 
-      // products
-      // * L2
-      typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType > L2ProductType;
-      auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      l2_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                             space.mapper().size(),
-                                                             L2ProductType::pattern(space)));
-      L2ProductType l2_product(*(l2_product_matrix->affine_part()), space);
-      system_assembler.add(l2_product);
-      // * H1 semi
-      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1SemiProductType;
-      auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      h1_semi_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                                  space.mapper().size(),
-                                                                  H1SemiProductType::pattern(space)));
-      H1SemiProductType h1_semi_product(*(h1_semi_product_matrix->affine_part()), space);
-      system_assembler.add(h1_semi_product);
-      // * H1 (we can not just add L2 and H1 semi since += is not available for all matrix backends; so this is a
-      //       crude hack, don't copy!)
-      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      h1_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                             space.mapper().size(),
-                                                             H1SemiProductType::pattern(space)));
-      L2ProductType     h1_prodcut_l2_part(*(h1_product_matrix->affine_part()), space);
-      H1SemiProductType h1_product_semi_part(*(h1_product_matrix->affine_part()), space);
-      system_assembler.add(h1_prodcut_l2_part);
-      system_assembler.add(h1_product_semi_part);
+    // products
+    // * L2
+    typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType > L2ProductType;
+    auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    l2_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
+                                                           space.mapper().size(),
+                                                           L2ProductType::pattern(space)));
+    L2ProductType l2_product(*(l2_product_matrix->affine_part()), space);
+    system_assembler.add(l2_product);
+    // * H1 semi
+    typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1SemiProductType;
+    auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    h1_semi_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
+                                                                space.mapper().size(),
+                                                                H1SemiProductType::pattern(space)));
+    H1SemiProductType h1_semi_product(*(h1_semi_product_matrix->affine_part()), space);
+    system_assembler.add(h1_semi_product);
+    // * H1 (we can not just add L2 and H1 semi since += is not available for all matrix backends; so this is a
+    //       crude hack, don't copy!)
+    auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    h1_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
+                                                           space.mapper().size(),
+                                                           H1SemiProductType::pattern(space)));
+    L2ProductType     h1_prodcut_l2_part(*(h1_product_matrix->affine_part()), space);
+    H1SemiProductType h1_product_semi_part(*(h1_product_matrix->affine_part()), space);
+    system_assembler.add(h1_prodcut_l2_part);
+    system_assembler.add(h1_product_semi_part);
 
-      // * energy
-      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
-      auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      std::vector< std::unique_ptr< EnergyProductType > > energy_products;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-        const size_t id = energy_product_matrix->register_component(new MatrixType(space.mapper().size(),
-                                                                                   space.mapper().size(),
-                                                                                   EnergyProductType::pattern(space)),
-                                                                    diffusion_factor.coefficient(qq));
-        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->component(id)),
-                                                           space,
-                                                           *(diffusion_factor.component(qq))));
-      }
-      if (diffusion_factor.has_affine_part()) {
-        energy_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                                   space.mapper().size(),
-                                                                   EnergyProductType::pattern(space)));
-        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->affine_part()),
-                                                           space,
-                                                           *(diffusion_factor.affine_part())));
-      }
-      for (auto& energy_product : energy_products)
-        system_assembler.add(*energy_product);
+    // * energy
+    typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
+    auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    std::vector< std::unique_ptr< EnergyProductType > > energy_products;
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+      const size_t id = energy_product_matrix->register_component(new MatrixType(space.mapper().size(),
+                                                                                 space.mapper().size(),
+                                                                                 EnergyProductType::pattern(space)),
+                                                                  diffusion_factor.coefficient(qq));
+      energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->component(id)),
+                                                         space,
+                                                         *(diffusion_factor.component(qq))));
+    }
+    if (diffusion_factor.has_affine_part()) {
+      energy_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
+                                                                 space.mapper().size(),
+                                                                 EnergyProductType::pattern(space)));
+      energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->affine_part()),
+                                                         space,
+                                                         *(diffusion_factor.affine_part())));
+    }
+    for (auto& energy_product : energy_products)
+      system_assembler.add(*energy_product);
 
-      // do the actual assembling
-      system_assembler.walk();
-      out << "done (took " << timer.elapsed() << "s)" << std::endl;
+    // do the actual assembling
+    system_assembler.walk();
+    out << "done (took " << timer.elapsed() << "s)" << std::endl;
 
-      out << prefix << "computing dirichlet shift... " << std::flush;
-      VectorType tmp(space.mapper().size());
-      if (matrix.has_affine_part() && dirichlet_vector->has_affine_part()) {
-        if (!rhs.has_affine_part())
-          rhs.register_affine_part(new VectorType(space.mapper().size()));
-        matrix.affine_part()->mv(*(dirichlet_vector->affine_part()), tmp);
-        *(rhs.affine_part()) -= tmp;
+    out << prefix << "computing dirichlet shift... " << std::flush;
+    VectorType tmp(space.mapper().size());
+    if (matrix.has_affine_part() && dirichlet_vector->has_affine_part()) {
+      if (!rhs.has_affine_part())
+        rhs.register_affine_part(new VectorType(space.mapper().size()));
+      matrix.affine_part()->mv(*(dirichlet_vector->affine_part()), tmp);
+      *(rhs.affine_part()) -= tmp;
+    }
+    if (matrix.has_affine_part()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
+        const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
+                                                  dirichlet_vector->coefficient(qq));
+        matrix.affine_part()->mv(*(dirichlet_vector->component(qq)), tmp);
+        *(rhs.component(ind)) -= tmp;
       }
-      if (matrix.has_affine_part()) {
-        for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
-          const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
-                                                    dirichlet_vector->coefficient(qq));
-          matrix.affine_part()->mv(*(dirichlet_vector->component(qq)), tmp);
-          *(rhs.component(ind)) -= tmp;
-        }
+    }
+    if (dirichlet_vector->has_affine_part()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq) {
+        const size_t ind = rhs.register_component(new VectorType(space.mapper().size()), matrix.coefficient(qq));
+        matrix.component(qq)->mv(*(dirichlet_vector->affine_part()), tmp);
+        *(rhs.component(ind)) -= tmp;
       }
-      if (dirichlet_vector->has_affine_part()) {
-        for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq) {
-          const size_t ind = rhs.register_component(new VectorType(space.mapper().size()), matrix.coefficient(qq));
-          matrix.component(qq)->mv(*(dirichlet_vector->affine_part()), tmp);
-          *(rhs.component(ind)) -= tmp;
-        }
+    }
+    Pymor::ParameterType param;
+    for (auto key : matrix.parameter_type().keys())
+      param.set(key, matrix.parameter_type().get(key));
+    for (auto key : dirichlet_vector->parameter_type().keys())
+      param.set(key, dirichlet_vector->parameter_type().get(key));
+    for (DUNE_STUFF_SSIZE_T pp = 0; pp < matrix.num_components(); ++ pp) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
+        const std::string expression = "(" + matrix.coefficient(pp)->expression()
+                                       + ")*(" + dirichlet_vector->coefficient(qq)->expression() + ")";
+        const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
+                                                  new Pymor::ParameterFunctional(param, expression));
+        const auto& matrix_component = *matrix.component(pp);
+        const auto& dirichlet_component = *dirichlet_vector->component(qq);
+        auto& rhs_component = *rhs.component(ind);
+        rhs_component -= matrix_component * dirichlet_component;
       }
-      Pymor::ParameterType param;
-      for (auto key : matrix.parameter_type().keys())
-        param.set(key, matrix.parameter_type().get(key));
-      for (auto key : dirichlet_vector->parameter_type().keys())
-        param.set(key, dirichlet_vector->parameter_type().get(key));
-      for (DUNE_STUFF_SSIZE_T pp = 0; pp < matrix.num_components(); ++ pp) {
-        for (DUNE_STUFF_SSIZE_T qq = 0; qq < dirichlet_vector->num_components(); ++qq) {
-          const std::string expression = "(" + matrix.coefficient(pp)->expression()
-                                         + ")*(" + dirichlet_vector->coefficient(qq)->expression() + ")";
-          const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
-                                                    new Pymor::ParameterFunctional(param, expression));
-          const auto& matrix_component = *matrix.component(pp);
-          const auto& dirichlet_component = *dirichlet_vector->component(qq);
-          auto& rhs_component = *rhs.component(ind);
-          rhs_component -= matrix_component * dirichlet_component;
-        }
-      }
-      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    }
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-      out << prefix << "applying constraints... " << std::flush;
-      GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
-        clear_and_set_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
-      GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
-        clear_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs(), false);
-      // we always need an affine part in the system matrix for the dirichlet rows
-      if (!matrix.has_affine_part())
-        matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
-      system_assembler.add(clear_and_set_dirichlet_rows,
-                           *(matrix.affine_part()),
+    out << prefix << "applying constraints... " << std::flush;
+    GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
+      clear_and_set_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
+    GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
+      clear_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs(), false);
+    // we always need an affine part in the system matrix for the dirichlet rows
+    if (!matrix.has_affine_part())
+      matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
+    system_assembler.add(clear_and_set_dirichlet_rows,
+                         *(matrix.affine_part()),
+                         new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
+      system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)),
                            new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-        system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
-      if (rhs.has_affine_part())
-        system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-        system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
-      system_assembler.walk();
-      out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    if (rhs.has_affine_part())
+      system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()),
+                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+    for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
+      system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
+                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+    system_assembler.walk();
+    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-      // build parameter type
-      this->inherit_parameter_type(matrix.parameter_type(), "lhs");
-      this->inherit_parameter_type(rhs.parameter_type(), "rhs");
-      this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
+    // build parameter type
+    this->inherit_parameter_type(matrix.parameter_type(), "lhs");
+    this->inherit_parameter_type(rhs.parameter_type(), "rhs");
+    this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
 
-      // finalize
-      this->products_.insert(std::make_pair("l2",        l2_product_matrix));
-      this->products_.insert(std::make_pair("h1_semi",   h1_semi_product_matrix));
-      this->products_.insert(std::make_pair("h1",        h1_product_matrix));
-      this->products_.insert(std::make_pair("energy",    energy_product_matrix));
-      this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
+    // finalize
+    this->products_.insert(std::make_pair("l2",        l2_product_matrix));
+    this->products_.insert(std::make_pair("h1_semi",   h1_semi_product_matrix));
+    this->products_.insert(std::make_pair("h1",        h1_product_matrix));
+    this->products_.insert(std::make_pair("energy",    energy_product_matrix));
+    this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
-      this->container_based_initialized_ = true;
-    } // if (!this->container_based_initialized_)
+    this->container_based_initialized_ = true;
   } // ... init(...)
 
 private:
