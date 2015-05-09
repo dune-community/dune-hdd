@@ -301,16 +301,6 @@ public:
                                                                   H1SemiProductType::pattern(space)));
       H1SemiProductType h1_semi_product(*(h1_semi_product_matrix->affine_part()), space);
       system_assembler.add(h1_semi_product);
-      // * H1 (we can not just add L2 and H1 semi since += is not available for all matrix backends; so this is a
-      //       crude hack, don't copy!)
-      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      h1_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                             space.mapper().size(),
-                                                             H1SemiProductType::pattern(space)));
-      L2ProductType     h1_prodcut_l2_part(*(h1_product_matrix->affine_part()), space);
-      H1SemiProductType h1_product_semi_part(*(h1_product_matrix->affine_part()), space);
-      system_assembler.add(h1_prodcut_l2_part);
-      system_assembler.add(h1_product_semi_part);
 
 //      // * energy
 //      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
@@ -338,6 +328,12 @@ public:
 
       // do the actual assembling
       system_assembler.walk();
+
+      // * H1 product
+      auto h1_product_matrix
+          = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(l2_product_matrix->affine_part()->backend()));
+      h1_product_matrix->affine_part()->axpy(1.0, *h1_semi_product_matrix->affine_part());
+
       out << "done (took " << timer.elapsed() << "s)" << std::endl;
 
       out << prefix << "computing dirichlet shift... " << std::flush;
