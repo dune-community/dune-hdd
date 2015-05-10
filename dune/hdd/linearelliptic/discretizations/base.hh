@@ -15,8 +15,8 @@
 
 #include <dune/stuff/common/crtp.hh>
 #include <dune/stuff/common/exceptions.hh>
-#include <dune/stuff/la/solver.hh>
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/la/solver.hh>
 
 #include <dune/pymor/operators/base.hh>
 #include <dune/pymor/operators/affine.hh>
@@ -375,6 +375,18 @@ public:
   } // ... uncached_solve(...)
 
 protected:
+  void finalize_init()
+  {
+    if (!container_based_initialized_) {
+      if (!matrix_->parametric())
+        matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(matrix_->affine_part()->pruned()));
+      for (auto& element : products_)
+        if (!element.second->parametric())
+          element.second = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(element.second->affine_part()->pruned()));
+      container_based_initialized_ = true;
+    }
+  } // ... finalize_init(...)
+
   void assert_everything_is_ready() const
   {
     if (!container_based_initialized_)
