@@ -546,7 +546,8 @@ public:
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "energy") != only_these_products_.end())
         this->products_.insert(std::make_pair("energy",
                                               std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
-      this->container_based_initialized_ = true;
+
+      this->finalize_init();
     } // if (!this->container_based_initialized_)
   } // ... init(...)
 

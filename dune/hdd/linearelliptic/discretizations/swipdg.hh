@@ -506,7 +506,7 @@ public:
         this->products_.insert(std::make_pair("energy",
                                               std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
 
-      this->container_based_initialized_ = true;
+      this->finalize_init();
     } // if (!this->container_based_initialized_)
   } // ... init(...)
 

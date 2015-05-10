@@ -413,7 +413,7 @@ public:
 //      this->products_.insert(std::make_pair("energy",    energy_product_matrix));
       this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
-      this->container_based_initialized_ = true;
+      this->finalize_init();
     } // if (!this->container_based_initialized_)
   } // ... init(...)
 
