@@ -1,22 +1,23 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_MPI_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_CG_MPI_HH
 
+#include <config.h> //mandatory for python bindings
+
 #include <memory>
 #include <dune/grid/spgrid.hh>
 #include <dune/stuff/common/memory.hh>
 #include <dune/hdd/linearelliptic/discreteproblem.hh>
-#include <dune/hdd/linearelliptic/discretizations/cg.hh>
+#include <dune/hdd/linearelliptic/discretizations/mpi_cg.hh>
 
-class LinearellipticExampleCG
+class MpiCGExample
 {
 public:
-  typedef Dune::SPGrid<double,2> GridType;
+  typedef Dune::HDD::LinearElliptic::Discretizations::MpiCG
+       DiscretizationType;
+  typedef typename DiscretizationType::GridType GridType;
   typedef Dune::HDD::LinearElliptic::DiscreteProblem< GridType > DiscreteProblemType;
   typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = DiscreteProblemType::dimRange;
-  typedef Dune::HDD::LinearElliptic::Discretizations::CG
-      < GridType, Dune::Stuff::Grid::ChooseLayer::leaf, RangeFieldType, dimRange, 1,
-        Dune::GDT::ChooseSpaceBackend::pdelab, Dune::Stuff::LA::ChooseBackend::istl_sparse > DiscretizationType;
 
   static std::string static_id()
   {

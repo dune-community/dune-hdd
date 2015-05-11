@@ -21,8 +21,8 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_cg
                       dunehdd-linearelliptic-cg
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-ADD_EXECUTABLE(mpi_example_linearelliptic_cg "cg_mpi.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(mpi_example_linearelliptic_cg
+ADD_EXECUTABLE(mpi_cg_main "mpi_cg_main.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(mpi_cg_main
                       dunehdd-linearelliptic-cg 
                       ${COMMON_LIBS} gtest_dune_stuff)
 
@@ -32,9 +32,9 @@ TARGET_LINK_LIBRARIES(mpi_example_linearelliptic_cg
 #                      dunehdd-linearelliptic-swipdg
 #                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-#ADD_EXECUTABLE(example_linearelliptic_thermalblock "thermalblock_main.cc" ${COMMON_HEADER})
-#TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
-#                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+ADD_EXECUTABLE(example_linearelliptic_thermalblock "thermalblock_main.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
+                     ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 #ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
 #               "OS2014_spe10_visualization.cc" ${COMMON_HEADER})
@@ -49,6 +49,10 @@ add_python_bindings(linearellipticexamplethermalblock
                     thermalblock_bindings_generator.py
                     thermalblock_bindings_generator.hh
                     "")
+add_python_bindings(mpi_cg_bindings
+                    mpi_cg_bindings_generator.py
+                    mpi_cg_example.hh
+                    dunehdd-linearelliptic-cg)
 #add_python_bindings(linearellipticexampleOS2014
 #                    OS2014_bindings_generator.py
 #                    OS2014_bindings_generator.hh
@@ -60,10 +64,12 @@ add_python_bindings(linearellipticexamplethermalblock
 #        example_linearelliptic_thermalblock
 #        linearellipticexampleOS2014)
 foreach(target
-        mpi_example_linearelliptic_cg
+        mpi_cg_main
+        mpi_cg_bindings
         example_linearelliptic_cg
         linearellipticexamplecg
-        linearellipticexamplethermalblock)
+        linearellipticexamplethermalblock
+        )
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})
   add_dune_umfpack_flags(${target})
