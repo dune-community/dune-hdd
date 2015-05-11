@@ -129,8 +129,9 @@ private:
   } // ... create_initial_grid(...)
 
 public:
-  ESV2007(const size_t num_refinements = ESV2007BaseType::default_num_refinements)
-    : TestCaseBaseType(create_initial_grid(ESV2007BaseType::initial_refinements()), num_refinements)
+  ESV2007(const size_t num_refinements = ESV2007BaseType::default_num_refinements,
+          const size_t initial_refine = ESV2007BaseType::initial_refinements())
+    : TestCaseBaseType(create_initial_grid(initial_refine), num_refinements)
   {}
 }; // class ESV2007
 
