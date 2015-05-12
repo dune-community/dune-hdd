@@ -391,8 +391,8 @@ protected:
   {
     if (!container_based_initialized_)
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-                 "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and set "
-                 << "container_based_initialized_ to true!\n"
+                 "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and call "
+                 << "finalize_init()!\n"
                  << "The user has to call init() before calling any other method!");
   } // ... assert_everything_is_ready()
 
