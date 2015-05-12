@@ -124,7 +124,10 @@ private:
   {
     Stuff::Grid::Providers::Cube< GridType > grid_provider(-1, 1, 4);
     auto grid = grid_provider.grid_ptr();
+    grid->preAdapt();
     grid->globalRefine(refinements);
+    grid->postAdapt();
+    grid->loadBalance();
     return grid;
   } // ... create_initial_grid(...)
 
