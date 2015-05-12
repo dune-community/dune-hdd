@@ -106,7 +106,7 @@ public:
   using typename BaseType::RangeFieldType;
   using typename BaseType::PatternType;
 
-private:
+protected:
   typedef typename Traits::SpaceProvider SpaceProvider;
 
   typedef Stuff::Grid::ProviderInterface< GridType >      GridProviderType;
