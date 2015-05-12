@@ -8,69 +8,78 @@
 #include <dune/stuff/common/memory.hh>
 #include <dune/hdd/linearelliptic/discreteproblem.hh>
 #include <dune/hdd/linearelliptic/discretizations/mpi_cg.hh>
+#include <dune/hdd/linearelliptic/problems/ESV2007.hh>
+#include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/linearelliptic/problems/spe10model2.hh>
+#include <dune/hdd/linearelliptic/testcases/spe10model2.hh>
 
 class MpiCGExample
 {
 public:
   typedef Dune::HDD::LinearElliptic::Discretizations::MpiCG
        DiscretizationType;
-  typedef typename DiscretizationType::GridType GridType;
-  typedef Dune::HDD::LinearElliptic::DiscreteProblem< GridType > DiscreteProblemType;
-  typedef typename DiscreteProblemType::RangeFieldType RangeFieldType;
-  static const unsigned int dimRange = DiscreteProblemType::dimRange;
+  typedef double RangeFieldType;
+  typedef typename Dune::SPGrid<RangeFieldType, 2> GridType;
+  typedef Dune::Stuff::Grid::Providers::Cube< GridType > GridProviderType;
+  static constexpr unsigned int dimRange = 1;
+  typedef typename DSG::Entity<typename GridType::LeafGridView>::Type EntityType;
+
+  typedef Dune::HDD::LinearElliptic::Problems::ESV2007
+      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
+  typedef Dune::HDD::LinearElliptic::TestCases::ESV2007
+      < GridType > TestcaseType;
+
+
+
+public:
+  MpiCGExample(const std::size_t num_refinements = 5,
+              const DUNE_STUFF_SSIZE_T info_log_levels = 0,
+              const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
+              const bool enable_warnings = true,
+              const bool enable_colors = true,
+               const std::string info_color  = DSC::TimedLogging::default_info_color(),
+               const std::string debug_color = DSC::TimedLogging::default_debug_color(),
+               const std::string warn_color  = DSC::TimedLogging::default_warning_color())
+    : testcase_(0, num_refinements)
+    , discretization_(testcase_,
+                      testcase_.boundary_info(),
+                      testcase_.problem())
+  {
+    DSC::TimedLogger().create(info_log_levels,
+                                debug_log_levels,
+                                enable_warnings,
+                                enable_colors,
+                                info_color,
+                                debug_color,
+                                warn_color);
+
+    DSC::TimedLogger().get("cg.thermalblock.example").info() << "creating grid and problem... " << std::endl;
+
+#if HAVE_ALUGRID
+    if (std::is_same< GridType, Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >::value)
+      grid_provider_->grid().globalRefine(1);
+#endif // HAVE_ALUGRID
+  } // Initializer(...)
 
   static std::string static_id()
   {
     return "linearelliptic.cg";
   }
 
-  static void write_config_file(const std::string filename = static_id() + ".cfg")
-  {
-    DiscreteProblemType::write_config(filename, static_id());
-  }
-
-  void initialize(const std::vector< std::string > arguments)
-  {
-    using namespace Dune;
-    if (!discrete_problem_) {
-      discrete_problem_ = Stuff::Common::make_unique< DiscreteProblemType >(static_id(), arguments);
-      const bool debug_logging = discrete_problem_->debug_logging();
-      auto& info = DSC_LOG_INFO;
-      auto& debug = DSC_LOG_DEBUG;
-      discretization_ = Stuff::Common::make_unique< DiscretizationType >(discrete_problem_->grid_provider(),
-                                                                         discrete_problem_->boundary_info(),
-                                                                         discrete_problem_->problem());
-      info << "initializing discretization";
-      if (debug_logging)
-        info << ":" << std::endl;
-      else
-        info << "... " << std::flush;
-      Dune::Timer timer;
-      discretization_->init(debug, "  ");
-      if (!debug_logging)
-        info << "done (took " << timer.elapsed() << "s)" << std::endl;
-    } else
-      DSC_LOG_INFO << "initialize has already been called" << std::endl;
-  } // ... initialize(...)
-
-  const DiscreteProblemType& discrete_problem() const
-  {
-    return *discrete_problem_;
-  }
-
   const DiscretizationType& discretization() const
   {
-    return *discretization_;
+    return discretization_;
   }
 
   DiscretizationType* discretization_and_return_ptr() const
   {
-    return new DiscretizationType(*discretization_);
+    return new DiscretizationType(discretization_);
   }
 
 private:
-  std::unique_ptr< DiscreteProblemType > discrete_problem_;
-  std::unique_ptr< DiscretizationType > discretization_;
+  TestcaseType testcase_;
+//  ProblemType problem_;
+  DiscretizationType discretization_;
 }; // class LinearellipticExampleCG
 
 

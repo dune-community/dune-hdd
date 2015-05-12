@@ -41,12 +41,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     MpiCGExample.add_method('static_id',
                                        retval('std::string'),
                                        [], is_const=True, throw=exceptions)
-    MpiCGExample.add_method('write_config_file',
-                                       None, [], is_const=True, throw=exceptions)
     MpiCGExample.add_constructor([], throw=exceptions)
-    MpiCGExample.add_method('initialize', None,
-                                       [param('const std::vector< std::string >', 'arguments')],
-                                       is_const=True, throw=exceptions)
     MpiCGExample.add_method('discretization_and_return_ptr',
                                        retval(DiscretizationFullName + ' *', caller_owns_return=True),
                                        [], is_const=True, throw=exceptions,

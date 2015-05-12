@@ -13,13 +13,11 @@ comm = MPI.COMM_WORLD
 import mpi_cg_bindings 
 
 # create example and write settings file
-print(dir(mpi_cg_bindings))
 example = mpi_cg_bindings.MpiCGExample()
 settingsFilename = 'foo'
 if not os.path.exists(settingsFilename):
     example.write_config_file()
-# initialize everything (grid, problem, discretization)
-example.initialize([os.getcwd()])
+
 discretization = example.discretization()
 if discretization.parametric():
     # solve

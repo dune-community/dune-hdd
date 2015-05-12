@@ -24,7 +24,7 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_cg
 ADD_EXECUTABLE(mpi_cg_main "mpi_cg_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(mpi_cg_main
                       dunehdd-linearelliptic-cg 
-                      ${COMMON_LIBS} gtest_dune_stuff)
+                      ${COMMON_LIBS} )
 
 
 #ADD_EXECUTABLE(example_linearelliptic_swipdg "swipdg_main.cc" ${COMMON_HEADER})

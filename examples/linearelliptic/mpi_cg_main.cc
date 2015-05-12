@@ -19,64 +19,64 @@
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/test/linearelliptic_cg.hh>
 
-void run_example(int argc, char** argv)
-{
-  // create empty example
-  typedef MpiCGExample ExampleType;
+//void run_example(int argc, char** argv)
+//{
+//  // create empty example
+//  typedef MpiCGExample ExampleType;
 
 
-  // read or write config file
-  const std::string config_file_name = ExampleType::static_id() + ".cfg";
-  if (!boost::filesystem::exists(config_file_name)) {
-    std::cout << "Writing default configuration to '" << config_file_name << "'... " << std::flush;
-    ExampleType::write_config_file(config_file_name);
-    std::cout << "done.\n"
-              << "Please review the configuration and start me again!" << std::endl;
-  } else {
+//  // read or write config file
+//  const std::string config_file_name = ExampleType::static_id() + ".cfg";
+//  if (!boost::filesystem::exists(config_file_name)) {
+//    std::cout << "Writing default configuration to '" << config_file_name << "'... " << std::flush;
+//    ExampleType::write_config_file(config_file_name);
+//    std::cout << "done.\n"
+//              << "Please review the configuration and start me again!" << std::endl;
+//  } else {
 
-    // init discrete problem and discretization
-    ExampleType example;
-    example.initialize(std::vector< std::string >(argv, argv + argc));
-    const auto& discreteProblem = example.discrete_problem();
-    auto& info = DSC_LOG_INFO;
-    Dune::Timer timer;
+//    // init discrete problem and discretization
+//    ExampleType example;
+//    example.initialize(std::vector< std::string >(argv, argv + argc));
+//    const auto& discreteProblem = example.discrete_problem();
+//    auto& info = DSC_LOG_INFO;
+//    Dune::Timer timer;
 
-    const auto& discretization = example.discretization();
-    auto solution = discretization.create_vector();
+//    const auto& discretization = example.discretization();
+//    auto solution = discretization.create_vector();
 
-    // solve
-    if (discretization.parametric()) {
-      info << "discretization is parametric with parameter_type: " << discretization.parameter_type() << std::endl;
-      const auto& config = discreteProblem.config();
-      if (config.has_sub("parameter")) {
-        const auto parameters = config.sub("parameter");
-        size_t pp = 0;
-        while (parameters.has_sub(Dune::Stuff::Common::toString(pp))) {
-          const auto parameter = parameters.sub(Dune::Stuff::Common::toString(pp));
-          Dune::Pymor::Parameter mu;
-          for (std::string key : parameter.getValueKeys())
-            mu.set(key, parameter.get< std::vector< double > >(key));
-          info << "solving for mu = " << mu << "... " << std::flush;
-          timer.reset();
-          discretization.solve(solution, mu);
-          info << " done (took " << timer.elapsed() << "s)" << std::endl;
-          discretization.visualize(solution,
-                                   example.static_id() + ".solution_to_parameter_" + Dune::Stuff::Common::toString(pp),
-                                   "solution to parameter " + Dune::Stuff::Common::toString(pp));
-          ++pp;
-        }
-      } else
-        info << "doing nothing, since there is no 'parameter' specified in the config!" << std::endl;
-    } else {
-      info << "discretization is not parametric, solving... " << std::flush;
-      timer.reset();
-      discretization.solve(solution, Dune::Pymor::Parameter());
-      info << " done (took " << timer.elapsed() << "s)" << std::endl;
-      discretization.visualize(solution, example.static_id() + ".solution", "solution");
-    }
+//    // solve
+//    if (discretization.parametric()) {
+//      info << "discretization is parametric with parameter_type: " << discretization.parameter_type() << std::endl;
+//      const auto& config = discreteProblem.config();
+//      if (config.has_sub("parameter")) {
+//        const auto parameters = config.sub("parameter");
+//        size_t pp = 0;
+//        while (parameters.has_sub(Dune::Stuff::Common::toString(pp))) {
+//          const auto parameter = parameters.sub(Dune::Stuff::Common::toString(pp));
+//          Dune::Pymor::Parameter mu;
+//          for (std::string key : parameter.getValueKeys())
+//            mu.set(key, parameter.get< std::vector< double > >(key));
+//          info << "solving for mu = " << mu << "... " << std::flush;
+//          timer.reset();
+//          discretization.solve(solution, mu);
+//          info << " done (took " << timer.elapsed() << "s)" << std::endl;
+//          discretization.visualize(solution,
+//                                   example.static_id() + ".solution_to_parameter_" + Dune::Stuff::Common::toString(pp),
+//                                   "solution to parameter " + Dune::Stuff::Common::toString(pp));
+//          ++pp;
+//        }
+//      } else
+//        info << "doing nothing, since there is no 'parameter' specified in the config!" << std::endl;
+//    } else {
+//      info << "discretization is not parametric, solving... " << std::flush;
+//      timer.reset();
+//      discretization.solve(solution, Dune::Pymor::Parameter());
+//      info << " done (took " << timer.elapsed() << "s)" << std::endl;
+//      discretization.visualize(solution, example.static_id() + ".solution", "solution");
+//    }
 
-  } // read or write config file
-}
+//  } // read or write config file
+//}
 
 void run_eoc_study(DSC::Configuration& config)
 {
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     DSC::TimedLogger().create(-1, -1);
     DS::threadManager().set_max_threads(1u);
     run_eoc_study(config);
-    run_example(argc, argv);
+//    run_example(argc, argv);
     std::unique_ptr<boost::filesystem::ofstream> of(DSC::make_ofstream(
                            std::string(DSC_CONFIG_GET("global.datadir", "data/")) + std::string("/env.txt")));
     config.report(*of);
