@@ -59,11 +59,12 @@ public:
     if (std::is_same< GridType, Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >::value)
       grid_provider_->grid().globalRefine(1);
 #endif // HAVE_ALUGRID
-  } // Initializer(...)
+    discretization_.init(DSC_LOG_DEBUG_0);
+  } // MpiCGExample(...)
 
   static std::string static_id()
   {
-    return "linearelliptic.cg";
+    return "mpi_cg";
   }
 
   const DiscretizationType& discretization() const
@@ -78,7 +79,6 @@ public:
 
 private:
   TestcaseType testcase_;
-//  ProblemType problem_;
   DiscretizationType discretization_;
 }; // class LinearellipticExampleCG
 
