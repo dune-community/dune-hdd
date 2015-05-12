@@ -378,11 +378,9 @@ protected:
   void finalize_init()
   {
     if (!container_based_initialized_) {
-      if (!matrix_->parametric())
-        matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(matrix_->affine_part()->pruned()));
+      matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(matrix_->pruned());
       for (auto& element : products_)
-        if (!element.second->parametric())
-          element.second = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(element.second->affine_part()->pruned()));
+        element.second = std::make_shared< AffinelyDecomposedMatrixType >(element.second->pruned());
       container_based_initialized_ = true;
     }
   } // ... finalize_init(...)
