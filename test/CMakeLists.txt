@@ -91,7 +91,7 @@ enable_testing()
 #target_link_libraries(test_OS2014_nonparametric_convergence_study lib_test_OS2014_nonparametric_convergence_study)
 #target_link_libraries(test_linearelliptic-block-swipdg lib_test_linearelliptic-block-swipdg)
 #target_link_libraries(test_OS2014-FVCA7-poster lib_test_linearelliptic-block-swipdg)
-target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
+#target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
 #
 ## clang analizer targets (should be guarded)
 ##add_analyze(OS2014.cc)
