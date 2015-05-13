@@ -103,7 +103,7 @@ void run_eoc_study(DSC::Configuration& config)
 //  test_case.problem().visualize(test_case.grid().leafGridView(), "problem");
   disc.init();
   auto options = disc.solver_options();
-  config.add(options, "solver");
+  config.add(options, "solver", true);
   if(!config.has_key("solver.verbose")) config["verbose"] = "6";
   if(!config.has_key("solver.precision")) config["precision"] = "1e-1";
   if(!config.has_key("solver.type")) config["type"] = "bicgstab.amg.ssor";
@@ -112,7 +112,7 @@ void run_eoc_study(DSC::Configuration& config)
 //  test_case.problem().neumann()->affine_part()->visualize(disc.grid_view(), "neumann");
 //  test_case.visualize(test_case.boundary_info());
   try {
-    disc.solve(config.sub("solver"), solution);
+    disc.solve(config.sub("solver"), solution, Dune::Pymor::Parameter("mu", 1.0));
     double min = std::numeric_limits< double >::max();
     for (const auto& element : solution)
       min = std::min(min, element);
