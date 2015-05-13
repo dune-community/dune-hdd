@@ -84,10 +84,15 @@ void run_eoc_study(DSC::Configuration& config)
   using namespace Dune::HDD;
 //  typedef Dune::SPGrid< double, 3 > SPG3;
   typedef Dune::SPGrid< double, 2 > SPG2;
-  typedef LinearElliptic::TestCases::ESV2007< SPG2 > TestCase;
+  typedef LinearElliptic::TestCases::Spe10::ParametricModel1< SPG2 > TestCase;
 
 //  typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TestCase;
-  TestCase test_case(0, config.get<size_t>("grids.refinements", 4u));
+//  TestCase test_case(0, config.get<size_t>("grids.refinements", 4u));
+  TestCase test_case({{"mu",     Dune::Pymor::Parameter("mu", 1)},
+                      {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
+                      {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
+                      {"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+                      {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}}, config.get<size_t>("grids.refinements", 4u));
   test_case.print_header(DSC_LOG_INFO_0);
   DSC_LOG_INFO << std::endl;
   LinearElliptic::Tests::CGStudy< TestCase, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >

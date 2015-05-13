@@ -91,19 +91,19 @@ enable_testing()
 #target_link_libraries(test_OS2014_nonparametric_convergence_study lib_test_OS2014_nonparametric_convergence_study)
 #target_link_libraries(test_linearelliptic-block-swipdg lib_test_linearelliptic-block-swipdg)
 #target_link_libraries(test_OS2014-FVCA7-poster lib_test_linearelliptic-block-swipdg)
-#target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
+target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
 #
 ## clang analizer targets (should be guarded)
 ##add_analyze(OS2014.cc)
 ##target_link_libraries(analyze_OS2014.cc lib_test_OS2014)
 #
-## link spe10 data file if present
-#if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
-#  set (SPE10MODEL1DATA_TARGET_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/perm_case1.dat")
-#  if (NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
-#    execute_process(COMMAND ln -s "${SPE10MODEL1DATA}" "${SPE10MODEL1DATA_TARGET_FILENAME}")
-#  endif(NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
-#endif (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
+# link spe10 data file if present
+if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
+ set (SPE10MODEL1DATA_TARGET_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/perm_case1.dat")
+ if (NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
+   execute_process(COMMAND ln -s "${SPE10MODEL1DATA}" "${SPE10MODEL1DATA_TARGET_FILENAME}")
+ endif(NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
+endif (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
 
 if (NOT ${SPE10MODEL2DATA} STREQUAL "SPE10MODEL2DATA-NOTFOUND")
   set (SPE10MODEL2DATA_TARGET_FILENAME "${CMAKE_CURRENT_BINARY_DIR}/perm_case2a.dat")

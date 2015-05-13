@@ -12,6 +12,8 @@
 #include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/linearelliptic/problems/spe10model2.hh>
 #include <dune/hdd/linearelliptic/testcases/spe10model2.hh>
+#include <dune/hdd/linearelliptic/problems/spe10.hh>
+#include <dune/hdd/linearelliptic/testcases/spe10.hh>
 
 class MpiCGExample
 {
@@ -24,15 +26,19 @@ public:
   static constexpr unsigned int dimRange = 1;
   typedef typename DSG::Entity<typename GridType::LeafGridView>::Type EntityType;
 
-  typedef Dune::HDD::LinearElliptic::Problems::ESV2007
+//  typedef Dune::HDD::LinearElliptic::Problems::ESV2007
+//      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
+//  typedef Dune::HDD::LinearElliptic::TestCases::ESV2007
+//      < GridType > TestcaseType;
+
+  typedef Dune::HDD::LinearElliptic::Problems::Spe10::Model1
       < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
-  typedef Dune::HDD::LinearElliptic::TestCases::ESV2007
+  typedef Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricModel1
       < GridType > TestcaseType;
 
 
-
 public:
-  MpiCGExample(const std::size_t num_refinements = 5,
+  MpiCGExample(const std::size_t num_refinements = 0,
               const DUNE_STUFF_SSIZE_T info_log_levels = 0,
               const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
               const bool enable_warnings = true,
@@ -40,7 +46,11 @@ public:
                const std::string info_color  = DSC::TimedLogging::default_info_color(),
                const std::string debug_color = DSC::TimedLogging::default_debug_color(),
                const std::string warn_color  = DSC::TimedLogging::default_warning_color())
-    : testcase_(0, num_refinements)
+    : testcase_( {{"mu",     Dune::Pymor::Parameter("mu", 1)},
+                  {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
+                  {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
+                  {"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+                  {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}}, num_refinements)
     , discretization_(testcase_,
                       testcase_.boundary_info(),
                       testcase_.problem())

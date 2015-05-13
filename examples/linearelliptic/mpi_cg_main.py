@@ -21,7 +21,7 @@ if not os.path.exists(settingsFilename):
 discretization = example.discretization()
 if discretization.parametric():
     # solve
-    mu = mpi_cg_bindings.Dune.Pymor.Parameter('diffusion_factor', [0.1, 1.0, 0.1, 1.0])
+    mu = mpi_cg_bindings.Dune.Pymor.Parameter('mu', [0.1])
     print('')
     print('solving for parameter mu = {}... '.format(mu.report()), end='')
     vector = discretization.create_vector()
