@@ -493,7 +493,10 @@ class Model1
   static std::shared_ptr< GridType > create_initial_grid(const int refinements)
   {
     auto grid = Stuff::Grid::Providers::Cube< GridType >::create(Model1BaseType::configuration(""))->grid_ptr();
+    grid->preAdapt();
     grid->globalRefine(refinements);
+    grid->postAdapt();
+    grid->loadBalance();
     return grid;
   } // ... create_initial_grid(...)
 
@@ -517,7 +520,10 @@ class ParametricModel1
   static std::shared_ptr< GridType > create_initial_grid(const int refinements)
   {
     auto grid = Stuff::Grid::Providers::Cube< GridType >::create(Model1BaseType::configuration(""))->grid_ptr();
+    grid->preAdapt();
     grid->globalRefine(refinements);
+    grid->postAdapt();
+    grid->loadBalance();
     return grid;
   } // ... create_initial_grid(...)
 
