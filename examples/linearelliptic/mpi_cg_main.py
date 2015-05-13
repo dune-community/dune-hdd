@@ -9,8 +9,8 @@ from __future__ import print_function
 import os
 
 from mpi4py import MPI
-comm = MPI.COMM_WORLD 
-import mpi_cg_bindings 
+comm = MPI.COMM_WORLD
+import mpi_cg_bindings
 
 # create example and write settings file
 example = mpi_cg_bindings.MpiCGExample()

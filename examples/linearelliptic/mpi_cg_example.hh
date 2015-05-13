@@ -31,18 +31,18 @@ public:
 //  typedef Dune::HDD::LinearElliptic::TestCases::ESV2007
 //      < GridType > TestcaseType;
 
-  typedef Dune::HDD::LinearElliptic::Problems::Spe10::Model1
-      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
+//  typedef Dune::HDD::LinearElliptic::Problems::Spe10::Model1
+//      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
   typedef Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricModel1
       < GridType > TestcaseType;
 
 
 public:
   MpiCGExample(const std::size_t num_refinements = 0,
-              const DUNE_STUFF_SSIZE_T info_log_levels = 0,
-              const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
-              const bool enable_warnings = true,
-              const bool enable_colors = true,
+               const DUNE_STUFF_SSIZE_T info_log_levels = 0,
+               const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
+               const bool enable_warnings = true,
+               const bool enable_colors = true,
                const std::string info_color  = DSC::TimedLogging::default_info_color(),
                const std::string debug_color = DSC::TimedLogging::default_debug_color(),
                const std::string warn_color  = DSC::TimedLogging::default_warning_color())

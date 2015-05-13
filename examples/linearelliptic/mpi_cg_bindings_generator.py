@@ -36,16 +36,15 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         )
     # then add the example
     MpiCGExample = module.add_class('MpiCGExample',
-                                               
-                                               custom_name='MpiCGExample')
+                                    custom_name='MpiCGExample')
     MpiCGExample.add_method('static_id',
-                                       retval('std::string'),
-                                       [], is_const=True, throw=exceptions)
+                            retval('std::string'),
+                            [], is_const=True, throw=exceptions)
     MpiCGExample.add_constructor([], throw=exceptions)
     MpiCGExample.add_method('discretization_and_return_ptr',
-                                       retval(DiscretizationFullName + ' *', caller_owns_return=True),
-                                       [], is_const=True, throw=exceptions,
-                                       custom_name='discretization')
+                            retval(DiscretizationFullName + ' *', caller_owns_return=True),
+                            [], is_const=True, throw=exceptions,
+                            custom_name='discretization')
 
 if __name__ == '__main__':
     # prepare the module
