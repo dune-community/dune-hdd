@@ -77,7 +77,7 @@ public:
                                                           default_config().get< size_t >("integration_order")));
   } // ... create(...)
 
-  Spe10Model2(const size_t integration_order = default_config().get< size_t >("integration_order"))
+  Spe10Model2(const size_t /*integration_order*/ = default_config().get< size_t >("integration_order"))
     : BaseType(std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(1, "diffusion_factor")),
                std::make_shared< MatrixFunctionType >(new Spe10FunctionType()),
                std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(0, "force")),

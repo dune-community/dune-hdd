@@ -10,8 +10,8 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
-#include <dune/common/static_assert.hh>
 #include <dune/common/timer.hh>
+#include <dune/common/typetraits.hh>
 
 #if HAVE_DUNE_GRID_MULTISCALE
 # include <dune/grid/multiscale/provider/cube.hh>
