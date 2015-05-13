@@ -292,8 +292,7 @@ protected:
   {
     int ret = 0;
 #if HAVE_ALUGRID
-    if (std::is_same< GridType, ALUConformGrid< 2, 2 > >::value
-        || std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
+    if (std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
       ret += 1;
 #endif // HAVE_ALUGRID
     return ret;
@@ -386,8 +385,7 @@ protected:
   {
     int ret = 1;
 #if HAVE_ALUGRID
-    if (std::is_same< GridType, ALUConformGrid< 2, 2 > >::value
-        || std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
+    if (std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
       ret += 1;
 #endif // HAVE_ALUGRID
     return ret;

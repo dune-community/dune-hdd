@@ -47,8 +47,7 @@ protected:
   {
     int ret = 0;
 #if HAVE_ALUGRID
-    if (std::is_same< GridType, ALUConformGrid< 3, 3 > >::value
-        || std::is_same< GridType, ALUGrid< 3, 3, simplex, conforming > >::value)
+    if (std::is_same< GridType, ALUGrid< 3, 3, simplex, conforming > >::value)
       ret += 1;
 #endif // HAVE_ALUGRID
     return ret;

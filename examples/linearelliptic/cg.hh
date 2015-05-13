@@ -99,7 +99,7 @@ extern template class LinearellipticExampleCG< Dune::YaspGrid< 3 > >;
 #if HAVE_ALUGRID
 #   include <dune/stuff/common/reenable_warnings.hh>
 
-extern template class LinearellipticExampleCG< Dune::ALUConformGrid< 2, 2 > >;
+//extern template class LinearellipticExampleCG< Dune::ALUConformGrid< 2, 2 > >;
 
 
 #endif // HAVE_ALUGRID

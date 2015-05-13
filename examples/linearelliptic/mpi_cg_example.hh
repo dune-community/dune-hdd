@@ -64,11 +64,6 @@ public:
                                 warn_color);
 
     DSC::TimedLogger().get("cg.thermalblock.example").info() << "creating grid and problem... " << std::endl;
-
-#if HAVE_ALUGRID
-    if (std::is_same< GridType, Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >::value)
-      grid_provider_->grid().globalRefine(1);
-#endif // HAVE_ALUGRID
     discretization_.init(DSC_LOG_DEBUG_0);
   } // MpiCGExample(...)
 
