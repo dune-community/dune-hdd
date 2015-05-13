@@ -14,9 +14,6 @@ import mpi_cg_bindings
 
 # create example and write settings file
 example = mpi_cg_bindings.MpiCGExample()
-settingsFilename = 'foo'
-if not os.path.exists(settingsFilename):
-    example.write_config_file()
 
 discretization = example.discretization()
 if discretization.parametric():
