@@ -21,6 +21,7 @@
 
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/common/timedlogging.hh>
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/ranges.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
@@ -144,5 +145,124 @@ private:
   DiscretizationType discretization_;
 }; // class CgExample
 
+
+/**
+    Orthonormalize a |VectorArray| using the stabilized Gram-Schmidt algorithm.
+
+    Parameters
+    ----------
+    A
+        The |VectorArray| which is to be orthonormalized.
+    product
+        The scalar product w.r.t. which to orthonormalize, given as a linear
+        |Operator|. If `None` the Euclidean product is used.
+    atol
+        Vectors of norm smaller than `atol` are removed from the array.
+    rtol
+        Relative tolerance used to detect linear dependent vectors
+        (which are then removed from the array).
+    offset
+        Assume that the first `offset` vectors are already orthogonal and start the
+        algorithm at the `offset + 1`-th vector.
+    find_duplicates
+        If `True`, eliminate duplicate vectors before the main loop.
+    reiterate
+        If `True`, orthonormalize again if the norm of the orthogonalized vector is
+        much smaller than the norm of the original vector.
+    reiteration_threshold
+        If `reiterate` is `True`, re-orthonormalize if the ratio between the norms of
+        the orthogonalized vector and the original vector is smaller than this value.
+    check
+        If `True`, check if the resulting VectorArray is really orthonormal.
+    check_tol
+        Tolerance for the check.
+    copy
+        If `True`, create a copy of `A` instead of modifying `A` itself.
+
+
+    Returns
+    -------
+    The orthonormalized |VectorArray|.
+  **/
+template< class VectorType >
+std::vector< VectorType > gram_schmidt(const std::vector< VectorType >& A,
+                                       const bool reiterate = true,
+                                       const bool check = true,
+                                       const double atol = 1e-13,
+                                       const double rtol = 1e-13,
+                                       const DUNE_STUFF_SSIZE_T offset = 0,
+                                       const double reiteration_threshold = 1e-1,
+                                       const double check_tol = 1e-3)
+{
+  if (offset < 0)
+    DUNE_THROW(Dune::Stuff::Exceptions::index_out_of_range, offset);
+  auto logger = DSC::TimedLogger().get("gram_schmidt");
+
+  auto ret = A;
+
+  // main loop
+  std::set< size_t > remove;
+  for (size_t i = offset; i < ret.size(); ++i) {
+    // first calculate norm
+    const double initial_norm = ret[i].l2_norm();
+
+    if (initial_norm < atol) {
+      logger.info() << "Removing vector " << i << " of norm " << initial_norm << std::endl;
+      remove.insert(i);
+    }
+
+    if (i == 0)
+      ret[0].scal(1./initial_norm);
+    else {
+      bool first_iteration = true;
+      double norm = initial_norm;
+      double old_norm = initial_norm;
+      // If reiterate is true, reiterate as long as the norm of the vector changes
+      // strongly during orthonormalization (due to Andreas Buhr).
+      while (first_iteration || reiterate && norm/old_norm < reiteration_threshold) {
+
+        if (first_iteration)
+          first_iteration = false;
+        else
+          logger.info() << "Orthonormalizing vector " << i << " again" << std::endl;
+
+        // orthogonalize to all vectors left
+        for (size_t j = 0; j < i; ++j) {
+          if (remove.find(j) != remove.end())
+            continue;
+          const double p = ret[i].dot(ret[j]);
+          ret[i].axpy(-p, ret[j]);
+        }
+
+        // calculate new norm
+        old_norm = norm;
+        norm = ret[i].l2_norm();
+
+        // remove vector if it got too small:
+        if (norm/initial_norm < rtol) {
+          logger.info() << "Removing linear dependent vector " << i << std::endl;
+          remove.insert(i);
+          break;
+        }
+      }
+      ret[i].scal(1./norm);
+    }
+  }
+
+  for (const size_t& i : remove)
+    ret.erase(ret.begin() + i);
+
+  if (check) {
+    for (size_t i = offset; i < ret.size(); ++i)
+      for (size_t j = i; j < ret.size(); ++j)
+        if (std::abs(ret[i].dot(ret[j])) - (i == j ? 1. : 0.) > check_tol)
+          DUNE_THROW(Dune::MathError,
+                     "result not orthogonal: \n"
+                     << "  A[i]*A[j] = " << ret[i].dot(ret[j]) << "\n"
+                     << "  i = " << i << "\n"
+                     << "  j = " << j);
+  }
+  return ret;
+} // ... gram_schmidt(...)
 
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH

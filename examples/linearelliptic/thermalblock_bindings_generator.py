@@ -19,9 +19,9 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     HAVE_DUNE_ISTL   = CONFIG_H['HAVE_DUNE_ISTL']
     HAVE_EIGEN       = CONFIG_H['HAVE_EIGEN']
     HAVE_ALUGRID     = CONFIG_H['HAVE_ALUGRID']
+    RangeFieldType = 'double'
     def add_example(GridType, space_backend, la_backend, name):
         # build all types needed for the discretization
-        RangeFieldType = 'double'
         dimRange = '1'
         polOrder = '1'
         grid_layer = 'Dune::Stuff::Grid::ChooseLayer::leaf'
@@ -114,7 +114,35 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            retval(DiscretizationType + ' *', caller_owns_return=True),
                            [], is_const=True, throw=exceptions,
                            custom_name='discretization')
-    # YaspGrid2d = 'Dune::YaspGrid< 2 >'
+    def add_gram_schmidt(la_backend, name):
+        VectorType = 'Dune::Stuff::LA::'
+        if 'eigen_sparse' in la_backend:
+            VectorType += 'EigenDenseVector'
+        elif 'istl_sparse' in la_backend:
+            VectorType += 'IstlDenseVector'
+        VectorType += '< ' + RangeFieldType + ' >'
+        module.add_function('gram_schmidt',
+                            retval('std::vector< ' + VectorType + ' >'),
+                            [param('const std::vector< ' + VectorType + ' >&', 'A'),
+                             param('const bool', 'reiterate'),
+                             param('const bool', 'check'),
+                             param('const double', 'atol'),
+                             param('const double', 'rtol'),
+                             param('const ' + ssize_t, 'offset'),
+                             param('const double', 'reiteration_threshold'),
+                             param('const double', 'check_tol')],
+                            throw=exceptions,
+                            template_parameters=[VectorType],
+                            custom_name='gram_schmidt_' + name)
+        module.add_function('gram_schmidt',
+                            retval('std::vector< ' + VectorType + ' >'),
+                            [param('const std::vector< ' + VectorType + ' >&', 'A'),
+                             param('const bool', 'reiterate'),
+                             param('const bool', 'check')],
+                            throw=exceptions,
+                            template_parameters=[VectorType],
+                            custom_name='gram_schmidt_' + name)
+    # YaSpGrid2d = 'Dune::YaspGrid< 2 >'
     # YaspGrid3d = 'Dune::YaspGrid< 3 >'
     if HAVE_ALUGRID:
         AluGridConform2d = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
@@ -146,6 +174,10 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_fem,
                         'CG_Thermalblock_2dAluConformGrid_fem_eigen')
+    if HAVE_DUNE_ISTL:
+        add_gram_schmidt(la_backend_istl, 'istl')
+    if HAVE_EIGEN:
+        add_gram_schmidt(la_backend_eigen, 'eigen')
 
 
 if __name__ == '__main__':
