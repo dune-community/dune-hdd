@@ -112,7 +112,9 @@ void run_eoc_study(DSC::Configuration& config)
 //  test_case.problem().neumann()->affine_part()->visualize(disc.grid_view(), "neumann");
 //  test_case.visualize(test_case.boundary_info());
   try {
-    disc.solve(config.sub("solver"), solution, Dune::Pymor::Parameter("mu", 1.0));
+    const auto mu = Dune::Pymor::Parameter("mu", 1.0);
+    const auto sub = config.sub("solver");
+    disc.solve(sub, solution, mu);
     double min = std::numeric_limits< double >::max();
     for (const auto& element : solution)
       min = std::min(min, element);
