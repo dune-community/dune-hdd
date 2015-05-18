@@ -40,13 +40,13 @@ class ContainerBasedDefault;
 namespace internal {
 
 
-template< class MatrixImp, class VectorImp >
+template< class MatrixImp, class VectorImp, class SpaceImp >
 class ContainerBasedDefaultTraits
 {
 public:
   typedef MatrixImp MatrixType;
   typedef VectorImp VectorType;
-  typedef Pymor::Operators::LinearAffinelyDecomposedContainerBased< MatrixType, VectorType > OperatorType;
+  typedef Pymor::Operators::LinearAffinelyDecomposedContainerBased< MatrixType, VectorType, SpaceImp > OperatorType;
   typedef OperatorType ProductType;
   typedef Pymor::Functionals::LinearAffinelyDecomposedVectorBased< VectorType > FunctionalType;
 }; // class ContainerBasedDefaultTraits
@@ -362,7 +362,7 @@ public:
         rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(mu_rhs));
       }
       logger.debug() << "computing system matrix..." << std::endl;
-      const OperatorType lhsOperator(matrix);
+      const OperatorType lhsOperator(matrix, BaseType::ansatz_space_);
       if (lhsOperator.parametric()) {
         const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
         const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);

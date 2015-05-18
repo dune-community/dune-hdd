@@ -60,10 +60,12 @@ template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, in
           Stuff::LA::ChooseBackend la_backend >
 class CGTraits
   : public internal::ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
-                                                  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType >
+                                                  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType,
+    typename GDT::Spaces::CGProvider< GridImp, layer, space_backend, polynomialOrder, RangeFieldImp, rangeDim >::Type>
 {
   typedef internal::ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
-  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType > BaseType;
+                                                    typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType,
+      typename GDT::Spaces::CGProvider< GridImp, layer, space_backend, polynomialOrder, RangeFieldImp, rangeDim >::Type> BaseType;
 public:
   typedef CG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > derived_type;
   typedef GridImp GridType;
