@@ -265,4 +265,93 @@ std::vector< VectorType > gram_schmidt(const std::vector< VectorType >& A,
   return ret;
 } // ... gram_schmidt(...)
 
+template< class VectorType, class MatrixType >
+std::vector< VectorType > gram_schmidt(const std::vector< VectorType >& A,
+                                       const MatrixType& product,
+                                       const bool reiterate = true,
+                                       const bool check = true,
+                                       const double atol = 1e-13,
+                                       const double rtol = 1e-13,
+                                       const DUNE_STUFF_SSIZE_T offset = 0,
+                                       const double reiteration_threshold = 1e-1,
+                                       const double check_tol = 1e-3)
+{
+  if (offset < 0)
+    DUNE_THROW(Dune::Stuff::Exceptions::index_out_of_range, offset);
+  auto logger = DSC::TimedLogger().get("gram_schmidt");
+
+  auto ret = A;
+  VectorType tmp(product.rows());
+
+  // main loop
+  std::set< size_t > remove;
+  for (size_t i = offset; i < ret.size(); ++i) {
+    // first calculate norm
+    product.mv(ret[i], tmp);
+    const double initial_norm = std::sqrt(tmp*ret[i]);
+
+    if (initial_norm < atol) {
+      logger.info() << "Removing vector " << i << " of norm " << initial_norm << std::endl;
+      remove.insert(i);
+    }
+
+    if (i == 0)
+      ret[0].scal(1./initial_norm);
+    else {
+      bool first_iteration = true;
+      double norm = initial_norm;
+      double old_norm = initial_norm;
+      // If reiterate is true, reiterate as long as the norm of the vector changes
+      // strongly during orthonormalization (due to Andreas Buhr).
+      while (first_iteration || reiterate && norm/old_norm < reiteration_threshold) {
+
+        if (first_iteration)
+          first_iteration = false;
+        else
+          logger.info() << "Orthonormalizing vector " << i << " again" << std::endl;
+
+        // orthogonalize to all vectors left
+        for (size_t j = 0; j < i; ++j) {
+          if (remove.find(j) != remove.end())
+            continue;
+          product.mv(ret[i], tmp);
+          const double p = tmp*ret[j];
+          ret[i].axpy(-p, ret[j]);
+        }
+
+        // calculate new norm
+        old_norm = norm;
+        product.mv(ret[i], tmp);
+        norm = std::sqrt(tmp*ret[i]);
+
+        // remove vector if it got too small:
+        if (norm/initial_norm < rtol) {
+          logger.info() << "Removing linear dependent vector " << i << std::endl;
+          remove.insert(i);
+          break;
+        }
+      }
+      ret[i].scal(1./norm);
+    }
+  }
+
+  for (const size_t& i : remove)
+    ret.erase(ret.begin() + i);
+
+  if (check) {
+    for (size_t i = offset; i < ret.size(); ++i) {
+      product.mv(ret[i], tmp);
+      for (size_t j = i; j < ret.size(); ++j) {
+        if (tmp*ret[j] - (i == j ? 1. : 0.) > check_tol)
+          DUNE_THROW(Dune::MathError,
+                     "result not orthogonal: \n"
+                     << "  product.apply2(A[i], A[j]) = " << tmp*ret[j] << "\n"
+                     << "  i = " << i << "\n"
+                     << "  j = " << j);
+      }
+    }
+  }
+  return ret;
+} // ... gram_schmidt(...)
+
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
