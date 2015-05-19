@@ -22,7 +22,7 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_cg
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 ADD_EXECUTABLE(mpi_cg_main "mpi_cg_main.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(mpi_cg_main
+TARGET_LINK_LIBRARIES(mpi_cg_main 
                       dunehdd-linearelliptic-cg 
                       ${COMMON_LIBS} )
 
@@ -64,6 +64,7 @@ add_python_bindings(mpi_cg_bindings
 #        example_linearelliptic_thermalblock
 #        linearellipticexampleOS2014)
 foreach(target
+	dunehdd-linearelliptic-cg
         mpi_cg_main
         mpi_cg_bindings
         example_linearelliptic_cg
@@ -76,6 +77,8 @@ foreach(target
   add_dune_tbb_flags(${target})
   add_dune_alugrid_flags(${target})
   add_dune_mpi_flags(${target})
+  target_link_libraries(${target} parmetis )
+  add_dune_alugrid_flags(${target})
 endforeach(_target)
 
 # link spe10 data file if present
