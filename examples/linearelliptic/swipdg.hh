@@ -91,7 +91,7 @@ extern template class LinearellipticExampleSWIPDG< Dune::SGrid< 1, 1 > >;
 
 # if HAVE_ALUGRID
 
-extern template class LinearellipticExampleSWIPDG< Dune::ALUConformGrid< 2, 2 > >;
+//extern template class LinearellipticExampleSWIPDG< Dune::ALUConformGrid< 2, 2 > >;
 
 
 # endif // HAVE_ALUGRID
