@@ -66,7 +66,8 @@ public:
                                 debug_color,
                                 warn_color);
     } catch (Dune::Stuff::Exceptions::you_are_using_this_wrong&) {}
-    DSC::TimedLogger().get("cg.thermalblock.example").info() << "creating grid and problem... " << std::endl;
+    auto logger = DSC::TimedLogger().get("cg.thermalblock.example");
+    logger.info() << "creating grid... " << std::flush;
     grid_provider_ = GridProviderType::create(GridProviderType::default_config().add(DSC::Configuration("num_elements",
                                                                                                         num_grid_elements),
                                                                                      "",
@@ -75,6 +76,7 @@ public:
     if (std::is_same< GridType, Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >::value)
       grid_provider_->grid().globalRefine(1);
 #endif // HAVE_ALUGRID
+    logger.info() << "done (has " << grid_provider_->grid().size(0) << " elements)" << std::endl;
   } // Initializer(...)
 
 protected:
@@ -129,9 +131,7 @@ public:
     auto logger = DSC::TimedLogger().get("cg.thermalblock.example");
     logger.info() << "initializing discretization... " << std::flush;
     discretization_.init();
-    logger.info() << "done (grid has " << discretization_.grid_view().indexSet().size(0)
-                  << " elements, discretization has " << discretization_.ansatz_space().mapper().size() << " DoFs)"
-                  << std::endl;
+    logger.info() << "done (has " << discretization_.ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // ... CgExample(...)
 
   DiscretizationType& discretization()
