@@ -28,13 +28,13 @@ public:
 
 //  typedef Dune::HDD::LinearElliptic::Problems::ESV2007
 //      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
-//  typedef Dune::HDD::LinearElliptic::TestCases::ESV2007
-//      < GridType > TestcaseType;
+  typedef Dune::HDD::LinearElliptic::TestCases::ESV2007
+      < GridType > TestcaseType;
 
 //  typedef Dune::HDD::LinearElliptic::Problems::Spe10::Model1
 //      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
-  typedef Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricModel1
-      < GridType > TestcaseType;
+//  typedef Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricModel1
+//      < GridType > TestcaseType;
 
 
 public:
@@ -46,11 +46,11 @@ public:
                const std::string info_color  = DSC::TimedLogging::default_info_color(),
                const std::string debug_color = DSC::TimedLogging::default_debug_color(),
                const std::string warn_color  = DSC::TimedLogging::default_warning_color())
-    : testcase_( {{"mu",     Dune::Pymor::Parameter("mu", 1)},
+    : testcase_( 0 /*{{"mu",     Dune::Pymor::Parameter("mu", 1)},
                   {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
                   {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
                   {"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
-                  {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}}, num_refinements)
+                  {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}}*/, num_refinements)
     , discretization_(testcase_,
                       testcase_.boundary_info(),
                       testcase_.problem())

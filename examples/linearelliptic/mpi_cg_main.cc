@@ -18,6 +18,8 @@
 #include <dune/hdd/linearelliptic/testcases/spe10model2.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/test/linearelliptic_cg.hh>
+#include <dune/grid/alugrid.hh>
+#include <dune/grid/uggrid.hh>
 
 //void run_example(int argc, char** argv)
 //{
@@ -84,15 +86,20 @@ void run_eoc_study(DSC::Configuration& config)
   using namespace Dune::HDD;
 //  typedef Dune::SPGrid< double, 3 > SPG3;
   typedef Dune::SPGrid< double, 2 > SPG2;
-  typedef LinearElliptic::TestCases::Spe10::ParametricModel1< SPG2 > TestCase;
+//  typedef Dune::YaspGrid< 2 > SPG2;
+//  typedef Dune::UGGrid< 2 > SPG2;
+//  typedef Dune::ALUGrid< 2, 2, simplex, conforming, MPI_Comm > SPG2;
+  typedef LinearElliptic::TestCases::ESV2007< SPG2 > TestCase;
+//  typedef LinearElliptic::TestCases::Spe10::Model1< SPG2 > TestCase;
 
 //  typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TestCase;
-//  TestCase test_case(0, config.get<size_t>("grids.refinements", 4u));
-  TestCase test_case({{"mu",     Dune::Pymor::Parameter("mu", 1)},
-                      {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
-                      {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
-                      {"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
-                      {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}}, config.get<size_t>("grids.refinements", 4u));
+  constexpr auto min_refine = 2u;
+  TestCase test_case(min_refine, config.get<size_t>("grids.refinements", 4u));
+//  TestCase test_case({{"mu",     Dune::Pymor::Parameter("mu", 1)},
+//                      {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
+//                      {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
+//                      {"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
+//                      {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}}, config.get<size_t>("grids.refinements", 4u));
   test_case.print_header(DSC_LOG_INFO_0);
   DSC_LOG_INFO << std::endl;
   LinearElliptic::Tests::CGStudy< TestCase, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >
@@ -102,28 +109,29 @@ void run_eoc_study(DSC::Configuration& config)
             test_case.level_of(0));
 //  test_case.problem().visualize(test_case.grid().leafGridView(), "problem");
   disc.init();
-  auto options = disc.solver_options();
-  config.add(options, "solver", true);
-  if(!config.has_key("solver.verbose")) config["verbose"] = "6";
-  if(!config.has_key("solver.precision")) config["precision"] = "1e-1";
-  if(!config.has_key("solver.type")) config["type"] = "bicgstab.amg.ssor";
-  if(!config.has_key("solver.max_iter")) config["max_iter"] = "700";
   auto solution = disc.create_vector();
-//  test_case.problem().neumann()->affine_part()->visualize(disc.grid_view(), "neumann");
+  test_case.problem().visualize(disc.grid_view(), "foo");
+
 //  test_case.visualize(test_case.boundary_info());
   try {
     const auto mu = Dune::Pymor::Parameter("mu", 1.0);
     const auto sub = config.sub("solver");
-    disc.solve(sub, solution, mu);
+//    disc.solve(sub, solution, mu);
+    disc.solve(sub, solution);
     double min = std::numeric_limits< double >::max();
     for (const auto& element : solution)
       min = std::min(min, element);
 
-    solution += std::abs(min) + 0.1;
-    DSC_LOG_INFO_0 << "Min " << min << " \n";
-  }
-   catch (Dune::Stuff::Exceptions::linear_solver_failed) {
-
+    const double all_min = test_case.grid().comm().min(min);
+    constexpr double target = 1.0;
+    const double shift = target - all_min;
+    solution += std::abs(all_min) + 0.1;
+    solution += shift;
+    DSC_LOG_INFO_0 << "Min " << all_min << "Shift " << shift << " \n";
+    DSC_LOG_DEBUG << test_case.grid().comm().rank() << " | "<< test_case.grid().comm().size() << std::endl;
+   }
+   catch (Dune::Stuff::Exceptions::linear_solver_failed& e) {
+    DSC_LOG_ERROR <<  e.what();
   }
   disc.visualize(solution, "spe10_solution", "solution");
 }

@@ -14,35 +14,34 @@ from dune.pymor.discretizations import inject_StationaryDiscretizationImplementa
 def inject_Example(module, exceptions, interfaces, CONFIG_H):
     '''injects the user code into the module'''
     # first the discretization
-    GridType = 'Dune::SPGrid< double, 2 >'
-    GridLayerType = 'Dune::Stuff::Grid::ChooseLayer::leaf'
-    RangeFieldType = 'double'
-    dimRange = '1'
-    polOrder = '1'
-    SpaceBackendType = 'Dune::GDT::ChooseSpaceBackend::pdelab'
-    LaBackendType = 'Dune::Stuff::LA::ChooseBackend::istl_sparse'
-    assert 'istl_sparse' in LaBackendType
-    MatrixType = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + RangeFieldType + ' >'
-    VectorType = 'Dune::Stuff::LA::IstlDenseVector< ' + RangeFieldType + ' >'
-    DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::MpiCG'
-    DiscretizationFullName = DiscretizationName
+    gridtype = 'Dune::SPGrid< double, 2 >'
+    gridlayertype = 'Dune::Stuff::Grid::ChooseLayer::leaf'
+    rangefieldtype = 'double'
+    matrixtype = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + rangefieldtype + ' >'
+    vectortype = 'Dune::Stuff::LA::IstlDenseVector< ' + rangefieldtype + ' >'
+    discretizationname = 'Dune::HDD::LinearElliptic::Discretizations::MpiCG'
+    discretizationfullname = discretizationname
+
+    view_type = 'Dune::GridView< SPGridViewTraits< const {}, Dune::All_Partition > >'.format(gridtype)
+    space_type = 'Dune::GDT::Spaces::CG:PdelabBased< {}, 1, double >'.format(view_type)
+    operator_type = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased<{},{},{} >'.format(matrixtype, vectortype, space_type)
     discretization = inject_StationaryDiscretizationImplementation(
         module, exceptions, interfaces, CONFIG_H,
-        DiscretizationName,
-        Traits={'VectorType': VectorType,
-                'OperatorType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >',
-                'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >',
-                'ProductType': 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' > '},
+        discretizationname,
+        Traits={'VectorType': vectortype,
+                'OperatorType': operator_type,
+                'FunctionalType': 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< {} >'.format(vectortype),
+                'ProductType': operator_type}
         )
     # then add the example
-    MpiCGExample = module.add_class('MpiCGExample',
+    mpicgexample = module.add_class('MpiCGExample',
                                     custom_name='MpiCGExample')
-    MpiCGExample.add_method('static_id',
+    mpicgexample.add_method('static_id',
                             retval('std::string'),
                             [], is_const=True, throw=exceptions)
-    MpiCGExample.add_constructor([], throw=exceptions)
-    MpiCGExample.add_method('discretization_and_return_ptr',
-                            retval(DiscretizationFullName + ' *', caller_owns_return=True),
+    mpicgexample.add_constructor([], throw=exceptions)
+    mpicgexample.add_method('discretization_and_return_ptr',
+                            retval(discretizationfullname + ' *', caller_owns_return=True),
                             [], is_const=True, throw=exceptions,
                             custom_name='discretization')
 
