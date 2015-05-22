@@ -115,25 +115,16 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            [], is_const=True, throw=exceptions,
                            custom_name='discretization')
     def add_gram_schmidt(la_backend, name):
+        MatrixType = 'Dune::Stuff::LA::'
         VectorType = 'Dune::Stuff::LA::'
         if 'eigen_sparse' in la_backend:
+            MatrixType += 'EigenRowMajorSparseMatrix'
             VectorType += 'EigenDenseVector'
         elif 'istl_sparse' in la_backend:
+            MatrixType += 'IstlRowMajorSparseMatrix'
             VectorType += 'IstlDenseVector'
+        MatrixType += '< ' + RangeFieldType + ' >'
         VectorType += '< ' + RangeFieldType + ' >'
-        module.add_function('gram_schmidt',
-                            retval('std::vector< ' + VectorType + ' >'),
-                            [param('const std::vector< ' + VectorType + ' >&', 'A'),
-                             param('const bool', 'reiterate'),
-                             param('const bool', 'check'),
-                             param('const double', 'atol'),
-                             param('const double', 'rtol'),
-                             param('const ' + ssize_t, 'offset'),
-                             param('const double', 'reiteration_threshold'),
-                             param('const double', 'check_tol')],
-                            throw=exceptions,
-                            template_parameters=[VectorType],
-                            custom_name='gram_schmidt_' + name)
         module.add_function('gram_schmidt',
                             retval('std::vector< ' + VectorType + ' >'),
                             [param('const std::vector< ' + VectorType + ' >&', 'A'),
@@ -141,6 +132,15 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                              param('const bool', 'check')],
                             throw=exceptions,
                             template_parameters=[VectorType],
+                            custom_name='gram_schmidt_' + name)
+        module.add_function('gram_schmidt',
+                            retval('std::vector< ' + VectorType + ' >'),
+                            [param('const std::vector< ' + VectorType + ' >&', 'A'),
+                             param('const ' + MatrixType + '&', 'product'),
+                             param('const bool', 'reiterate'),
+                             param('const bool', 'check')],
+                            throw=exceptions,
+                            template_parameters=[VectorType, MatrixType],
                             custom_name='gram_schmidt_' + name)
     # YaSpGrid2d = 'Dune::YaspGrid< 2 >'
     # YaspGrid3d = 'Dune::YaspGrid< 3 >'
