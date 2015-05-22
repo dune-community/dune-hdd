@@ -8,13 +8,13 @@ import sys
 from pybindgen import param, retval
 
 from dune.pymor.core import prepare_python_bindings, inject_lib_dune_pymor, finalize_python_bindings
+from dune.pymor.core.bindings import inject_spaces
 from dune.pymor.discretizations import inject_StationaryDiscretizationImplementation
 
 
-def inject_Example(module, exceptions, interfaces, CONFIG_H):
+def inject_Example(module, exceptions, interfaces, CONFIG_H, gridtype, view_type, space_type):
     '''injects the user code into the module'''
-    # first the discretization
-    gridtype = 'Dune::SPGrid< double, 2 >'
+
     gridlayertype = 'Dune::Stuff::Grid::ChooseLayer::leaf'
     rangefieldtype = 'double'
     matrixtype = 'Dune::Stuff::LA::IstlRowMajorSparseMatrix< ' + rangefieldtype + ' >'
@@ -22,8 +22,6 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     discretizationname = 'Dune::HDD::LinearElliptic::Discretizations::MpiCG'
     discretizationfullname = discretizationname
 
-    view_type = 'Dune::GridView< SPGridViewTraits< const {}, Dune::All_Partition > >'.format(gridtype)
-    space_type = 'Dune::GDT::Spaces::CG:PdelabBased< {}, 1, double >'.format(view_type)
     operator_type = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased<{},{},{} >'.format(matrixtype, vectortype, space_type)
     discretization = inject_StationaryDiscretizationImplementation(
         module, exceptions, interfaces, CONFIG_H,
@@ -49,8 +47,13 @@ if __name__ == '__main__':
     # prepare the module
     module, pybindgen_filename, config_h_filename = prepare_python_bindings(sys.argv[1:])
     # add all of libdunepymor
-    module, exceptions, interfaces, CONFIG_H = inject_lib_dune_pymor(module, config_h_filename)
+    gridtype = 'Dune::SPGrid< double, 2 >'
+    view_type = 'Dune::GridView< Dune::SPGridViewTraits< const {}, Dune::All_Partition > >'.format(gridtype)
+
+    module, space_type = inject_spaces(module, view_type)
+    module, exceptions, interfaces, CONFIG_H = inject_lib_dune_pymor(module, config_h_filename,
+                                                                     view_type, space_type)
     # add example user code (see above)
-    inject_Example(module, exceptions, interfaces, CONFIG_H)
+    inject_Example(module, exceptions, interfaces, CONFIG_H, gridtype, view_type, space_type)
     # and finally write the pybindgen .cc file
     finalize_python_bindings(module, pybindgen_filename)

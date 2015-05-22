@@ -268,7 +268,7 @@ public:
   OperatorType get_operator() const
   {
     assert_everything_is_ready();
-    return OperatorType(*matrix_);
+    return OperatorType(*matrix_, BaseType::ansatz_space_);
   }
 
   FunctionalType get_rhs() const
@@ -295,7 +295,7 @@ public:
     const auto result = products_.find(id);
     if (result == products_.end())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, id);
-    return ProductType(*(result->second));
+    return ProductType(*(result->second), BaseType::ansatz_space_);
   } // ... get_product(...)
 
   std::vector< std::string > available_vectors() const
@@ -400,6 +400,7 @@ protected:
   std::shared_ptr< AffinelyDecomposedVectorType > rhs_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedMatrixType > > products_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedVectorType > > vectors_;
+
 }; // class ContainerBasedDefault
 
 
