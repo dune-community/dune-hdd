@@ -38,14 +38,7 @@ public:
 
 
 public:
-  MpiCGExample(const std::size_t num_refinements = 0,
-               const DUNE_STUFF_SSIZE_T info_log_levels = 0,
-               const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
-               const bool enable_warnings = true,
-               const bool enable_colors = true,
-               const std::string info_color  = DSC::TimedLogging::default_info_color(),
-               const std::string debug_color = DSC::TimedLogging::default_debug_color(),
-               const std::string warn_color  = DSC::TimedLogging::default_warning_color())
+  MpiCGExample(const std::size_t num_refinements = 0)
     : testcase_( 0 /*{{"mu",     Dune::Pymor::Parameter("mu", 1)},
                   {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
                   {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
@@ -55,15 +48,6 @@ public:
                       testcase_.boundary_info(),
                       testcase_.problem())
   {
-    DSC::TimedLogger().create(info_log_levels,
-                                debug_log_levels,
-                                enable_warnings,
-                                enable_colors,
-                                info_color,
-                                debug_color,
-                                warn_color);
-
-    DSC::TimedLogger().get("cg.thermalblock.example").info() << "creating grid and problem... " << std::endl;
     discretization_.init(DSC_LOG_DEBUG_0);
   } // MpiCGExample(...)
 
