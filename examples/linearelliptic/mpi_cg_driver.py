@@ -13,16 +13,18 @@ import sys
 import mpi_cg_main
 from mpi_cg_bindings import MpiCGExample, Dune
 
+from pymor.parameters.base import Parameter
 import pymor.tools.mpi as pmpi
 from pymor.discretizations.mpi import mpi_wrap_discretization
 from pymor.vectorarrays.mpi import MPIVectorArrayAutoComm, MPIVectorArrayNoComm
 
 print(os.getcwd())
-fn = '/home/r_milk01/projekte/uni/dune/build/dune-pymor-paper/gcc-release/dune-hdd/examples/linearelliptic/mpi_cg.ini'
+config_file = '/home/r_milk01/projekte/uni/dune/build/dune-pymor-paper/gcc-release/dune-hdd/examples/linearelliptic/mpi_cg.ini'
 
-example_id = pmpi.call(pmpi.function_call_manage, mpi_cg_main.init_example, fn, [sys.argv[0]])
-disc_id = pmpi.call(pmpi.function_call_manage, mpi_cg_main.discretize, example_id)
-d = mpi_wrap_discretization(disc_id, use_with=True, array_type=MPIVectorArrayNoComm)
+
+example_id = pmpi.call(pmpi.function_call_manage, mpi_cg_main.init_example, config_file, [sys.argv[0]])
+disc_id = pmpi.call(pmpi.function_call_manage, mpi_cg_main.discretize, example_id, config_file)
+d = mpi_wrap_discretization(disc_id, use_with=False, array_type=MPIVectorArrayNoComm)
 
 '''Bei array_type sollten wir es mit MPIVectorArrayNoComm versuchen. Außerdem würde ich es erstmal 'use_with=False'
 wählen. Dies gibt dir eine MPIDiscretization, die für 'solve' MPI-verteilt das 'solve' der
@@ -33,6 +35,8 @@ Schließlich solltest Du noch 'with_apply2=True' angeben, was den 'apply2'-Call 
 was aber einfach sein sollte ..)
 '''
 
-mu = Dune.Pymor.Parameter('mu', [0.1])
-d.solve(mu)
-# d.visualize()
+mu = Dune.Pymor.Parameter('diffusion', [0.1, 1, 1, 1])
+mu = Parameter({'diffusion': [0.1, 1, 1, 1]})
+u = d.solve(mu)
+# print(u.l2_norm())
+d.visualize(u)

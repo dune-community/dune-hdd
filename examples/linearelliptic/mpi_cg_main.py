@@ -18,25 +18,36 @@ import mpi_cg_bindings as dune_code
 from mpi_cg_bindings import MpiCGExample, Dune
 import pymor.tools.mpi as pmpi
 
-
-def init_example(config_file, extra_args=None):
-    extra_args = extra_args or []
+def _get_cfg(fn, extra_args=None):
+    extra_args = extra_args or [''] # cannot be empty list
     try:
-        assert open(config_file)
-        cfg = Dune.Stuff.Common.Configuration(extra_args, config_file)
+        assert open(fn)
+        cfg = Dune.Stuff.Common.Configuration(extra_args, fn)
     except IOError as e:
         print('Could not load parameter file, defaulting')
         cfg = Dune.Stuff.Common.Configuration('grids.refinements', 2)
+    return cfg
 
+
+def init_example(config_file, extra_args):
+
+    cfg = _get_cfg(config_file, extra_args)
     example = MpiCGExample(cfg.get_int("grids.refinements"))
     return example
 
 
-def discretize(example):
+def discretize(example, config_file):
     foo, wrapper = wrap_module(dune_code)
     pmpi.manage_object(wrapper)
     discretization = wrapper[example.discretization()]
+    discretization.unlock()
+    cfg = _get_cfg(config_file)
+    print(cfg.report_string())
+    print(config_file)
+    discretization.solver_options = cfg.sub('solver')
+    discretization.lock()
     return discretization
+
 
 '''
 def solve(mu):
