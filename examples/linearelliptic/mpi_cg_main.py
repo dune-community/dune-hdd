@@ -11,12 +11,15 @@ import sys
 import pprint
 
 from mpi4py import MPI
+from dune.pymor.core import wrap_module
+
 comm = MPI.COMM_WORLD
+import mpi_cg_bindings as dune_code
 from mpi_cg_bindings import MpiCGExample, Dune
-import pymor.tools.mpi as mpit
+import pymor.tools.mpi as pmpi
 
 
-def run_cg(config_file, extra_args=None):
+def init_example(config_file, extra_args=None):
     extra_args = extra_args or []
     try:
         assert open(config_file)
@@ -26,7 +29,17 @@ def run_cg(config_file, extra_args=None):
         cfg = Dune.Stuff.Common.Configuration('grids.refinements', 2)
 
     example = MpiCGExample(cfg.get_int("grids.refinements"))
-    discretization = example.discretization()
+    return example
+
+
+def discretize(example):
+    foo, wrapper = wrap_module(dune_code)
+    pmpi.manage_object(wrapper)
+    discretization = wrapper[example.discretization()]
+    return discretization
+
+'''
+def solve(mu):
     if discretization.parametric():
         # solve
         mu = Dune.Pymor.Parameter('mu', [0.1])
@@ -48,10 +61,11 @@ def run_cg(config_file, extra_args=None):
         print('writing to {}.vtu... '.format(filename), end='')
         discretization.visualize(vector, filename, 'CG_solution')
         print('done')
+'''
 
 if __name__ == '__main__':
-    assert mpit.HAVE_MPI
-    if mpit.rank0:
+    assert pmpi.HAVE_MPI
+    if pmpi.rank0:
         import sys
         assert 1 <= len(sys.argv) <= 2
         if len(sys.argv) == 2:
@@ -64,4 +78,4 @@ if __name__ == '__main__':
                 import code
                 code.interact()
     else:
-        mpit.event_loop()
+        pmpi.event_loop()
