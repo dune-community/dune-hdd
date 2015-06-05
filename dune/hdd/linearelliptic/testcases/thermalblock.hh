@@ -19,6 +19,7 @@
 #include <dune/stuff/common/fvector.hh>
 #include <dune/stuff/common/type_utils.hh>
 #include <dune/stuff/functions/constant.hh>
+#include <dune/stuff/grid/provider.hh>
 
 #include <dune/pymor/functions/default.hh>
 
@@ -37,6 +38,7 @@ namespace internal {
 template< class GridType >
 class ThermalblockBase
 {
+  typedef ThermalblockBase<GridType> ThisType;
 public:
   typedef typename GridType::template Codim< 0 >::Entity EntityType;
   typedef typename GridType::ctype                       DomainFieldType;
@@ -111,7 +113,8 @@ public:
   } // ... required_parameters(...)
 
   ThermalblockBase(const DSC::FieldVector< size_t, dimDomain >& num_blocks,
-                   const ParametersMapType& parameters)
+                   const ParametersMapType& parameters
+                   = ThisType::default_parameters(DSC::FieldVector<size_t, dimDomain>{{2u,2u}}))
     : parameters_(add_parameter_range(num_blocks, parameters))
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , problem_(*ThermalblockProblemType::create(problem_config(num_blocks)))
@@ -223,6 +226,44 @@ class BlockThermalblock
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE
+
+template< class GridType >
+class Thermalblock
+  : public internal::ThermalblockBase< GridType >
+  , public DSG::Providers::Cube< GridType >
+  , public  internal::ParametricBase
+{
+  typedef internal::ThermalblockBase< GridType > ThermalblockBaseType;
+  typedef DSG::Providers::Cube< GridType > GridProviderType;
+
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
+  {
+    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
+    grid_cfg["lower_left"] = "0";
+    grid_cfg["upper_right"] = "1";
+    grid_cfg["num_elements"] = "4";
+    grid_cfg["num_partitions"] = num_partitions;
+    return grid_cfg;
+  } // ... initial_grid_cfg(...)
+
+public:
+  typedef typename Base<GridType>::ParametersMapType ParametersMapType;
+
+  using ThermalblockBaseType::required_parameters;
+  using ThermalblockBaseType::parameters;
+  using ThermalblockBaseType::dimDomain;
+
+  Thermalblock(const ParametersMapType parameters,
+                    const DSC::FieldVector< size_t, dimDomain >& num_blocks = {2, 2},
+                    const std::string num_partitions = "[1 1 1]",
+                    const size_t num_refinements = ThermalblockBaseType::default_num_refinements)
+    : ThermalblockBaseType(num_blocks, parameters)
+    , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_partitions)))
+  {
+    this->check_parameters(ThermalblockBaseType::required_parameters(num_blocks), parameters);
+    this->inherit_parameter_type(this->problem_, "problem");
+  }
+}; // class BlockThermalblock
 
 } // namespace TestCases
 } // namespace LinearElliptic
