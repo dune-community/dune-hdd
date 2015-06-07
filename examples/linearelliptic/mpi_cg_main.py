@@ -78,8 +78,8 @@ if __name__ == '__main__':
     assert pmpi.HAVE_MPI
     if pmpi.rank0:
         import sys
-        assert 1 <= len(sys.argv) <= 2
-        if len(sys.argv) == 2:
+        assert 1 <= len(sys.argv) <= 3
+        if len(sys.argv) <= 3:
             execfile(sys.argv[1])
         else:
             try:

@@ -19,8 +19,10 @@ from pymor.discretizations.mpi import mpi_wrap_discretization
 from pymor.vectorarrays.mpi import MPIVectorArrayAutoComm, MPIVectorArrayNoComm
 
 print(os.getcwd())
-config_file = '/home/r_milk01/projekte/uni/dune/build/dune-pymor-paper/gcc-release/dune-hdd/examples/linearelliptic/mpi_cg.ini'
-
+try:
+    config_file = sys.argv[2]
+except IndexError as ix:
+    config_file = '/home/r_milk01/projekte/uni/dune/build/dune-pymor-paper/gcc-release/dune-hdd/examples/linearelliptic/mpi_cg.ini'
 
 example_id = pmpi.call(pmpi.function_call_manage, mpi_cg_main.init_example, config_file, [sys.argv[0]])
 disc_id = pmpi.call(pmpi.function_call_manage, mpi_cg_main.discretize, example_id, config_file)
@@ -35,8 +37,7 @@ Schließlich solltest Du noch 'with_apply2=True' angeben, was den 'apply2'-Call 
 was aber einfach sein sollte ..)
 '''
 
-mu = Dune.Pymor.Parameter('diffusion', [0.1, 1, 1, 1])
-mu = Parameter({'diffusion': [0.1, 1, 1, 1]})
+mu = Parameter({'diffusion': [0.15227525, 0.87955853, 0.24041678, 0.24039507]})
 u = d.solve(mu)
 # print(u.l2_norm())
-d.visualize(u)
+d.visualize(u, file_name='solution.vtu', delete=False)
