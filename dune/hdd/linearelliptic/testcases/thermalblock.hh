@@ -185,13 +185,12 @@ class BlockThermalblock
   typedef internal::ThermalblockBase< GridType > ThermalblockBaseType;
   typedef MultiscaleCubeBase< GridType >         TestCaseBaseType;
 
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
+  static Stuff::Common::Configuration initial_grid_cfg()
   {
     Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
     grid_cfg["lower_left"] = "0";
     grid_cfg["upper_right"] = "1";
-    grid_cfg["num_elements"] = "4";
-    grid_cfg["num_partitions"] = num_partitions;
+    grid_cfg["num_elements"] = "32";
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
@@ -204,7 +203,6 @@ public:
 
   BlockThermalblock(const ParametersMapType parameters,
                     const DSC::FieldVector< size_t, dimDomain >& num_blocks = {2, 2},
-                    const std::string num_partitions = "[1 1 1]",
                     const size_t num_refinements = ThermalblockBaseType::default_num_refinements)
     : ThermalblockBaseType(num_blocks, parameters)
     , TestCaseBaseType(initial_grid_cfg(num_partitions), ThermalblockBaseType::initial_refinements(), num_refinements)
@@ -236,13 +234,12 @@ class Thermalblock
   typedef internal::ThermalblockBase< GridType > ThermalblockBaseType;
   typedef DSG::Providers::Cube< GridType > GridProviderType;
 
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
+  static Stuff::Common::Configuration initial_grid_cfg(const size_t num_refinements)
   {
     Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
     grid_cfg["lower_left"] = "0";
     grid_cfg["upper_right"] = "1";
-    grid_cfg["num_elements"] = "4";
-    grid_cfg["num_partitions"] = num_partitions;
+    grid_cfg["num_elements"] = DSC::toString(size_t(std::pow(2u,num_refinements)));
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
@@ -253,12 +250,12 @@ public:
   using ThermalblockBaseType::parameters;
   using ThermalblockBaseType::dimDomain;
 
-  Thermalblock(const ParametersMapType parameters,
-                    const DSC::FieldVector< size_t, dimDomain >& num_blocks = {2, 2},
-                    const std::string num_partitions = "[1 1 1]",
-                    const size_t num_refinements = ThermalblockBaseType::default_num_refinements)
+  Thermalblock(const size_t num_refinements = ThermalblockBaseType::default_num_refinements,
+               const DSC::FieldVector< size_t, dimDomain >& num_blocks = {2, 2},
+               const ParametersMapType parameters
+               = ThermalblockBaseType::default_parameters(DSC::FieldVector< size_t, dimDomain >{{2, 2}}))
     : ThermalblockBaseType(num_blocks, parameters)
-    , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_partitions)))
+    , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_refinements)))
   {
     this->check_parameters(ThermalblockBaseType::required_parameters(num_blocks), parameters);
     this->inherit_parameter_type(this->problem_, "problem");

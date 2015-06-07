@@ -44,13 +44,9 @@ public:
         < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
 
 public:
-  MpiCGExample(const std::size_t num_refinements = 0)
-    : testcase_( TestcaseType::default_parameters(DSC::FieldVector<size_t, dimDomain>{{2u,2u}})
-                 /*{{"mu",     Dune::Pymor::Parameter("mu", 1)},
-                  {"mu_hat", Dune::Pymor::Parameter("mu", 1)},
-                  {"mu_bar", Dune::Pymor::Parameter("mu", 1)},
-                  {"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
-                  {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}}, num_refinements*/)
+  MpiCGExample(const std::size_t num_refinements = 0,
+               DSC::FieldVector< size_t, dimDomain > num_blocks = DSC::FieldVector< size_t, dimDomain >{{2, 2}})
+    : testcase_( num_refinements, num_blocks)
     , discretization_(testcase_,
                       testcase_.boundary_info(),
                       testcase_.problem())
