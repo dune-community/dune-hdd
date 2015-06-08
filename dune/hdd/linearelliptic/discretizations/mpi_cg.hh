@@ -15,7 +15,8 @@ namespace HDD {
 namespace LinearElliptic {
 namespace Discretizations {
 
-class MpiCG : public CG < Dune::SPGrid<double, 3>,
+template <int dimDomain = 2>
+class MpiCG : public CG < Dune::SPGrid<double, dimDomain>,
                           Stuff::Grid::ChooseLayer::leaf,
                           double,
                           1,
@@ -24,14 +25,14 @@ class MpiCG : public CG < Dune::SPGrid<double, 3>,
       Dune::Stuff::LA::ChooseBackend::istl_sparse>
 {
 public:
-  typedef Dune::SPGrid<double, 3> GridType;
+  typedef Dune::SPGrid<double, dimDomain> GridType;
   typedef CG < GridType,  Stuff::Grid::ChooseLayer::leaf, double, 1, 1, Dune::GDT::ChooseSpaceBackend::pdelab, Dune::Stuff::LA::ChooseBackend::istl_sparse> BaseType;
   typedef typename BaseType::SpaceProvider::Type SpaceType;
 
 
-  MpiCG(GridProviderType& grid_provider,
+  MpiCG(typename BaseType::GridProviderType& grid_provider,
      Stuff::Common::Configuration bound_inf_cfg,
-     const ProblemType& prob)
+     const typename BaseType::ProblemType& prob)
     :BaseType(grid_provider, bound_inf_cfg, prob)
   {
 

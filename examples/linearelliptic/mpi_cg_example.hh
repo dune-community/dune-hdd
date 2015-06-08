@@ -20,10 +20,10 @@
 class MpiCGExample
 {
 public:
-  typedef Dune::HDD::LinearElliptic::Discretizations::MpiCG
-       DiscretizationType;
   typedef double RangeFieldType;
   static constexpr size_t dimDomain = 3;
+  typedef Dune::HDD::LinearElliptic::Discretizations::MpiCG<dimDomain>
+       DiscretizationType;
   typedef typename Dune::SPGrid<RangeFieldType, dimDomain> GridType;
   typedef Dune::Stuff::Grid::Providers::Cube< GridType > GridProviderType;
   static constexpr unsigned int dimRange = 1;
