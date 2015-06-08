@@ -100,8 +100,8 @@ void run_eoc_study(DSC::Configuration& config)
 {
   using namespace Dune;
   using namespace Dune::HDD;
-//  typedef Dune::SPGrid< double, 3 > SPG3;
-  typedef Dune::SPGrid< double, 2 > SPG2;
+  constexpr size_t dim = 3;
+  typedef Dune::SPGrid< double, dim > SPG2;
 //  typedef Dune::YaspGrid< 2 > SPG2;
 //  typedef Dune::UGGrid< 2 > SPG2;
 //  typedef Dune::ALUGrid< 2, 2, simplex, conforming, MPI_Comm > SPG2;
@@ -110,7 +110,7 @@ void run_eoc_study(DSC::Configuration& config)
     typedef LinearElliptic::TestCases::Thermalblock< SPG2 > TestCase;
 //  typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TestCase;
 
-  const DSC::FieldVector<size_t, 2> blocks{{2,2}};
+  const DSC::ValueInitFieldVector<size_t, dim, 2u> blocks;
   TestCase test_case(config.get<size_t>("grids.refinements", 4u), blocks);
   test_case.print_header(DSC_LOG_INFO_0);
   DSC_LOG_INFO << std::endl;
@@ -126,7 +126,8 @@ void run_eoc_study(DSC::Configuration& config)
 //  test_case.visualize(test_case.boundary_info());
   try {
 //    {0.1,1,1,1}
-    const auto mu = Dune::Pymor::Parameter("diffusion", {0.15227525, 0.87955853, 0.24041678, 0.24039507  });
+    const auto mu = Dune::Pymor::Parameter("diffusion", {0.15227525, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1  });
+//    const auto mu = Dune::Pymor::Parameter("diffusion", {1, 1, 1, 1 , 1, 1, 1, 1  });
     const auto sub = config.sub("solver");
 //    disc.solve(sub, solution, mu);
     disc.solve(sub, solution, mu);

@@ -23,7 +23,7 @@ public:
   typedef Dune::HDD::LinearElliptic::Discretizations::MpiCG
        DiscretizationType;
   typedef double RangeFieldType;
-  static constexpr size_t dimDomain = 2;
+  static constexpr size_t dimDomain = 3;
   typedef typename Dune::SPGrid<RangeFieldType, dimDomain> GridType;
   typedef Dune::Stuff::Grid::Providers::Cube< GridType > GridProviderType;
   static constexpr unsigned int dimRange = 1;
@@ -45,7 +45,8 @@ public:
 
 public:
   MpiCGExample(const std::size_t num_refinements = 0,
-               DSC::FieldVector< size_t, dimDomain > num_blocks = DSC::FieldVector< size_t, dimDomain >{{2, 2}})
+               DSC::FieldVector< size_t, dimDomain > num_blocks
+               = DSC::ValueInitFieldVector< size_t, dimDomain, 2u >())
     : testcase_( num_refinements, num_blocks)
     , discretization_(testcase_,
                       testcase_.boundary_info(),

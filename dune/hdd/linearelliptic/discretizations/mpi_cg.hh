@@ -15,7 +15,7 @@ namespace HDD {
 namespace LinearElliptic {
 namespace Discretizations {
 
-class MpiCG : public CG < Dune::SPGrid<double, 2>,
+class MpiCG : public CG < Dune::SPGrid<double, 3>,
                           Stuff::Grid::ChooseLayer::leaf,
                           double,
                           1,
@@ -24,7 +24,7 @@ class MpiCG : public CG < Dune::SPGrid<double, 2>,
       Dune::Stuff::LA::ChooseBackend::istl_sparse>
 {
 public:
-  typedef Dune::SPGrid<double, 2> GridType;
+  typedef Dune::SPGrid<double, 3> GridType;
   typedef CG < GridType,  Stuff::Grid::ChooseLayer::leaf, double, 1, 1, Dune::GDT::ChooseSpaceBackend::pdelab, Dune::Stuff::LA::ChooseBackend::istl_sparse> BaseType;
   typedef typename BaseType::SpaceProvider::Type SpaceType;
 

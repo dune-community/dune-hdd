@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # prepare the module
     module, pybindgen_filename, config_h_filename = prepare_python_bindings(sys.argv[1:])
     # add all of libdunepymor
-    gridtype = 'Dune::SPGrid< double, 2 >'
+    gridtype = 'Dune::SPGrid< double, 3 >'
     view_type = 'Dune::GridView< Dune::SPGridViewTraits< const {}, Dune::All_Partition > >'.format(gridtype)
 
     module, space_type = inject_spaces(module, view_type)

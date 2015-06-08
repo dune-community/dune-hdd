@@ -245,15 +245,17 @@ class Thermalblock
 
 public:
   typedef typename Base<GridType>::ParametersMapType ParametersMapType;
-
   using ThermalblockBaseType::required_parameters;
   using ThermalblockBaseType::parameters;
   using ThermalblockBaseType::dimDomain;
+  typedef DSC::ValueInitFieldVector< size_t, dimDomain, 2u > DefaultBlocks;
+
+
 
   Thermalblock(const size_t num_refinements = ThermalblockBaseType::default_num_refinements,
-               const DSC::FieldVector< size_t, dimDomain >& num_blocks = {2, 2},
+               const DSC::FieldVector< size_t, dimDomain >& num_blocks = DefaultBlocks(),
                const ParametersMapType parameters
-               = ThermalblockBaseType::default_parameters(DSC::FieldVector< size_t, dimDomain >{{2, 2}}))
+               = ThermalblockBaseType::default_parameters(DefaultBlocks()))
     : ThermalblockBaseType(num_blocks, parameters)
     , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_refinements)))
   {
