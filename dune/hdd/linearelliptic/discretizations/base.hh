@@ -48,7 +48,7 @@ public:
   typedef VectorImp VectorType;
   typedef Pymor::Operators::LinearAffinelyDecomposedContainerBased< MatrixType, VectorType, SpaceImp > OperatorType;
   typedef OperatorType ProductType;
-  typedef Pymor::Functionals::LinearAffinelyDecomposedVectorBased< VectorType > FunctionalType;
+  typedef Pymor::Functionals::LinearAffinelyDecomposedVectorBased< VectorType, SpaceImp > FunctionalType;
 }; // class ContainerBasedDefaultTraits
 
 
@@ -274,7 +274,7 @@ public:
   FunctionalType get_rhs() const
   {
     assert_everything_is_ready();
-    return FunctionalType(*rhs_);
+    return FunctionalType(*rhs_, BaseType::ansatz_space_);
   }
 
   std::vector< std::string > available_products() const
