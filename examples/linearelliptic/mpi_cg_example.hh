@@ -17,14 +17,14 @@
 #include <dune/hdd/linearelliptic/problems/thermalblock.hh>
 #include <dune/hdd/linearelliptic/testcases/thermalblock.hh>
 
-template <int dimDomain = 2>
 class MpiCGExample
 {
 public:
+  static constexpr int dimDomain = 2;
   typedef double RangeFieldType;
   typedef Dune::HDD::LinearElliptic::Discretizations::MpiCG<dimDomain>
        DiscretizationType;
-  typedef typename Dune::SPGrid<RangeFieldType, dimDomain> GridType;
+  typedef Dune::SPGrid<RangeFieldType, dimDomain> GridType;
   typedef Dune::Stuff::Grid::Providers::Cube< GridType > GridProviderType;
   static constexpr unsigned int dimRange = 1;
   typedef typename DSG::Entity<typename GridType::LeafGridView>::Type EntityType;

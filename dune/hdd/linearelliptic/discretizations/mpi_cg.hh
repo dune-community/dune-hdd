@@ -15,7 +15,7 @@ namespace HDD {
 namespace LinearElliptic {
 namespace Discretizations {
 
-template <int dimDomain = 2>
+template <int dimDomain>
 class MpiCG : public CG < Dune::SPGrid<double, dimDomain>,
                           Stuff::Grid::ChooseLayer::leaf,
                           double,
