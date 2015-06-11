@@ -37,8 +37,8 @@ Schließlich solltest Du noch 'with_apply2=True' angeben, was den 'apply2'-Call 
 was aber einfach sein sollte ..)
 '''
 
-mu = Parameter({'diffusion': [0.15227525, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1]})
+mu = Parameter({'diffusion': [0.15227525, 0.87955853, 0.24041678, 0.24039507]})
 # mu = Parameter({'diffusion': [1,1,1,1, 1, 1, 1, 1]})
 u = d.solve(mu)
 # print(u.l2_norm())
-d.visualize(u, file_name='solution.vtu', delete=False)
+# d.visualize(u, file_name='solution.vtu', delete=False)

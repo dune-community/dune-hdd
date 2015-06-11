@@ -234,16 +234,15 @@ class Thermalblock
   typedef internal::ThermalblockBase< GridType > ThermalblockBaseType;
   typedef DSG::Providers::Cube< GridType > GridProviderType;
 
-  static Stuff::Common::Configuration initial_grid_cfg(const size_t num_refinements)
+  static Stuff::Common::Configuration initial_grid_cfg(const size_t num_refinements,
+                                                       const unsigned int overlap_size)
   {
     Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
     const auto elments_per_dim = size_t(std::pow(2u,num_refinements));
-    const double ranks = MPIHelper::getCollectiveCommunication().size();
-    const auto overlap = static_cast<unsigned int>(std::ceil(elments_per_dim / ranks) * 0.15);
     grid_cfg["lower_left"] = "0";
     grid_cfg["upper_right"] = "1";
     grid_cfg["num_elements"] = DSC::toString(elments_per_dim);
-    grid_cfg["overlap"] = DSC::toString(overlap);
+    grid_cfg["overlap"] = DSC::toString(overlap_size);
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
@@ -254,14 +253,13 @@ public:
   using ThermalblockBaseType::dimDomain;
   typedef DSC::ValueInitFieldVector< size_t, dimDomain, 2u > DefaultBlocks;
 
-
-
   Thermalblock(const size_t num_refinements = ThermalblockBaseType::default_num_refinements,
                const DSC::FieldVector< size_t, dimDomain >& num_blocks = DefaultBlocks(),
+               const unsigned int overlap_size = 1u,
                const ParametersMapType parameters
                = ThermalblockBaseType::default_parameters(DefaultBlocks()))
     : ThermalblockBaseType(num_blocks, parameters)
-    , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_refinements)))
+    , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_refinements, overlap_size)))
   {
     this->check_parameters(ThermalblockBaseType::required_parameters(num_blocks), parameters);
     this->inherit_parameter_type(this->problem_, "problem");

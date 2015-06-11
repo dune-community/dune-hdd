@@ -111,7 +111,8 @@ void run_eoc_study(DSC::Configuration& config)
 //  typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TestCase;
 
   const DSC::ValueInitFieldVector<size_t, dim, 2u> blocks;
-  TestCase test_case(config.get<size_t>("grids.refinements", 4u), blocks);
+  const unsigned int overlap_size = config.get<size_t>("grids.overlap", 4u);
+  TestCase test_case(config.get<size_t>("grids.refinements", 4u), blocks, overlap_size);
   test_case.print_header(DSC_LOG_INFO_0);
   DSC_LOG_INFO << std::endl;
   LinearElliptic::Tests::CGStudy< TestCase, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >

@@ -44,10 +44,11 @@ public:
         < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
 
 public:
-  MpiCGExample(const std::size_t num_refinements = 0,
+  MpiCGExample(const std::size_t num_refinements,
+               const unsigned int overlap_size,
                DSC::FieldVector< size_t, dimDomain > num_blocks
                = DSC::ValueInitFieldVector< size_t, dimDomain, 2u >())
-    : testcase_( num_refinements, num_blocks)
+    : testcase_( num_refinements, num_blocks, overlap_size)
     , discretization_(testcase_,
                       testcase_.boundary_info(),
                       testcase_.problem())

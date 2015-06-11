@@ -36,7 +36,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H, griddim, space_type
     mpicgexample.add_method('static_id',
                             retval('std::string'),
                             [], is_const=True, throw=exceptions)
-    mpicgexample.add_constructor([param('std::size_t', 'num_refinements')], throw=exceptions)
+    mpicgexample.add_constructor([param('std::size_t', 'num_refinements'),
+                                  param('unsigned int', 'overlap')], throw=exceptions)
     mpicgexample.add_method('discretization_and_return_ptr',
                             retval(discretizationfullname + ' *', caller_owns_return=True),
                             [], is_const=True, throw=exceptions,
