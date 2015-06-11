@@ -239,7 +239,7 @@ class Thermalblock
     Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
     const auto elments_per_dim = size_t(std::pow(2u,num_refinements));
     const double ranks = MPIHelper::getCollectiveCommunication().size();
-    const auto overlap = std::ceil(elments_per_dim / ranks) * 0.15;
+    const auto overlap = static_cast<unsigned int>(std::ceil(elments_per_dim / ranks) * 0.15);
     grid_cfg["lower_left"] = "0";
     grid_cfg["upper_right"] = "1";
     grid_cfg["num_elements"] = DSC::toString(elments_per_dim);
