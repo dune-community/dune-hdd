@@ -16,6 +16,8 @@
 #include <dune/hdd/linearelliptic/testcases/spe10.hh>
 #include <dune/hdd/linearelliptic/problems/thermalblock.hh>
 #include <dune/hdd/linearelliptic/testcases/thermalblock.hh>
+#include <dune/hdd/linearelliptic/problems/random_block_problem.hh>
+#include <dune/hdd/linearelliptic/testcases/random_block_testcase.hh>
 
 class MpiCGExample
 {
@@ -33,14 +35,16 @@ public:
 //      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
 //  typedef Dune::HDD::LinearElliptic::TestCases::ESV2007
 //      < GridType > TestcaseType;
-  typedef Dune::HDD::LinearElliptic::TestCases::Thermalblock
+//  typedef Dune::HDD::LinearElliptic::TestCases::Thermalblock
+//      < GridType > TestcaseType;
+  typedef Dune::HDD::LinearElliptic::TestCases::RandomBlockTestcase
       < GridType > TestcaseType;
 
 //  typedef Dune::HDD::LinearElliptic::Problems::Spe10::Model1
 //      < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
 //  typedef Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricModel1
 //      < GridType > TestcaseType;
-    typedef Dune::HDD::LinearElliptic::Problems::Thermalblock
+    typedef Dune::HDD::LinearElliptic::Problems::RandomBlockProblem
         < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
 
 public:

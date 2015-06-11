@@ -71,12 +71,18 @@ public:
     typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, domainDim, domainDim >
         ConstantMatrixFunctionType;
     Stuff::Common::Configuration config;
-    Stuff::Common::Configuration checkerboard_config = ComplementPairPymorFunction::default_config();
-    checkerboard_config["name"] = "diffusion_factor";
-    checkerboard_config["type"] = ComplementPairPymorFunction::static_id();
-    checkerboard_config["num_elements"] = "[4 4 4]";
-    checkerboard_config["parameter_name"] = "diffusion";
-    config.add(checkerboard_config, "diffusion_factor");
+    Stuff::Common::Configuration randomblock_config = ComplementPairPymorFunction::default_config();
+    randomblock_config["name"] = "diffusion_factor";
+    randomblock_config["type"] = ComplementPairPymorFunction::static_id();
+    randomblock_config["parameter_name"] = "diffusion";
+    randomblock_config["ellipsoids.count"] = "200";
+    randomblock_config["ellipsoids.min_radius"] = "0.01";
+    randomblock_config["ellipsoids.max_radius"] = "0.03";
+    randomblock_config["ellipsoids.seed"] = "0";
+    randomblock_config["ellipsoids.children"] = "3";
+    randomblock_config["ellipsoids.recursion_depth"] = "4";
+    randomblock_config["ellipsoids.recursion_scale"] = "0.5";
+    config.add(randomblock_config, "diffusion_factor");
     Stuff::Common::Configuration diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
     diffusion_tensor_config["name"] = "diffusion_tensor";
     diffusion_tensor_config["type"] = ConstantMatrixFunctionType::static_id();
@@ -105,8 +111,8 @@ public:
   {
     const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     std::shared_ptr< ComplementPairPymorFunction >
-        checkerboard_function(ComplementPairPymorFunction::create(cfg.sub("diffusion_factor")));
-    return Stuff::Common::make_unique< ThisType >(checkerboard_function,
+        randomblock_function(ComplementPairPymorFunction::create(cfg.sub("diffusion_factor")));
+    return Stuff::Common::make_unique< ThisType >(randomblock_function,
                                                   BaseType::create_matrix_function("diffusion_tensor", cfg),
                                                   BaseType::create_vector_function("force", cfg),
                                                   BaseType::create_vector_function("dirichlet", cfg),
