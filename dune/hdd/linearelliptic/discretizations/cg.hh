@@ -389,17 +389,13 @@ public:
       if (!matrix.has_affine_part())
         matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
       system_assembler.add(clear_and_set_dirichlet_rows,
-                           *(matrix.affine_part()),
-                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+                           *(matrix.affine_part()));
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-        system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+        system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)));
       if (rhs.has_affine_part())
-        system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+        system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()));
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-        system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+        system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)));
       system_assembler.walk();
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
