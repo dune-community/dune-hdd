@@ -57,43 +57,26 @@ public:
 
   typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
   typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
-  typedef DSC::ValueInitFieldVector< size_t, dimDomain, 1u > DefaultBlocks;
-
-  static const size_t default_num_refinements = 3;
 
 protected:
-  static int initial_refinements()
-  {
-    int ret = 1;
-#if HAVE_ALUGRID
-    if (std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
-      ret += 1;
-#endif // HAVE_ALUGRID
-    return ret;
-  } // ... initial_refinements()
 
-  static ParametersMapType add_parameter_range(const DSC::FieldVector< size_t, dimDomain >& num_blocks,
-                                               const ParametersMapType& parameters)
+  static ParametersMapType add_parameter_range(const ParametersMapType& parameters)
   {
-    size_t parameter_size = 1;
-    for (const auto& element : num_blocks)
-      parameter_size *= element;
     ParametersMapType ret = parameters;
-    ret["parameter_range_min"] = Pymor::Parameter("mu", std::vector< double >(parameter_size, 0.1));
-    ret["parameter_range_max"] = Pymor::Parameter("mu", std::vector< double >(parameter_size, 1.0));
+    ret["parameter_range_min"] = Pymor::Parameter("mu", 0.1);
+    ret["parameter_range_max"] = Pymor::Parameter("mu", 1.0);
     return ret;
   } // ... add_parameter_range(...)
 
 public:
-  static ParametersMapType default_parameters(const DSC::FieldVector< size_t, dimDomain >& num_blocks)
+  static ParametersMapType default_parameters()
   {
-    const size_t parameter_size = 1;
-    return ParametersMapType({{"mu",     Pymor::Parameter("mu", std::vector< double >(parameter_size, 1.0))},
-                              {"mu_bar", Pymor::Parameter("mu", std::vector< double >(parameter_size, 1.0))},
-                              {"mu_hat", Pymor::Parameter("mu", std::vector< double >(parameter_size, 1.0))}});
+    return ParametersMapType({{"mu",     Pymor::Parameter("mu", 1.0)},
+                              {"mu_bar", Pymor::Parameter("mu", 1.0)},
+                              {"mu_hat", Pymor::Parameter("mu", 1.0)}});
   } // ... default_parameters(...)
 
-  static ParameterTypesMapType required_parameters(const DSC::FieldVector< size_t, dimDomain >& num_blocks)
+  static ParameterTypesMapType required_parameters()
   {
     const size_t parameter_size = 1;
     return ParameterTypesMapType({{"mu",     Pymor::ParameterType("mu", parameter_size)},
@@ -101,11 +84,9 @@ public:
                                   {"mu_hat", Pymor::ParameterType("mu", parameter_size)}});
   } // ... required_parameters(...)
 
-  RandomBlockTestcaseBase(const DSC::FieldVector< size_t, dimDomain >& num_blocks,
-                   const ParametersMapType& parameters
-                   = ThisType::default_parameters(DefaultBlocks()),
-                   DSC::Configuration config = DSC::Configuration() )
-    : parameters_(add_parameter_range(num_blocks, parameters))
+  RandomBlockTestcaseBase(const ParametersMapType& parameters,
+                   DSC::Configuration config )
+    : parameters_(add_parameter_range(parameters))
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , problem_(*RandomBlockProblemType::create(config))
     , exact_solution_(0)
@@ -172,32 +153,19 @@ class RandomBlockTestcase
   typedef internal::RandomBlockTestcaseBase< GridType > BaseType;
   typedef DSG::Providers::Cube< GridType > GridProviderType;
 
-  static Stuff::Common::Configuration initial_grid_cfg(const size_t num_refinements,
-                                                       const unsigned int overlap_size)
-  {
-    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
-    grid_cfg["lower_left"] = "0";
-    grid_cfg["upper_right"] = "1";
-    grid_cfg["overlap"] = DSC::toString(overlap_size);
-    return grid_cfg;
-  } // ... initial_grid_cfg(...)
-
 public:
   typedef typename Base<GridType>::ParametersMapType ParametersMapType;
   using BaseType::required_parameters;
   using BaseType::parameters;
   using BaseType::dimDomain;
 
-  RandomBlockTestcase(const size_t num_refinements = BaseType::default_num_refinements,
-               const DSC::FieldVector< size_t, dimDomain >& num_blocks = typename BaseType:: DefaultBlocks(),
-               const unsigned int overlap_size = 1u,
-               const Stuff::Common::Configuration config = DSC::Configuration(),
+  RandomBlockTestcase(const Stuff::Common::Configuration config,
                const ParametersMapType parameters
-               = BaseType::default_parameters(typename BaseType::DefaultBlocks()))
-    : BaseType(num_blocks, parameters, config)
+               = BaseType::default_parameters())
+    : BaseType(parameters, config)
     , GridProviderType(*GridProviderType::create(config.sub("grids")))
   {
-    this->check_parameters(BaseType::required_parameters(num_blocks), parameters);
+    this->check_parameters(BaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
   }
 }; // class BlockRandomBlockTestcase

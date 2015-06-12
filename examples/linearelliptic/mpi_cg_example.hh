@@ -37,12 +37,11 @@ public:
       < GridType > ProblemType;
 
 public:
-  MpiCGExampleThermal(const std::size_t num_refinements,
-                                   const unsigned int overlap_size,
+  MpiCGExampleThermal(DSC::Configuration config = DSC::Configuration(),
                                    DSC::FieldVector< size_t, dimDomain > num_blocks
-                                    = DSC::ValueInitFieldVector< size_t, dimDomain, 2u >(),
-                                   DSC::Configuration config = DSC::Configuration())
-                        : testcase_( num_refinements, num_blocks, overlap_size, config)
+                                    = DSC::ValueInitFieldVector< size_t, dimDomain, 2u >()
+                                   )
+                        : testcase_(config, num_blocks)
     , discretization_(testcase_,
                       testcase_.boundary_info(),
                       testcase_.problem())
@@ -88,12 +87,8 @@ public:
       < EntityType, RangeFieldType, dimRange, RangeFieldType, dimRange> ProblemType;
 
 public:
-  MpiCGExampleRandom(const std::size_t num_refinements,
-               const unsigned int overlap_size,
-               DSC::FieldVector< size_t, dimDomain > num_blocks
-                = DSC::ValueInitFieldVector< size_t, dimDomain, 2u >(),
-               DSC::Configuration config = DSC::Configuration())
-    : testcase_( num_refinements, num_blocks, overlap_size, config)
+  MpiCGExampleRandom(DSC::Configuration config)
+    : testcase_(config)
     , discretization_(testcase_,
                       testcase_.boundary_info(),
                       testcase_.problem())
@@ -103,7 +98,7 @@ public:
 
   static std::string static_id()
   {
-    return "mpi_cg";
+    return "mpi_cg_random";
   }
 
   const DiscretizationType& discretization() const
@@ -121,7 +116,7 @@ private:
   DiscretizationType discretization_;
 }; // class LinearellipticExampleCG
 
-typedef MpiCGExampleRandom MpiCGExample;
-//typedef MpiCGExampleThermal MpiCGExample;
+//typedef MpiCGExampleRandom MpiCGExample;
+typedef MpiCGExampleThermal MpiCGExample;
 
 #endif // CG_MPI_HH
