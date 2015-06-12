@@ -75,12 +75,12 @@ public:
     randomblock_config["name"] = "diffusion_factor";
     randomblock_config["type"] = ComplementPairPymorFunction::static_id();
     randomblock_config["parameter_name"] = "diffusion";
-    randomblock_config["ellipsoids.count"] = "200";
-    randomblock_config["ellipsoids.min_radius"] = "0.01";
-    randomblock_config["ellipsoids.max_radius"] = "0.03";
+    randomblock_config["ellipsoids.count"] = "10";
+    randomblock_config["ellipsoids.min_radius"] = "0.05";
+    randomblock_config["ellipsoids.max_radius"] = "0.1";
     randomblock_config["ellipsoids.seed"] = "0";
-    randomblock_config["ellipsoids.children"] = "3";
-    randomblock_config["ellipsoids.recursion_depth"] = "4";
+    randomblock_config["ellipsoids.children"] = "1";
+    randomblock_config["ellipsoids.recursion_depth"] = "1";
     randomblock_config["ellipsoids.recursion_scale"] = "0.5";
     config.add(randomblock_config, "diffusion_factor");
     Stuff::Common::Configuration diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
@@ -106,10 +106,9 @@ public:
     }
   } // ... default_config(...)
 
-  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config = default_config(),
-                                            const std::string sub_name = static_id())
+  static std::unique_ptr< ThisType > create(const Stuff::Common::Configuration config)
   {
-    const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
+    const Stuff::Common::Configuration cfg = config;
     std::shared_ptr< ComplementPairPymorFunction >
         randomblock_function(ComplementPairPymorFunction::create(cfg.sub("diffusion_factor")));
     return Stuff::Common::make_unique< ThisType >(randomblock_function,

@@ -123,12 +123,12 @@ void run_eoc_study(DSC::Configuration& config)
 //  test_case.problem().visualize(test_case.grid().leafGridView(), "problem");
   disc.init();
   auto solution = disc.create_vector();
-  test_case.problem().visualize(disc.grid_view(), "foo");
+  test_case.problem().visualize(disc.grid_view(), "problem");
 
 //  test_case.visualize(test_case.boundary_info());
   try {
 //    {0.1,1,1,1}
-    const auto mu = Dune::Pymor::Parameter("diffusion", {0.15227525});//, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1  });
+    const auto mu = Dune::Pymor::Parameter("diffusion", {1});//, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1  });
 //    const auto mu = Dune::Pymor::Parameter("diffusion", {1, 1, 1, 1 , 1, 1, 1, 1  });
     const auto sub = config.sub("solver");
 //    disc.solve(sub, solution, mu);

@@ -57,6 +57,7 @@ public:
 
   typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
   typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
+  typedef DSC::ValueInitFieldVector< size_t, dimDomain, 1u > DefaultBlocks;
 
   static const size_t default_num_refinements = 3;
 
@@ -83,20 +84,10 @@ protected:
     return ret;
   } // ... add_parameter_range(...)
 
-  static DSC::Configuration problem_config(const DSC::FieldVector< size_t, dimDomain >& num_blocks)
-  {
-    DSC::Configuration ret = RandomBlockProblemType::default_config();
-    assert(ret.has_key("diffusion_factor.num_elements"));
-    ret.set("diffusion_factor.num_elements", num_blocks, /*overwrite=*/true);
-    return ret;
-  } // ... problem_config(...)
-
 public:
   static ParametersMapType default_parameters(const DSC::FieldVector< size_t, dimDomain >& num_blocks)
   {
-    size_t parameter_size = 1;
-    for (const auto& element : num_blocks)
-      parameter_size *= element;
+    const size_t parameter_size = 1;
     return ParametersMapType({{"mu",     Pymor::Parameter("mu", std::vector< double >(parameter_size, 1.0))},
                               {"mu_bar", Pymor::Parameter("mu", std::vector< double >(parameter_size, 1.0))},
                               {"mu_hat", Pymor::Parameter("mu", std::vector< double >(parameter_size, 1.0))}});
@@ -104,9 +95,7 @@ public:
 
   static ParameterTypesMapType required_parameters(const DSC::FieldVector< size_t, dimDomain >& num_blocks)
   {
-    size_t parameter_size = 1;
-    for (const auto& element : num_blocks)
-      parameter_size *= element;
+    const size_t parameter_size = 1;
     return ParameterTypesMapType({{"mu",     Pymor::ParameterType("mu", parameter_size)},
                                   {"mu_bar", Pymor::ParameterType("mu", parameter_size)},
                                   {"mu_hat", Pymor::ParameterType("mu", parameter_size)}});
@@ -114,10 +103,11 @@ public:
 
   RandomBlockTestcaseBase(const DSC::FieldVector< size_t, dimDomain >& num_blocks,
                    const ParametersMapType& parameters
-                   = ThisType::default_parameters(DSC::FieldVector<size_t, dimDomain>{{2u,2u}}))
+                   = ThisType::default_parameters(DefaultBlocks()),
+                   DSC::Configuration config = DSC::Configuration() )
     : parameters_(add_parameter_range(num_blocks, parameters))
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
-    , problem_(*RandomBlockProblemType::create(problem_config(num_blocks)))
+    , problem_(*RandomBlockProblemType::create(config))
     , exact_solution_(0)
   {}
 
@@ -186,10 +176,8 @@ class RandomBlockTestcase
                                                        const unsigned int overlap_size)
   {
     Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
-    const auto elments_per_dim = size_t(std::pow(2u,num_refinements));
     grid_cfg["lower_left"] = "0";
     grid_cfg["upper_right"] = "1";
-    grid_cfg["num_elements"] = DSC::toString(elments_per_dim);
     grid_cfg["overlap"] = DSC::toString(overlap_size);
     return grid_cfg;
   } // ... initial_grid_cfg(...)
@@ -199,14 +187,14 @@ public:
   using BaseType::required_parameters;
   using BaseType::parameters;
   using BaseType::dimDomain;
-  typedef DSC::ValueInitFieldVector< size_t, dimDomain, 2u > DefaultBlocks;
 
   RandomBlockTestcase(const size_t num_refinements = BaseType::default_num_refinements,
-               const DSC::FieldVector< size_t, dimDomain >& num_blocks = DefaultBlocks(),
+               const DSC::FieldVector< size_t, dimDomain >& num_blocks = typename BaseType:: DefaultBlocks(),
                const unsigned int overlap_size = 1u,
+               const Stuff::Common::Configuration config = DSC::Configuration(),
                const ParametersMapType parameters
-               = BaseType::default_parameters(DefaultBlocks()))
-    : BaseType(num_blocks, parameters)
+               = BaseType::default_parameters(typename BaseType::DefaultBlocks()))
+    : BaseType(num_blocks, parameters, config)
     , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_refinements, overlap_size)))
   {
     this->check_parameters(BaseType::required_parameters(num_blocks), parameters);
