@@ -18,6 +18,7 @@
 #include <dune/hdd/linearelliptic/testcases/spe10model2.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/linearelliptic/testcases/thermalblock.hh>
+#include <dune/hdd/linearelliptic/testcases/random_block_testcase.hh>
 #include <dune/hdd/test/linearelliptic_cg.hh>
 #include <dune/grid/alugrid.hh>
 #include <dune/grid/uggrid.hh>
@@ -107,7 +108,7 @@ void run_eoc_study(DSC::Configuration& config)
 //  typedef Dune::ALUGrid< 2, 2, simplex, conforming, MPI_Comm > SPG2;
 //  typedef LinearElliptic::TestCases::ESV2007< SPG2 > TestCase;
   //  typedef LinearElliptic::TestCases::Spe10::Model1< SPG2 > TestCase;
-    typedef LinearElliptic::TestCases::Thermalblock< SPG2 > TestCase;
+    typedef LinearElliptic::TestCases::RandomBlockTestcase< SPG2 > TestCase;
 //  typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TestCase;
 
   const DSC::ValueInitFieldVector<size_t, dim, 2u> blocks;
@@ -127,7 +128,7 @@ void run_eoc_study(DSC::Configuration& config)
 //  test_case.visualize(test_case.boundary_info());
   try {
 //    {0.1,1,1,1}
-    const auto mu = Dune::Pymor::Parameter("diffusion", {0.15227525, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1  });
+    const auto mu = Dune::Pymor::Parameter("diffusion", {0.15227525});//, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1  });
 //    const auto mu = Dune::Pymor::Parameter("diffusion", {1, 1, 1, 1 , 1, 1, 1, 1  });
     const auto sub = config.sub("solver");
 //    disc.solve(sub, solution, mu);
