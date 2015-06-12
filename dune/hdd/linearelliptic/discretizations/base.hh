@@ -17,14 +17,16 @@
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/la/solver.hh>
+#include <dune/stuff/grid/intersection.hh>
 
 #include <dune/pymor/operators/base.hh>
 #include <dune/pymor/operators/affine.hh>
 #include <dune/pymor/functionals/affine.hh>
 
 #include <dune/gdt/discretefunction/default.hh>
-
+#include <dune/pdelab/backend/ovlpistlsolverbackend.hh>
 #include "interfaces.hh"
+#include <dune/pdelab/backend/istl/patternstatistics.hh>
 
 namespace Dune {
 namespace HDD {
@@ -366,7 +368,37 @@ public:
       if (lhsOperator.parametric()) {
         const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
         const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);
-        frozenOperator.apply_inverse(*rhs_vector, vector, options);
+//        frozenOperator.apply_inverse(*rhs_vector, vector, options);
+        const DSC::Configuration boundary_info_cfg_(DSG::BoundaryInfoConfigs::AllDirichlet::default_config());
+        const auto& space = BaseType::ansatz_space_.backend();
+        typedef typename std::remove_reference<decltype(BaseType::ansatz_space_.grid_view())>::type View;
+        typedef typename DSG::Intersection<View>::Type I;
+        auto boundary_info = DSG::BoundaryInfos::AllDirichlet<I>();
+        typedef typename AnsatzSpaceType::BackendType GFS;
+        typedef RangeFieldType Real;
+        typedef typename GFS::template ConstraintsContainer<Real>::Type CC;
+        CC constraints_container;
+        constraints_container.clear();
+
+        Dune::PDELab::constraints(boundary_info, space, constraints_container);
+        typedef PDELab::istl::ParallelHelper<GFS> PHELPER;
+        PHELPER phelper(space);
+//        phelper.createIndexSetAndProjectForAMG(mat, oocc);
+        PDELab::ISTLBackend_OVLP_BCGS_ILU0<GFS, CC> pdelab_solver(space, constraints_container);
+        auto rhs_copy = rhs_vector->backend();
+        auto& solution = vector.backend();
+        typedef typename std::remove_reference<decltype(solution)>::type Vector;
+        auto& actual_matrix = frozenOperator.container()->backend();
+        typedef PDELab::ISTLBlockVectorContainer<GFS,Vector> VT;
+        VT solution_vt(space, solution);
+        VT rhs_copy_vt(space, rhs_copy);
+        typedef typename std::remove_reference<decltype(actual_matrix)>::type Matrix;
+//        actual_matrix = "k";
+        typedef PDELab::istl::PatternStatistics<typename Matrix::size_type> Stats;
+        typedef PDELab::ISTLMatrixContainer<GFS, GFS, Matrix, Stats> MT;
+        MT matrix_container(actual_matrix);
+
+        pdelab_solver.apply(matrix_container, solution_vt, rhs_copy_vt, 1e-6);
       } else {
         const auto nonparametricOperator = lhsOperator.affine_part();
         nonparametricOperator.apply_inverse(*rhs_vector, vector, options);
