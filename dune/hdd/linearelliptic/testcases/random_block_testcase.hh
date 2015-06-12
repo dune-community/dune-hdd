@@ -195,7 +195,7 @@ public:
                const ParametersMapType parameters
                = BaseType::default_parameters(typename BaseType::DefaultBlocks()))
     : BaseType(num_blocks, parameters, config)
-    , GridProviderType(*GridProviderType::create(initial_grid_cfg(num_refinements, overlap_size)))
+    , GridProviderType(*GridProviderType::create(config.sub("grids")))
   {
     this->check_parameters(BaseType::required_parameters(num_blocks), parameters);
     this->inherit_parameter_type(this->problem_, "problem");

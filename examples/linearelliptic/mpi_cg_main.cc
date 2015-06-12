@@ -101,7 +101,7 @@ void run_eoc_study(DSC::Configuration& config)
 {
   using namespace Dune;
   using namespace Dune::HDD;
-  constexpr size_t dim = 3;
+  constexpr size_t dim = 2;
   typedef Dune::SPGrid< double, dim > SPG2;
 //  typedef Dune::YaspGrid< 2 > SPG2;
 //  typedef Dune::UGGrid< 2 > SPG2;
@@ -111,9 +111,10 @@ void run_eoc_study(DSC::Configuration& config)
     typedef LinearElliptic::TestCases::RandomBlockTestcase< SPG2 > TestCase;
 //  typedef LinearElliptic::TestCases::Spe10::Model2< SPG3 > TestCase;
 
-  const DSC::ValueInitFieldVector<size_t, dim, 2u> blocks;
+  const DSC::ValueInitFieldVector<size_t, dim, 1u> blocks;
   const unsigned int overlap_size = config.get<size_t>("grids.overlap", 4u);
-  TestCase test_case(config.get<size_t>("grids.refinements", 4u), blocks, overlap_size);
+  const auto refine = config.get<size_t>("grids.refinements", 4u);
+  TestCase test_case(refine, blocks, overlap_size, config);
   test_case.print_header(DSC_LOG_INFO_0);
   DSC_LOG_INFO << std::endl;
   LinearElliptic::Tests::CGStudy< TestCase, 1, GDT::ChooseSpaceBackend::pdelab, Stuff::LA::ChooseBackend::istl_sparse >
@@ -128,7 +129,7 @@ void run_eoc_study(DSC::Configuration& config)
 //  test_case.visualize(test_case.boundary_info());
   try {
 //    {0.1,1,1,1}
-    const auto mu = Dune::Pymor::Parameter("diffusion", {1});//, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1  });
+    const auto mu = Dune::Pymor::Parameter("value", {1});//, 0.87955853, 0.24041678, 0.24039507, 1, 1, 1, 1  });
 //    const auto mu = Dune::Pymor::Parameter("diffusion", {1, 1, 1, 1 , 1, 1, 1, 1  });
     const auto sub = config.sub("solver");
 //    disc.solve(sub, solution, mu);

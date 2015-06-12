@@ -256,6 +256,7 @@ public:
   Thermalblock(const size_t num_refinements = ThermalblockBaseType::default_num_refinements,
                const DSC::FieldVector< size_t, dimDomain >& num_blocks = DefaultBlocks(),
                const unsigned int overlap_size = 1u,
+               DSC::Configuration = DSC::Configuration(),
                const ParametersMapType parameters
                = ThermalblockBaseType::default_parameters(DefaultBlocks()))
     : ThermalblockBaseType(num_blocks, parameters)
