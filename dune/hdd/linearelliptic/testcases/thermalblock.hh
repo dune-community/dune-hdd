@@ -58,7 +58,6 @@ public:
   typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
   typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
 
-  static const size_t default_num_refinements = 3;
 
 protected:
   static int initial_refinements()
@@ -194,6 +193,8 @@ class BlockThermalblock
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
+  static const size_t default_num_refinements = 3;
+
 public:
   typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
 
@@ -203,7 +204,7 @@ public:
 
   BlockThermalblock(const ParametersMapType parameters,
                     const DSC::FieldVector< size_t, dimDomain >& num_blocks = {2, 2},
-                    const size_t num_refinements = ThermalblockBaseType::default_num_refinements)
+                    const size_t num_refinements = default_num_refinements)
     : ThermalblockBaseType(num_blocks, parameters)
     , TestCaseBaseType(initial_grid_cfg(num_partitions), ThermalblockBaseType::initial_refinements(), num_refinements)
   {
@@ -228,7 +229,7 @@ class BlockThermalblock
 template< class GridType >
 class Thermalblock
   : public internal::ThermalblockBase< GridType >
-  , public DSG::Providers::Cube< GridType >
+  , public DSG::Providers::Default< GridType >
   , public  internal::ParametricBase
 {
   typedef internal::ThermalblockBase< GridType > ThermalblockBaseType;
@@ -246,7 +247,7 @@ public:
                const ParametersMapType parameters
                = ThermalblockBaseType::default_parameters(DefaultBlocks()))
     : ThermalblockBaseType(num_blocks, parameters)
-    , GridProviderType(*GridProviderType::create(config))
+    , DSG::Providers::Default<GridType>(GridProviderType::create(config).grid_ptr())
   {
     this->check_parameters(ThermalblockBaseType::required_parameters(num_blocks), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
