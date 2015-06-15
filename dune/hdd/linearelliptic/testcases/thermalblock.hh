@@ -247,7 +247,7 @@ public:
                const ParametersMapType parameters
                = ThermalblockBaseType::default_parameters(DefaultBlocks()))
     : ThermalblockBaseType(num_blocks, parameters)
-    , DSG::Providers::Default<GridType>(GridProviderType::create(config).grid_ptr())
+    , DSG::Providers::Default<GridType>(GridProviderType::create(config.sub("grids"))->grid_ptr())
   {
     this->check_parameters(ThermalblockBaseType::required_parameters(num_blocks), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
