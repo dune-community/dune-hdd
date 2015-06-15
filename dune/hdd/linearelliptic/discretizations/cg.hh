@@ -136,6 +136,7 @@ public:
                bound_inf_cfg,
                prob)
     , pattern_(EllipticOperatorType::pattern(this->test_space(), this->test_space()))
+    , grid_provider_(grid_provider.copy())
   {
     // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
     if (this->problem_.diffusion_tensor()->parametric())
@@ -421,6 +422,7 @@ private:
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
 
   PatternType pattern_;
+  std::shared_ptr< GridProviderType > grid_provider_;
 }; // class CG
 
 
