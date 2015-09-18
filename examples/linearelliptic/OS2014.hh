@@ -136,7 +136,7 @@ public:
     if (with_reference_)
       reference_discretization_->init();
     logger.info() << "done (grid has " << discretization_.grid_view().indexSet().size(0)
-                  << " elements, discretization has " << discretization_.ansatz_space()->mapper().size() << " DoFs)"
+                  << " elements, discretization has " << discretization_.ansatz_space().mapper().size() << " DoFs)"
                   << std::endl;
   } // ... OS2014Spe10Model1Example(...)
 
@@ -168,7 +168,7 @@ public:
     using namespace Dune;
     typedef typename DiscretizationType::AnsatzSpaceType AnsatzSpaceType;
     typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
-    DiscreteFunctionType discrete_function(*discretization_.ansatz_space());
+    DiscreteFunctionType discrete_function(discretization_.ansatz_space());
 
     typedef Stuff::Functions::Expression< typename DiscreteFunctionType::EntityType,
                                           typename DiscreteFunctionType::DomainFieldType,
@@ -198,15 +198,15 @@ public:
     using namespace Dune;
     typedef typename DiscretizationType::AnsatzSpaceType AnsatzSpaceType;
     typedef GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType > ConstDiscreteFunctionType;
-    ConstDiscreteFunctionType coarse_solution(*discretization_.ansatz_space(), solution);
+    ConstDiscreteFunctionType coarse_solution(discretization_.ansatz_space(), solution);
     // prolong to reference grid view
     typedef GDT::DiscreteFunction< AnsatzSpaceType, VectorType > DiscreteFunctionType;
-    DiscreteFunctionType fine_solution(*reference_discretization_->ansatz_space());
+    DiscreteFunctionType fine_solution(reference_discretization_->ansatz_space());
     GDT::Operators::Prolongation< typename DiscretizationType::GridViewType >
         prolongation_operator(reference_discretization_->grid_view());
     prolongation_operator.apply(coarse_solution, fine_solution);
     // compute reference solution
-    DiscreteFunctionType reference_solution(*reference_discretization_->ansatz_space());
+    DiscreteFunctionType reference_solution(reference_discretization_->ansatz_space());
     reference_discretization_->solve(reference_solution.vector(), mu);
     // compute error
     const auto difference = reference_solution.vector() - fine_solution.vector();
@@ -226,10 +226,10 @@ public:
                  << Stuff::Common::Typename< size_t >::value() << ": \n\n" << ee.what());
     }
     const GDT::ConstDiscreteFunction< typename DiscretizationType::AnsatzSpaceType, VectorType >
-        global_function(*discretization_.ansatz_space(), global_vector);
+        global_function(discretization_.ansatz_space(), global_vector);
     const auto oversampled_discretization = discretization_.get_oversampled_discretization(subdomain, "dirichlet");
     GDT::DiscreteFunction< typename DiscretizationType::OversampledDiscretizationType::AnsatzSpaceType, VectorType >
-        oversampled_function(*oversampled_discretization.ansatz_space());
+        oversampled_function(oversampled_discretization.ansatz_space());
     const GDT::Operators::Projection< typename DiscretizationType::OversampledDiscretizationType::GridViewType >
         projection_operator(oversampled_discretization.grid_view());
     projection_operator.apply(global_function, oversampled_function);
@@ -248,10 +248,10 @@ public:
                  << Stuff::Common::Typename< size_t >::value() << ": \n\n" << ee.what());
     }
     const GDT::ConstDiscreteFunction< typename DiscretizationType::AnsatzSpaceType, VectorType >
-        global_function(*discretization_.ansatz_space(), global_vector);
+        global_function(discretization_.ansatz_space(), global_vector);
     const auto local_discretization = discretization_.get_local_discretization(subdomain);
     GDT::DiscreteFunction< typename DiscretizationType::LocalDiscretizationType::AnsatzSpaceType, VectorType >
-        local_function(*local_discretization.ansatz_space());
+        local_function(local_discretization.ansatz_space());
     const GDT::Operators::Projection< typename DiscretizationType::LocalDiscretizationType::GridViewType >
         projection_operator(local_discretization.grid_view());
     projection_operator.apply(global_function, local_function);
@@ -272,9 +272,9 @@ public:
     const auto oversampled_discretization = discretization_.get_oversampled_discretization(subdomain, "dirichlet");
     const GDT::ConstDiscreteFunction
         < typename DiscretizationType::OversampledDiscretizationType::AnsatzSpaceType, VectorType >
-        oversampled_function(*oversampled_discretization.ansatz_space(), oversampled_vector);
+        oversampled_function(oversampled_discretization.ansatz_space(), oversampled_vector);
     const auto local_discretization = discretization_.get_local_discretization(subdomain);
-    const auto& local_space = *local_discretization.ansatz_space();
+    const auto& local_space = local_discretization.ansatz_space();
     GDT::DiscreteFunction< typename DiscretizationType::LocalDiscretizationType::AnsatzSpaceType, VectorType >
         local_function(local_space);
     const GDT::Operators::Projection< typename DiscretizationType::LocalDiscretizationType::GridViewType >
@@ -294,7 +294,7 @@ public:
                           const Dune::Pymor::Parameter mu_bar = Dune::Pymor::Parameter(),
                           const Dune::Pymor::Parameter mu     = Dune::Pymor::Parameter())
   {
-    return Estimator::estimate(*discretization_.ansatz_space(),
+    return Estimator::estimate(discretization_.ansatz_space(),
                                vector,
                                discretization_.problem(),
                                type,
@@ -315,7 +315,7 @@ public:
                                                const Dune::Pymor::Parameter mu_bar = Dune::Pymor::Parameter(),
                                                const Dune::Pymor::Parameter mu     = Dune::Pymor::Parameter())
   {
-    return Estimator::estimate_local(*discretization_.ansatz_space(),
+    return Estimator::estimate_local(discretization_.ansatz_space(),
                                      vector,
                                      discretization_.problem(),
                                      type,
@@ -355,7 +355,7 @@ public:
                                                                        OversampledProblemType;
     typedef typename OversampledDiscretizationType::AnsatzSpaceType    OversampledAnsatzSpaceType;
     auto bv_function = std::make_shared< GDT::ConstDiscreteFunction< OversampledAnsatzSpaceType, VectorType > >(
-          *oversampled_space, boundary_values, "boundary_values");
+          oversampled_space, boundary_values, "boundary_values");
     auto nonparametric_problem = test_case_.problem().with_mu(mu);
     const OversampledProblemType oversampled_problem(nonparametric_problem->diffusion_factor()->affine_part(),
                                                      nonparametric_problem->diffusion_tensor()->affine_part(),
@@ -377,7 +377,7 @@ public:
                                 const std::string& name)
   {
     using namespace Dune;
-    const auto ms_grid = discretization_.ansatz_space()->ms_grid();
+    const auto ms_grid = discretization_.ansatz_space().ms_grid();
     const auto& grid_view = discretization_.grid_view();
     if (vector.size() != ms_grid->size())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given,
