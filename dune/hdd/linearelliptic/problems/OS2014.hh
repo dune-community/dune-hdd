@@ -78,7 +78,7 @@ class ParametricESV2007< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
                               },
                               integration_order,
                               "component_0"),
-                            new Pymor::ParameterFunctional("mu", 1, "mu"));
+                            new Pymor::ParameterFunctional("mu", 1, "mu[0]"));
     return ret;
   } // ... create_diffusion_factor(...)
 
