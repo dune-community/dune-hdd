@@ -53,10 +53,10 @@ add_python_bindings(mpi_cg_bindings
                     mpi_cg_bindings_generator.py
                     mpi_cg_example.hh
                     dunehdd-linearelliptic-cg)
-#add_python_bindings(linearellipticexampleOS2014
-#                    OS2014_bindings_generator.py
-#                    OS2014_bindings_generator.hh
-#                    "")
+add_python_bindings(linearellipticexampleOS2014
+                    OS2014_bindings_generator.py
+                    OS2014_bindings_generator.hh
+                    "")
 
 #        example_linearelliptic_block_swipdg
 #        example_linearelliptic_OS2014_spe10_visualization
@@ -69,6 +69,7 @@ foreach(target
         example_linearelliptic_cg
         linearellipticexamplecg
         linearellipticexamplethermalblock
+        linearellipticexampleOS2014
         )
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})
@@ -91,8 +92,8 @@ if (NOT ${SPE10MODEL2DATA} STREQUAL "SPE10MODEL2DATA-NOTFOUND")
     execute_process(COMMAND ln -s "${SPE10MODEL2DATA}" "${SPE10MODEL2DATA_TARGET_FILENAME}")
   endif(NOT EXISTS ${SPE10MODEL2DATA_TARGET_FILENAME})
 endif (NOT ${SPE10MODEL2DATA} STREQUAL "SPE10MODEL2DATA-NOTFOUND")
-#foreach(_file "cg_main.py" "OS2014_academic.py" "OS2014_estimators.py" "OS2014_offline.py" "OS2014_online.py" "OS2014_prepare.py" "OS2014_spe10.py" "thermalblock_main.py")
-#  if (NOT EXISTS ${_file})
-#    execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${_file}" "${CMAKE_CURRENT_BINARY_DIR}//${_file}")
-#  endif (NOT EXISTS ${_file})
-#endforeach(_file)
+foreach(_file "cg_main.py" "OS2014_academic.py" "OS2014_estimators.py" "OS2014_offline.py" "OS2014_online.py" "OS2014_prepare.py" "OS2014_spe10.py" "thermalblock_main.py")
+  if (NOT EXISTS ${_file})
+    execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${_file}" "${CMAKE_CURRENT_BINARY_DIR}//${_file}")
+  endif (NOT EXISTS ${_file})
+endforeach(_file)
