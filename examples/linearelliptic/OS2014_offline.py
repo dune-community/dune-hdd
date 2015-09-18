@@ -17,6 +17,8 @@ from pymor.vectorarrays.block import BlockVectorArray
 
 from simdb.run import add_values
 
+from dune.pymor.la.container import make_listvectorarray
+
 from OS2014_estimators import ReducedEstimator, reduce_with_estimator
 
 
@@ -51,20 +53,20 @@ def offline_phase(cfg, data):
     initial_basis = discretization.functionals['rhs'].source.empty()._blocks
     if cfg['initialize_basis_with'] >= 0:
         logger.info('Initializing local bases of up to order {} ...'.format(cfg['initialize_basis_with']))
-        one = wrapper.vector_array(wrapper[example.project('1')])
+        one = make_listvectorarray(wrapper[example.project('1')])
         one = BlockVectorArray([discretization.localize_vector(one, ss)
                                 for ss in np.arange(discretization.num_subdomains)])
         initial_basis, _ = extension_algorithm(initial_basis, one)
     if cfg['initialize_basis_with'] >= 1:
-        xx = wrapper.vector_array(wrapper[example.project('x[0]')])
+        xx = make_listvectorarray(wrapper[example.project('x[0]')])
         xx = BlockVectorArray([discretization.localize_vector(xx, ss)
                                for ss in np.arange(discretization.num_subdomains)])
         initial_basis, _ = extension_algorithm(initial_basis, xx)
-        yy = wrapper.vector_array(wrapper[example.project('x[1]')])
+        yy = make_listvectorarray(wrapper[example.project('x[1]')])
         yy = BlockVectorArray([discretization.localize_vector(yy, ss)
                                for ss in np.arange(discretization.num_subdomains)])
         initial_basis, _ = extension_algorithm(initial_basis, yy)
-        xy = wrapper.vector_array(wrapper[example.project('x[0]*x[1]')])
+        xy = make_listvectorarray(wrapper[example.project('x[0]*x[1]')])
         xy = BlockVectorArray([discretization.localize_vector(xy, ss)
                                for ss in np.arange(discretization.num_subdomains)])
         initial_basis, _ = extension_algorithm(initial_basis, xy)

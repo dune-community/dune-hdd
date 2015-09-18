@@ -17,6 +17,8 @@ from pymor.playground.reductors    import GenericBlockRBReconstructor
 
 from simdb.run import add_values
 
+from dune.pymor.la.container import make_listvectorarray
+
 from OS2014_estimators import DetailedEstimator, ReducedEstimator
 
 
@@ -184,7 +186,7 @@ def online_phase(cfg, detailed_data, offline_data):
                                     subdomain, local_boundary_values, U_red_oversampled_dune, mu_dune)
                             U_h_improved_local_dune = example.project_oversampled_to_local(
                                     U_h_improved_oversampled_dune, subdomain)
-                            U_h_improved_local = wrapper.vector_array(wrapper[U_h_improved_local_dune])
+                            U_h_improved_local = make_listvectorarray(wrapper[U_h_improved_local_dune])
                             local_solutions[subdomain] = U_h_improved_local
                         # extend local bases
                         logger.info('  Extending bases on {} subdomain{}...'.format(
