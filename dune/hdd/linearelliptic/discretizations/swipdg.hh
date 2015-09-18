@@ -12,7 +12,6 @@
 #include <boost/numeric/conversion/cast.hpp>
 
 #include <dune/common/timer.hh>
-#include <dune/common/static_assert.hh>
 
 #include <dune/stuff/common/disable_warnings.hh>
 # if HAVE_ALUGRID
