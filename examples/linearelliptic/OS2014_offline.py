@@ -10,7 +10,7 @@ from __future__ import division, print_function
 from functools import partial
 import numpy as np
 
-from pymor.algorithms import greedy
+from pymor.algorithms.greedy import greedy
 from pymor.core.logger import getLogger
 from pymor.playground.algorithms import gram_schmidt_block_basis_extension
 from pymor.vectorarrays.block import BlockVectorArray
