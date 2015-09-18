@@ -10,7 +10,9 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
-#include <dune/fem/misc/mpimanager.hh>
+#if HAVE_DUNE_FEM
+# include <dune/fem/misc/mpimanager.hh>
+#endif
 
 #include <dune/stuff/common/exceptions.hh>
 #include <dune/stuff/common/logging.hh>
