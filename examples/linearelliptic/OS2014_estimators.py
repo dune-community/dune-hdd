@@ -102,9 +102,9 @@ def reduce_with_estimator(discretization,
                           disable_caching=True,
                           extends=None,
                           reduced_estimator=None):
+    assert operator_product is None
     rd, _, reduction_data = reduce_generic_rb(discretization,
                                               RB,
-                                              operator_product,
                                               vector_product,
                                               disable_caching,
                                               extends)
