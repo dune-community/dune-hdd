@@ -184,6 +184,11 @@ public:
                  "Requested type '" << type << "' is not one of those avaible for dimensions " << int(d) << " -> "
                  << int(r) << ":\n" << available_as_str());  } // ... default_config(...)
 
+  static std::unique_ptr< InterfaceType > create(const Stuff::Common::Configuration& cfg)
+  {
+    return create(cfg.get< std::string >("type"), cfg);
+  }
+
   static std::unique_ptr< InterfaceType > create(const std::string type = available()[0],
                                                  const Stuff::Common::Configuration cfg = Stuff::Common::Configuration())
   {
