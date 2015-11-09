@@ -14,7 +14,7 @@ from thermalblock_prepare import prepare
 
 
 config = {'dune_num_blocks': '[2 2 1]',
-          'dune_num_grid_elements': '[128 128 128]',
+          'dune_num_grid_elements': '[512 512 512]',
           'dune_products': ['l2', 'h1', 'elliptic'],
           'dune_log_info_level': 99,
           'dune_log_debug_level': -1,
@@ -22,11 +22,13 @@ config = {'dune_num_blocks': '[2 2 1]',
           'dune_example': 'CG_Thermalblock_1dYaspGrid_fem_eigen',
           'parameter_range': (0.1, 10),
           'initial_values_expr': 'exp(-((x[0]-0.5)*(x[0]-0.5))/(2*0.1*0.1))',
-          'end_time': 0.05}
+          'end_time': 0.075,
+          'num_timesteps': 250}
 
 pymor.core.logger.MAX_HIERACHY_LEVEL = 2
-getLogger('pymor.WrappedDiscretization').setLevel('WARN')
 getLogger('pymor.algorithms').setLevel('INFO')
+getLogger('pymor.la.genericsolvers.lgmres').setLevel('WARN')
+getLogger('pymor.WrappedDiscretization').setLevel('WARN')
 getLogger('dune.pymor.discretizations').setLevel('WARN')
 
 
@@ -37,7 +39,7 @@ if __name__ == '__main__':
 
     discretization = detailed_data['discretization']
     u = discretization.solve([1, 1])
-    discretization.visualize(u, filename='solution_uniform')
+    discretization.visualize(u, filename='temperature__diffusion_1')
     u = discretization.solve([0.1, 10])
-    discretization.visualize(u, filename='solution_jump')
+    discretization.visualize(u, filename='temperature__diffusion_01_10')
 

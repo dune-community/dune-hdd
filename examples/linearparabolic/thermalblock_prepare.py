@@ -69,7 +69,7 @@ def prepare(cfg):
                                                 operator=stationary_discretization.operator,
                                                 rhs=stationary_discretization.rhs,
                                                 mass=stationary_discretization.products['l2'],
-                                                time_stepper=ImplicitEulerTimeStepper(100),
+                                                time_stepper=ImplicitEulerTimeStepper(cfg['num_timesteps']),
                                                 products=stationary_discretization.products,
                                                 operators=stationary_discretization.operators,
                                                 functionals=stationary_discretization.functionals,
