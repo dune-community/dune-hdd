@@ -27,7 +27,7 @@
 #include <dune/stuff/grid/boundaryinfo.hh>
 #include <dune/stuff/grid/provider/cube.hh>
 
-#include <dune/hdd/linearelliptic/problems/thermalblock.hh>
+#include <dune/hdd/linearelliptic/testcases/spe10.hh>
 #include <dune/hdd/linearelliptic/discretizations/cg.hh>
 
 namespace internal {
@@ -66,10 +66,10 @@ public:
                                 debug_color,
                                 warn_color);
     } catch (Dune::Stuff::Exceptions::you_are_using_this_wrong&) {}
-    auto logger = DSC::TimedLogger().get("cg.thermalblock.example");
+    auto logger = DSC::TimedLogger().get("cg.spe10.example");
     logger.info() << "creating grid... " << std::flush;
-    grid_provider_ = GridProviderType::create(GridProviderType::default_config().add(DSC::Configuration("num_elements",
-                                                                                                        num_grid_elements),
+    grid_provider_ = GridProviderType::create(GridProviderType::default_config().add(DSC::Configuration({"num_elements", "upper_right"},
+                                                                                                        {num_grid_elements, "[5 1]"}),
                                                                                      "",
                                                                                      true));
 #if HAVE_ALUGRID
@@ -98,15 +98,15 @@ class CgExample
   typedef typename GridType::ctype                       DomainFieldType;
   typedef double                                         RangeFieldType;
   static const size_t                                    dimRange = 1;
-  typedef Dune::HDD::LinearElliptic::Problems::Thermalblock
+  typedef Dune::HDD::LinearElliptic::Problems::Spe10::Model1
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 > ProblemType;
 public:
   typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
                                                           RangeFieldType, dimRange, 1,
                                                           space_backend, la_backend > DiscretizationType;
 
-  CgExample(const std::string& num_blocks        = "[2 2 2]",
-            const std::string& num_grid_elements = "[32 32 32]",
+  CgExample(const std::string& /*num_blocks*/        = "[1 1]",
+            const std::string& num_grid_elements = "[100 20]",
             const DUNE_STUFF_SSIZE_T info_log_levels  = 0,
             const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
             const bool enable_warnings = true,
@@ -122,13 +122,12 @@ public:
                info_color,
                debug_color,
                warn_color)
-    , problem_(ProblemType::create(ProblemType::default_config().add(DSC::Configuration("diffusion_factor.num_elements",
-                                                                                        num_blocks),
-                                                                     "",
-                                                                     true)))
-    , discretization_(*grid_provider_, Dune::Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config(), *problem_)
+    , problem_(ProblemType::create(Dune::HDD::LinearElliptic::TestCases::Spe10::internal::parametric_model1_problem_cfg().
+                                   add(Dune::HDD::LinearElliptic::TestCases::Spe10::internal::parametric_model1_grid_cfg(), "", true).
+                                   add(DSC::Configuration("filename", "perm_case1.dat"))))
+    , discretization_(*grid_provider_, Dune::Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config(), *problem_, -1, {"h1"})
   {
-    auto logger = DSC::TimedLogger().get("cg.thermalblock.example");
+    auto logger = DSC::TimedLogger().get("cg.spe10.example");
     logger.info() << "initializing discretization... " << std::flush;
     discretization_.init();
     logger.info() << "done (has " << discretization_.ansatz_space().mapper().size() << " DoFs)" << std::endl;

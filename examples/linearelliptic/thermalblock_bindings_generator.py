@@ -142,8 +142,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             throw=exceptions,
                             template_parameters=[VectorType, MatrixType],
                             custom_name='gram_schmidt_' + name)
-    # YaSpGrid2d = 'Dune::YaspGrid< 2 >'
-    # YaspGrid3d = 'Dune::YaspGrid< 3 >'
+    YaspGrid2d = 'Dune::YaspGrid< 2 >'
+    YaspGrid3d = 'Dune::YaspGrid< 3 >'
     if HAVE_ALUGRID:
         AluGridConform2d = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
     la_backend_eigen = 'Dune::Stuff::LA::ChooseBackend::eigen_sparse'
@@ -151,28 +151,28 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     space_backend_pdelab = 'Dune::GDT::ChooseSpaceBackend::pdelab'
     space_backend_fem    = 'Dune::GDT::ChooseSpaceBackend::fem'
     if HAVE_DUNE_PDELAB and HAVE_DUNE_ISTL:
-        # add_example(YaspGrid2d, space_backend_pdelab, la_backend_istl, 'CG_Thermalblock_2dYaspGrid_pdelab_istl')
+        add_example(YaspGrid2d, space_backend_pdelab, la_backend_istl, 'CG_Thermalblock_2dYaspGrid_pdelab_istl')
         # add_example(YaspGrid3d, space_backend_pdelab, la_backend_istl, 'CG_Thermalblock_3dYaspGrid_pdelab_istl')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_pdelab, la_backend_istl,
                         'CG_Thermalblock_2dAluConformGrid_pdelab_istl')
     if HAVE_DUNE_PDELAB and HAVE_EIGEN:
-        # add_example(YaspGrid2d, space_backend_pdelab, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_pdelab_eigen')
+        add_example(YaspGrid2d, space_backend_pdelab, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_pdelab_eigen')
         # add_example(YaspGrid3d, space_backend_pdelab, la_backend_eigen, 'CG_Thermalblock_3dYaspGrid_pdelab_eigen')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_pdelab, la_backend_eigen,
                         'CG_Thermalblock_2dAluConformGrid_pdelab_eigen')
     if HAVE_DUNE_FEM and HAVE_DUNE_ISTL:
-        # add_example(YaspGrid2d, space_backend_fem, la_backend_istl, 'CG_Thermalblock_2dYaspGrid_fem_istl')
+        add_example(YaspGrid2d, space_backend_fem, la_backend_istl, 'CG_Thermalblock_2dYaspGrid_fem_istl')
         # add_example(YaspGrid3d, space_backend_fem, la_backend_istl, 'CG_Thermalblock_3dYaspGrid_fem_istl')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_istl,
                         'CG_Thermalblock_2dAluConformGrid_fem_istl')
     if HAVE_DUNE_FEM and HAVE_EIGEN:
-        # add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_fem_eigen')
+        add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_fem_eigen')
         # add_example(YaspGrid3d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_3dYaspGrid_fem_eigen')
         if HAVE_ALUGRID:
-            add_example(AluGridConform2d, space_backend_fem, la_backend_fem,
+            add_example(AluGridConform2d, space_backend_fem, la_backend_eigen,
                         'CG_Thermalblock_2dAluConformGrid_fem_eigen')
     if HAVE_DUNE_ISTL:
         add_gram_schmidt(la_backend_istl, 'istl')
