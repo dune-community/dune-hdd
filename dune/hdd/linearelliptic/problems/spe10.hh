@@ -165,7 +165,7 @@ private:
       auto minus_one = std::make_shared< ConstantFunctionType >(-1, "minus_one");
       diffusion_factor->register_affine_part(Stuff::Functions::make_sum(one, channel));
       diffusion_factor->register_component(Stuff::Functions::make_product(minus_one, channel),
-                                           new Pymor::ParameterFunctional("mu", 1, "mu[0]"));
+                                           new Pymor::ParameterFunctional("channel", 1, "channel[0]"));
       return BaseType(diffusion_factor,
                       std::make_shared< MatrixWrapper >(diffusion_tensor),
                       std::make_shared< ScalarWrapper >(force),
