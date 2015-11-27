@@ -19,6 +19,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     HAVE_DUNE_ISTL   = CONFIG_H['HAVE_DUNE_ISTL']
     HAVE_EIGEN       = CONFIG_H['HAVE_EIGEN']
     HAVE_ALUGRID     = CONFIG_H['HAVE_ALUGRID']
+    HAVE_DUNE_SPGRID = CONFIG_H['HAVE_DUNE_SPGRID']
     RangeFieldType = 'double'
     def add_example(GridType, space_backend, la_backend, name):
         # build all types needed for the discretization
@@ -137,8 +138,11 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     YaspGrid3d = 'Dune::YaspGrid< 3 >'
     if HAVE_ALUGRID:
         AluGridConform2d = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
-    if HAVE_ALUGRID:
         AluGridConform3d = 'Dune::ALUGrid< 3, 3, Dune::simplex, Dune::conforming >'
+    if HAVE_DUNE_SPGRID:
+        SPGrid1d = 'Dune::SPGrid< double, 1 >'
+        SPGrid2d = 'Dune::SPGrid< double, 2 >'
+        SPGrid3d = 'Dune::SPGrid< double, 3 >'
     la_backend_eigen = 'Dune::Stuff::LA::ChooseBackend::eigen_sparse'
     la_backend_istl  = 'Dune::Stuff::LA::ChooseBackend::istl_sparse'
     space_backend_pdelab = 'Dune::GDT::ChooseSpaceBackend::pdelab'
@@ -171,14 +175,21 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     #         add_example(AluGridConform3d, space_backend_fem, la_backend_istl,
     #                     'CG_Thermalblock_3dAluConformGrid_fem_istl')
     if HAVE_DUNE_FEM and HAVE_EIGEN:
-        add_example(YaspGrid1d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_1dYaspGrid_fem_eigen')
-        add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_fem_eigen')
+        # add_example(YaspGrid1d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_1dYaspGrid_fem_eigen')
+        # add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_fem_eigen')
         add_example(YaspGrid3d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_3dYaspGrid_fem_eigen')
-        if HAVE_ALUGRID:
-            add_example(AluGridConform2d, space_backend_fem, la_backend_eigen,
-                        'CG_Thermalblock_2dAluConformGrid_fem_eigen')
-            add_example(AluGridConform3d, space_backend_fem, la_backend_eigen,
-                        'CG_Thermalblock_3dAluConformGrid_fem_eigen')
+        # if HAVE_ALUGRID:
+            # add_example(AluGridConform2d, space_backend_fem, la_backend_eigen,
+                        # 'CG_Thermalblock_2dAluConformGrid_fem_eigen')
+            # add_example(AluGridConform3d, space_backend_fem, la_backend_eigen,
+                        # 'CG_Thermalblock_3dAluConformGrid_fem_eigen')
+        # if HAVE_DUNE_SPGRID:
+            # add_example(SPGrid1d, space_backend_fem, la_backend_eigen,
+                        # 'CG_Thermalblock_1dSpGrid_fem_eigen')
+            # add_example(SPGrid2d, space_backend_fem, la_backend_eigen,
+                        # 'CG_Thermalblock_2dSpGrid_fem_eigen')
+            # add_example(SPGrid3d, space_backend_fem, la_backend_eigen,
+                        # 'CG_Thermalblock_3dSpGrid_fem_eigen')
 
 
 if __name__ == '__main__':

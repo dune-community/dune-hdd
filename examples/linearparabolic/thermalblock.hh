@@ -25,7 +25,7 @@
 #include <dune/gdt/spaces/interface.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/cg.hh>
-#include <dune/hdd/linearelliptic/problems/thermalblock.hh>
+#include <dune/hdd/linearelliptic/problems/battery.hh>
 
 namespace internal {
 
@@ -63,12 +63,10 @@ public:
                                 debug_color,
                                 warn_color);
     } catch (Dune::Stuff::Exceptions::you_are_using_this_wrong&) {}
-    auto logger = DSC::TimedLogger().get("cg.thermalblock.example");
+    auto logger = DSC::TimedLogger().get("cg.parabolic.example");
     logger.info() << "creating grid... " << std::flush;
-    grid_provider_ = GridProviderType::create(GridProviderType::default_config().add(DSC::Configuration("num_elements",
-                                                                                                        num_grid_elements),
-                                                                                     "",
-                                                                                     true));
+    grid_provider_ = GridProviderType::create(DSC::Configuration({"lower_left", "upper_right", "num_elements"},
+                                                                 {"[0.0 0.0 0.0]", "[0.0184 0.008 0.008]", num_grid_elements}));
 #if HAVE_ALUGRID
     if (std::is_same< GridType, Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming > >::value)
       grid_provider_->grid().globalRefine(1);
@@ -95,7 +93,7 @@ class CgThermalblockExample
   typedef typename GridType::ctype                       DomainFieldType;
   typedef double                                         RangeFieldType;
   static const size_t                                    dimRange = 1;
-  typedef Dune::HDD::LinearElliptic::Problems::Thermalblock
+  typedef Dune::HDD::LinearElliptic::Problems::Battery
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 > ProblemType;
 public:
   typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
@@ -104,8 +102,8 @@ public:
   typedef typename DiscretizationType::VectorType                                        VectorType;
 
 public:
-  CgThermalblockExample(const std::string& num_blocks = "[1 1 1]",
-                        const std::string& num_grid_elements = "[8 8 8]",
+  CgThermalblockExample(const std::string& /*num_blocks*/ = "[1 1 1]",
+                        const std::string& num_grid_elements = "[46 20 20]",
                         const std::vector< std::string >& only_these_products = {},
                         const DUNE_STUFF_SSIZE_T info_log_levels  = 0,
                         const DUNE_STUFF_SSIZE_T debug_log_levels = -1,
@@ -123,8 +121,8 @@ public:
                debug_color,
                warn_color)
     , problem_(ProblemType::create(ProblemType::default_config().add(
-                                     DSC::Configuration({"diffusion_factor.num_elements", "force.value"},
-                                                        {num_blocks,                      "0"}),
+                                     DSC::Configuration({"dirichlet.value", "force.value"},
+                                                        {"0",               "0"}),
                                      "",
                                      true)))
     , boundary_info_cfg_(Dune::Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())

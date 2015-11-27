@@ -22,7 +22,11 @@
 # if HAVE_ALUGRID
 #   include <dune/grid/alugrid.hh>
 # endif
+# if HAVE_DUNE_SPGRID
+# include <dune/grid/spgrid.hh>
+# endif
 # include <dune/grid/yaspgrid.hh>
+
 
 # include <dune/pymor/bindings/pymor.hh>
 
