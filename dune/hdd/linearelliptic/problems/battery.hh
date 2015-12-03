@@ -28,7 +28,7 @@ template< class E, class D, int d, class R, int r = 1 >
 class Battery
   : public ProblemInterface< E, D, d, R, r >
 {
-  static_assert(AlwaysFalse< E >::value, "Not available for these dimensions!");
+  Battery() { static_assert(AlwaysFalse< E >::value, "Not available for these dimensions!"); }
 };
 
 
