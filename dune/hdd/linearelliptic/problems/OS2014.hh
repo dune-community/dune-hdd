@@ -235,7 +235,7 @@ class LocalThermalblock< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
   typedef Default< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >  BaseType;
   typedef LocalThermalblock< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > ThisType;
 
-  typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >   IndicatorFunctionType;
+  typedef Stuff::Functions::DomainIndicator< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 > IndicatorFunctionType;
   typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >    ConstantScalarFunctionType;
   typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 2, RangeFieldImp, 2, 2 > ConstantMatrixFunctionType;
   typedef Pymor::Functions::NonparametricDefault< EntityImp, DomainFieldImp, 2, RangeFieldImp, 1 >
