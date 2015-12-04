@@ -58,6 +58,7 @@ public:
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
     Stuff::Common::Configuration config("integration_order", "3");
+    config["type"] = static_id();
     config["lower_left"] = "[0 0 0]";
     config.set("upper_right", Spe10FunctionType::default_upper_right);
     if (sub_name.empty())

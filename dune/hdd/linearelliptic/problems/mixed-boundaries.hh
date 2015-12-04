@@ -52,6 +52,7 @@ public:
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
     Stuff::Common::Configuration config;
+    config["type"] = static_id();
     config.add(ConstantScalarFunctionType::default_config(), "diffusion_factor");
     config["diffusion_factor.type"] = ConstantScalarFunctionType::static_id();
     config["diffusion_factor.name"] = "diffusion_factor";

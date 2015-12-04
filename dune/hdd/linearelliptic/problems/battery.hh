@@ -60,6 +60,7 @@ public:
   {
     auto config = BaseType::default_config();
     config["diffusion_factor."] = "";
+    config["type"] = static_id();
     config["diffusion_factor.filename"]    = "geometry";
     config["diffusion_factor.lower_left"]  = "[0.0 0.0 0.0]";
     config["diffusion_factor.upper_right"] = "[0.0184 0.008 0.008]";

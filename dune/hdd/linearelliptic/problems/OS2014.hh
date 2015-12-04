@@ -93,6 +93,7 @@ public:
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
     Stuff::Common::Configuration config("integration_order", "3");
+    config["type"] = static_id();
     if (sub_name.empty())
       return config;
     else {
