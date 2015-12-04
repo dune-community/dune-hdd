@@ -39,6 +39,7 @@ if (NOT ${SPE10MODEL2DATA} STREQUAL "SPE10MODEL2DATA-NOTFOUND")
 endif (NOT ${SPE10MODEL2DATA} STREQUAL "SPE10MODEL2DATA-NOTFOUND")
 
 foreach(file
+        "battery.py"
         "thermalblock_main.py"
         "thermalblock_prepare.py")
   if (NOT EXISTS ${file})
