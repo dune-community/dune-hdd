@@ -452,6 +452,7 @@ public:
     this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
 
     // finalize
+    this->vectors_.insert(std::make_pair("dirichlet", dirichlet_vector));
     if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end())
       this->products_.insert(std::make_pair("l2", l2_product_matrix));
     if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end())
