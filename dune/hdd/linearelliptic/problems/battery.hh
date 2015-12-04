@@ -58,8 +58,9 @@ public:
 
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
-    auto config = BaseType::default_config();
-    config["diffusion_factor."] = "";
+    Stuff::Common::Configuration config;
+    for (auto sub : {"diffusion_tensor", "force", "dirichlet", "neumann"})
+      config.add(BaseType::default_config().sub(sub), sub);
     config["type"] = static_id();
     config["diffusion_factor.filename"]    = "geometry";
     config["diffusion_factor.lower_left"]  = "[0.0 0.0 0.0]";
