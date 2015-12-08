@@ -26,14 +26,13 @@ class InstationaryDuneVisualizer(object):
         self.prefix = prefix
 
     def visualize(self, U, *args, **kwargs):
-        dune_disc = self.disc._impl
         import numpy as np
+        dune_disc = self.disc._impl
         assert isinstance(U, ListVectorArray)
         filename = kwargs['filename'] if 'filename' in kwargs else self.prefix
         size = len(U)
         pad = len(str(size))
         for ss in np.arange(size):
-            dune_U = U._list[ss]._impl
             dune_disc.visualize(U._list[ss]._impl,
                                 filename + '_' + str(ss).zfill(pad),
                                 'solution',
@@ -90,7 +89,7 @@ dirichlet_shift = make_listvectorarray(stationary_discretization.vector_operator
 initial_values = make_listvectorarray(wrapper[example.project(dirichlet_value)])
 initial_values -= dirichlet_shift
 
-discretization = InstationaryDiscretization(T=0.0000001,
+discretization = InstationaryDiscretization(T=0.01,
                                             initial_data=initial_values,
                                             operator=stationary_discretization.operator,
                                             rhs=stationary_discretization.rhs,
@@ -106,8 +105,7 @@ discretization = InstationaryDiscretization(T=0.0000001,
                                                                                 [0.5, 0.5, 0.5, 0.5, 0.1, 0.1],
                                                                                 [2.0, 2.0, 2.0, 2.0, 10., 1.0]))
 
-# mu = {'ANODE': 1.04, 'CATHODE': 1.58, 'CC_ANODE': 238, 'CC_CATHODE': 398, 'ELECTROLYTE': 0.6, 'SEPARATOR': 0.3344}
-mu = {'ANODE': 1.04, 'CATHODE': 1.58, 'CC_ANODE': 1.04, 'CC_CATHODE': 1.58, 'ELECTROLYTE': 0.6, 'SEPARATOR': 0.3344}
+mu = {'ANODE': 1.04, 'CATHODE': 1.58, 'CC_ANODE': 238, 'CC_CATHODE': 398, 'ELECTROLYTE': 0.6, 'SEPARATOR': 0.3344}
 U = discretization.solve(mu)
 U += dirichlet_shift
 logger.info('visualizing trajectory ...')
