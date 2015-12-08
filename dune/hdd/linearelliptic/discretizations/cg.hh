@@ -450,14 +450,30 @@ public:
 
     // finalize
     this->vectors_.insert(std::make_pair("dirichlet", dirichlet_vector));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end())
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()) {
       this->products_.insert(std::make_pair("l2", l2_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end())
+      this->products_.insert(std::make_pair("l2_0", make_zero_dirichlet_product(l2_product_matrix,
+                                                                                clear_and_set_dirichlet_rows,
+                                                                                clear_dirichlet_rows)));
+    }
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()) {
       this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end())
+      this->products_.insert(std::make_pair("h1_semi_0", make_zero_dirichlet_product(h1_product_matrix,
+                                                                                     clear_and_set_dirichlet_rows,
+                                                                                     clear_dirichlet_rows)));
+    }
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end()) {
       this->products_.insert(std::make_pair("elliptic", elliptic_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end())
+      this->products_.insert(std::make_pair("elliptic_0", make_zero_dirichlet_product(elliptic_product_matrix,
+                                                                                      clear_and_set_dirichlet_rows,
+                                                                                      clear_dirichlet_rows)));
+    }
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
       this->products_.insert(std::make_pair("h1", h1_product_matrix));
+      this->products_.insert(std::make_pair("h1_0", make_zero_dirichlet_product(h1_product_matrix,
+                                                                                clear_and_set_dirichlet_rows,
+                                                                                clear_dirichlet_rows)));
+    }
     if (std::find(only_these_products_.begin(), only_these_products_.end(), "energy") != only_these_products_.end())
       this->products_.insert(std::make_pair("energy",
                                             std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
@@ -466,6 +482,26 @@ public:
 
 private:
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
+
+  template< class SetConstraints, class ClearConstraints >
+  std::shared_ptr< AffinelyDecomposedMatrixType >
+  make_zero_dirichlet_product(const std::shared_ptr< AffinelyDecomposedMatrixType >& prod,
+                              const SetConstraints& set,
+                              const ClearConstraints& clear)
+  {
+    auto ret = std::make_shared<AffinelyDecomposedMatrixType>(prod->copy());
+    for (ssize_t qq = 0; qq < ret->num_components(); ++qq) {
+      clear.apply(*ret->component(qq));
+    }
+    if (!ret->has_affine_part()) {
+      // we can assume that there is at least one component
+      assert(ret->num_components() > 0);
+      ret->register_affine_part(new MatrixType(ret->component(0)->copy()));
+      *ret->affine_part() *= 0;
+    }
+    set.apply(*ret->affine_part());
+    return ret;
+  } // ... make_zero_dirichlet_product(...)
 
   PatternType pattern_;
   std::shared_ptr< GridProviderType > grid_provider_;
