@@ -368,6 +368,13 @@ public:
       for (auto& product : elliptic_products)
         system_assembler.add(*product);
     }
+    // constraints
+    Spaces::DirichletConstraints< typename GridViewType::Intersection >
+        clear_and_set_dirichlet_rows(boundary_info, space.mapper().size());
+    Spaces::DirichletConstraints< typename GridViewType::Intersection >
+        clear_dirichlet_rows(boundary_info, space.mapper().size(), false);
+    system_assembler.add(clear_and_set_dirichlet_rows, new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+    system_assembler.add(clear_dirichlet_rows, new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
     // do the actual assembling
     system_assembler.walk();
 
@@ -424,26 +431,16 @@ public:
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     out << prefix << "applying constraints... " << std::flush;
-    GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
-      clear_and_set_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
-    GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
-      clear_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs(), false);
     // we always need an affine part in the system matrix for the dirichlet rows
     if (!matrix.has_affine_part())
       matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
-    system_assembler.add(clear_and_set_dirichlet_rows,
-                         *(matrix.affine_part()),
-                         new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+    clear_and_set_dirichlet_rows.apply(*(matrix.affine_part()));
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-      system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)),
-                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+      clear_dirichlet_rows.apply(*(matrix.component(qq)));
     if (rhs.has_affine_part())
-      system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()),
-                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+      clear_dirichlet_rows.apply(*(rhs.affine_part()));
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-      system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
-                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
-    system_assembler.walk();
+      clear_dirichlet_rows.apply(*(rhs.component(qq)));
     out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // build parameter type
