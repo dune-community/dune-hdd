@@ -65,8 +65,9 @@ boundary_cfg.set('default', 'neumann')
 boundary_cfg.set('dirichlet.0', '[-1 0 0]')
 boundary_cfg.set('dirichlet.1', '[1 0 0]')
 
+dirichlet_value = '298'
 problem_cfg = Example.problem_options('hdd.linearelliptic.problem.battery')
-problem_cfg.set('dirichlet.expression', '298', True)
+problem_cfg.set('dirichlet.expression,', dirichlet_value, True)
 problem_cfg.set('neumann.expression', '0', True)
 problem_cfg.set('force.expression', '0', True)
 
@@ -85,13 +86,15 @@ logger.info('visualizing grid and data functions ...')
 example.visualize(problem_cfg.get_str('type'))
 
 logger.info('projecting initial values ...')
-initial_values = make_listvectorarray(wrapper[example.project('298')])
+dirichlet_shift = make_listvectorarray(stationary_discretization.vector_operators['dirichlet'])
+initial_values = make_listvectorarray(wrapper[example.project(dirichlet_value)])
+initial_values -= dirichlet_shift
 
 discretization = InstationaryDiscretization(T=0.0000001,
                                             initial_data=initial_values,
                                             operator=stationary_discretization.operator,
                                             rhs=stationary_discretization.rhs,
-                                            mass=stationary_discretization.products['l2'],
+                                            mass=stationary_discretization.products['l2_0'],
                                             time_stepper=ImplicitEulerTimeStepper(100, invert_options=solver_options.get_str('type')),
                                             products=stationary_discretization.products,
                                             operators=stationary_discretization.operators,
@@ -106,6 +109,7 @@ discretization = InstationaryDiscretization(T=0.0000001,
 # mu = {'ANODE': 1.04, 'CATHODE': 1.58, 'CC_ANODE': 238, 'CC_CATHODE': 398, 'ELECTROLYTE': 0.6, 'SEPARATOR': 0.3344}
 mu = {'ANODE': 1.04, 'CATHODE': 1.58, 'CC_ANODE': 1.04, 'CC_CATHODE': 1.58, 'ELECTROLYTE': 0.6, 'SEPARATOR': 0.3344}
 U = discretization.solve(mu)
+U += dirichlet_shift
 logger.info('visualizing trajectory ...')
 discretization.visualize(U)
 
