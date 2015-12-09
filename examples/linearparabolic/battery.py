@@ -7,10 +7,16 @@
 
 from __future__ import division, print_function
 
+from functools import partial
+import numpy as np
+
+from pymor.algorithms.basisextension import pod_basis_extension
+from pymor.algorithms.greedy import greedy
 from pymor.algorithms.timestepping import ImplicitEulerTimeStepper
 from pymor.core.logger import getLogger
 from pymor.discretizations.basic import InstationaryDiscretization
 from pymor.parameters.spaces import CubicParameterSpace
+from pymor.reductors.basic import reduce_generic_rb
 from pymor.vectorarrays.list import ListVectorArray
 
 from dune.pymor.la.container import make_listvectorarray
@@ -85,16 +91,18 @@ logger.info('visualizing grid and data functions ...')
 example.visualize(problem_cfg.get_str('type'))
 
 logger.info('projecting initial values ...')
-dirichlet_shift = make_listvectorarray(stationary_discretization.vector_operators['dirichlet'])
+dirichlet_shift = stationary_discretization.vector_operators['dirichlet'].as_vector()
 initial_values = make_listvectorarray(wrapper[example.project(dirichlet_value)])
 initial_values -= dirichlet_shift
 
-discretization = InstationaryDiscretization(T=0.01,
+end_time = 0.01
+nt = 10
+discretization = InstationaryDiscretization(T=end_time,
                                             initial_data=initial_values,
                                             operator=stationary_discretization.operator,
                                             rhs=stationary_discretization.rhs,
                                             mass=stationary_discretization.products['l2_0'],
-                                            time_stepper=ImplicitEulerTimeStepper(100, invert_options=solver_options.get_str('type')),
+                                            time_stepper=ImplicitEulerTimeStepper(nt, invert_options=solver_options.get_str('type')),
                                             products=stationary_discretization.products,
                                             operators=stationary_discretization.operators,
                                             functionals=stationary_discretization.functionals,
@@ -102,11 +110,27 @@ discretization = InstationaryDiscretization(T=0.01,
                                             visualizer=InstationaryDuneVisualizer(stationary_discretization,
                                                                                   problem_cfg.get_str('type') + '.solution'),
                                             parameter_space=CubicParameterSpace(stationary_discretization.parameter_type,
-                                                                                [0.5, 0.5, 0.5, 0.5, 0.1, 0.1],
-                                                                                [2.0, 2.0, 2.0, 2.0, 10., 1.0]))
+                                                                                [0.1, 0.1, 200, 350, 0.1, 0.1],
+                                                                                [2.0, 2.0, 300, 450, 2.0, 2.0]))
 
 mu = {'ANODE': 1.04, 'CATHODE': 1.58, 'CC_ANODE': 238, 'CC_CATHODE': 398, 'ELECTROLYTE': 0.6, 'SEPARATOR': 0.3344}
+num_training_samples = 1
+max_rb_size = 1
+greedy_data = greedy(discretization,
+                     reduce_generic_rb,
+                     # discretization.parameter_space.sample_uniformly(num_training_samples),
+                     (mu,),
+                     use_estimator=False,
+                     error_norm=lambda U: np.max(discretization.h1_0_norm(U)),
+                     extension_algorithm=partial(pod_basis_extension, count=1, product=discretization.products['h1_0']),
+                     max_extensions=max_rb_size)
+
+rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
+rd = rd.with_(time_stepper=ImplicitEulerTimeStepper(nt))
+URB = rd.solve(mu)
 U = discretization.solve(mu)
+print('error: {}'.format(np.max(discretization.h1_0_norm(U - rc.reconstruct(URB)))))
+
 U += dirichlet_shift
 logger.info('visualizing trajectory ...')
 discretization.visualize(U)
