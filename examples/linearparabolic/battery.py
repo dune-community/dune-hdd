@@ -74,7 +74,7 @@ dirichlet_value = '298'
 problem_cfg = Example.problem_options('hdd.linearelliptic.problem.battery')
 problem_cfg.set('dirichlet.expression', dirichlet_value, True)
 problem_cfg.set('neumann.expression', '0', True)
-problem_cfg.set('force.expression', '0', True)
+problem_cfg.set('force.value', '1000', True)
 
 # all but the 'type' will be discarded, so no point in setting more details here
 solver_options = Example.solver_options('bicgstab.amg.ilu0')
@@ -110,10 +110,10 @@ discretization = InstationaryDiscretization(T=end_time,
                                             visualizer=InstationaryDuneVisualizer(stationary_discretization,
                                                                                   problem_cfg.get_str('type') + '.solution'),
                                             parameter_space=CubicParameterSpace(stationary_discretization.parameter_type,
-                                                                                [0.1, 0.1, 200, 350, 0.1, 0.1],
-                                                                                [2.0, 2.0, 300, 450, 2.0, 2.0]))
+                                                                                (0.1,),
+                                                                                (10,)))
 
-mu = {'ANODE': 1.04, 'CATHODE': 1.58, 'CC_ANODE': 238, 'CC_CATHODE': 398, 'ELECTROLYTE': 0.6, 'SEPARATOR': 0.3344}
+mu = {'ELECTROLYTE': 0.6}
 num_training_samples = 1
 max_rb_size = 1
 greedy_data = greedy(discretization,
