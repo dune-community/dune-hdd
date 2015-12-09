@@ -21,6 +21,10 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_cg
                       dunehdd-linearelliptic-cg
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
+ADD_EXECUTABLE(example_linearelliptic_generic "generic.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_generic
+                      ${COMMON_LIBS})
+
 ADD_EXECUTABLE(mpi_cg_main "mpi_cg_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(mpi_cg_main
                       dunehdd-linearelliptic-cg 
@@ -71,6 +75,7 @@ foreach(target
         mpi_cg_main
         mpi_cg_bindings
         example_linearelliptic_cg
+        example_linearelliptic_generic
         linearellipticexamplecg
         linearellipticexamplegeneric
         linearellipticexamplethermalblock
