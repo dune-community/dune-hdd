@@ -72,7 +72,7 @@ boundary_cfg.set('dirichlet.1', '[1 0 0]')
 
 dirichlet_value = '298'
 problem_cfg = Example.problem_options('hdd.linearelliptic.problem.battery')
-problem_cfg.set('dirichlet.expression,', dirichlet_value, True)
+problem_cfg.set('dirichlet.expression', dirichlet_value, True)
 problem_cfg.set('neumann.expression', '0', True)
 problem_cfg.set('force.expression', '0', True)
 
