@@ -111,9 +111,13 @@ discretization = InstationaryDiscretization(T=end_time,
                                                                                   problem_cfg.get_str('type') + '.solution'),
                                             parameter_space=CubicParameterSpace(stationary_discretization.parameter_type,
                                                                                 (0.1,),
-                                                                                (10,)))
+                                                                                (10,)),
+                                            cache_region='disk')
 
 mu = {'ELECTROLYTE': 0.6}
+U = discretization.solve(mu)
+U = discretization.solve(mu)
+U = discretization.solve(mu)
 num_training_samples = 1
 max_rb_size = 1
 greedy_data = greedy(discretization,
