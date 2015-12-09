@@ -57,11 +57,13 @@ logger_cfg.set('info_color', 'blue', True)
 battery_geometry = {'lower_left':   '[0      0     0]',
                     'upper_right':  '[0.0184 0.008 0.008]',
                     'num_elements': '[46     20    20]',
+                    'separator':    '[0.0084 0.01; 0 0.008; 0 0.008]'}
                     'filename': 'geometry__46x20x20_h4e-6m'}
 # multibat-pymor/problem-data/ellisoid_5_5_16.8
 # battery_geometry = {'lower_left':   '[0      0     0]',
 #                     'upper_right':  '[0.0246 0.006 0.006]',
 #                     'num_elements': '[246    60    60]',
+#                     'separator':    '[]',
 #                     'filename': 'geometry__ellisoid_5_5_16.8'}
 
 grid_cfg = Example.grid_options('stuff.grid.provider.cube')
@@ -75,11 +77,12 @@ boundary_cfg.set('default', 'neumann')
 boundary_cfg.set('dirichlet.0', '[-1 0 0]')
 boundary_cfg.set('dirichlet.1', '[1 0 0]')
 
-dirichlet_value = '298'
+dirichlet_value = '0'
 problem_cfg = Example.problem_options('hdd.linearelliptic.problem.battery')
 problem_cfg.set('diffusion_factor.lower_left', battery_geometry['lower_left'], True)
 problem_cfg.set('diffusion_factor.upper_right', battery_geometry['upper_right'], True)
 problem_cfg.set('diffusion_factor.num_elements', battery_geometry['num_elements'], True)
+problem_cfg.set('diffusion_factor.separator', battery_geometry['separator'], True)
 problem_cfg.set('diffusion_factor.filename', battery_geometry['filename'], True)
 problem_cfg.set('dirichlet.expression', dirichlet_value, True)
 problem_cfg.set('neumann.expression', '0', True)
