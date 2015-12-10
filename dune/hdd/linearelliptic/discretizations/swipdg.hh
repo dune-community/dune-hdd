@@ -361,7 +361,8 @@ public:
       typedef Products::L2Assemblable< MatrixType, TestSpaceType, GridViewType, AnsatzSpaceType > L2ProductType;
       std::unique_ptr< L2ProductType > l2_product;
       auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()) {
+      if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()
+          || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
         l2_product_matrix->register_affine_part(this->test_space()->mapper().size(),
                                                 this->ansatz_space()->mapper().size(),
                                                 L2ProductType::pattern(*this->test_space(),
@@ -377,13 +378,14 @@ public:
       typedef Products::H1SemiAssemblable< MatrixType, TestSpaceType, GridViewType, AnsatzSpaceType >
           H1ProductType;
       std::unique_ptr< H1ProductType > h1_product;
-      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()) {
-        h1_product_matrix->register_affine_part(this->test_space()->mapper().size(),
+      auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()
+          || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
+        h1_semi_product_matrix->register_affine_part(this->test_space()->mapper().size(),
                                                 this->ansatz_space()->mapper().size(),
                                                 H1ProductType::pattern(*this->test_space(),
                                                                        *this->ansatz_space()));
-        h1_product = DSC::make_unique< H1ProductType >(*(h1_product_matrix->affine_part()),
+        h1_product = DSC::make_unique< H1ProductType >(*(h1_semi_product_matrix->affine_part()),
                                                        *this->test_space(),
                                                        this->grid_view(),
                                                        *this->ansatz_space(),
@@ -493,10 +495,18 @@ public:
       this->inherit_parameter_type(rhs.parameter_type(),    "rhs");
 
       // finalize
+      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
+        h1_product_matrix->register_affine_part(h1_semi_product_matrix->affine_part()->copy());
+        h1_product_matrix->affine_part()->axpy(1, *l2_product_matrix->affine_part());
+      }
+
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end())
         this->products_.insert(std::make_pair("l2", l2_product_matrix));
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end())
-        this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
+        this->products_.insert(std::make_pair("h1_semi", h1_semi_product_matrix));
+      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end())
+        this->products_.insert(std::make_pair("h1", h1_product_matrix));
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end())
         this->products_.insert(std::make_pair("elliptic", elliptic_product_matrix));
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end())
