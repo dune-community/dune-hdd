@@ -57,6 +57,7 @@ foreach(target
         example_linearelliptic_thermalblock
         example_linearelliptic_OS2014_spe10_visualization
         linearellipticexamplecg
+        linearellipticexamplegeneric
         linearellipticexamplethermalblock
         linearellipticexampleOS2014)
   add_dune_superlu_flags(${target})
