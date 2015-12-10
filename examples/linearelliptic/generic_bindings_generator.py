@@ -145,9 +145,9 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         #     add_example(SPGrid3d, space_backend_pdelab, la_backend_eigen,
         #                 'GenericLinearellipticExample_3dSpGrid_pdelab_eigen')
     if HAVE_DUNE_FEM and HAVE_DUNE_ISTL:
-        # add_example(YaspGrid1d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_1dYaspGrid_fem_istl')
-        # add_example(YaspGrid2d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_2dYaspGrid_fem_istl')
-        # add_example(YaspGrid3d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_3dYaspGrid_fem_istl')
+        add_example(YaspGrid1d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_1dYaspGrid_fem_istl')
+        add_example(YaspGrid2d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_2dYaspGrid_fem_istl')
+        add_example(YaspGrid3d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_3dYaspGrid_fem_istl')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_istl,
                         'GenericLinearellipticExample_2dAluConformGrid_fem_istl')
@@ -161,9 +161,9 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         #     add_example(SPGrid3d, space_backend_fem, la_backend_istl,
         #                 'GenericLinearellipticExample_3dSpGrid_fem_istl')
     if HAVE_DUNE_FEM and HAVE_EIGEN:
-        # add_example(YaspGrid1d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_1dYaspGrid_fem_eigen')
-        # add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_2dYaspGrid_fem_eigen')
-        # add_example(YaspGrid3d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_3dYaspGrid_fem_eigen')
+        add_example(YaspGrid1d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_1dYaspGrid_fem_eigen')
+        add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_2dYaspGrid_fem_eigen')
+        add_example(YaspGrid3d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_3dYaspGrid_fem_eigen')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_eigen,
                         'GenericLinearellipticExample_2dAluConformGrid_fem_eigen')
