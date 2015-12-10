@@ -125,26 +125,35 @@ public:
   void visualize(const VectorType& vector,
                  const std::string filename,
                  const std::string name,
+                 const bool add_dirichlet = true,
                  Pymor::Parameter mu = Pymor::Parameter()) const
   {
-    VectorType tmp = vector.copy();
     const auto vectors = this->available_vectors();
-    const auto result = std::find(vectors.begin(), vectors.end(), "dirichlet");
-    if (result != vectors.end()) {
+    if (add_dirichlet && std::find(vectors.begin(), vectors.end(), "dirichlet") != vectors.end()) {
+      VectorType tmp = vector.copy();
       const auto dirichlet_vector = this->get_vector("dirichlet");
       if (dirichlet_vector.parametric()) {
         const Pymor::Parameter mu_dirichlet = this->map_parameter(mu, "dirichlet");
         if (mu_dirichlet.type() != dirichlet_vector.parameter_type())
           DUNE_THROW(Pymor::Exceptions::wrong_parameter_type,
                      mu_dirichlet.type() << " vs. " << dirichlet_vector.parameter_type());
-        tmp = dirichlet_vector.freeze_parameter(mu);
-      } else
-        tmp = *(dirichlet_vector.affine_part());
-      tmp += vector;
+        tmp += dirichlet_vector.freeze_parameter(mu);
+      } else {
+        tmp += *(dirichlet_vector.affine_part());
+      }
+      GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >(*ansatz_space_, tmp, name).visualize(filename);
+    } else {
+      GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >(*ansatz_space_, vector, name).visualize(filename);
     }
-    const GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >function(*(ansatz_space()), tmp, name);
-    function.visualize(filename);
   } // ... visualize(...)
+
+  void visualize(const VectorType& vector,
+                 const std::string filename,
+                 const std::string name,
+                 Pymor::Parameter mu) const
+  {
+    visualize(vector, filename, name, true, mu);
+  }
 
   using BaseType::solve;
 
