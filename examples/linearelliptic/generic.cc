@@ -64,8 +64,10 @@ int main(int /*argc*/, char** /*argv*/)
     ExampleType example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg);
     auto& disc = example.discretization();
     auto U = disc.create_vector();
-    disc.solve(solver_options, U, Pymor::Parameter("ELECTROLYTE", 1.));
+    disc.solve(solver_options, U, Pymor::Parameter("ELECTROLYTE", 0.6));
     disc.visualize(U, "solution", "solution");
+
+    DSC::TimedLogger().get("main").info() << "finished!" << std::endl;
 
     // if we came that far we can as well be happy about it
     return EXIT_SUCCESS;
