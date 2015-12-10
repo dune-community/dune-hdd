@@ -51,7 +51,7 @@ class Model1< E, D, 2, R, 1 >
 
   typedef Stuff::Functions::Constant< E, D, 2, R, 1 >         ConstantFunctionType;
   typedef Stuff::Functions::FlatTop< E, D, 2, R, 1 >          FlatTopFunctionType;
-  typedef Stuff::Functions::Indicator< E, D, 2, R, 1 >        IndicatorFunctionType;
+  typedef Stuff::Functions::DomainIndicator< E, D, 2, R, 1 >  IndicatorFunctionType;
   typedef Stuff::Functions::Spe10::Model1< E, D, 2, R, 2, 2 > Spe10FunctionType;
 
 public:

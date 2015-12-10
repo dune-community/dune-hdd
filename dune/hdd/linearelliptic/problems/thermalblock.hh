@@ -202,7 +202,7 @@ public:
 private:
   static std::shared_ptr< AffinelyDecomposableDefaultFunctionType > create_diffusion_factor()
   {
-    typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > IndicatorFunctionType;
+    typedef Stuff::Functions::DomainIndicator< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > IndicatorFunctionType;
     const Pymor::ParameterType mu("diffusion_factor", 3);
 
     auto ret = std::make_shared< AffinelyDecomposableDefaultFunctionType >("diffusion_factor");
