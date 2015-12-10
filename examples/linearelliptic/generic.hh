@@ -15,6 +15,7 @@
 
 #include <dune/grid/multiscale/provider.hh>
 
+#include <dune/gdt/operators/projections.hh>
 #include <dune/gdt/spaces/interface.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
@@ -118,11 +119,11 @@ public:
     } catch (Dune::Stuff::Exceptions::you_are_using_this_wrong&) {}
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
     logger.info() << "creating grid (" << grid_cfg.get< std::string >("type") << ")... " << std::flush;
-    grid_ = GridProvider::create(grid_cfg);
+    grid_ = GridProvider::create(grid_cfg.get< std::string >("type"), grid_cfg);
     logger.info() << "done (has " << grid_->grid().size(0) << " elements)" << std::endl;
 
     logger.info() << "creating problem (" << problem_cfg.get< std::string >("type") << ")... " << std::flush;
-    problem_= ProblemProvider::create(problem_cfg);
+    problem_= ProblemProvider::create(problem_cfg.get< std::string >("type"), problem_cfg);
     logger.info() << "done" << std::endl;
 
     logger.info() << "creating discretization... " << std::flush;
@@ -131,7 +132,7 @@ public:
                                                              *problem_,
                                                              /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
     discretization_->init();
-    logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
+    logger.info() << "done (has " << discretization_->ansatz_space()->mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticExample(...)
 
   DiscretizationType& discretization()
@@ -155,7 +156,7 @@ public:
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic.project");
     logger.info() << "projecting '" << expression << "'... " << std::flush;
     auto discrete_function = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
-    GDT::project(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
+    GDT::Operators::apply_projection(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
     logger.info() << "done" << std::endl;
     return discrete_function.vector();
   } // ... project(...)
