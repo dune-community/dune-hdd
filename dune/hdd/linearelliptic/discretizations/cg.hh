@@ -299,11 +299,11 @@ public:
       system_assembler.add(l2_product);
       // * H1 semi
       typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1ProductType;
-      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      h1_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
+      auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      h1_semi_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
                                                              space.mapper().size(),
                                                              H1ProductType::pattern(space)));
-      H1ProductType h1_product(*(h1_product_matrix->affine_part()), space);
+      H1ProductType h1_product(*(h1_semi_product_matrix->affine_part()), space);
       system_assembler.add(h1_product);
       // * energy
       typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
@@ -374,6 +374,11 @@ public:
       }
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
+      // H1 product
+      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      h1_product_matrix->register_affine_part(h1_semi_product_matrix->affine_part()->copy());
+      h1_product_matrix->affine_part()->axpy(1, *l2_product_matrix->affine_part());
+
       out << prefix << "applying constraints... " << std::flush;
       GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
         clear_and_set_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
@@ -394,6 +399,9 @@ public:
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
         system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
                              new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+      system_assembler.add(clear_and_set_dirichlet_rows, *l2_product_matrix->affine_part());
+      system_assembler.add(clear_and_set_dirichlet_rows, *h1_semi_product_matrix->affine_part());
+      system_assembler.add(clear_and_set_dirichlet_rows, *h1_product_matrix->affine_part());
       system_assembler.walk();
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
@@ -403,8 +411,9 @@ public:
       this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
 
       // finalize
-      this->products_.insert(std::make_pair("l2", l2_product_matrix));
-      this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
+      this->products_.insert(std::make_pair("l2_0", l2_product_matrix));
+      this->products_.insert(std::make_pair("h1_semi_0", h1_semi_product_matrix));
+      this->products_.insert(std::make_pair("h1_0", h1_semi_product_matrix));
       this->products_.insert(std::make_pair("energy", energy_product_matrix));
       this->vectors_.insert(std::make_pair("dirichlet", dirichlet_vector));
 
