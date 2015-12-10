@@ -228,13 +228,13 @@ public:
   }
 
   BlockSWIPDG(const GridProviderType& grid_provider,
-              const Stuff::Common::Configuration& /*bound_inf_cfg*/,
+              const Stuff::Common::Configuration& bound_inf_cfg,
               const ProblemType& prob,
               const std::vector< std::string >& only_these_products = {})
     : LocalDiscretizationsBaseType(grid_provider, prob, only_these_products)
     , BaseType(std::make_shared< TestSpaceType >(grid_provider.ms_grid(), this->local_test_spaces_),
                std::make_shared< AnsatzSpaceType >(grid_provider.ms_grid(), this->local_ansatz_spaces_),
-               this->all_dirichlet_boundary_config_,
+               bound_inf_cfg,
                this->zero_boundary_problem_)
     , grid_provider_(grid_provider)
     , ms_grid_(grid_provider.ms_grid())
