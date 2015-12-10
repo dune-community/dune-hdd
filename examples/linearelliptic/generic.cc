@@ -65,7 +65,7 @@ int main(int /*argc*/, char** /*argv*/)
     auto& disc = example.discretization();
     auto U = disc.create_vector();
     disc.solve(solver_options, U, Pymor::Parameter("ELECTROLYTE", 1.));
-    disc.visualize(U, "solution", "solution", false);
+    disc.visualize(U, "solution", "solution");
 
     // if we came that far we can as well be happy about it
     return EXIT_SUCCESS;
