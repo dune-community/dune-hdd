@@ -16,6 +16,7 @@
 #include <dune/grid/multiscale/provider/cube.hh>
 
 #include <dune/stuff/common/memory.hh>
+#include <dune/stuff/common/string.hh>
 #include <dune/stuff/functions/constant.hh>
 #include <dune/stuff/functions/expression.hh>
 #include <dune/stuff/playground/functions/indicator.hh>
@@ -289,7 +290,7 @@ public:
   {
     // mpi
     int argc = boost::numeric_cast< int >(arguments.size());
-    char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
+    char** argv = Stuff::Common::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
 #else
@@ -440,7 +441,7 @@ public:
   {
     // mpi
     int argc = boost::numeric_cast< int >(arguments.size());
-    char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
+    char** argv = Stuff::Common::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
 #else
@@ -598,7 +599,7 @@ public:
   {
     // mpi
     int argc = boost::numeric_cast< int >(arguments.size());
-    char** argv = Stuff::Common::String::vectorToMainArgs(arguments);
+    char** argv = Stuff::Common::vectorToMainArgs(arguments);
 #if HAVE_DUNE_FEM
     Fem::MPIManager::initialize(argc, argv);
 #else
