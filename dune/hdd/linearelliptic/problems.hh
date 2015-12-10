@@ -15,6 +15,7 @@
 
 #include "problems/interfaces.hh"
 #include "problems/default.hh"
+#include "problems/battery.hh"
 #include "problems/ESV2007.hh"
 #include "problems/mixed-boundaries.hh"
 #include "problems/OS2014.hh"
@@ -143,6 +144,7 @@ private:
 
   typedef Problems::Default< E, D, d, R, r >                   DefaultType;
   typedef Problems::ESV2007< E, D, d, R, r >                   ESV2007Type;
+  typedef Problems::Battery< E, D, d, R, r >                   BatteryType;
   typedef Problems::MixedBoundaries< E, D, d, R, r >           MixedBoundariesType;
   typedef Problems::OS2014::ParametricESV2007< E, D, d, R, r > OS2014ParametricESV2007Type;
   typedef Problems::Spe10::Model1< E, D, d, R, r >             Spe10Model1Type;
@@ -154,6 +156,7 @@ public:
     std::vector< std::string > ret;
     ret = call_append< DefaultType >(ret);
     ret = call_append< ESV2007Type >(ret);
+    ret = call_append< BatteryType >(ret);
     ret = call_append< MixedBoundariesType >(ret);
     ret = call_append< OS2014ParametricESV2007Type >(ret);
     ret = call_append< Spe10Model1Type >(ret);
@@ -167,6 +170,8 @@ public:
       return call_default_config< DefaultType >(sub_name);
     else if (call_compare< ESV2007Type >(type))
       return call_default_config< ESV2007Type >(sub_name);
+    else if (call_compare< BatteryType >(type))
+      return call_default_config< BatteryType >(sub_name);
     else if (call_compare< MixedBoundariesType >(type))
       return call_default_config< MixedBoundariesType >(sub_name);
     else if (call_compare< OS2014ParametricESV2007Type >(type))
@@ -191,6 +196,8 @@ public:
       return call_create< DefaultType >(cfg);
     else if (call_compare< ESV2007Type >(type))
       return call_create< ESV2007Type >(cfg);
+    else if (call_compare< BatteryType >(type))
+      return call_create< BatteryType >(cfg);
     else if (call_compare< MixedBoundariesType >(type))
       return call_create< MixedBoundariesType >(cfg);
     else if (call_compare< OS2014ParametricESV2007Type >(type))
