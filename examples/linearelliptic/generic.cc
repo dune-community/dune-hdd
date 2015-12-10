@@ -44,7 +44,7 @@ int main(int /*argc*/, char** /*argv*/)
     battery_geometry["separator"]    = "[0.0084 0.01; 0 0.008; 0 0.008]";
     battery_geometry["filename"]     = "geometry__46x20x20_h4e-6m";
 
-    auto grid_cfg = ExampleType::grid_options("grid.multiscale.provider.cube");
+    auto grid_cfg = ExampleType::grid_options("stuff.grid.provider.cube");
     grid_cfg.add(battery_geometry, "", true);
 
     Stuff::Common::Configuration boundary_cfg;

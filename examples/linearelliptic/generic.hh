@@ -10,15 +10,14 @@
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/common/timedlogging.hh>
 #include <dune/stuff/grid/boundaryinfo.hh>
+#include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/la/container/container-interface.hh>
 #include <dune/stuff/la/solver.hh>
-
-#include <dune/grid/multiscale/provider.hh>
 
 #include <dune/gdt/operators/projections.hh>
 #include <dune/gdt/spaces/interface.hh>
 
-#include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
+#include <dune/hdd/linearelliptic/discretizations/cg.hh>
 #include <dune/hdd/linearelliptic/problems.hh>
 
 
@@ -31,11 +30,12 @@ class GenericLinearellipticExample
   typedef double R;
   static const size_t r = 1;
 public:
-  typedef Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG< GridType, R, 1, 1, la_backend > DiscretizationType;
+  typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf, R, 1, 1,
+                                                          space_backend, la_backend > DiscretizationType;
   typedef typename DiscretizationType::VectorType                                     VectorType;
 private:
   typedef typename DiscretizationType::MatrixType                                        MatrixType;
-  typedef Dune::grid::Multiscale::MsGridProviders< GridType >                            GridProvider;
+  typedef Dune::Stuff::GridProviders< GridType >                                         GridProvider;
   typedef Dune::Stuff::Grid::BoundaryInfoProvider< typename GridType::LeafIntersection > BoundaryProvider;
   typedef Dune::HDD::LinearElliptic::ProblemsProvider< E, D, d, R, r >                   ProblemProvider;
   typedef Dune::Stuff::LA::Solver< MatrixType >                                          SolverProvider;
@@ -130,7 +130,8 @@ public:
     discretization_ = DSC::make_unique< DiscretizationType >(*grid_,
                                                              boundary_cfg_,
                                                              *problem_,
-                                                             /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
+                                                             -1);
+//                                                             /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
     discretization_->init();
     logger.info() << "done (has " << discretization_->ansatz_space()->mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticExample(...)
@@ -163,7 +164,7 @@ public:
 
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
-  std::unique_ptr< Dune::grid::Multiscale::ProviderInterface< GridType > > grid_;
+  std::unique_ptr< Dune::Stuff::Grid::ProviderInterface< GridType > > grid_;
   std::unique_ptr< Dune::HDD::LinearElliptic::ProblemInterface< E, D, d, R, r > > problem_;
   std::unique_ptr< DiscretizationType > discretization_;
 
