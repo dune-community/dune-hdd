@@ -73,7 +73,10 @@ if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
   endif(NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
 endif (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
 
-set (OS2014_main_py "OS2014_main.py")
-if (NOT EXISTS ${OS2014_main_py})
-  execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${OS2014_main_py}" "${CMAKE_CURRENT_BINARY_DIR}//${OS2014_main_py}")
-endif (NOT EXISTS ${OS2014_main_py})
+foreach(file
+        "OS2014_main.py"
+        "generic.py")
+  if (NOT EXISTS ${file})
+    execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${file}" "${CMAKE_CURRENT_BINARY_DIR}/${file}")
+  endif (NOT EXISTS ${file})
+endforeach(file)
