@@ -10,14 +10,23 @@ from __future__ import division, print_function
 from functools import partial
 import numpy as np
 
+from scipy.sparse import coo_matrix, bmat
+
 from pymor.algorithms.basisextension import pod_basis_extension
 from pymor.algorithms.greedy import greedy
 from pymor.algorithms.timestepping import ImplicitEulerTimeStepper
 from pymor.core.logger import getLogger
 from pymor.discretizations.basic import InstationaryDiscretization
+from pymor.operators.constructions import LincombOperator
+from pymor.operators.numpy import NumpyMatrixOperator
 from pymor.parameters.spaces import CubicParameterSpace
+from pymor.playground.algorithms.blockbasisextension import pod_block_basis_extension
+from pymor.playground.operators.block import BlockOperator
+from pymor.playground.reductors import GenericBlockRBReconstructor
 from pymor.reductors.basic import reduce_generic_rb
+from pymor.vectorarrays.block import BlockVectorArray
 from pymor.vectorarrays.list import ListVectorArray
+from pymor.vectorarrays.numpy import NumpyVectorArray
 
 from dune.pymor.la.container import make_listvectorarray
 
@@ -66,10 +75,11 @@ battery_geometry = {'lower_left':   '[0      0     0]',
 #                     'separator':    '[]',
 #                     'filename': 'geometry__ellisoid_5_5_16.8'}
 
-grid_cfg = Example.grid_options('stuff.grid.provider.cube')
+grid_cfg = Example.grid_options('grid.multiscale.provider.cube')
 grid_cfg.set('lower_left', battery_geometry['lower_left'], True)
 grid_cfg.set('upper_right', battery_geometry['upper_right'], True)
 grid_cfg.set('num_elements', battery_geometry['num_elements'], True)
+grid_cfg.set('num_subdomains', '[2 2 2]', True)
 
 boundary_cfg = dune_module.Dune.Stuff.Common.Configuration()
 boundary_cfg.set('type', 'stuff.grid.boundaryinfo.normalbased')
@@ -91,58 +101,148 @@ problem_cfg.set('force.value', '1000', True)
 # all but the 'type' will be discarded, so no point in setting more details here
 solver_options = Example.solver_options('bicgstab.amg.ilu0')
 
-end_time = 0.01
-nt = 100
+end_time = 0.001
+nt = 10
+num_training_samples = 10
+max_rb_size = 50
 
 example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
-disc = wrapper[example.discretization()]
-logger.info('  discretization has {} DoFs'.format(disc.solution_space.dim))
-logger.info('  parameter type is {}'.format(disc.parameter_type))
-logger.info('visualizing grid and data functions ...')
-example.visualize(problem_cfg.get_str('type'))
+stat_blocked_disc = wrapper[example.discretization()]
+stat_nonblocked_disc = stat_blocked_disc.as_nonblocked()
+logger.info('  discretization has {} DoFs'.format(stat_nonblocked_disc.solution_space.dim))
+logger.info('  parameter type is {}'.format(stat_nonblocked_disc.parameter_type))
+# logger.info('visualizing grid and data functions ...')
+# example.visualize(problem_cfg.get_str('type'))
 
-logger.info('projecting initial values ...')
-dirichlet_shift = disc.vector_operators['dirichlet'].as_vector()
-initial_values = make_listvectorarray(wrapper[example.project(dirichlet_value)])
-initial_values -= dirichlet_shift
+nonblocked_disc = InstationaryDiscretization(T=end_time,
+                                             initial_data=make_listvectorarray(wrapper[stat_nonblocked_disc._impl.create_vector()]),
+                                             operator=stat_nonblocked_disc.operator,
+                                             rhs=stat_nonblocked_disc.rhs,
+                                             mass=stat_nonblocked_disc.products['l2'],
+                                             time_stepper=ImplicitEulerTimeStepper(nt, invert_options=solver_options.get_str('type')),
+                                             products=stat_nonblocked_disc.products,
+                                             operators=stat_nonblocked_disc.operators,
+                                             functionals=stat_nonblocked_disc.functionals,
+                                             vector_operators=stat_nonblocked_disc.vector_operators,
+                                             visualizer=InstationaryDuneVisualizer(stat_nonblocked_disc,
+                                                                                   problem_cfg.get_str('type') + '.solution'),
+                                             parameter_space=CubicParameterSpace(stat_nonblocked_disc.parameter_type, 0.1, 10),
+                                             cache_region='disk',
+                                             name='detailed non-blocked discretization')
 
-disc = InstationaryDiscretization(T=end_time,
-                                  initial_data=initial_values,
-                                  operator=disc.operator,
-                                  rhs=disc.rhs,
-                                  mass=disc.products['l2_0'],
-                                  time_stepper=ImplicitEulerTimeStepper(nt, invert_options=solver_options.get_str('type')),
-                                  products=disc.products,
-                                  operators=disc.operators,
-                                  functionals=disc.functionals,
-                                  vector_operators=disc.vector_operators,
-                                  visualizer=InstationaryDuneVisualizer(disc,
-                                                                        problem_cfg.get_str('type') + '.solution'),
-                                  parameter_space=CubicParameterSpace(disc.parameter_type, 0.1, 10),
-                                  cache_region='disk')
-
-# U = disc.solve(mu)
-# U += dirichlet_shift
+# mu = 0.6
+# U = nonblocked_disc.solve(mu)
 # logger.info('visualizing trajectory ...')
-# disc.visualize(U)
+# nonblocked_disc.visualize(U)
 
-num_training_samples = 1
-max_rb_size = 45
+
 
 def norm(U):
-    return np.max(disc.h1_0_norm(U))
+    return np.max(nonblocked_disc.h1_norm(U))
+
+
+class Reconstructor(object):
+
+    def __init__(self, disc, RB):
+        self._disc = disc
+        self._RB = RB
+
+    def reconstruct(self, U):
+        if U.dim == 0:
+            return self._disc.globalize_vectors(self._disc.solution_space.zeros(1))
+        else:
+            assert U.dim == np.sum(len(RB) for RB in self._RB)
+            local_lens = [len(RB) for RB in self._RB]
+            local_starts = np.insert(np.cumsum(local_lens), 0, 0)[:-1]
+            localized_U = [NumpyVectorArray(U._array[:, local_starts[ii]:(local_starts[ii] + local_lens[ii])])
+                           for ii in np.arange(len(self._RB))]
+            U = GenericBlockRBReconstructor(self._RB).reconstruct(BlockVectorArray(localized_U))
+            return self._disc.globalize_vectors(U)
+
+    def restricted_to_subbasis(self, dim):
+        if not isinstance(dim, tuple):
+            dim = len(self.RB)*[dim]
+        assert all([dd <= len(rb) for dd, rb in izip(dim, self.RB)])
+        return Reconstructor(self._disc, [rb.copy(ind=range(dd)) for rb, dd in izip(self.RB, dim)])
+
 
 def reductor(discretization, RB, vector_product=None, disable_caching=True, extends=None):
-    rd, rc, reduction_data = reduce_generic_rb(discretization, RB, vector_product, disable_caching,
-            extends)
-    return rd.with_(time_stepper=ImplicitEulerTimeStepper(nt)), rc, reduction_data
+    if RB is None:
+        RB = [stat_blocked_disc.local_operator(ss).source.empty() for ss in np.arange(stat_blocked_disc.num_subdomains)]
+    rd, rc, reduction_data = reduce_generic_rb(stat_blocked_disc, RB, vector_product, disable_caching, extends)
 
-greedy_data = greedy(disc,
+    def unblock_op(op):
+        assert op._blocks[0][0] is not None
+        if isinstance(op._blocks[0][0], LincombOperator):
+            coefficients = op._blocks[0][0].coefficients
+            operators = [None for kk in np.arange(len(op._blocks[0][0].operators))]
+            for kk in np.arange(len(op._blocks[0][0].operators)):
+                ops = [[op._blocks[ii][jj].operators[kk]
+                        if op._blocks[ii][jj] is not None else None
+                        for jj in np.arange(op.num_source_blocks)]
+                       for ii in np.arange(op.num_range_blocks)]
+                operators[kk] = unblock_op(BlockOperator(ops))
+            return LincombOperator(operators=operators, coefficients=coefficients)
+        else:
+            assert all(all([isinstance(block, NumpyMatrixOperator) if block is not None else True
+                           for block in row])
+                       for row in op._blocks)
+            if op.source.dim == 0 and op.range.dim == 0:
+                return NumpyMatrixOperator(np.zeros((0, 0)))
+            elif op.source.dim == 1:
+                mat = np.concatenate([op._blocks[ii][0]._matrix
+                                      for ii in np.arange(op.num_range_blocks)],
+                                     axis=1)
+            elif op.range.dim == 1:
+                mat = np.concatenate([op._blocks[0][jj]._matrix
+                                      for jj in np.arange(op.num_source_blocks)],
+                                     axis=1)
+            else:
+                mat = bmat([[coo_matrix(op._blocks[ii][jj]._matrix)
+                             if op._blocks[ii][jj] is not None else coo_matrix((op._range_dims[ii], op._source_dims[jj]))
+                             for jj in np.arange(op.num_source_blocks)]
+                            for ii in np.arange(op.num_range_blocks)]).toarray()
+            return NumpyMatrixOperator(mat)
+
+    reduced_op = unblock_op(rd.operator)
+    reduced_rhs = unblock_op(rd.rhs)
+    return (InstationaryDiscretization(T=end_time,
+                                       initial_data=reduced_op.source.zeros(1),
+                                       operator=reduced_op,
+                                       rhs=unblock_op(rd.rhs),
+                                       mass=unblock_op(rd.products['l2']),
+                                       time_stepper=ImplicitEulerTimeStepper(nt),
+                                       products={kk: unblock_op(rd.products[kk]) for kk in rd.products.keys()},
+                                       operators={kk: unblock_op(rd.operators[kk])
+                                                  for kk in rd.operators.keys() if kk != 'operator'},
+                                       functionals={kk: unblock_op(rd.functionals[kk])
+                                                    for kk in rd.functionals.keys() if kk != 'rhs'},
+                                       vector_operators={kk: unblock_op(rd.vector_operators[kk])
+                                                         for kk in rd.vector_operators.keys()},
+                                       parameter_space=rd.parameter_space,
+                                       cache_region='disk',
+                                       name='reduced non-blocked discretization'),
+            Reconstructor(stat_blocked_disc, RB),
+            reduction_data)
+
+
+def extension(basis, U):
+    if not isinstance(U, BlockVectorArray):
+        U = BlockVectorArray([stat_blocked_disc.localize_vector(U, ii)
+                              for ii in np.arange(stat_blocked_disc.num_subdomains)])
+    return pod_block_basis_extension(basis,
+                                     U,
+                                     count=1,
+                                     product=[stat_blocked_disc.local_product(ss, 'h1')
+                                              for ss in np.arange(stat_blocked_disc.num_subdomains)])
+
+
+greedy_data = greedy(nonblocked_disc,
                      reductor,
-                     disc.parameter_space.sample_uniformly(num_training_samples),
+                     nonblocked_disc.parameter_space.sample_uniformly(num_training_samples),
                      use_estimator=False,
                      error_norm=norm,
-                     extension_algorithm=partial(pod_basis_extension, count=1, product=disc.products['h1_0']),
+                     extension_algorithm=extension,
                      max_extensions=max_rb_size)
 rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
 
