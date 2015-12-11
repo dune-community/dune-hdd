@@ -8,9 +8,10 @@
 from __future__ import division, print_function
 
 from functools import partial
-import numpy as np
-
+from tempfile import NamedTemporaryFile
 from scipy.sparse import coo_matrix, bmat
+
+import numpy as np
 
 from pymor.algorithms.basisextension import pod_basis_extension
 from pymor.algorithms.greedy import greedy
@@ -27,8 +28,14 @@ from pymor.reductors.basic import reduce_generic_rb
 from pymor.vectorarrays.block import BlockVectorArray
 from pymor.vectorarrays.list import ListVectorArray
 from pymor.vectorarrays.numpy import NumpyVectorArray
+import pymor.core.logger
 
 from dune.pymor.la.container import make_listvectorarray
+
+from simdb.run import new_dataset, add_values, add_logfile
+
+logfile = NamedTemporaryFile(delete=False).name
+pymor.core.logger.FILENAME = logfile
 
 logger = getLogger('.battery.main')
 logger.setLevel('INFO')
@@ -53,6 +60,13 @@ class InstationaryDuneVisualizer(object):
                                 'solution',
                                 False) # do not add dirichlet shift
 
+config= {'subdomains': '[1 1 1]',
+         'end_time' : 0.001,
+         'nt' : 25,
+         'num_training_samples' : 50,
+         'max_rb_size' : 500,
+         'target_error': 1e-10}
+new_dataset('parabolic_LRBMS_ENUMATH2015', **config)
 
 logger.info('initializing DUNE module ...')
 from generic import dune_module, examples, wrapper
@@ -79,7 +93,7 @@ grid_cfg = Example.grid_options('grid.multiscale.provider.cube')
 grid_cfg.set('lower_left', battery_geometry['lower_left'], True)
 grid_cfg.set('upper_right', battery_geometry['upper_right'], True)
 grid_cfg.set('num_elements', battery_geometry['num_elements'], True)
-grid_cfg.set('num_subdomains', '[2 2 2]', True)
+grid_cfg.set('num_partitions', config['subdomains'], True)
 
 boundary_cfg = dune_module.Dune.Stuff.Common.Configuration()
 boundary_cfg.set('type', 'stuff.grid.boundaryinfo.normalbased')
@@ -101,25 +115,22 @@ problem_cfg.set('force.value', '1000', True)
 # all but the 'type' will be discarded, so no point in setting more details here
 solver_options = Example.solver_options('bicgstab.amg.ilu0')
 
-end_time = 0.001
-nt = 10
-num_training_samples = 10
-max_rb_size = 50
 
 example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
 stat_blocked_disc = wrapper[example.discretization()]
 stat_nonblocked_disc = stat_blocked_disc.as_nonblocked()
+logger.info('  grid has {} subdomains'.format(stat_blocked_disc.num_subdomains))
 logger.info('  discretization has {} DoFs'.format(stat_nonblocked_disc.solution_space.dim))
 logger.info('  parameter type is {}'.format(stat_nonblocked_disc.parameter_type))
 # logger.info('visualizing grid and data functions ...')
 # example.visualize(problem_cfg.get_str('type'))
 
-nonblocked_disc = InstationaryDiscretization(T=end_time,
+nonblocked_disc = InstationaryDiscretization(T=config['end_time'],
                                              initial_data=make_listvectorarray(wrapper[stat_nonblocked_disc._impl.create_vector()]),
                                              operator=stat_nonblocked_disc.operator,
                                              rhs=stat_nonblocked_disc.rhs,
                                              mass=stat_nonblocked_disc.products['l2'],
-                                             time_stepper=ImplicitEulerTimeStepper(nt, invert_options=solver_options.get_str('type')),
+                                             time_stepper=ImplicitEulerTimeStepper(config['nt'], invert_options=solver_options.get_str('type')),
                                              products=stat_nonblocked_disc.products,
                                              operators=stat_nonblocked_disc.operators,
                                              functionals=stat_nonblocked_disc.functionals,
@@ -206,12 +217,12 @@ def reductor(discretization, RB, vector_product=None, disable_caching=True, exte
 
     reduced_op = unblock_op(rd.operator)
     reduced_rhs = unblock_op(rd.rhs)
-    return (InstationaryDiscretization(T=end_time,
+    return (InstationaryDiscretization(T=config['end_time'],
                                        initial_data=reduced_op.source.zeros(1),
                                        operator=reduced_op,
                                        rhs=unblock_op(rd.rhs),
                                        mass=unblock_op(rd.products['l2']),
-                                       time_stepper=ImplicitEulerTimeStepper(nt),
+                                       time_stepper=ImplicitEulerTimeStepper(config['nt']),
                                        products={kk: unblock_op(rd.products[kk]) for kk in rd.products.keys()},
                                        operators={kk: unblock_op(rd.operators[kk])
                                                   for kk in rd.operators.keys() if kk != 'operator'},
@@ -239,13 +250,21 @@ def extension(basis, U):
 
 greedy_data = greedy(nonblocked_disc,
                      reductor,
-                     nonblocked_disc.parameter_space.sample_uniformly(num_training_samples),
+                     nonblocked_disc.parameter_space.sample_uniformly(config['num_training_samples']),
                      use_estimator=False,
                      error_norm=norm,
                      extension_algorithm=extension,
-                     max_extensions=max_rb_size)
+                     max_extensions=config['max_rb_size'],
+                     target_error=config['target_error'])
 rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
-
+RB = greedy_data['basis']
 
 logger.info(' ')
+
+add_values(time=greedy_data['time'],
+           max_err_mus=greedy_data['max_err_mus'],
+           extensions=greedy_data['extensions'],
+           max_errs=greedy_data['max_errs'],
+           basis_sizes=[len(local_RB) for local_RB in RB])
+add_logfile(logfile)
 
