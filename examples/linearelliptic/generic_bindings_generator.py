@@ -39,20 +39,21 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
         ProductType = OperatorType
         FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
-        DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::CG'
+        DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG'
         DiscretizationType = (DiscretizationName + '< '
-                              + GridType + ', ' + grid_layer + ', '
+                              + GridType + ', '
+                              # + GridType + ', ' + grid_layer + ', '
                               + RangeFieldType + ', '
                               + dimRange + ', ' + polOrder + ', '
-                              + space_backend + ', ' + la_backend + '>')
+                              + la_backend + '>')
         inject_StationaryDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
                                                       DiscretizationName,
                                                       Traits={'VectorType': VectorType,
                                                               'OperatorType': OperatorType,
                                                               'FunctionalType': FunctionalType,
                                                               'ProductType': ProductType},
-                                                      template_parameters=[GridType, grid_layer, RangeFieldType,
-                                                                           dimRange, polOrder, space_backend, la_backend])
+                                                      template_parameters=[GridType, RangeFieldType,
+                                                                           dimRange, polOrder, la_backend])
         # then create the example
         Example = module.add_class('PbGenericLinearellipticExample', template_parameters=[GridType, space_backend, la_backend], custom_name=name)
         Example.add_method('logger_options',
