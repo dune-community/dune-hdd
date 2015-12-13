@@ -13,6 +13,9 @@ from scipy.sparse import coo_matrix, bmat
 
 import numpy as np
 
+from pymor.core.defaults import set_defaults
+set_defaults({'pymor.core.cache.default_regions.disk_max_size': 107374182400})
+
 from pymor.algorithms.basisextension import pod_basis_extension
 from pymor.algorithms.greedy import greedy
 from pymor.algorithms.timestepping import ImplicitEulerTimeStepper
