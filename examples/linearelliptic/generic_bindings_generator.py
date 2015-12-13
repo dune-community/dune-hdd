@@ -136,19 +136,29 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            None,
                            [param('const std::string&', 'filename_prefix')],
                            is_const=True, throw=exceptions)
+    SGrid1d = 'Dune::SGrid< 1, 1 >'
+    SGrid2d = 'Dune::SGrid< 2, 2 >'
+    SGrid3d = 'Dune::SGrid< 3, 3 >'
     if HAVE_ALUGRID:
         AluGridConform2d = 'Dune::ALUGrid< 2, 2, Dune::simplex, Dune::conforming >'
         AluGridConform3d = 'Dune::ALUGrid< 3, 3, Dune::simplex, Dune::conforming >'
     la_backend_eigen = 'Dune::Stuff::LA::ChooseBackend::eigen_sparse'
     la_backend_istl  = 'Dune::Stuff::LA::ChooseBackend::istl_sparse'
+    space_backend_pdelab = 'Dune::GDT::ChooseSpaceBackend::pdelab'
     space_backend_fem    = 'Dune::GDT::ChooseSpaceBackend::fem'
     if HAVE_DUNE_FEM and HAVE_DUNE_ISTL:
+        add_example(SGrid1d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_1dSGrid_fem_istl')
+        add_example(SGrid2d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_2dSGrid_fem_istl')
+        add_example(SGrid3d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_3dSGrid_fem_istl')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_istl,
                         'GenericLinearellipticExample_2dAluConformGrid_fem_istl')
             add_example(AluGridConform3d, space_backend_fem, la_backend_istl,
                         'GenericLinearellipticExample_3dAluConformGrid_fem_istl')
     if HAVE_DUNE_FEM and HAVE_EIGEN:
+        add_example(SGrid1d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_1dSGrid_fem_eigen')
+        add_example(SGrid2d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_2dSGrid_fem_eigen')
+        add_example(SGrid3d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_3dSGrid_fem_eigen')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_eigen,
                         'GenericLinearellipticExample_2dAluConformGrid_fem_eigen')

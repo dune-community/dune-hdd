@@ -15,7 +15,7 @@ _, wrapper = wrap_module(dune_module)
 examples = {}
 
 for dd in (1, 2, 3):
-    for grid in ('Yasp', 'AluConform', 'Sp'):
+    for grid in ('Yasp', 'AluConform', 'Sp', 'S'):
         for space in ('fem', 'pdelab'):
             for la in ('istl', 'eigen'):
                 name = 'GenericLinearellipticExample_{}d{}Grid_{}_{}'.format(dd, grid, space, la)
