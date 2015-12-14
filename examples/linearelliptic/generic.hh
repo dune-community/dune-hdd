@@ -33,7 +33,7 @@ class GenericLinearellipticExample
 public:
   typedef Dune::HDD::LinearElliptic::Discretizations::BlockSWIPDG< GridType, R, 1, 1, la_backend > DiscretizationType;
   typedef typename DiscretizationType::VectorType                                     VectorType;
-private:
+//private:
   typedef typename DiscretizationType::MatrixType                                        MatrixType;
   typedef Dune::grid::Multiscale::MsGridProviders< GridType >                            GridProvider;
   typedef Dune::Stuff::Grid::BoundaryInfoProvider< typename GridType::LeafIntersection > BoundaryProvider;

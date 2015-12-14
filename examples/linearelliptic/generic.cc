@@ -21,6 +21,8 @@
 
 #include <dune/grid/alugrid.hh>
 
+#include <dune/gdt/playground/spaces/finitevolume/default.hh>
+
 #include "generic.hh"
 
 using namespace Dune;
@@ -39,13 +41,14 @@ int main(int /*argc*/, char** /*argv*/)
 
     Stuff::Common::Configuration battery_geometry;
     battery_geometry["lower_left"]   = "[0      0     0]";
-    battery_geometry["upper_right"]  = "[0.0184 0.008 0.008]";
-    battery_geometry["num_elements"] = "[46     20    20]";
-    battery_geometry["separator"]    = "[0.0084 0.01; 0 0.008; 0 0.008]";
-    battery_geometry["filename"]     = "geometry__46x20x20_h4e-6m";
+    battery_geometry["upper_right"]  = "[0.0246 0.006 0.006]";
+    battery_geometry["num_elements"] = "[246    60    60]";
+    battery_geometry["separator"]    = "[-2 -1; -2 -1; -2 -1]";
+    battery_geometry["filename"]     = "geometry__ellisoid_5_5_16.8";
 
     auto grid_cfg = ExampleType::grid_options("grid.multiscale.provider.cube");
     grid_cfg.add(battery_geometry, "", true);
+    grid_cfg["num_partitions"] = "[1 1 1]";
 
     Stuff::Common::Configuration boundary_cfg;
     boundary_cfg["type"]        = "stuff.grid.boundaryinfo.normalbased";
@@ -61,11 +64,20 @@ int main(int /*argc*/, char** /*argv*/)
 
     auto solver_options = ExampleType::solver_options("bicgstab.amg.ilu0");
 
-    ExampleType example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg);
-    auto& disc = example.discretization();
-    auto U = disc.create_vector();
-    disc.solve(solver_options, U, Pymor::Parameter("ELECTROLYTE", 0.6));
-    disc.visualize(U, "solution", "solution");
+//    ExampleType example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg);
+//    auto& disc = example.discretization();
+//    auto U = disc.create_vector();
+//    disc.solve(solver_options, U, Pymor::Parameter("ELECTROLYTE", 0.6));
+//    disc.visualize(U, "solution", "solution");
+
+    auto grid = Stuff::GridProviders< SGrid< 3, 3 > >::create("stuff.grid.provider.cube",
+                                                              grid_cfg);
+    auto problem = GenericLinearellipticExample< SGrid< 3, 3 >,
+        GDT::ChooseSpaceBackend::fem,
+        Stuff::LA::ChooseBackend::istl_sparse >::ProblemProvider::create(problem_cfg.get< std::string >("type"),
+                                                                         problem_cfg);
+//    auto fv_space = GDT::Spaces::make_fv_default< 1 >(disc.ansatz_space()->grid_view());
+    problem->visualize(grid->leaf_view(), "problem", false);
 
     DSC::TimedLogger().get("main").info() << "finished!" << std::endl;
 

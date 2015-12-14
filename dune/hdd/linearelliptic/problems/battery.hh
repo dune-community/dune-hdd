@@ -114,11 +114,11 @@ public:
     battery_geometry_->register_component(electrolyte_, new Pymor::ParameterFunctional("ELECTROLYTE", 1, "ELECTROLYTE[0]"));
 //    battery_geometry_->register_component(separator_,   new Pymor::ParameterFunctional("SEPARATOR",   1, "SEPARATOR[0]"));
     battery_geometry_->register_affine_part(
-          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(1.04),   anode_),
-          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(1.58),   cathode_),
-          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(238.),   cc_anode_),
-          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(398.),   cc_cathode_),
-                                     Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(0.3344), separator_)))),
+          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(1),   anode_),
+          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(2),   cathode_),
+          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(3),   cc_anode_),
+          Stuff::Functions::make_sum(Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(4),   cc_cathode_),
+                                     Stuff::Functions::make_product(std::make_shared< ConstantFunctionType >(0), separator_)))),
                                      "NON_ELECTROLYTE"));
   } // BatteryGeometry(...)
 
