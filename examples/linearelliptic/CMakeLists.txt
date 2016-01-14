@@ -26,6 +26,9 @@ TARGET_LINK_LIBRARIES(mpi_cg_main
                       dunehdd-linearelliptic-cg 
                       ${COMMON_LIBS} )
 
+ADD_EXECUTABLE(example_linearelliptic_generic "generic.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_generic
+                      ${COMMON_LIBS})
 
 #ADD_EXECUTABLE(example_linearelliptic_swipdg "swipdg_main.cc" ${COMMON_HEADER})
 #TARGET_LINK_LIBRARIES(example_linearelliptic_swipdg
@@ -57,6 +60,7 @@ add_python_bindings(mpi_cg_bindings
 #                    OS2014_bindings_generator.py
 #                    OS2014_bindings_generator.hh
 #                    "")
+add_python_bindings(linearellipticexamplegeneric generic_bindings_generator.py generic_bindings_generator.hh "")
 
 #        example_linearelliptic_block_swipdg
 #        example_linearelliptic_OS2014_spe10_visualization
@@ -67,9 +71,10 @@ foreach(target
         mpi_cg_main
         mpi_cg_bindings
         example_linearelliptic_cg
+        example_linearelliptic_generic
         linearellipticexamplecg
         linearellipticexamplethermalblock
-        )
+	linearellipticexamplegeneric)
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})
   add_dune_umfpack_flags(${target})
