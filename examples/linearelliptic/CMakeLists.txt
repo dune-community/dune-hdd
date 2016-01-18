@@ -16,6 +16,10 @@ add_library(dunehdd-linearelliptic-cg
 #TARGET_LINK_LIBRARIES(example_linearelliptic_block_swipdg
 #                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
+ADD_EXECUTABLE(example_linearelliptic_spe10 "spe10.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_spe10
+                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+
 ADD_EXECUTABLE(example_linearelliptic_cg "cg_main.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_cg
                       dunehdd-linearelliptic-cg
