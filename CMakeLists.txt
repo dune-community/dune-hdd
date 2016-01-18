@@ -81,9 +81,9 @@ find_file(SPE10MODEL1DATA
           DOC "Location of perm_case1.dat"
           NO_DEFAULT_PATH)
 find_file(SPE10MODEL2DATA
-          NAMES perm_case2a.dat
+          NAMES spe_perm.dat
           PATHS "${dune-hdd_SOURCE_DIR}/../local/src/spe10/model2"
-          DOC "Location of perm_case2a.dat"
+          DOC "Location of spe_perm.dat"
           NO_DEFAULT_PATH)
 add_subdirectory(examples EXCLUDE_FROM_ALL)
 add_subdirectory(test EXCLUDE_FROM_ALL)
