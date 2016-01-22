@@ -33,16 +33,22 @@ class PbGenericLinearellipticExample
 {
   typedef GenericLinearellipticExample< G, s, l > BaseType;
 public:
-  using typename BaseType::DiscretizationType;
+  using typename BaseType::CgDiscretizationType;
+  using typename BaseType::SwipdgDiscretizationType;
 
   template< class... Args >
   explicit PbGenericLinearellipticExample(Args&& ...args)
     : BaseType(std::forward< Args >(args)...)
   {}
 
-  DiscretizationType* pb_discretization_and_return_ptr()
+  CgDiscretizationType* pb_cg_discretization_and_return_ptr()
   {
-    return new DiscretizationType(this->discretization());
+    return new CgDiscretizationType(this->cg_discretization());
+  }
+
+  SwipdgDiscretizationType* pb_swipdg_discretization_and_return_ptr()
+  {
+    return new SwipdgDiscretizationType(this->swipdg_discretization());
   }
 }; // class PbGenericLinearellipticExample
 
