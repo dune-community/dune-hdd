@@ -172,7 +172,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         # add_example(YaspGrid2d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_2dYaspGrid_fem_eigen')
         # add_example(YaspGrid3d, space_backend_fem, la_backend_eigen, 'CG_Thermalblock_3dYaspGrid_fem_eigen')
         if HAVE_ALUGRID:
-            add_example(AluGridConform2d, space_backend_fem, la_backend_fem,
+            add_example(AluGridConform2d, space_backend_fem, la_backend_eigen,
                         'CG_Thermalblock_2dAluConformGrid_fem_eigen')
     if HAVE_DUNE_ISTL:
         add_gram_schmidt(la_backend_istl, 'istl')
