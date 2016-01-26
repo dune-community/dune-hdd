@@ -4,6 +4,8 @@ from generic import dune_module, examples
 
 DuneException = dune_module.Dune.Exception
 
+first = True
+
 for la_backend, Example in examples[3]['aluconformgrid']['fem'].items():
     spe10_cfg = {'filename': 'spe_perm.dat',
                  'upper_right': '[2 5 1]'}
@@ -14,7 +16,7 @@ for la_backend, Example in examples[3]['aluconformgrid']['fem'].items():
 
     grid_cfg = Example.grid_options('stuff.grid.provider.cube')
     grid_cfg.set('type', 'stuff.grid.provider.cube', True)
-    grid_cfg.set('num_elements', '[16 40 8]', True)
+    grid_cfg.set('num_elements', '[60 220 85]', True)
     grid_cfg.set('upper_right', spe10_cfg['upper_right'], True)
 
     boundary_cfg = dune_module.Dune.Stuff.Common.Configuration()
@@ -41,32 +43,29 @@ for la_backend, Example in examples[3]['aluconformgrid']['fem'].items():
     problem_cfg.set('neumann.0.value', '1')
 
     example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
-    example.visualize('spe10_example')
+    if first:
+        example.visualize('spe10_example')
+    else:
+        first = False
 
     for solver_tp in list(Example.solver_options()):
-        if solver_tp in ('bicgstab.ilut', 'lu.sparse', 'superlu', 'bicgstab.amg.ilu0'):
+        if ((solver_tp in ('bicgstab.ilut', 'lu.sparse') and la_backend == 'eigen')
+            or (solver_tp in ('superlu', 'bicgstab.amg.ilu0') and la_backend == 'istl')):
             solver_cfg = solver_cfg = Example.solver_options(solver_tp)
-            solver_cfg.set('preconditioner.anisotropy_dim', 3, True)
-            solver_cfg.set('preconditioner.isotropy_dim', 3, True)
+            if solver_tp == 'bicgstab.amg.ilu0':
+                solver_cfg.set('preconditioner.anisotropy_dim', 3, True)
+                solver_cfg.set('preconditioner.isotropy_dim', 3, True)
+            if 'bicgstab' in solver_tp:
+                solver_cfg.set('max_iter', 1000, True)
 
-            cg_d = example.cg_discretization()
-            cg_U = cg_d.create_vector()
-            try:
-                cg_d.solve(solver_cfg, cg_U, dune_module.Dune.Pymor.Parameter())
-                solver_cfg.report()
-                prefix = ''
-            except DuneException as ee:
-                prefix = 'failed__'
-                print(ee)
-            cg_d.visualize(cg_U, 'spe10_example.solution.cg.{}{}{}'.format(la_backend, prefix, solver_tp), 'pressure_cg')
+            for disc in ('cg', 'swipdg'):
+                d = getattr(example, '{}_discretization'.format(disc))()
+                U = d.create_vector()
+                try:
+                    d.solve(solver_cfg, U, dune_module.Dune.Pymor.Parameter())
+                    prefix = ''
+                except DuneException as ee:
+                    prefix = 'failed__'
+                    print(ee)
+                d.visualize(U, 'spe10_example.solution.{}.{}.{}{}'.format(disc, la_backend, prefix, solver_tp), 'pressure_cg')
 
-            swipdg_d = example.swipdg_discretization()
-            swipdg_U = swipdg_d.create_vector()
-            try:
-                swipdg_d.solve(solver_cfg, swipdg_U, dune_module.Dune.Pymor.Parameter())
-                solver_cfg.report()
-                prefix = ''
-            except DuneException as ee:
-                prefix = 'failed__'
-                print(ee)
-            swipdg_d.visualize(swipdg_U, 'spe10_example.solution.swipdg.{}{}{}'.format(la_backend, prefix, solver_tp), 'pressure_dg')
