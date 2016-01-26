@@ -16,6 +16,7 @@
 
 #include <dune/gdt/operators/projections.hh>
 #include <dune/gdt/spaces/interface.hh>
+#include <dune/gdt/operators/darcy.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/cg.hh>
 #include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
@@ -42,6 +43,10 @@ private:
   typedef Dune::Stuff::Grid::BoundaryInfoProvider< typename GridType::LeafIntersection > BoundaryProvider;
   typedef Dune::HDD::LinearElliptic::ProblemsProvider< E, D, d, R, r >                   ProblemProvider;
   typedef Dune::Stuff::LA::Solver< MatrixType >                                          SolverProvider;
+  typedef Dune::GDT::Spaces::CGProvider< GridType, Dune::Stuff::Grid::ChooseLayer::leaf, space_backend, 1, R, d >
+    VelocitySpaceProvider;
+  typedef typename VelocitySpaceProvider::Type VelocitySpaceType;
+
 public:
   static Dune::Stuff::Common::Configuration logger_options()
   {
@@ -140,6 +145,7 @@ public:
                                                                     *problem_,
                                                                     -1);
 //                                                             /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
+    cg_velocity_space_ = DSC::make_unique< VelocitySpaceType >(VelocitySpaceProvider::create(*grid_));
   } // GenericLinearellipticExample(...)
 
   ~GenericLinearellipticExample()
@@ -178,6 +184,27 @@ public:
     logger.info() << "done" << std::endl;
   }
 
+  void visualize_darcy_velocity(const VectorType& cg_vector, const std::string& filename, const std::string& name) const
+  {
+    using namespace Dune;
+    using namespace Dune::GDT;
+    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
+    logger.info() << "reconstructing darcy velocity... " << std::flush;
+    auto pressure = make_const_discrete_function(cg_discretization_->ansatz_space(), cg_vector);
+    auto velocity = make_discrete_function< VectorType >(*cg_velocity_space_, name);
+    const auto& grid_view = cg_discretization_->grid_view();
+    auto diffusion_ptr = problem_->diffusion_tensor()->with_mu(Pymor::Parameter());
+    const auto& diffusion = *diffusion_ptr;
+    Operators::Darcy< typename std::remove_const< typename std::remove_reference< decltype(grid_view) >::type >::type,
+                      typename std::remove_const< typename std::remove_reference< decltype(diffusion) >::type >::type >
+        darcy_operator(grid_view, diffusion);
+    darcy_operator.apply(pressure, velocity);
+    logger.info() << "done" << std::endl;
+    logger.info() << "visualizing darcy velocity... " << std::flush;
+    velocity.visualize(filename);
+    logger.info() << "done" << std::endl;
+  } // ... visualize_darcy_velocity(...)
+
   VectorType project_cg(const std::string& expression) const
   {
     using namespace Dune;
@@ -210,6 +237,7 @@ private:
   std::unique_ptr< Dune::HDD::LinearElliptic::ProblemInterface< E, D, d, R, r > > problem_;
   std::unique_ptr< CgDiscretizationType > cg_discretization_;
   std::unique_ptr< SwipdgDiscretizationType > swipdg_discretization_;
+  std::unique_ptr< VelocitySpaceType > cg_velocity_space_;
 }; // class GenericLinearellipticExample
 
 
