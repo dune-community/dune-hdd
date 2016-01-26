@@ -12,7 +12,7 @@ logger_cfg.set('info', 99, True)
 
 grid_cfg = Example.grid_options('stuff.grid.provider.cube')
 grid_cfg.set('type', 'stuff.grid.provider.cube', True)
-grid_cfg.set('num_elements', '[60 220 85]', True)
+grid_cfg.set('num_elements', '[12 44 16]', True)
 grid_cfg.set('upper_right', spe10_cfg['upper_right'], True)
 
 boundary_cfg = dune_module.Dune.Stuff.Common.Configuration()
@@ -50,4 +50,5 @@ d = example.cg_discretization()
 U = d.create_vector()
 d.solve(solver_cfg, U, dune_module.Dune.Pymor.Parameter())
 d.visualize(U, 'spe10_example.solution', 'pressure')
+example.visualize_darcy_velocity(U, 'spe10_example.velocity', 'velocity')
 
