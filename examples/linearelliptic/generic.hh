@@ -15,8 +15,10 @@
 #include <dune/stuff/la/solver.hh>
 
 #include <dune/gdt/operators/projections.hh>
-#include <dune/gdt/spaces/interface.hh>
+#if HAVE_DUNE_FEM
+#include <dune/gdt/spaces/cg.hh>
 #include <dune/gdt/operators/darcy.hh>
+#endif
 
 #include <dune/hdd/linearelliptic/discretizations/cg.hh>
 #include <dune/hdd/linearelliptic/problems.hh>
@@ -40,9 +42,11 @@ private:
   typedef Dune::Stuff::Grid::BoundaryInfoProvider< typename GridType::LeafIntersection > BoundaryProvider;
   typedef Dune::HDD::LinearElliptic::ProblemsProvider< E, D, d, R, r >                   ProblemProvider;
   typedef Dune::Stuff::LA::Solver< MatrixType >                                          SolverProvider;
-  typedef Dune::GDT::Spaces::CGProvider< GridType, Dune::Stuff::Grid::ChooseLayer::leaf, space_backend, 1, R, d >
-    VelocitySpaceProvider;
+#if HAVE_DUNE_FEM
+  typedef Dune::GDT::Spaces::CGProvider< GridType, Dune::Stuff::Grid::ChooseLayer::leaf,
+                                         Dune::GDT::ChooseSpaceBackend::fem, 1, R, d > VelocitySpaceProvider;
   typedef typename VelocitySpaceProvider::Type VelocitySpaceType;
+#endif
 
 public:
   static Dune::Stuff::Common::Configuration logger_options()
@@ -136,8 +140,10 @@ public:
                                                              boundary_cfg_,
                                                              *problem_,
                                                              -1);
-//                                                             /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
     discretization_->init();
+#if HAVE_DUNE_FEM
+    velocity_space_ = DSC::make_unique< VelocitySpaceType >(VelocitySpaceProvider::create(*grid_));
+#endif
     logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticExample(...)
 
@@ -164,6 +170,7 @@ public:
     logger.info() << "done" << std::endl;
   }
 
+#if HAVE_DUNE_FEM
   void visualize_darcy_velocity(const VectorType& vector, const std::string& filename, const std::string& name) const
   {
     using namespace Dune;
@@ -184,6 +191,7 @@ public:
     velocity.visualize(filename);
     logger.info() << "done" << std::endl;
   } // ... visualize_darcy_velocity(...)
+#endif // HAVE_DUNE_FEM
 
   VectorType project(const std::string& expression) const
   {
@@ -203,8 +211,9 @@ private:
   std::unique_ptr< Dune::Stuff::Grid::ProviderInterface< GridType > > grid_;
   std::unique_ptr< Dune::HDD::LinearElliptic::ProblemInterface< E, D, d, R, r > > problem_;
   std::unique_ptr< DiscretizationType > discretization_;
+#if HAVE_DUNE_FEM
   std::unique_ptr< VelocitySpaceType > velocity_space_;
-
+#endif
 }; // class GenericLinearellipticExample
 
 
