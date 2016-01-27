@@ -39,28 +39,14 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         OperatorType = 'Dune::Pymor::Operators::LinearAffinelyDecomposedContainerBased< ' + MatrixType + ', ' + VectorType + ' >'
         ProductType = OperatorType
         FunctionalType = 'Dune::Pymor::Functionals::LinearAffinelyDecomposedVectorBased< ' + VectorType + ' >'
-        CgDiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::CG'
-        CgDiscretizationType = (CgDiscretizationName + '< '
-                                + GridType + ', ' + grid_layer + ', '
-                                + RangeFieldType + ', '
-                                + dimRange + ', ' + polOrder + ', '
-                                + space_backend + ', ' + la_backend + '>')
+        DiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::CG'
+        DiscretizationType = (DiscretizationName + '< '
+                              + GridType + ', ' + grid_layer + ', '
+                              + RangeFieldType + ', '
+                              + dimRange + ', ' + polOrder + ', '
+                              + space_backend + ', ' + la_backend + '>')
         inject_StationaryDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
-                                                      CgDiscretizationName,
-                                                      Traits={'VectorType': VectorType,
-                                                              'OperatorType': OperatorType,
-                                                              'FunctionalType': FunctionalType,
-                                                              'ProductType': ProductType},
-                                                      template_parameters=[GridType, grid_layer, RangeFieldType,
-                                                                           dimRange, polOrder, space_backend, la_backend])
-        SwipdgDiscretizationName = 'Dune::HDD::LinearElliptic::Discretizations::SWIPDG'
-        SwipdgDiscretizationType = (SwipdgDiscretizationName + '< '
-                                    + GridType + ', ' + grid_layer + ', '
-                                    + RangeFieldType + ', '
-                                    + dimRange + ', ' + polOrder + ', '
-                                    + space_backend + ', ' + la_backend + '>')
-        inject_StationaryDiscretizationImplementation(module, exceptions, interfaces, CONFIG_H,
-                                                      SwipdgDiscretizationName,
+                                                      DiscretizationName,
                                                       Traits={'VectorType': VectorType,
                                                               'OperatorType': OperatorType,
                                                               'FunctionalType': FunctionalType,
@@ -101,18 +87,11 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                  param('const Dune::Stuff::Common::Configuration&', 'boundary_cfg'),
                                  param('const Dune::Stuff::Common::Configuration&', 'problem_cfg')],
                                 throw=exceptions)
-        Example.add_method('pb_cg_discretization_and_return_ptr',
-                           retval(CgDiscretizationType + ' *', caller_owns_return=True),
+        Example.add_method('pb_discretization_and_return_ptr',
+                           retval(DiscretizationType + ' *', caller_owns_return=True),
                            [], is_const=True, throw=exceptions,
-                           custom_name='cg_discretization')
-        Example.add_method('pb_swipdg_discretization_and_return_ptr',
-                           retval(SwipdgDiscretizationType + ' *', caller_owns_return=True),
-                           [], is_const=True, throw=exceptions,
-                           custom_name='swipdg_discretization')
-        Example.add_method('project_cg',
-                           retval(VectorType),
-                           [param('const std::string', 'expression')], is_const=True, throw=exceptions)
-        Example.add_method('project_swipdg',
+                           custom_name='discretization')
+        Example.add_method('project',
                            retval(VectorType),
                            [param('const std::string', 'expression')], is_const=True, throw=exceptions)
         Example.add_method('visualize',
@@ -133,15 +112,15 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     la_backend_istl  = 'Dune::Stuff::LA::ChooseBackend::istl_sparse'
     space_backend_pdelab = 'Dune::GDT::ChooseSpaceBackend::pdelab'
     space_backend_fem    = 'Dune::GDT::ChooseSpaceBackend::fem'
-    # if HAVE_DUNE_PDELAB and HAVE_DUNE_ISTL:
+    if HAVE_DUNE_PDELAB and HAVE_DUNE_ISTL:
         # add_example(YaspGrid1d, space_backend_pdelab, la_backend_istl, 'GenericLinearellipticExample_1dYaspGrid_pdelab_istl')
         # add_example(YaspGrid2d, space_backend_pdelab, la_backend_istl, 'GenericLinearellipticExample_2dYaspGrid_pdelab_istl')
-        # add_example(YaspGrid3d, space_backend_pdelab, la_backend_istl, 'GenericLinearellipticExample_3dYaspGrid_pdelab_istl')
-        # if HAVE_ALUGRID:
+        add_example(YaspGrid3d, space_backend_pdelab, la_backend_istl, 'GenericLinearellipticExample_3dYaspGrid_pdelab_istl')
+        if HAVE_ALUGRID:
             # add_example(AluGridConform2d, space_backend_pdelab, la_backend_istl,
             #             'GenericLinearellipticExample_2dAluConformGrid_pdelab_istl')
-            # add_example(AluGridConform3d, space_backend_pdelab, la_backend_istl,
-                        # 'GenericLinearellipticExample_3dAluConformGrid_pdelab_istl')
+            add_example(AluGridConform3d, space_backend_pdelab, la_backend_istl,
+                        'GenericLinearellipticExample_3dAluConformGrid_pdelab_istl')
         # if HAVE_DUNE_SPGRID:
         #     add_example(SPGrid1d, space_backend_pdelab, la_backend_istl,
         #                 'GenericLinearellipticExample_1dSpGrid_pdelab_istl')
@@ -165,15 +144,15 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     #                     'GenericLinearellipticExample_2dSpGrid_pdelab_eigen')
     #         add_example(SPGrid3d, space_backend_pdelab, la_backend_eigen,
     #                     'GenericLinearellipticExample_3dSpGrid_pdelab_eigen')
-    if HAVE_DUNE_FEM and HAVE_DUNE_ISTL:
+    # if HAVE_DUNE_FEM and HAVE_DUNE_ISTL:
     #     add_example(YaspGrid1d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_1dYaspGrid_fem_istl')
     #     add_example(YaspGrid2d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_2dYaspGrid_fem_istl')
-        add_example(YaspGrid3d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_3dYaspGrid_fem_istl')
-        if HAVE_ALUGRID:
+    #     add_example(YaspGrid3d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_3dYaspGrid_fem_istl')
+    #     if HAVE_ALUGRID:
     #         add_example(AluGridConform2d, space_backend_fem, la_backend_istl,
     #                     'GenericLinearellipticExample_2dAluConformGrid_fem_istl')
-            add_example(AluGridConform3d, space_backend_fem, la_backend_istl,
-                        'GenericLinearellipticExample_3dAluConformGrid_fem_istl')
+    #         add_example(AluGridConform3d, space_backend_fem, la_backend_istl,
+    #                     'GenericLinearellipticExample_3dAluConformGrid_fem_istl')
     #     if HAVE_DUNE_SPGRID:
     #         add_example(SPGrid1d, space_backend_fem, la_backend_istl,
     #                     'GenericLinearellipticExample_1dSpGrid_fem_istl')

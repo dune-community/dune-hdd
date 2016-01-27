@@ -18,7 +18,6 @@
 #include <dune/gdt/spaces/interface.hh>
 
 #include <dune/hdd/linearelliptic/discretizations/cg.hh>
-#include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
 #include <dune/hdd/linearelliptic/problems.hh>
 
 
@@ -32,12 +31,10 @@ class GenericLinearellipticExample
   static const size_t r = 1;
 public:
   typedef Dune::HDD::LinearElliptic::Discretizations::CG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf, R, 1, 1,
-                                                              space_backend, la_backend > CgDiscretizationType;
-  typedef Dune::HDD::LinearElliptic::Discretizations::SWIPDG< GridType, Dune::Stuff::Grid::ChooseLayer::leaf, R, 1, 1,
-                                                              space_backend, la_backend > SwipdgDiscretizationType;
-  typedef typename CgDiscretizationType::VectorType                                       VectorType;
+                                                          space_backend, la_backend > DiscretizationType;
+  typedef typename DiscretizationType::VectorType                                     VectorType;
 private:
-  typedef typename CgDiscretizationType::MatrixType                                      MatrixType;
+  typedef typename DiscretizationType::MatrixType                                        MatrixType;
   typedef Dune::Stuff::GridProviders< GridType >                                         GridProvider;
   typedef Dune::Stuff::Grid::BoundaryInfoProvider< typename GridType::LeafIntersection > BoundaryProvider;
   typedef Dune::HDD::LinearElliptic::ProblemsProvider< E, D, d, R, r >                   ProblemProvider;
@@ -129,76 +126,37 @@ public:
     problem_= ProblemProvider::create(problem_cfg.get< std::string >("type"), problem_cfg);
     logger.info() << "done" << std::endl;
 
-    cg_discretization_ = DSC::make_unique< CgDiscretizationType >(*grid_,
-                                                                boundary_cfg_,
-                                                                *problem_,
-                                                                -1);
+    logger.info() << "creating discretization... " << std::flush;
+    discretization_ = DSC::make_unique< DiscretizationType >(*grid_,
+                                                             boundary_cfg_,
+                                                             *problem_,
+                                                             -1);
 //                                                             /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
-
-    swipdg_discretization_ = DSC::make_unique< SwipdgDiscretizationType >(*grid_,
-                                                                    boundary_cfg_,
-                                                                    *problem_,
-                                                                    -1);
-//                                                             /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
+    discretization_->init();
+    logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticExample(...)
 
-  ~GenericLinearellipticExample()
+  DiscretizationType& discretization()
   {
-    DSC::TimedLogger().get("example.linearelliptic.generic").info() << std::endl;
-  }
-
-  CgDiscretizationType& cg_discretization()
-  {
-    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "creating cg discretization... " << std::flush;
-    cg_discretization_->init();
-    logger.info() << "done (has " << cg_discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
-    return *cg_discretization_;
-  }
-
-  SwipdgDiscretizationType& swipdg_discretization()
-  {
-    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "creating swipdg discretization... " << std::flush;
-    swipdg_discretization_->init();
-    logger.info() << "done (has " << swipdg_discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
-    return *swipdg_discretization_;
+    return *discretization_;
   }
 
   void visualize(const std::string& filename_prefix) const
   {
-    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "visualizing grid... " << std::flush;
     if (filename_prefix.empty())
       DUNE_THROW(Dune::Stuff::Exceptions::wrong_input_given, "Given filename prefix must not be empty!");
     grid_->visualize(filename_prefix + ".grid", boundary_cfg_);
-    logger.info() << "done" << std::endl;
-    logger.info() << "visualizing problem... " << std::flush;
     problem_->visualize(grid_->leaf_view(), filename_prefix + ".problem", /*subsampling=*/ false);
-    logger.info() << "done" << std::endl;
   }
 
-  VectorType project_cg(const std::string& expression) const
+  VectorType project(const std::string& expression) const
   {
     using namespace Dune;
     if (expression.empty())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given expression must not be empty!");
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic.project");
     logger.info() << "projecting '" << expression << "'... " << std::flush;
-    auto discrete_function = GDT::make_discrete_function< VectorType >(cg_discretization_->ansatz_space());
-    GDT::Operators::apply_projection(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
-    logger.info() << "done" << std::endl;
-    return discrete_function.vector();
-  } // ... project(...)
-
-  VectorType project_swipdg(const std::string& expression) const
-  {
-    using namespace Dune;
-    if (expression.empty())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given expression must not be empty!");
-    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic.project");
-    logger.info() << "projecting '" << expression << "'... " << std::flush;
-    auto discrete_function = GDT::make_discrete_function< VectorType >(swipdg_discretization_->ansatz_space());
+    auto discrete_function = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
     GDT::Operators::apply_projection(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
     logger.info() << "done" << std::endl;
     return discrete_function.vector();
@@ -208,8 +166,8 @@ private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
   std::unique_ptr< Dune::Stuff::Grid::ProviderInterface< GridType > > grid_;
   std::unique_ptr< Dune::HDD::LinearElliptic::ProblemInterface< E, D, d, R, r > > problem_;
-  std::unique_ptr< CgDiscretizationType > cg_discretization_;
-  std::unique_ptr< SwipdgDiscretizationType > swipdg_discretization_;
+  std::unique_ptr< DiscretizationType > discretization_;
+
 }; // class GenericLinearellipticExample
 
 
