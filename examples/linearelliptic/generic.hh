@@ -136,6 +136,11 @@ public:
     logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticExample(...)
 
+  ~GenericLinearellipticExample()
+  {
+    DSC::TimedLogger().get("example.linearelliptic.generic").info() << "finished" << std::endl;
+  }
+
   DiscretizationType& discretization()
   {
     return *discretization_;
@@ -143,10 +148,15 @@ public:
 
   void visualize(const std::string& filename_prefix) const
   {
+    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
+    logger.info() << "visualizing grid... " << std::flush;
     if (filename_prefix.empty())
       DUNE_THROW(Dune::Stuff::Exceptions::wrong_input_given, "Given filename prefix must not be empty!");
     grid_->visualize(filename_prefix + ".grid", boundary_cfg_);
+    logger.info() << "done" << std::endl;
+    logger.info() << "visualizing problem... " << std::flush;
     problem_->visualize(grid_->leaf_view(), filename_prefix + ".problem", /*subsampling=*/ false);
+    logger.info() << "done" << std::endl;
   }
 
   VectorType project(const std::string& expression) const
