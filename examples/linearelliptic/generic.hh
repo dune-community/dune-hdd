@@ -171,21 +171,22 @@ public:
   }
 
 #if HAVE_DUNE_FEM
-  void visualize_darcy_velocity(const VectorType& vector, const std::string& filename, const std::string& name) const
+  void visualize_darcy_velocity(const VectorType& vector,
+                                const std::string& filename,
+                                const std::string& name,
+                                const Dune::Pymor::Parameter& mu = Dune::Pymor::Parameter()) const
   {
     using namespace Dune;
     using namespace Dune::GDT;
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
     logger.info() << "reconstructing darcy velocity... " << std::flush;
+    auto problem_mu = problem_->with_mu(mu);
+    auto diffusion = *problem_mu->diffusion_factor()->affine_part() * *problem_mu->diffusion_tensor()->affine_part();
     auto pressure = make_const_discrete_function(discretization_->ansatz_space(), vector);
     auto velocity = make_discrete_function< VectorType >(*velocity_space_, name);
     const auto& grid_view = discretization_->grid_view();
-    auto diffusion_ptr = problem_->diffusion_tensor()->with_mu(Pymor::Parameter());
-    const auto& diffusion = *diffusion_ptr;
-    Operators::Darcy< typename std::remove_const< typename std::remove_reference< decltype(grid_view) >::type >::type,
-                      typename std::remove_const< typename std::remove_reference< decltype(diffusion) >::type >::type >
-        darcy_operator(grid_view, diffusion);
-    darcy_operator.apply(pressure, velocity);
+    auto darcy_operator = Operators::make_darcy(grid_view, diffusion);
+    darcy_operator->apply(pressure, velocity);
     logger.info() << "done" << std::endl;
     logger.info() << "visualizing darcy velocity... " << std::flush;
     velocity.visualize(filename);

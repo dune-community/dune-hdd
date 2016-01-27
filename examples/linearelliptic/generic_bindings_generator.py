@@ -119,6 +119,13 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                                 param('const std::string&', 'filename'),
                                 param('const std::string&', 'name')],
                                is_const=True, throw=exceptions)
+            Example.add_method('visualize_darcy_velocity',
+                               None,
+                               [param('const {}&'.format(VectorType), 'cg_vector'),
+                                param('const std::string&', 'filename'),
+                                param('const std::string&', 'name'),
+                                param('const Dune::Pymor::Parameter&', 'mu')],
+                               is_const=True, throw=exceptions)
     if HAVE_DUNE_PDELAB and HAVE_DUNE_ISTL:
         # add_example(YaspGrid1d, space_backend_pdelab, la_backend_istl, 'GenericLinearellipticExample_1dYaspGrid_pdelab_istl')
         # add_example(YaspGrid2d, space_backend_pdelab, la_backend_istl, 'GenericLinearellipticExample_2dYaspGrid_pdelab_istl')
