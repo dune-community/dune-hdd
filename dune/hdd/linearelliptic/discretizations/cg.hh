@@ -138,11 +138,9 @@ public:
     , pattern_(EllipticOperatorType::pattern(this->test_space(), this->test_space()))
     , grid_provider_(grid_provider.copy())
   {
-    // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
-    if (this->problem_.diffusion_tensor()->parametric())
-      DUNE_THROW(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor()->has_affine_part())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+    // in that case we would have to build the elliptic operators like the dirichlet shift
+    if (this->problem_.diffusion_factor()->parametric() && this->problem_.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Both parametric diffusion factor and tensor not supported!");
   } // CG(...)
 
 #if HAVE_DUNE_GRID_MULTISCALE
@@ -157,11 +155,9 @@ public:
                prob)
     , pattern_(EllipticOperatorType::pattern(this->test_space(), this->test_space()))
   {
-    // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
-    if (this->problem_.diffusion_tensor()->parametric())
-      DUNE_THROW(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor()->has_affine_part())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+    // in that case we would have to build the elliptic operators like the dirichlet shift
+    if (this->problem_.diffusion_factor()->parametric() && this->problem_.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Both parametric diffusion factor and tensor not supported!");
   } // CG(...)
 
 #endif // HAVE_DUNE_GRID_MULTISCALE
@@ -220,25 +216,38 @@ public:
       // lhs operator
       const auto& diffusion_factor = *(this->problem_.diffusion_factor());
       const auto& diffusion_tensor = *(this->problem_.diffusion_tensor());
-      assert(!diffusion_tensor.parametric());
-      assert(diffusion_tensor.has_affine_part());
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-        const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
-                                                                   space.mapper().size(),
-                                                                   pattern_),
-                                                    diffusion_factor.coefficient(qq));
-        elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
-                                                                 *(diffusion_tensor.affine_part()),
-                                                                 *(matrix.component(id)),
-                                                                 space));
-      }
-      if (diffusion_factor.has_affine_part()) {
+      if (diffusion_factor.has_affine_part() && diffusion_tensor.has_affine_part()) {
         matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
         elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
                                                                  *(diffusion_tensor.affine_part()),
                                                                  *(matrix.affine_part()),
                                                                  space));
+      }
+      if (diffusion_factor.parametric() && !diffusion_tensor.parametric()) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+          const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
+                                                                     space.mapper().size(),
+                                                                     pattern_),
+                                                      diffusion_factor.coefficient(qq));
+          elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
+                                                                   *(diffusion_tensor.affine_part()),
+                                                                   *(matrix.component(id)),
+                                                                   space));
+        }
+      } else if (!diffusion_factor.parametric() && diffusion_tensor.parametric()) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_tensor.num_components(); ++qq) {
+          const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
+                                                                     space.mapper().size(),
+                                                                     pattern_),
+                                                      diffusion_tensor.coefficient(qq));
+          elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
+                                                                   *(diffusion_tensor.component(qq)),
+                                                                   *(matrix.component(id)),
+                                                                   space));
+        }
+      } else if (diffusion_factor.parametric() && diffusion_tensor.parametric()) {
+        DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
       }
       for (auto& elliptic_operator : elliptic_operators)
         system_assembler.add(*elliptic_operator);
