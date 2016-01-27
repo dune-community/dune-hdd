@@ -19,6 +19,7 @@
 #include "problems/mixed-boundaries.hh"
 #include "problems/OS2014.hh"
 #include "problems/spe10.hh"
+#include "problems/spe10model2.hh"
 #include "problems/thermalblock.hh"
 
 namespace Dune {
@@ -146,6 +147,7 @@ private:
   typedef Problems::MixedBoundaries< E, D, d, R, r >           MixedBoundariesType;
   typedef Problems::OS2014::ParametricESV2007< E, D, d, R, r > OS2014ParametricESV2007Type;
   typedef Problems::Spe10::Model1< E, D, d, R, r >             Spe10Model1Type;
+  typedef Problems::Spe10::Model2< E, D, d, R, r >             Spe10Model2Type;
   typedef Problems::Thermalblock< E, D, d, R, r >              ThermalblockType;
 
 public:
@@ -157,6 +159,7 @@ public:
     ret = call_append< MixedBoundariesType >(ret);
     ret = call_append< OS2014ParametricESV2007Type >(ret);
     ret = call_append< Spe10Model1Type >(ret);
+    ret = call_append< Spe10Model2Type >(ret);
     ret = call_append< ThermalblockType >(ret);
     return ret;
   } // ... available(...)
@@ -173,6 +176,8 @@ public:
       return call_default_config< OS2014ParametricESV2007Type >(sub_name);
     else if (call_compare< Spe10Model1Type >(type))
       return call_default_config< Spe10Model1Type >(sub_name);
+    else if (call_compare< Spe10Model2Type >(type))
+      return call_default_config< Spe10Model2Type >(sub_name);
     else if (call_compare< ThermalblockType >(type))
       return call_default_config< ThermalblockType >(sub_name);
     else if (available().empty())
@@ -197,6 +202,8 @@ public:
       return call_create< OS2014ParametricESV2007Type >(cfg);
     else if (call_compare< Spe10Model1Type >(type))
       return call_create< Spe10Model1Type >(cfg);
+    else if (call_compare< Spe10Model2Type >(type))
+      return call_create< Spe10Model2Type >(cfg);
     else if (call_compare< ThermalblockType >(type))
       return call_create< ThermalblockType >(cfg);
     else if (available().empty())
