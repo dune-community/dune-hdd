@@ -296,53 +296,29 @@ public:
 
       // products
       // * L2
-      typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType > L2ProductType;
+      typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType >     L2ProductType;
+      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1ProductType;
       auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       l2_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
                                                              space.mapper().size(),
-                                                             L2ProductType::pattern(space)));
+                                                             H1ProductType::pattern(space))); // to allow axpy with h1_semi
       L2ProductType l2_product(*(l2_product_matrix->affine_part()), space);
       system_assembler.add(l2_product);
       // * H1 semi
-      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1SemiProductType;
       auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       h1_semi_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
                                                                   space.mapper().size(),
-                                                                  H1SemiProductType::pattern(space)));
-      H1SemiProductType h1_semi_product(*(h1_semi_product_matrix->affine_part()), space);
-      system_assembler.add(h1_semi_product);
-
-//      // * energy
-//      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
-//      auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-//      std::vector< std::unique_ptr< EnergyProductType > > energy_products;
-//      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-//        const size_t id = energy_product_matrix->register_component(new MatrixType(space.mapper().size(),
-//                                                                                   space.mapper().size(),
-//                                                                                   EnergyProductType::pattern(space)),
-//                                                                    diffusion_factor.coefficient(qq));
-//        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->component(id)),
-//                                                           space,
-//                                                           *(diffusion_factor.component(qq))));
-//      }
-//      if (diffusion_factor.has_affine_part()) {
-//        energy_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-//                                                                   space.mapper().size(),
-//                                                                   EnergyProductType::pattern(space)));
-//        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->affine_part()),
-//                                                           space,
-//                                                           *(diffusion_factor.affine_part())));
-//      }
-//      for (auto& energy_product : energy_products)
-//        system_assembler.add(*energy_product);
+                                                                  H1ProductType::pattern(space)));
+      H1ProductType h1_product(*(h1_semi_product_matrix->affine_part()), space);
+      system_assembler.add(h1_product);
 
       // do the actual assembling
       system_assembler.walk();
 
       // * H1 product
-      auto h1_product_matrix
-          = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(l2_product_matrix->affine_part()->backend()));
-      h1_product_matrix->affine_part()->axpy(1.0, *h1_semi_product_matrix->affine_part());
+      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      h1_product_matrix->register_affine_part(h1_semi_product_matrix->affine_part()->copy());
+      h1_product_matrix->affine_part()->axpy(1, *l2_product_matrix->affine_part());
 
       out << "done (took " << timer.elapsed() << "s)" << std::endl;
 
@@ -408,6 +384,9 @@ public:
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
         system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
                              new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+      system_assembler.add(clear_and_set_dirichlet_rows, *l2_product_matrix->affine_part());
+      system_assembler.add(clear_and_set_dirichlet_rows, *h1_semi_product_matrix->affine_part());
+      system_assembler.add(clear_and_set_dirichlet_rows, *h1_product_matrix->affine_part());
       system_assembler.walk();
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
@@ -417,10 +396,10 @@ public:
       this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
 
       // finalize
-      this->products_.insert(std::make_pair("l2",        l2_product_matrix));
-      this->products_.insert(std::make_pair("h1_semi",   h1_semi_product_matrix));
-      this->products_.insert(std::make_pair("h1",        h1_product_matrix));
-//      this->products_.insert(std::make_pair("energy",    energy_product_matrix));
+      this->products_.insert(std::make_pair("l2_0",      l2_product_matrix));
+      this->products_.insert(std::make_pair("h1_semi_0", h1_semi_product_matrix));
+      this->products_.insert(std::make_pair("h1_0",      h1_semi_product_matrix));
+      this->products_.insert(std::make_pair("energy_0",  std::make_shared<AffinelyDecomposedMatrixType>(matrix.copy())));
       this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
       this->finalize_init();
