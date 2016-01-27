@@ -157,16 +157,28 @@ public:
     return *discretization_;
   }
 
-  void visualize(const std::string& filename_prefix) const
+  void visualize_grid(const std::string& filename) const
   {
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
     logger.info() << "visualizing grid... " << std::flush;
-    if (filename_prefix.empty())
+    if (filename.empty())
       DUNE_THROW(Dune::Stuff::Exceptions::wrong_input_given, "Given filename prefix must not be empty!");
-    grid_->visualize(filename_prefix + ".grid", boundary_cfg_);
+    grid_->visualize(filename, boundary_cfg_);
     logger.info() << "done" << std::endl;
-    logger.info() << "visualizing problem... " << std::flush;
-    problem_->visualize(grid_->leaf_view(), filename_prefix + ".problem", /*subsampling=*/ false);
+  }
+
+  void visualize_problem(const std::string& filename,
+                         const Dune::Pymor::Parameter& mu = Dune::Pymor::Parameter()) const
+  {
+    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
+    logger.info() << "visualizing problem (mu = " << mu << ")... " << std::flush;
+    if (filename.empty())
+      DUNE_THROW(Dune::Stuff::Exceptions::wrong_input_given, "Given filename prefix must not be empty!");
+    if (mu.empty()) {
+      problem_->visualize(grid_->leaf_view(), filename, /*subsampling=*/ false);
+    } else {
+      problem_->with_mu(mu)->visualize(grid_->leaf_view(), filename, /*subsampling=*/ false);
+    }
     logger.info() << "done" << std::endl;
   }
 

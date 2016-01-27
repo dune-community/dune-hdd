@@ -108,9 +108,18 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         Example.add_method('project',
                            retval(VectorType),
                            [param('const std::string', 'expression')], is_const=True, throw=exceptions)
-        Example.add_method('visualize',
+        Example.add_method('visualize_grid',
                            None,
                            [param('const std::string&', 'filename_prefix')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('visualize_problem',
+                           None,
+                           [param('const std::string&', 'filename_prefix')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('visualize_problem',
+                           None,
+                           [param('const std::string&', 'filename_prefix'),
+                            param('const Dune::Pymor::Parameter&', 'mu')],
                            is_const=True, throw=exceptions)
         if space_backend == space_backend_fem:
             Example.add_method('visualize_darcy_velocity',
