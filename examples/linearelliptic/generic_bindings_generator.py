@@ -17,7 +17,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     HAVE_DUNE_PDELAB = CONFIG_H['HAVE_DUNE_PDELAB']
     HAVE_DUNE_FEM    = CONFIG_H['HAVE_DUNE_FEM']
     HAVE_DUNE_ISTL   = CONFIG_H['HAVE_DUNE_ISTL']
-    HAVE_EIGEN       = CONFIG_H['HAVE_EIGEN']
+    HAVE_EIGEN       = False #CONFIG_H['HAVE_EIGEN']
     HAVE_ALUGRID     = CONFIG_H['HAVE_ALUGRID']
     HAVE_DUNE_SPGRID = CONFIG_H['HAVE_DUNE_SPGRID']
     RangeFieldType = 'double'
@@ -97,6 +97,12 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         Example.add_method('visualize',
                            None,
                            [param('const std::string&', 'filename_prefix')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('visualize_darcy_velocity',
+                           None,
+                           [param('const {}&'.format(VectorType), 'cg_vector'),
+                            param('const std::string&', 'filename'),
+                            param('const std::string&', 'name')],
                            is_const=True, throw=exceptions)
     YaspGrid1d = 'Dune::YaspGrid< 1 >'
     YaspGrid2d = 'Dune::YaspGrid< 2 >'
