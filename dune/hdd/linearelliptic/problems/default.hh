@@ -53,11 +53,11 @@ public:
   typedef typename DiffusionTensorType::NonparametricType NonparametricDiffusionTensorType;
   typedef typename FunctionType::NonparametricType NonparametricFunctionType;
 
-private:
+protected:
   typedef Pymor::Functions::NonparametricDefault
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >                    DiffusionFactorWrapperType;
   typedef Pymor::Functions::NonparametricDefault
-      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > DiffusiontensorWrapperType;
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > DiffusionTensorWrapperType;
   typedef Pymor::Functions::NonparametricDefault
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >             FunctionWrapperType;
 
@@ -131,7 +131,7 @@ public:
           const std::shared_ptr< const NonparametricFunctionType >& dir,
           const std::shared_ptr< const NonparametricFunctionType >& neum)
     : diffusion_factor_(std::make_shared< DiffusionFactorWrapperType >(diff_fac))
-    , diffusion_tensor_(std::make_shared< DiffusiontensorWrapperType >(diff_ten))
+    , diffusion_tensor_(std::make_shared< DiffusionTensorWrapperType >(diff_ten))
     , force_(std::make_shared< FunctionWrapperType >(forc))
     , dirichlet_(std::make_shared< FunctionWrapperType >(dir))
     , neumann_(std::make_shared< FunctionWrapperType >(neum))
