@@ -147,11 +147,6 @@ public:
     logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticExample(...)
 
-  ~GenericLinearellipticExample()
-  {
-    DSC::TimedLogger().get("example.linearelliptic.generic").info() << "finished" << std::endl;
-  }
-
   DiscretizationType& discretization()
   {
     return *discretization_;
