@@ -40,13 +40,12 @@ class Spe10Example
     cfg["diffusion_tensor.type"] = "pymor.function.spe10.model2";
     cfg["diffusion_tensor.upper_right"] = "[2 5 1]";
     cfg["diffusion_tensor.blockade_width"] = "0.2";
-    cfg["diffusion_tensor.blockade_value"] = "1";
     cfg["force.type"] = "pymor.function.affinelydecomposabledefault";
     cfg["force.name"] = "force";
     cfg["force.component.0.type"] = "stuff.function.indicator";
     cfg["force.component.0.name"] = "sink";
     cfg["force.component.0.0.domain"] = "[0.167 0.5; 1.82 2.05; 0 1]";
-    cfg["force.component.0.0.value"] = "-1";
+    cfg["force.component.0.0.value"] = "-25";
     cfg["force.coefficient.0.sink"] = "1";
     cfg["force.coefficient.0.expression"] = "sink[0]";
     cfg["dirichlet.type"] = "stuff.function.constant";
