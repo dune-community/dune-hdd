@@ -62,8 +62,8 @@ public:
   {
     Stuff::Common::Configuration config;
     config["type"] = static_id();
-    config["filename"] = Spe10FunctionType::default_config().get< std::string >("filename");
-    config["upper_right"] = Spe10FunctionType::default_config().get< std::string >("upper_right");
+    config["filename"] = Spe10FunctionType::default_config().template get< std::string >("filename");
+    config["upper_right"] = Spe10FunctionType::default_config().template get< std::string >("upper_right");
     config["channel_width"] = "0";
     if (sub_name.empty())
       return config;
@@ -120,7 +120,7 @@ private:
       channel_x_scaled_value[0][0]
             = channel_x_scaled_value[1][1]
             = channel_x_scaled_value[2][2]
-            = Spe10FunctionType::default_config().get< RangeFieldImp >("max");
+            = Spe10FunctionType::default_config().template get< RangeFieldImp >("max");
       auto channel_x_scaled = std::shared_ptr<TensorIndicatorFunctionType>(new TensorIndicatorFunctionType(
           {{{{0.,             upper_right[1]/2. - channel_width/2., 0.},
              {upper_right[0], upper_right[1]/2. + channel_width/2., upper_right[2]/2.}},
@@ -141,7 +141,7 @@ private:
       channel_y_scaled_value[0][0]
             = channel_y_scaled_value[1][1]
             = channel_y_scaled_value[2][2]
-            = Spe10FunctionType::default_config().get< RangeFieldImp >("max");
+            = Spe10FunctionType::default_config().template get< RangeFieldImp >("max");
       auto channel_y_scaled = std::shared_ptr<TensorIndicatorFunctionType>(new TensorIndicatorFunctionType(
           {{{{upper_right[0]/2. - channel_width/2., 0.,             upper_right[2]/2.},
              {upper_right[0]/2. + channel_width/2., upper_right[1], upper_right[2]}},
