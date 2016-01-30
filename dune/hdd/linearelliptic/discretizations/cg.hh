@@ -395,8 +395,8 @@ public:
 
       // finalize
       this->products_.insert(std::make_pair("l2_0",      l2_product_matrix));
-      this->products_.insert(std::make_pair("h1_semi_0", h1_semi_product_matrix));
-      this->products_.insert(std::make_pair("h1_0",      h1_semi_product_matrix));
+      this->products_.insert(std::make_pair("h1_0_semi", h1_semi_product_matrix));
+      this->products_.insert(std::make_pair("h1_0",      h1_product_matrix));
       this->products_.insert(std::make_pair("energy_0",  std::make_shared<AffinelyDecomposedMatrixType>(matrix.copy())));
       this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
