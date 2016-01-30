@@ -386,6 +386,16 @@ public:
       clear_and_set_dirichlet_rows.apply(*l2_product_matrix->affine_part());
       clear_and_set_dirichlet_rows.apply(*h1_semi_product_matrix->affine_part());
       clear_and_set_dirichlet_rows.apply(*h1_product_matrix->affine_part());
+      // also clear columns of products
+      auto energy_0_product = std::make_shared<AffinelyDecomposedMatrixType>(matrix.copy());
+      for (const auto& column : clear_and_set_dirichlet_rows.dirichlet_DoFs()) {
+        l2_product_matrix->affine_part()->unit_col(column);
+        h1_semi_product_matrix->affine_part()->unit_col(column);
+        h1_product_matrix->affine_part()->unit_col(column);
+        energy_0_product->affine_part()->unit_col(column);
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < energy_0_product->num_components(); ++qq)
+          energy_0_product->component(qq)->unit_col(column);
+      }
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // build parameter type
@@ -397,7 +407,7 @@ public:
       this->products_.insert(std::make_pair("l2_0",      l2_product_matrix));
       this->products_.insert(std::make_pair("h1_0_semi", h1_semi_product_matrix));
       this->products_.insert(std::make_pair("h1_0",      h1_product_matrix));
-      this->products_.insert(std::make_pair("energy_0",  std::make_shared<AffinelyDecomposedMatrixType>(matrix.copy())));
+      this->products_.insert(std::make_pair("energy_0",  energy_0_product));
       this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
       this->finalize_init();
