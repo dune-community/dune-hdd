@@ -189,14 +189,20 @@ public:
     logger.info() << "reconstructing darcy velocity... " << std::flush;
     auto problem_mu = problem_->with_mu(mu);
     auto diffusion = *problem_mu->diffusion_factor()->affine_part() * *problem_mu->diffusion_tensor()->affine_part();
-    auto pressure = make_const_discrete_function(discretization_->ansatz_space(), vector);
+    auto pressure = make_const_discrete_function(discretization_->ansatz_space(), vector, "pressure");
     auto velocity = make_discrete_function< VectorType >(*velocity_space_, name);
     const auto& grid_view = discretization_->grid_view();
     auto darcy_operator = Operators::make_darcy(grid_view, diffusion);
     darcy_operator->apply(pressure, velocity);
     logger.info() << "done" << std::endl;
-    logger.info() << "visualizing darcy velocity... " << std::flush;
-    velocity.visualize(filename);
+    logger.info() << "visualizing pressure and darcy velocity... " << std::flush;
+    typedef typename std::remove_const<typename std::remove_reference<decltype(grid_view)>::type>::type GV;
+    auto pressure_adapter = std::make_shared< Stuff::Functions::VisualizationAdapter< GV, 1 > >(pressure);
+    auto velocity_adapter = std::make_shared< Stuff::Functions::VisualizationAdapter< GV, d > >(velocity);
+    VTKWriter<GV> vtk_writer(grid_view, VTK::nonconforming);
+    vtk_writer.addVertexData(pressure_adapter);
+    vtk_writer.addVertexData(velocity_adapter);
+    vtk_writer.write(filename, VTK::appendedraw);
     logger.info() << "done" << std::endl;
   } // ... visualize_darcy_velocity(...)
 #endif // HAVE_DUNE_FEM
