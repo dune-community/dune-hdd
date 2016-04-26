@@ -85,6 +85,9 @@ TEST_F(OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_64_subdomain) {
 }
 
 
+extern template class LinearElliptic::Tests::SWIPDGStudyExpectations
+    < LinearElliptic::TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
     < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
