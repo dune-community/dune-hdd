@@ -35,6 +35,9 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
                       dunehdd-linearelliptic-thermalblock
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
+ADD_EXECUTABLE(example_linearelliptic_OS2014_FVCA7__visualization "OS2014_FVCA7__visualization.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_OS2014_FVCA7__visualization ${COMMON_LIBS})
+
 ADD_EXECUTABLE(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
                "OS2015_SISC__6_1__multiscale_example__visualizations.cc" ${COMMON_HEADER})
 TARGET_LINK_LIBRARIES(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
