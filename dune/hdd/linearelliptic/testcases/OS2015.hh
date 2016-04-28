@@ -3,8 +3,8 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2014_HH
-#define DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2014_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2015_HH
+#define DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2015_HH
 
 #include <algorithm>
 #include <cmath>
@@ -28,7 +28,7 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace TestCases {
-namespace OS2014 {
+namespace OS2015 {
 namespace internal {
 
 
@@ -402,7 +402,7 @@ public:
 
 
 template< class GridType >
-class ParametricBlockConvergence
+class Academic
   : public internal::ParametricConvergenceBase< GridType >
   , public MultiscaleCubeBase< GridType >
 {
@@ -427,7 +427,7 @@ public:
   using ParametricConvergenceBaseType::required_parameters;
   using ParametricConvergenceBaseType::parameters;
 
-  ParametricBlockConvergence(const ParametersMapType parameters,
+  Academic(const ParametersMapType parameters,
                              const std::string num_partitions = "[1 1 1]",
                              const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_,
                              const size_t oversampling_layers = 0,
@@ -441,7 +441,7 @@ public:
     this->check_parameters(ParametricConvergenceBaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
   }
-}; // class ParametricBlockConvergence
+}; // class Academic
 
 
 template< class GridType >
@@ -528,10 +528,10 @@ public:
 
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
-} // namespace OS2014
+} // namespace OS2015
 } // namespace TestCases
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2014_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2015_HH

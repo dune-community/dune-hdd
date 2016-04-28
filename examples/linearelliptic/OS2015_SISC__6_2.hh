@@ -26,7 +26,7 @@
 #include <dune/gdt/playground/products/elliptic-swipdg.hh>
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 
-#include <dune/hdd/linearelliptic/testcases/OS2014.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 #include <dune/hdd/linearelliptic/testcases/spe10.hh>
 #include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
 #include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
@@ -445,11 +445,11 @@ public:
 
 template< class GridImp >
 class OS2014Example
-  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridImp > >
+  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2015::Academic< GridImp > >
 {
   static_assert(GridImp::dimension == 2, "Only available in 2d!");
   typedef internal::Example
-      < Dune::HDD::LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< GridImp > > BaseType;
+      < Dune::HDD::LinearElliptic::TestCases::OS2015::Academic< GridImp > > BaseType;
 
 public:
   template< class... Args >

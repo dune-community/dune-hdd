@@ -23,7 +23,7 @@
 # include <dune/stuff/common/float_cmp.hh>
 
 # include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
-# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 # include <dune/hdd/linearelliptic/testcases/spe10.hh>
 
 # include "linearelliptic-swipdg.hh"

@@ -24,7 +24,7 @@
 #include <dune/pymor/parameters/base.hh>
 
 #include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
-#include <dune/hdd/linearelliptic/testcases/OS2014.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 #include <dune/hdd/linearelliptic/testcases/spe10.hh>
 
 #include "linearelliptic-swipdg.hh"
@@ -76,7 +76,7 @@ extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
     < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+    < LinearElliptic::TestCases::OS2015::Academic< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 
 #endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_GRID_MULTISCALE

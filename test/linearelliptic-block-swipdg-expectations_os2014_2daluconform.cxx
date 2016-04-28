@@ -8,7 +8,7 @@
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
 
-# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 
 # include "linearelliptic-block-swipdg-expectations.hh"
 
@@ -17,7 +17,7 @@ namespace HDD {
 namespace LinearElliptic {
 
 
-typedef TestCases::OS2014::ParametricBlockConvergence< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
+typedef TestCases::OS2015::Academic< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
 
 namespace Tests {
 

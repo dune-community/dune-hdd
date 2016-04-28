@@ -44,14 +44,14 @@ template< class GridType >
 class ESV2007Multiscale;
 
 
-namespace OS2014 {
+namespace OS2015 {
 
 
 template< class GridType >
-class ParametricBlockConvergence;
+class Academic;
 
 
-} // namespace OS2014
+} // namespace OS2015
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE
