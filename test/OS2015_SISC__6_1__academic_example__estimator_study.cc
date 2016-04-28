@@ -13,7 +13,7 @@
 // This one has to come first (includes the config.h)!
 #include <dune/stuff/test/main.hxx>
 
-#if HAVE_ALUGRID
+#if HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
 # include <vector>
 # include <string>
 # include <map>
@@ -91,7 +91,7 @@ void run_eoc_study(const std::string partitioning,
 } // ... run_eoc_study(...)
 
 
-TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable)
+TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_1)
 {
   using Pymor::Parameter;
   run_eoc_study("[1 1 1]",
@@ -102,10 +102,10 @@ TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable)
                 true,
                 "",
                 false);
-} // TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable)
+} // TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_1)
 
 
-TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h)
+TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_2_columns_2_3_4)
 {
   using Pymor::Parameter;
   run_eoc_study("[2 2 1]",
@@ -116,10 +116,10 @@ TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable_with_f
                 true,
                 "",
                 true);
-} // TEST(OS2014_parametric_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h)
+} // TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_2_columns_2_3_4)
 
 
-TEST(OS2014_parametric_convergence_study, offline_online_decomposable)
+TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_2_columns_5_6_7)
 {
   using Pymor::Parameter;
   run_eoc_study("[2 2 1]",
@@ -130,10 +130,10 @@ TEST(OS2014_parametric_convergence_study, offline_online_decomposable)
                 true,
                 "",
                 true);
-} // TEST(OS2014_parametric_convergence_study, offline_online_decomposable)
+} // TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_2_columns_5_6_7)
 
 
-TEST(OS2014_parametric_convergence_study, offline_online_decomposable_with_fixed_norm)
+TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_3)
 {
   using Pymor::Parameter;
   run_eoc_study("[2 2 1]",
@@ -144,19 +144,31 @@ TEST(OS2014_parametric_convergence_study, offline_online_decomposable_with_fixed
                 true,
                 "",
                 true);
-} // TEST(OS2014_parametric_convergence_study, offline_online_decomposable_with_fixed_norm)
+} // TEST(OS2015_SISC__6_1__academic_example__estimator_study, table_3)
 
 
 extern template class Dune::HDD::LinearElliptic::Tests::BlockSWIPDGStudyExpectations< TestCaseType >;
 
 
-#else // HAVE_ALUGRID
+#else // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
 
 
-TEST(DISABLED_OS2014_parametric_convergence_study, not_offline_online_decomposable) {}
-TEST(DISABLED_OS2014_parametric_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h) {}
-TEST(DISABLED_OS2014_parametric_convergence_study, offline_online_decomposable) {}
-TEST(DISABLED_OS2014_parametric_convergence_study, offline_online_decomposable_with_fixed_norm) {}
+TEST(DISABLED_OS2015_SISC__6_1__academic_example__estimator_study, table_1)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2015_SISC__6_1__academic_example__estimator_study, table_2__columns_2_3_4)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2015_SISC__6_1__academic_example__estimator_study, table_2__columns_5_6_7)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2015_SISC__6_1__academic_example__estimator_study, table_3)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
 
 
-#endif // HAVE_ALUGRID
+#endif // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
