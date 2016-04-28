@@ -17,7 +17,7 @@ from pymor.parameters import CubicParameterSpace
 
 from dune.pymor.core import wrap_module
 
-import linearellipticexampleOS2014 as dune_module
+import linearellipticexampleOS2015SISC62 as dune_module
 
 
 def prepare(cfg):

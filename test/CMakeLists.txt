@@ -54,17 +54,17 @@ add_library(lib_test_OS2014_nonparametric_convergence_study
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
 add_dune_alugrid_flags(lib_test_OS2014_nonparametric_convergence_study)
 
-add_library(lib_test_OS2014_parametric_convergence_study
+add_library(lib_test_OS2015_SISC__6_1__academic_example__estimator_study
             STATIC
             EXCLUDE_FROM_ALL
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>)
-add_dune_alugrid_flags(lib_test_OS2014_parametric_convergence_study)
+add_dune_alugrid_flags(lib_test_OS2015_SISC__6_1__academic_example__estimator_study)
 
-add_library(lib_test_OS2014_parametric_multiscale_convergence_study
+add_library(lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study
             STATIC
             EXCLUDE_FROM_ALL
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_spe10_2daluconform>)
-add_dune_alugrid_flags(lib_test_OS2014_parametric_multiscale_convergence_study)
+add_dune_alugrid_flags(lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study)
 
 add_library(lib_test_linearelliptic-swipdg
             STATIC
@@ -80,18 +80,17 @@ add_library(lib_test_linearelliptic-block-swipdg
             EXCLUDE_FROM_ALL
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
 
-add_library(lib_test_OS2014-FVCA7-poster
+add_library(lib_test_OS2014_FVCA7__estimator_study
             STATIC
             EXCLUDE_FROM_ALL
             $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_esv2007_2daluconform>
             $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
 
 # test targets
-target_link_libraries(test_OS2014_parametric_convergence_study lib_test_OS2014_parametric_convergence_study)
-target_link_libraries(test_OS2014_parametric_multiscale_convergence_study lib_test_OS2014_parametric_multiscale_convergence_study)
-target_link_libraries(test_OS2014_nonparametric_convergence_study lib_test_OS2014_nonparametric_convergence_study)
+target_link_libraries(test_OS2015_SISC__6_1__academic_example__estimator_study lib_test_OS2015_SISC__6_1__academic_example__estimator_study)
+target_link_libraries(test_OS2015_SISC__6_1__multiscale_example__estimator_study lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study)
 target_link_libraries(test_linearelliptic-block-swipdg lib_test_linearelliptic-block-swipdg)
-target_link_libraries(test_OS2014-FVCA7-poster lib_test_OS2014-FVCA7-poster)
+target_link_libraries(test_OS2014_FVCA7__estimator_study lib_test_OS2014_FVCA7__estimator_study)
 target_link_libraries(test_linearelliptic-swipdg lib_test_linearelliptic-swipdg)
 
 # clang analizer targets (should be guarded)

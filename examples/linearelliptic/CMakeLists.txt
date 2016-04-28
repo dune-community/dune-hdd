@@ -35,23 +35,23 @@ TARGET_LINK_LIBRARIES(example_linearelliptic_thermalblock
                       dunehdd-linearelliptic-thermalblock
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
-ADD_EXECUTABLE(example_linearelliptic_OS2014_spe10_visualization
-               "OS2014_spe10_visualization.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(example_linearelliptic_OS2014_spe10_visualization
+ADD_EXECUTABLE(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
+               "OS2015_SISC__6_1__multiscale_example__visualizations.cc" ${COMMON_HEADER})
+TARGET_LINK_LIBRARIES(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 
 add_python_bindings(linearellipticexamplecg cg_bindings_generator.py cg.hh dunehdd-linearelliptic-cg)
 add_python_bindings(linearellipticexamplethermalblock thermalblock_bindings_generator.py thermalblock.hh dunehdd-linearelliptic-thermalblock)
-add_python_bindings(linearellipticexampleOS2014 OS2014_bindings_generator.py OS2014_bindings_generator.hh "")
+add_python_bindings(linearellipticexampleOS2015SISC62 OS2015_SISC__6_2__bindings_generator.py OS2015_SISC__6_2__bindings_generator.hh "")
 
 add_dune_alugrid_flags(example_linearelliptic_block_swipdg
                        example_linearelliptic_cg
                        example_linearelliptic_swipdg
                        example_linearelliptic_thermalblock
-                       example_linearelliptic_OS2014_spe10_visualization
+                       example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
                        linearellipticexamplecg
                        linearellipticexamplethermalblock
-                       linearellipticexampleOS2014)
+                       linearellipticexampleOS2015SISC62)
 
 add_dune_superlu_flags(example_linearelliptic_block_swipdg
                        example_linearelliptic_cg
@@ -60,7 +60,7 @@ add_dune_superlu_flags(example_linearelliptic_block_swipdg
                        example_linearelliptic_OS2014_spe10_visualization
                        linearellipticexamplecg
                        linearellipticexamplethermalblock
-                       linearellipticexampleOS2014)
+                       linearellipticexampleOS2015SISC62)
 
 add_dune_tbb_flags(example_linearelliptic_block_swipdg
                    example_linearelliptic_cg
@@ -69,7 +69,7 @@ add_dune_tbb_flags(example_linearelliptic_block_swipdg
                    example_linearelliptic_OS2014_spe10_visualization
                    linearellipticexamplecg
                    linearellipticexamplethermalblock
-                   linearellipticexampleOS2014)
+                   linearellipticexampleOS2015SISC62)
 
 # link spe10 data file if present
 if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
@@ -79,11 +79,11 @@ if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
   endif(NOT EXISTS ${SPE10MODEL1DATA_TARGET_FILENAME})
 endif (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
 
-set (OS2014_academic_py "OS2014_academic.py")
-if (NOT EXISTS ${OS2014_academic_py})
-  execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${OS2014_academic_py}" "${CMAKE_CURRENT_BINARY_DIR}//${OS2014_academic_py}")
-endif (NOT EXISTS ${OS2014_academic_py})
-set (OS2014_spe10_py "OS2014_spe10.py")
-if (NOT EXISTS ${OS2014_spe10_py})
-  execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${OS2014_spe10_py}" "${CMAKE_CURRENT_BINARY_DIR}//${OS2014_spe10_py}")
-endif (NOT EXISTS ${OS2014_spe10_py})
+set (OS2015_SISC__6_2__academic_example_py "OS2015_SISC__6_2__academic_example.py")
+if (NOT EXISTS ${OS2015_SISC__6_2__academic_example_py})
+  execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${OS2015_SISC__6_2__academic_example_py}" "${CMAKE_CURRENT_BINARY_DIR}//${OS2015_SISC__6_2__academic_example_py}")
+endif (NOT EXISTS ${OS2015_SISC__6_2__academic_example_py})
+set (OS2015_SISC__6_2__multiscale_example_py "OS2015_SISC__6_2__multiscale_example.py")
+if (NOT EXISTS ${OS2015_SISC__6_2__multiscale_example_py})
+  execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${OS2015_SISC__6_2__multiscale_example_py}" "${CMAKE_CURRENT_BINARY_DIR}//${OS2015_SISC__6_2__multiscale_example_py}")
+endif (NOT EXISTS ${OS2015_SISC__6_2__multiscale_example_py})
