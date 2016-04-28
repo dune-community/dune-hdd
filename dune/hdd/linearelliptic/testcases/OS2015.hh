@@ -365,39 +365,6 @@ protected:
 } // namespace internal
 
 
-template< class GridType >
-class ParametricConvergence
-  : public internal::ParametricConvergenceBase< GridType >
-  , public Base< GridType >
-{
-  typedef internal::ParametricConvergenceBase< GridType > ParametricConvergenceBaseType;
-  typedef Base< GridType >                 TestCaseBaseType;
-
-  static std::shared_ptr< GridType > create_initial_grid(const int refinements)
-  {
-    Stuff::Grid::Providers::Cube< GridType > grid_provider(-1, 1, 4);
-    auto grid = grid_provider.grid_ptr();
-    grid->globalRefine(refinements);
-    return grid;
-  } // ... create_initial_grid(...)
-
-public:
-  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
-
-  using ParametricConvergenceBaseType::required_parameters;
-  using ParametricConvergenceBaseType::parameters;
-
-  ParametricConvergence(const ParametersMapType parameters,
-                        const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_)
-    : ParametricConvergenceBaseType(parameters)
-    , TestCaseBaseType(create_initial_grid(ParametricConvergenceBaseType::initial_refinements()), num_refinements)
-  {
-    this->check_parameters(ParametricConvergenceBaseType::required_parameters(), parameters);
-    this->inherit_parameter_type(this->problem_, "problem");
-  }
-}; // class ParametricConvergence
-
-
 #if HAVE_DUNE_GRID_MULTISCALE
 
 
@@ -442,88 +409,6 @@ public:
     this->inherit_parameter_type(this->problem_, "problem");
   }
 }; // class Academic
-
-
-template< class GridType >
-class FiveSpotBlock
-  : public internal::FiveSpotBase< GridType >
-  , public MultiscaleCubeBase< GridType >
-{
-  typedef internal::FiveSpotBase< GridType > FiveSpotBaseType;
-  typedef MultiscaleCubeBase< GridType >     TestCaseBaseType;
-
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
-                                                       const size_t oversampling_layers)
-  {
-    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
-    grid_cfg["lower_left"] = "-1";
-    grid_cfg["upper_right"] = "1";
-    grid_cfg["num_elements"] = "4";
-    grid_cfg["num_partitions"] = num_partitions;
-    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
-    return grid_cfg;
-  } // ... initial_grid_cfg(...)
-
-public:
-  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
-
-  using FiveSpotBaseType::required_parameters;
-  using FiveSpotBaseType::parameters;
-
-  FiveSpotBlock(const ParametersMapType parameters,
-                const std::string num_partitions = "[1 1 1]",
-                const size_t num_refinements = FiveSpotBaseType::default_num_refinements_,
-                const size_t oversampling_layers = 0)
-    : FiveSpotBaseType(parameters)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
-                       FiveSpotBaseType::initial_refinements(),
-                       num_refinements)
-  {
-    this->check_parameters(FiveSpotBaseType::required_parameters(), parameters);
-    this->inherit_parameter_type(this->problem_, "problem");
-  }
-}; // class FiveSpotBlock
-
-
-template< class GridType >
-class LocalThermalblockBlock
-  : public internal::LocalThermalblockBase< GridType >
-  , public MultiscaleCubeBase< GridType >
-{
-  typedef internal::LocalThermalblockBase< GridType > LocalThermalblockBaseType;
-  typedef MultiscaleCubeBase< GridType >              TestCaseBaseType;
-
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
-                                                       const size_t oversampling_layers)
-  {
-    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
-    grid_cfg["lower_left"] = "0";
-    grid_cfg["upper_right"] = "1";
-    grid_cfg["num_elements"] = "6";
-    grid_cfg["num_partitions"] = num_partitions;
-    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
-    return grid_cfg;
-  } // ... initial_grid_cfg(...)
-
-public:
-  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
-
-  using LocalThermalblockBaseType::required_parameters;
-  using LocalThermalblockBaseType::parameters;
-
-  LocalThermalblockBlock(const ParametersMapType parameters,
-                         const std::string num_partitions = "[1 1 1]",
-                         const size_t num_refinements = LocalThermalblockBaseType::default_num_refinements_,
-                         const size_t oversampling_layers = 0)
-    : LocalThermalblockBaseType(parameters)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
-                       LocalThermalblockBaseType::initial_refinements(),
-                       num_refinements)
-  {
-    this->check_parameters(LocalThermalblockBaseType::required_parameters(), parameters);
-    this->inherit_parameter_type(this->problem_, "problem");
-  }
-}; // class LocalThermalblockBlock
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE

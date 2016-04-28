@@ -27,16 +27,6 @@ template< class GridType >
 class ESV2007;
 
 
-namespace OS2014 {
-
-
-template< class GridType >
-class ParametricConvergence;
-
-
-} // namespace OS2014
-
-
 #if HAVE_DUNE_GRID_MULTISCALE
 
 
