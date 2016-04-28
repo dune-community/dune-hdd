@@ -17,7 +17,7 @@
 #include "problems/default.hh"
 #include "problems/ESV2007.hh"
 #include "problems/mixed-boundaries.hh"
-#include "problems/OS2014.hh"
+#include "problems/OS2015.hh"
 #include "problems/spe10.hh"
 #include "problems/thermalblock.hh"
 
@@ -144,7 +144,7 @@ private:
   typedef Problems::Default< E, D, d, R, r >                   DefaultType;
   typedef Problems::ESV2007< E, D, d, R, r >                   ESV2007Type;
   typedef Problems::MixedBoundaries< E, D, d, R, r >           MixedBoundariesType;
-  typedef Problems::OS2014::ParametricESV2007< E, D, d, R, r > OS2014ParametricESV2007Type;
+  typedef Problems::OS2015::ParametricESV2007< E, D, d, R, r > OS2015ParametricESV2007Type;
   typedef Problems::Spe10::Model1< E, D, d, R, r >             Spe10Model1Type;
   typedef Problems::Thermalblock< E, D, d, R, r >              ThermalblockType;
 
@@ -155,7 +155,7 @@ public:
     ret = call_append< DefaultType >(ret);
     ret = call_append< ESV2007Type >(ret);
     ret = call_append< MixedBoundariesType >(ret);
-    ret = call_append< OS2014ParametricESV2007Type >(ret);
+    ret = call_append< OS2015ParametricESV2007Type >(ret);
     ret = call_append< Spe10Model1Type >(ret);
     ret = call_append< ThermalblockType >(ret);
     return ret;
@@ -169,8 +169,8 @@ public:
       return call_default_config< ESV2007Type >(sub_name);
     else if (call_compare< MixedBoundariesType >(type))
       return call_default_config< MixedBoundariesType >(sub_name);
-    else if (call_compare< OS2014ParametricESV2007Type >(type))
-      return call_default_config< OS2014ParametricESV2007Type >(sub_name);
+    else if (call_compare< OS2015ParametricESV2007Type >(type))
+      return call_default_config< OS2015ParametricESV2007Type >(sub_name);
     else if (call_compare< Spe10Model1Type >(type))
       return call_default_config< Spe10Model1Type >(sub_name);
     else if (call_compare< ThermalblockType >(type))
@@ -193,8 +193,8 @@ public:
       return call_create< ESV2007Type >(cfg);
     else if (call_compare< MixedBoundariesType >(type))
       return call_create< MixedBoundariesType >(cfg);
-    else if (call_compare< OS2014ParametricESV2007Type >(type))
-      return call_create< OS2014ParametricESV2007Type >(cfg);
+    else if (call_compare< OS2015ParametricESV2007Type >(type))
+      return call_create< OS2015ParametricESV2007Type >(cfg);
     else if (call_compare< Spe10Model1Type >(type))
       return call_create< Spe10Model1Type >(cfg);
     else if (call_compare< ThermalblockType >(type))

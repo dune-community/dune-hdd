@@ -3,8 +3,8 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_OS2014_HH
-#define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_OS2014_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_OS2015_HH
+#define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_OS2015_HH
 
 #include <memory>
 #include <cmath>
@@ -23,7 +23,7 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace Problems {
-namespace OS2014 {
+namespace OS2015 {
 
 
 template< class E, class D, int d, class R, int r = 1 >
@@ -87,7 +87,7 @@ public:
 
   static std::string static_id()
   {
-    return BaseType::BaseType::static_id() + ".OS2014.parametricESV2007";
+    return BaseType::BaseType::static_id() + ".OS2015.parametricESV2007";
   }
 
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
@@ -121,7 +121,7 @@ public:
 
   virtual std::string type() const override
   {
-    return BaseType::BaseType::static_id() + ".OS2014.parametricESV2007";
+    return BaseType::BaseType::static_id() + ".OS2015.parametricESV2007";
   }
 }; // class ParametricESV2007< ..., 2, ..., 1 >
 
@@ -176,7 +176,7 @@ public:
 
   static std::string static_id()
   {
-    return BaseType::BaseType::static_id() + ".OS2014.fivespot";
+    return BaseType::BaseType::static_id() + ".OS2015.fivespot";
   }
 
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
@@ -214,7 +214,7 @@ public:
 
   virtual std::string type() const override
   {
-    return BaseType::BaseType::static_id() + ".OS2014.fivespot";
+    return BaseType::BaseType::static_id() + ".OS2015.fivespot";
   }
 }; // class FiveSpot< ..., 2, ..., 1 >
 
@@ -272,7 +272,7 @@ public:
 
   static std::string static_id()
   {
-    return BaseType::BaseType::static_id() + ".OS2014.localthermalblock";
+    return BaseType::BaseType::static_id() + ".OS2015.localthermalblock";
   }
 
   static Stuff::Common::Configuration default_config(const std::string /*sub_name*/ = "")
@@ -297,15 +297,15 @@ public:
 
   virtual std::string type() const override
   {
-    return BaseType::BaseType::static_id() + ".OS2014.localthermalblock";
+    return BaseType::BaseType::static_id() + ".OS2015.localthermalblock";
   }
 }; // class LocalThermalblock< ..., 2, ..., 1 >
 
 
-} // namespace OS2014
+} // namespace OS2015
 } // namespace Problems
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_PROBLEMS_OS2014_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_PROBLEMS_OS2015_HH

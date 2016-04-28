@@ -20,7 +20,7 @@
 
 #include <dune/pymor/functions/default.hh>
 
-#include <dune/hdd/linearelliptic/problems/OS2014.hh>
+#include <dune/hdd/linearelliptic/problems/OS2015.hh>
 
 #include "base.hh"
 
@@ -43,7 +43,7 @@ public:
   typedef double            RangeFieldType;
   static const unsigned int dimRange = 1;
 public:
-  typedef Problems::OS2014::ParametricESV2007
+  typedef Problems::OS2015::ParametricESV2007
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
   typedef Stuff::Functions::Constant
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ExactSolutionType;
