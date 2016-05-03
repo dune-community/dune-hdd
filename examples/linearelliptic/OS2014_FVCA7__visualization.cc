@@ -36,11 +36,12 @@
 
 #include <dune/gdt/operators/prolongations.hh>
 #include <dune/gdt/discretefunction/default.hh>
-#include <dune/gdt/playground/products/elliptic.hh>
+#include <dune/gdt/products/elliptic.hh>
 #include <dune/gdt/operators/fluxreconstruction.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
-#include <dune/hdd/playground/linearelliptic/discretizations/block-swipdg.hh>
+#include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
+#include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
 
 using namespace Dune;
 using namespace HDD;
@@ -69,18 +70,18 @@ class IndicatorFunction
       , value_(value)
     {}
 
-    virtual size_t order() const DS_OVERRIDE DS_FINAL
+    virtual size_t order() const override final
     {
       return 0;
     }
 
-    virtual void evaluate(const DomainType& xx, RangeType& ret) const DS_OVERRIDE DS_FINAL
+    virtual void evaluate(const DomainType& xx, RangeType& ret) const override final
     {
       assert(this->is_a_valid_point(xx));
       ret = value_;
     }
 
-    virtual void jacobian(const DomainType& xx, JacobianRangeType& ret) const DS_OVERRIDE DS_FINAL
+    virtual void jacobian(const DomainType& xx, JacobianRangeType& ret) const override final
     {
       assert(this->is_a_valid_point(xx));
       ret *= 0.0;
@@ -104,17 +105,17 @@ public:
 
   virtual ~IndicatorFunction() {}
 
-  virtual ThisType* copy() const DS_OVERRIDE DS_FINAL
+  virtual ThisType* copy() const override final
   {
     DUNE_THROW(NotImplemented, "");
   }
 
-  virtual std::string name() const DS_OVERRIDE DS_FINAL
+  virtual std::string name() const override final
   {
     return name_;
   }
 
-  virtual std::unique_ptr< LocalfunctionType > local_function(const EntityType& entity) const DS_OVERRIDE DS_FINAL
+  virtual std::unique_ptr< LocalfunctionType > local_function(const EntityType& entity) const override final
   {
     const auto center = entity.geometry().center();
     for (const auto& element : values_) {
@@ -152,9 +153,9 @@ int main(int argc, char** argv)
     typedef double            RangeFieldType;
     static const unsigned int dimRange = 1;
 
-    typedef Stuff::Functions::Spe10Model1
+    typedef Stuff::Functions::Spe10::Model1
         < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimDomain, dimDomain > Spe10Model1FunctionType;
-    Stuff::Common::ConfigTree config = Spe10Model1FunctionType::default_config();
+    Stuff::Common::Configuration config = Spe10Model1FunctionType::default_config();
     const std::string x_elements = "5";
     const std::string y_elements = "1";
     config["upper_right"] = "[5 1]";
@@ -179,24 +180,24 @@ int main(int argc, char** argv)
 
     typedef Stuff::Grid::Providers::Cube< GridType > GridProvider;
     auto level_grid_provider = GridProvider::create(config);
-    level_grid_provider->grid()->globalRefine(1);
+    level_grid_provider->grid().globalRefine(1);
 
     typedef grid::Multiscale::Providers::Cube< GridType > MsGridProviderType;
-    MsGridProviderType level_provider(level_grid_provider->grid(),
+    MsGridProviderType level_provider(level_grid_provider->grid_ptr(),
                                       config.get< DomainType >("lower_left"),
                                       config.get< DomainType >("upper_right"),
                                       config.get< std::vector< size_t >  >("num_partitions", dimDomain));
 
     typedef Stuff::Grid::Providers::Cube< GridType > GridProvider;
     auto reference_grid_provider = GridProvider::create(config);
-    reference_grid_provider->grid()->globalRefine(1);
-    reference_grid_provider->grid()->globalRefine(2 * DGFGridInfo< GridType >::refineStepsForHalf());
-    MsGridProviderType reference_level_provider(reference_grid_provider->grid(),
+    reference_grid_provider->grid().globalRefine(1);
+    reference_grid_provider->grid().globalRefine(2 * DGFGridInfo< GridType >::refineStepsForHalf());
+    MsGridProviderType reference_level_provider(reference_grid_provider->grid_ptr(),
                                                 config.get< DomainType >("lower_left"),
                                                 config.get< DomainType >("upper_right"),
                                                 config.get< std::vector< size_t >  >("num_partitions", dimDomain));
 
-    problem.visualize(*level_grid_provider->leaf_view(), "problem");
+    problem.visualize(level_grid_provider->leaf_view(), "problem");
 
     std::cout << "solving... " << std::flush;
     Dune::Timer timer;
@@ -227,7 +228,7 @@ int main(int argc, char** argv)
     ConstDiscreteFunction< SpaceType, VectorType > discrete_solution_on_level(*discretization.ansatz_space(),
                                                                               solution);
     discrete_solution_on_level.visualize("solution_grid_"
-                                         + DSC::toString(discrete_solution_on_level.space().grid_view()->indexSet().size(0))
+                                         + DSC::toString(discrete_solution_on_level.space().grid_view().indexSet().size(0))
                                          + "_msgrid_" + x_elements + "x" + y_elements);
 
     typedef Spaces::RaviartThomas::PdelabBased< typename SpaceType::GridViewType, 0, RangeFieldType, dimDomain >
@@ -236,16 +237,16 @@ int main(int argc, char** argv)
     VectorType diffusive_flux_vector(rtn0_space.mapper().size());
     DiscreteFunction< RTN0SpaceType, VectorType > diffusive_flux(rtn0_space, diffusive_flux_vector);
     const Operators::DiffusiveFluxReconstruction< typename SpaceType::GridViewType, ConstantFunctionType, Spe10Model1FunctionType >
-      diffusive_flux_reconstruction(*discretization.grid_view(),
+      diffusive_flux_reconstruction(discretization.grid_view(),
                                     *one,
                                     *spe10_model1_function);
     diffusive_flux_reconstruction.apply(discrete_solution_on_level, diffusive_flux);
     diffusive_flux.visualize("diffusive_flux_grid_"
-                             + DSC::toString(discrete_solution_on_level.space().grid_view()->indexSet().size(0))
+                             + DSC::toString(discrete_solution_on_level.space().grid_view().indexSet().size(0))
                              + "_msgrid_" + x_elements + "x" + y_elements);
 
     auto solution_on_reference_level = reference_discretization.create_vector();
-    const auto& reference_grid_view = *reference_discretization.ansatz_space()->grid_view();
+    const auto& reference_grid_view = reference_discretization.ansatz_space()->grid_view();
     DiscreteFunction< SpaceType, VectorType > discrete_solution_on_reference_level(*reference_discretization.ansatz_space(),
                                                                                    solution_on_reference_level);
     Operators::Prolongation< GridViewType >(reference_grid_view).apply(discrete_solution_on_level,
@@ -260,26 +261,33 @@ int main(int argc, char** argv)
     ConstDiscreteFunction< SpaceType, VectorType > difference(*reference_discretization.ansatz_space(),
                                                               difference_vector);
     difference.visualize("difference_grid_"
-                         + DSC::toString(discrete_reference_solution.space().grid_view()->indexSet().size(0))
+                         + DSC::toString(discrete_reference_solution.space().grid_view().indexSet().size(0))
                          + "_msgrid_" + x_elements + "x" + y_elements);
 
     std::cout << "computing energy error... " << std::flush;
     timer.reset();
-    Products::Elliptic< ConstantFunctionType, GridViewType, RangeFieldType, Spe10Model1FunctionType >
-        elliptic_product(*one, *spe10_model1_function, reference_grid_view);
+    Products::Elliptic< GridViewType, ConstantFunctionType, RangeFieldType, Spe10Model1FunctionType >
+        elliptic_product(reference_grid_view, *one, *spe10_model1_function);
     const RangeFieldType energy_error = std::sqrt(elliptic_product.apply2(difference, difference));
     std::cout << "done (is " << energy_error << ", took " << timer.elapsed() << "s)" << std::endl;
 
     std::cout << "estimating error... " << std::flush;
     timer.reset();
-    const RangeFieldType estimate = discretization.estimate(solution);
+    typedef LinearElliptic::Estimators::BlockSWIPDG< SpaceType, VectorType, ProblemType, GridType > Estimator;
+    const RangeFieldType estimate = Estimator::estimate(*discretization.ansatz_space(),
+                                                        solution,
+                                                        problem,
+                                                        "eta_OS2014");
     std::cout << "done (is " << estimate << ", took " << timer.elapsed() << "s)" << std::endl;
 
     std::cout << "computing local error/estimator contributions... " << std::flush;
     timer.reset();
     // walk the multiscale grid
     std::vector< RangeFieldType > local_error_contributions(reference_level_provider.ms_grid()->size());
-    std::vector< RangeFieldType > local_estimator_contributions(reference_level_provider.ms_grid()->size());
+    auto local_estimator_contributions = Estimator::estimate_local(*discretization.ansatz_space(),
+                                                                   solution,
+                                                                   problem,
+                                                                   "eta_OS2014");
     typedef typename DiscretizationType::LocalDiscretizationType LocalDiscretizationType;
     const auto& local_reference_discretizations = reference_discretization.local_discretizations();
     assert(local_reference_discretizations.size() == reference_level_provider.ms_grid()->size());
@@ -292,21 +300,18 @@ int main(int argc, char** argv)
       auto local_level_solution_vector = local_reference_discretization.create_vector();
       DiscreteFunction< LocalAnsatzSpaceType, VectorType >
           local_level_solution(*local_reference_discretization.ansatz_space(), local_level_solution_vector);
-      Operators::Prolongation< LocalGridViewType >(*local_grid_view).apply(discrete_solution_on_level,
-                                                                           local_level_solution);
+      Operators::Prolongation< LocalGridViewType >(local_grid_view).apply(discrete_solution_on_level,
+                                                                          local_level_solution);
       auto local_reference_solution_vector = local_reference_discretization.create_vector();
       DiscreteFunction< LocalAnsatzSpaceType, VectorType >
           local_reference_solution(*local_reference_discretization.ansatz_space(), local_reference_solution_vector);
-      Operators::Prolongation< LocalGridViewType >(*local_grid_view).apply(discrete_reference_solution,
-                                                                           local_reference_solution);
+      Operators::Prolongation< LocalGridViewType >(local_grid_view).apply(discrete_reference_solution,
+                                                                          local_reference_solution);
       // compute energy error
-      Products::Elliptic< ConstantFunctionType, LocalGridViewType, RangeFieldType, Spe10Model1FunctionType >
-          local_elliptic_product(*one, *spe10_model1_function, *local_grid_view);
+      Products::Elliptic< LocalGridViewType, ConstantFunctionType, RangeFieldType, Spe10Model1FunctionType >
+          local_elliptic_product(local_grid_view, *one, *spe10_model1_function);
       const auto local_difference = local_level_solution - local_reference_solution;
       local_error_contributions[ss] = local_elliptic_product.apply2(local_difference, local_difference);
-
-      // compute estimator
-      local_estimator_contributions[ss] = discretization.estimate_local(solution, ss);
     } // walk the multiscale grid
     std::cout << "done (took " << timer.elapsed() << "s):" << std::endl;
     RangeFieldType sum_local_errors = 0.0;
@@ -336,7 +341,7 @@ int main(int argc, char** argv)
 
     std::cout << "visualizing local errors/estimators... " << std::flush;
     timer.reset();
-    const auto& global_level_grid_view = level_provider.ms_grid()->globalGridPart()->gridView();
+    const auto global_level_grid_view = level_provider.ms_grid()->globalGridPart().gridView();
     std::vector< double > local_error_visualization(global_level_grid_view.indexSet().size(0));
     std::vector< double > local_estimator_visualization(global_level_grid_view.indexSet().size(0));
     const auto entity_it_end = global_level_grid_view.template end< 0 >();
