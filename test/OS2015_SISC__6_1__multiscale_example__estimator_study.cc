@@ -22,7 +22,7 @@
 
 # include <dune/pymor/parameters/base.hh>
 
-# include <dune/hdd/linearelliptic/testcases/spe10.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 
 # include "linearelliptic-block-swipdg.hh"
 # include "linearelliptic-block-swipdg-expectations.hh"
@@ -33,7 +33,7 @@ using namespace HDD;
 
 typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 
-typedef LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridType > TestCaseType;
+typedef LinearElliptic::TestCases::OS2015::Multiscale< GridType > TestCaseType;
 typedef LinearElliptic::Tests::BlockSWIPDGStudy< TestCaseType >             StudyType;
 
 

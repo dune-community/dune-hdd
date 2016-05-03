@@ -27,7 +27,7 @@
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 
 #include <dune/hdd/linearelliptic/testcases/OS2015.hh>
-#include <dune/hdd/linearelliptic/testcases/spe10.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 #include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
 #include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
 
@@ -428,10 +428,10 @@ private:
 
 template< class GridImp >
 class Spe10Model1Example
-  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > >
+  : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2015::Multiscale< GridImp > >
 {
   static_assert(GridImp::dimension == 2, "Only available in 2d!");
-  typedef internal::Example< Dune::HDD::LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridImp > > BaseType;
+  typedef internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2015::Multiscale< GridImp > > BaseType;
 
 public:
   template< class... Args >

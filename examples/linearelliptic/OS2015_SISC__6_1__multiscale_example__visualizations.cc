@@ -26,7 +26,7 @@
 # include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
 # include <dune/gdt/products/elliptic.hh>
 
-# include <dune/hdd/linearelliptic/testcases/spe10.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 # include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
 # include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
 
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
     logger.info() << "creating grid and test case ..." << std::endl;
 
     typedef ALUGrid< 2, 2, simplex, conforming > GridType;
-    typedef LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridType > TestCaseType;
+    typedef LinearElliptic::TestCases::OS2015::Multiscale< GridType > TestCaseType;
     const TestCaseType test_case({{"mu",     mu_max},
                                   {"mu_bar", mu_bar},
                                   {"mu_hat", mu_hat},

@@ -17,7 +17,7 @@ namespace HDD {
 namespace LinearElliptic {
 
 
-typedef TestCases::Spe10::ParametricBlockModel1< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
+typedef TestCases::OS2015::Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
 
 namespace Tests {
 
