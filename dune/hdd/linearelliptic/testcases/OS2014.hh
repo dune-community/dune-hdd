@@ -3,8 +3,8 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_ESV2007_HH
-#define DUNE_HDD_LINEARELLIPTIC_TESTCASES_ESV2007_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2014_HH
+#define DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2014_HH
 
 #include <dune/stuff/common/disable_warnings.hh>
 # if HAVE_ALUGRID
@@ -27,7 +27,7 @@ namespace internal {
 
 
 template< class GridType >
-class ESV2007Base
+class OS2014Base
 {
   static_assert(GridType::dimension == 2, "This test case is only available in 2d!");
 public:
@@ -59,7 +59,7 @@ protected:
   } // ... initial_refinements()
 
 public:
-  ESV2007Base()
+  OS2014Base()
     : boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , problem_(3)
     , exact_solution_(2, problem_.static_id() + ".exact_solution")
@@ -69,7 +69,7 @@ public:
   {
     out << "+==================================================================+\n"
         << "|+================================================================+|\n"
-        << "||  Testcase ESV2007: smooth data, homogeneous dirichlet          ||\n"
+        << "||  Testcase OS2014: smooth data, homogeneous dirichlet          ||\n"
         << "||  (see testcase 1, page 23 in Ern, Stephansen, Vohralik, 2007)  ||\n"
         << "|+----------------------------------------------------------------+|\n"
         << "||  domain = [-1, 1] x [-1, 1]                                    ||\n"
@@ -105,18 +105,18 @@ private:
   const Stuff::Common::Configuration boundary_info_cfg_;
   const ProblemType problem_;
   const ExactSolutionType exact_solution_;
-}; // class ESV2007
+}; // class OS2014
 
 
 } // namespace internal
 
 
 template< class GridType >
-class ESV2007
-  : public internal::ESV2007Base< GridType >
+class OS2014
+  : public internal::OS2014Base< GridType >
   , public Base< GridType >
 {
-  typedef internal::ESV2007Base< GridType > ESV2007BaseType;
+  typedef internal::OS2014Base< GridType > OS2014BaseType;
   typedef Base< GridType >                  TestCaseBaseType;
 
 private:
@@ -129,21 +129,21 @@ private:
   } // ... create_initial_grid(...)
 
 public:
-  ESV2007(const size_t num_refinements = ESV2007BaseType::default_num_refinements)
-    : TestCaseBaseType(create_initial_grid(ESV2007BaseType::initial_refinements()), num_refinements)
+  OS2014(const size_t num_refinements = OS2014BaseType::default_num_refinements)
+    : TestCaseBaseType(create_initial_grid(OS2014BaseType::initial_refinements()), num_refinements)
   {}
-}; // class ESV2007
+}; // class OS2014
 
 
 # if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
-class ESV2007Multiscale
-  : public internal::ESV2007Base< GridType >
+class OS2014Multiscale
+  : public internal::OS2014Base< GridType >
   , public MultiscaleCubeBase< GridType >
 {
-  typedef internal::ESV2007Base< GridType > ESV2007BaseType;
+  typedef internal::OS2014Base< GridType > OS2014BaseType;
   typedef MultiscaleCubeBase< GridType >    TestCaseBaseType;
 
 private:
@@ -158,13 +158,13 @@ private:
   } // ... initial_grid_cfg(...)
 
 public:
-  ESV2007Multiscale(const std::string num_partitions = "[1 1 1]",
-                    const size_t num_refinements = ESV2007BaseType::default_num_refinements)
-    : TestCaseBaseType(initial_grid_cfg(num_partitions), ESV2007BaseType::initial_refinements(), num_refinements)
+  OS2014Multiscale(const std::string num_partitions = "[1 1 1]",
+                    const size_t num_refinements = OS2014BaseType::default_num_refinements)
+    : TestCaseBaseType(initial_grid_cfg(num_partitions), OS2014BaseType::initial_refinements(), num_refinements)
   {}
 
 
-}; // class ESV2007Multiscale
+}; // class OS2014Multiscale
 
 
 # endif // HAVE_DUNE_GRID_MULTISCALE
@@ -174,4 +174,4 @@ public:
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_ESV2007_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2014_HH
