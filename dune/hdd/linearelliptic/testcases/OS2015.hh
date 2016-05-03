@@ -33,7 +33,7 @@ namespace internal {
 
 
 template< class GridType >
-class ParametricConvergenceBase
+class AcademicBase
 {
   static_assert(GridType::dimension == 2, "This test case is only available in 2d!");
 public:
@@ -82,7 +82,7 @@ public:
                                   {"mu_hat",        Pymor::ParameterType("mu", 1)}});
   }
 
-  ParametricConvergenceBase(const ParametersMapType& parameters)
+  AcademicBase(const ParametersMapType& parameters)
     : parameters_(add_parameter_range(parameters))
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , problem_(3)
@@ -93,8 +93,8 @@ public:
   {
     out << "+==========================================================+\n"
         << "|+========================================================+|\n"
-        << "||  Testcase OS2014: (parametric) ESV2007                 ||\n"
-        << "||  (see Ohlberger, Schindler, 2014)                      ||\n"
+        << "||  Testcase OS2015: (parametric) ESV2007                 ||\n"
+        << "||  (see Ohlberger, Schindler, 2016, sec. 6)              ||\n"
         << "|+--------------------------------------------------------+|\n"
         << "||  domain = [-1, 1] x [-1, 1]                            ||\n"
         << "||  diffusion = 1 + (1 - mu) cos(1/2 pi x) cos(1/2 pi y)  ||\n"
@@ -137,7 +137,7 @@ protected:
   const Stuff::Common::Configuration boundary_info_cfg_;
   const ProblemType problem_;
   const ExactSolutionType exact_solution_;
-}; // class ParametricConvergenceBase
+}; // class AcademicBase
 
 
 } // namespace internal
@@ -148,10 +148,10 @@ protected:
 
 template< class GridType >
 class Academic
-  : public internal::ParametricConvergenceBase< GridType >
+  : public internal::AcademicBase< GridType >
   , public MultiscaleCubeBase< GridType >
 {
-  typedef internal::ParametricConvergenceBase< GridType > ParametricConvergenceBaseType;
+  typedef internal::AcademicBase< GridType > AcademicBaseType;
   typedef MultiscaleCubeBase< GridType >   TestCaseBaseType;
 
   static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
@@ -169,21 +169,21 @@ class Academic
 public:
   typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
 
-  using ParametricConvergenceBaseType::required_parameters;
-  using ParametricConvergenceBaseType::parameters;
+  using AcademicBaseType::required_parameters;
+  using AcademicBaseType::parameters;
 
   Academic(const ParametersMapType parameters,
                              const std::string num_partitions = "[1 1 1]",
-                             const size_t num_refinements = ParametricConvergenceBaseType::default_num_refinements_,
+                             const size_t num_refinements = AcademicBaseType::default_num_refinements_,
                              const size_t oversampling_layers = 0,
                              const bool H_with_h = false)
-    : ParametricConvergenceBaseType(parameters)
+    : AcademicBaseType(parameters)
     , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
-                       ParametricConvergenceBaseType::initial_refinements(),
+                       AcademicBaseType::initial_refinements(),
                        num_refinements,
                        H_with_h)
   {
-    this->check_parameters(ParametricConvergenceBaseType::required_parameters(), parameters);
+    this->check_parameters(AcademicBaseType::required_parameters(), parameters);
     this->inherit_parameter_type(this->problem_, "problem");
   }
 }; // class Academic
