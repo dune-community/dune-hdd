@@ -41,19 +41,6 @@ add_library(obj_test_linearelliptic-swipdg-expectations_spe10_2dsgrid
             linearelliptic-swipdg-expectations_spe10_2dsgrid.cxx)
 
 # test target libs
-add_library(obj_test_os2014_nonparametric_convergence_study
-            OBJECT
-            EXCLUDE_FROM_ALL
-            OS2014_nonparametric_convergence_study.cxx)
-add_library(lib_test_OS2014_nonparametric_convergence_study
-            STATIC
-            EXCLUDE_FROM_ALL
-            $<TARGET_OBJECTS:obj_test_os2014_nonparametric_convergence_study>
-            $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_esv2007_2daluconform>
-            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>
-            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_esv2007_2daluconform>)
-add_dune_alugrid_flags(lib_test_OS2014_nonparametric_convergence_study)
-
 add_library(lib_test_OS2015_SISC__6_1__academic_example__estimator_study
             STATIC
             EXCLUDE_FROM_ALL
