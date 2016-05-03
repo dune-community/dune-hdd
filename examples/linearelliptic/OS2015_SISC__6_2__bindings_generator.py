@@ -302,8 +302,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            [param('const Dune::Pymor::Parameter&', 'mu_1'),
                             param('const Dune::Pymor::Parameter&', 'mu_2')],
                            is_const=True, throw=exceptions)
-    add_example('Spe10Model1Example')
-    add_example('OS2014Example')
+    add_example('OS2015MultiscaleExample')
+    add_example('OS2015AcademicExample')
 
 
 if __name__ == '__main__':

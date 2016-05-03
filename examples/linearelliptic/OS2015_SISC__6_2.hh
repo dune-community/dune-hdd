@@ -27,7 +27,6 @@
 #include <dune/gdt/playground/spaces/finitevolume/default.hh>
 
 #include <dune/hdd/linearelliptic/testcases/OS2015.hh>
-#include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 #include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
 #include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
 
@@ -57,7 +56,7 @@ public:
                               info_color,
                               debug_color,
                               warn_color);
-    DSC::TimedLogger().get("OS2014.initializer").info() << "creating grid and problem... " << std::endl;
+    DSC::TimedLogger().get("OS2015.initializer").info() << "creating grid and problem... " << std::endl;
   }
 }; // class Initializer
 
@@ -128,7 +127,7 @@ public:
                                                          products)
                                 : nullptr)
   {
-    auto logger = DSC::TimedLogger().get("OS2014.example");
+    auto logger = DSC::TimedLogger().get("OS2015.example");
     logger.info() << "initializing discretization... " << std::flush;
     discretization_.init();
     if (with_reference_)
@@ -136,7 +135,7 @@ public:
     logger.info() << "done (grid has " << discretization_.grid_view().indexSet().size(0)
                   << " elements, discretization has " << discretization_.ansatz_space()->mapper().size() << " DoFs)"
                   << std::endl;
-  } // ... OS2014Spe10Model1Example(...)
+  } // ... Example(...)
 
   const TestCaseType& test_case() const
   {
@@ -427,7 +426,7 @@ private:
 
 
 template< class GridImp >
-class Spe10Model1Example
+class OS2015MultiscaleExample
   : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2015::Multiscale< GridImp > >
 {
   static_assert(GridImp::dimension == 2, "Only available in 2d!");
@@ -435,16 +434,16 @@ class Spe10Model1Example
 
 public:
   template< class... Args >
-  Spe10Model1Example(Args&& ...args)
+  OS2015MultiscaleExample(Args&& ...args)
     : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
                 {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}},
                std::forward< Args >(args)...)
   {}
-}; // class Spe10Model1Example
+}; // class OS2015MultiscaleExample
 
 
 template< class GridImp >
-class OS2014Example
+class OS2015AcademicExample
   : public internal::Example< Dune::HDD::LinearElliptic::TestCases::OS2015::Academic< GridImp > >
 {
   static_assert(GridImp::dimension == 2, "Only available in 2d!");
@@ -453,12 +452,12 @@ class OS2014Example
 
 public:
   template< class... Args >
-  OS2014Example(Args&& ...args)
+  OS2015AcademicExample(Args&& ...args)
     : BaseType({{"parameter_range_min", Dune::Pymor::Parameter("mu", 0.1)},
                 {"parameter_range_max", Dune::Pymor::Parameter("mu", 1.0)}},
                std::forward< Args >(args)...)
   {}
-}; // class OS2014Example
+}; // class OS2015AcademicExample
 
 
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_OS2015_SISC_6_2_HH
