@@ -25,7 +25,7 @@
 # include <dune/stuff/common/print.hh>
 # include <dune/stuff/common/float_cmp.hh>
 
-# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 # include "linearelliptic-swipdg.hh"
 # include "linearelliptic-block-swipdg.hh"
@@ -40,8 +40,8 @@ class OS2014_FVCA7__estimator_study
 {
   typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 
-  typedef LinearElliptic::TestCases::ESV2007< GridType >           TestCaseType;
-  typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > BlockTestCaseType;
+  typedef LinearElliptic::TestCases::OS2014< GridType >           TestCaseType;
+  typedef LinearElliptic::TestCases::OS2014Multiscale< GridType > BlockTestCaseType;
 
   static const GDT::ChooseSpaceBackend  space_backend = GDT::ChooseSpaceBackend::fem;
   static const Stuff::LA::ChooseBackend la_backend    = Stuff::LA::ChooseBackend::istl_sparse;
@@ -86,10 +86,10 @@ TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__64_sub
 
 
 extern template class LinearElliptic::Tests::SWIPDGStudyExpectations
-    < LinearElliptic::TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+    < LinearElliptic::TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+    < LinearElliptic::TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 
 #else // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID

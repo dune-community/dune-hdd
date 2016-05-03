@@ -20,7 +20,7 @@
 
 #include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
 #include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
-#include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 
 #include "linearelliptic.hh"

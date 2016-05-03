@@ -10,7 +10,7 @@
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
 
-# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 # include "linearelliptic-block-swipdg-expectations.hh"
 
@@ -19,7 +19,7 @@ namespace HDD {
 namespace LinearElliptic {
 
 
-typedef TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
+typedef TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
 
 
 namespace Tests {

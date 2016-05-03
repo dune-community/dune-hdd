@@ -22,7 +22,7 @@
 # include <dune/stuff/common/print.hh>
 # include <dune/stuff/common/float_cmp.hh>
 
-# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 # include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 # include <dune/hdd/linearelliptic/testcases/spe10.hh>
 
@@ -83,10 +83,10 @@ struct linearelliptic_SWIPDG_discretization
 #if HAVE_DUNE_FEM && (HAVE_DUNE_ISTL || HAVE_EIGEN)
 
 
-typedef testing::Types< LinearElliptic::TestCases::ESV2007< SGrid< 2, 2 > >
+typedef testing::Types< LinearElliptic::TestCases::OS2014< SGrid< 2, 2 > >
                       , LinearElliptic::TestCases::Spe10::Model1< SGrid< 2, 2 > >
 #if HAVE_ALUGRID
-                      , LinearElliptic::TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >
+                      , LinearElliptic::TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >
                       , LinearElliptic::TestCases::Spe10::Model1< ALUGrid< 2, 2, simplex, conforming > >
 #endif
                       > TestCases;
@@ -133,7 +133,7 @@ namespace LinearElliptic {
 namespace Tests {
 
 
-extern template class SWIPDGStudyExpectations< TestCases::ESV2007< SGrid< 2, 2 > >, 1 >;
+extern template class SWIPDGStudyExpectations< TestCases::OS2014< SGrid< 2, 2 > >, 1 >;
 
 extern template class SWIPDGStudyExpectations< TestCases::Spe10::Model1< SGrid< 2, 2 > >, 1 >;
 
@@ -141,7 +141,7 @@ extern template class SWIPDGStudyExpectations< TestCases::Spe10::Model1< SGrid< 
 #if HAVE_ALUGRID
 
 
-extern template class SWIPDGStudyExpectations< TestCases::ESV2007< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+extern template class SWIPDGStudyExpectations< TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 extern template class SWIPDGStudyExpectations< TestCases::Spe10::Model1< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 

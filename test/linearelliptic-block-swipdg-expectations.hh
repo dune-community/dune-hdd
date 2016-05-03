@@ -24,14 +24,14 @@ namespace TestCases {
 
 // forwards
 template< class GridType >
-class ESV2007;
+class OS2014;
 
 
 #if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
-class ESV2007Multiscale;
+class OS2014Multiscale;
 
 
 namespace OS2015 {

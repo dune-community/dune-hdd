@@ -26,7 +26,7 @@
 
 # include <dune/stuff/common/exceptions.hh>
 
-# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 # include "linearelliptic-block-swipdg.hh"
 
@@ -55,9 +55,9 @@ typedef SGrid< 2, 2 > SGridType;
 typedef ALUGrid< 2, 2, simplex, conforming > AluConform2dGridType;
 # endif // HAVE_ALUGRID
 
-typedef testing::Types< LinearElliptic::TestCases::ESV2007Multiscale< SGridType >
+typedef testing::Types< LinearElliptic::TestCases::OS2014Multiscale< SGridType >
 # if HAVE_ALUGRID
-                      , LinearElliptic::TestCases::ESV2007Multiscale< AluConform2dGridType >
+                      , LinearElliptic::TestCases::OS2014Multiscale< AluConform2dGridType >
 # endif
                       > TestCases;
 TYPED_TEST_CASE(linearelliptic_BlockSWIPDG_discretization, TestCases);
@@ -110,12 +110,12 @@ namespace LinearElliptic {
 namespace Tests {
 
 //extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-//    < LinearElliptic::TestCases::ESV2007Multiscale< SGridType >, 1 >;
+//    < LinearElliptic::TestCases::OS2014Multiscale< SGridType >, 1 >;
 
 # if HAVE_ALUGRID
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::ESV2007Multiscale< AluConform2dGridType >, 1 >;
+    < LinearElliptic::TestCases::OS2014Multiscale< AluConform2dGridType >, 1 >;
 
 # endif // HAVE_ALUGRID
 
