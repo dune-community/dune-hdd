@@ -566,47 +566,6 @@ public:
 }; // class BlockModel1
 
 
-template< class GridType >
-class ParametricBlockModel1
-  : public internal::ParametricModel1Base< GridType >
-  , public MultiscaleCubeBase< GridType >
-{
-  typedef internal::ParametricModel1Base< GridType > Model1BaseType;
-  typedef MultiscaleCubeBase< GridType >             TestCaseBaseType;
-
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
-                                                       const size_t oversampling_layers)
-  {
-    Stuff::Common::Configuration grid_cfg = Model1BaseType::configuration("");
-    grid_cfg["num_partitions"] = num_partitions;
-    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
-    return grid_cfg;
-  } // ... initial_grid_cfg(...)
-
-public:
-  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
-
-  using Model1BaseType::required_parameters;
-  using Model1BaseType::parameters;
-
-  ParametricBlockModel1(const ParametersMapType parameters,
-                        const std::string num_partitions = "[1 1 1]",
-                        const size_t num_refinements = Model1BaseType::default_num_refinements_,
-                        const size_t oversampling_layers = 0,
-                        const bool H_with_h = false,
-                        const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
-    : Model1BaseType(parameters, filename)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
-                       Model1BaseType::initial_refinements(),
-                       num_refinements,
-                       H_with_h)
-  {
-    this->check_parameters(Model1BaseType::required_parameters(), parameters);
-    this->inherit_parameter_type(*this->problem_, "problem");
-  }
-}; // class ParametricBlockModel1
-
-
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
 
