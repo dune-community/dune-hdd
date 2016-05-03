@@ -13,7 +13,7 @@
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/functions/constant.hh>
 
-#include <dune/hdd/linearelliptic/problems/spe10.hh>
+#include <dune/hdd/linearelliptic/problems/OS2015.hh>
 
 #include "base.hh"
 
@@ -279,7 +279,7 @@ public:
   static const unsigned int                              dimDomain = GridType::dimension;
   typedef double            RangeFieldType;
   static const unsigned int dimRange = 1;
-  typedef Problems::Spe10::Model1< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef Problems::OS2015::Spe10Model1< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
   typedef Stuff::Functions::Constant
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >                            ExactSolutionType;
   typedef typename ProblemType::FunctionType::NonparametricType                                       FunctionType;
@@ -370,7 +370,7 @@ public:
   static const unsigned int                              dimDomain = GridType::dimension;
   typedef double            RangeFieldType;
   static const unsigned int dimRange = 1;
-  typedef Problems::Spe10::Model1< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef Problems::OS2015::Spe10Model1< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
   typedef Stuff::Functions::Constant
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >                            ExactSolutionType;
   typedef typename ProblemType::FunctionType::NonparametricType                                       FunctionType;
