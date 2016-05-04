@@ -25,7 +25,7 @@
 # include <dune/stuff/common/print.hh>
 # include <dune/stuff/common/float_cmp.hh>
 
-# include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 # include "linearelliptic-swipdg.hh"
 # include "linearelliptic-block-swipdg.hh"
@@ -35,13 +35,13 @@ using namespace Dune;
 using namespace HDD;
 
 
-class OS2014_FVCA7_Poster_convergence_study
+class OS2014_FVCA7__estimator_study
   : public ::testing::Test
 {
   typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 
-  typedef LinearElliptic::TestCases::ESV2007< GridType >           TestCaseType;
-  typedef LinearElliptic::TestCases::ESV2007Multiscale< GridType > BlockTestCaseType;
+  typedef LinearElliptic::TestCases::OS2014< GridType >           TestCaseType;
+  typedef LinearElliptic::TestCases::OS2014Multiscale< GridType > BlockTestCaseType;
 
   static const GDT::ChooseSpaceBackend  space_backend = GDT::ChooseSpaceBackend::fem;
   static const Stuff::LA::ChooseBackend la_backend    = Stuff::LA::ChooseBackend::istl_sparse;
@@ -65,38 +65,56 @@ protected:
     BlockEocStudyType eoc_study(test_case, {"energy", "eta_OS2014"});
     Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run_eoc(DSC_LOG_INFO));
   } // ... BlockSWIPDG_coarse_triangulation(...)
-}; // class OS2014_FVCA7_Poster_convergence_study
+}; // class OS2014_FVCA7__estimator_study
 
 
-TEST_F(OS2014_FVCA7_Poster_convergence_study, ESV2007_fine_triangulation) {
+TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_fine_grid) {
   ESV2007_fine_triangulation();
 }
-TEST_F(OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_01_subdomain) {
+TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__01_subdomain) {
   BlockSWIPDG_coarse_triangulation("[1 1 1]");
 }
-TEST_F(OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_04_subdomain) {
+TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__04_subdomain) {
   BlockSWIPDG_coarse_triangulation("[2 2 1]");
 }
-TEST_F(OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_16_subdomain) {
+TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__16_subdomain) {
   BlockSWIPDG_coarse_triangulation("[4 4 1]");
 }
-TEST_F(OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_64_subdomain) {
+TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__64_subdomain) {
   BlockSWIPDG_coarse_triangulation("[8 8 1]");
 }
 
 
+extern template class LinearElliptic::Tests::SWIPDGStudyExpectations
+    < LinearElliptic::TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::ESV2007Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+    < LinearElliptic::TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
 
 #else // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
 
 
-TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, ESV2007_fine_triangulation) {}
-TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_01_subdomain) {}
-TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_04_subdomain) {}
-TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_16_subdomain) {}
-TEST(DISABLED_OS2014_FVCA7_Poster_convergence_study, BlockSWIPDG_64_subdomain) {}
+TEST(DISABLED_OS2014_FVCA7__estimator_study, ESV2007_fine_triangulation)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2014_FVCA7__estimator_study, BlockSWIPDG_01_subdomain)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2014_FVCA7__estimator_study, BlockSWIPDG_04_subdomain)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2014_FVCA7__estimator_study, BlockSWIPDG_16_subdomain)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2014_FVCA7__estimator_study, BlockSWIPDG_64_subdomain)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID

@@ -24,34 +24,24 @@ namespace TestCases {
 
 // forwards
 template< class GridType >
-class ESV2007;
-
-
-namespace OS2014 {
-
-
-template< class GridType >
-class ParametricConvergence;
-
-
-} // namespace OS2014
+class OS2014;
 
 
 #if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
-class ESV2007Multiscale;
+class OS2014Multiscale;
 
 
-namespace OS2014 {
+namespace OS2015 {
 
 
 template< class GridType >
-class ParametricBlockConvergence;
+class Academic;
 
 
-} // namespace OS2014
+} // namespace OS2015
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE

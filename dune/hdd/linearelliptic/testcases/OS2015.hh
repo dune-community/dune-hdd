@@ -3,15 +3,22 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_SPE10_HH
-#define DUNE_HDD_LINEARELLIPTIC_TESTCASES_SPE10_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2015_HH
+#define DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2015_HH
 
+#include <algorithm>
+#include <cmath>
 #include <map>
-#include <string>
-#include <memory>
 
-#include <dune/stuff/common/configuration.hh>
+#include <dune/stuff/common/disable_warnings.hh>
+# if HAVE_ALUGRID
+#   include <dune/grid/alugrid.hh>
+# endif
+#include <dune/stuff/common/reenable_warnings.hh>
+
 #include <dune/stuff/functions/constant.hh>
+
+#include <dune/pymor/functions/default.hh>
 
 #include <dune/hdd/linearelliptic/problems/OS2015.hh>
 
@@ -21,11 +28,11 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace TestCases {
-namespace Spe10 {
+namespace OS2015 {
 namespace internal {
 
 
-static inline Stuff::Common::Configuration parametric_model1_problem_cfg()
+static inline Stuff::Common::Configuration multiscale_problem_cfg()
 {
   std::istringstream ss(
       "# forces\n"
@@ -256,21 +263,21 @@ static inline Stuff::Common::Configuration parametric_model1_problem_cfg()
   config["upper_right"] = "[5 1]";
   config["channel_boundary_layer"] = "0";
   return config;
-} // ... parametric_model1_problem_cfg(...)
+} // ... multiscale_problem_cfg(...)
 
 
-static inline Stuff::Common::Configuration parametric_model1_grid_cfg()
+static inline Stuff::Common::Configuration multiscale_grid_cfg()
 {
   Stuff::Common::Configuration config;
   config["lower_left"]   = "[0 0]";
   config["upper_right"]  = "[5 1]";
   config["num_elements"] = "[100 20]";
   return config;
-} // ... parametric_model1_grid_cfg(...)
+} // ... multiscale_grid_cfg(...)
 
 
 template< class GridType >
-class Model1Base
+class AcademicBase
 {
   static_assert(GridType::dimension == 2, "This test case is only available in 2d!");
 public:
@@ -279,17 +286,22 @@ public:
   static const unsigned int                              dimDomain = GridType::dimension;
   typedef double            RangeFieldType;
   static const unsigned int dimRange = 1;
-  typedef Problems::OS2015::Spe10Model1< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+public:
+  typedef Problems::OS2015::ParametricESV2007
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
   typedef Stuff::Functions::Constant
-      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >                            ExactSolutionType;
-  typedef typename ProblemType::FunctionType::NonparametricType                                       FunctionType;
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ExactSolutionType;
+  typedef typename ProblemType::FunctionType::NonparametricType            FunctionType;
+
+  typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
+  typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
 
 protected:
-  static const size_t default_num_refinements_ = 1;
+  static const size_t default_num_refinements_ = 3;
 
   static int initial_refinements()
   {
-    int ret = 0;
+    int ret = 1;
 #if HAVE_ALUGRID
     if (std::is_same< GridType, ALUConformGrid< 2, 2 > >::value
         || std::is_same< GridType, ALUGrid< 2, 2, simplex, conforming > >::value)
@@ -298,18 +310,26 @@ protected:
     return ret;
   } // ... initial_refinements()
 
-  static Stuff::Common::Configuration configuration(const std::string filename)
+  static ParametersMapType add_parameter_range(const ParametersMapType& parameters)
   {
-    Stuff::Common::Configuration config = ProblemType::default_config();
-    config["num_elements"] = "[100 20]";
-    config["filename"] = filename;
-    return config;
-  } // ... configuration()
+    ParametersMapType ret = parameters;
+    ret["parameter_range_min"] = Pymor::Parameter("mu", 0.1);
+    ret["parameter_range_max"] = Pymor::Parameter("mu", 1.0);
+    return ret;
+  } // ... add_parameter_range(...)
 
 public:
-  Model1Base(const std::string filename)
-    : boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
-    , problem_(ProblemType::create(configuration(filename)))
+  static ParameterTypesMapType required_parameters()
+  {
+    return ParameterTypesMapType({{"mu",            Pymor::ParameterType("mu", 1)},
+                                  {"mu_bar",        Pymor::ParameterType("mu", 1)},
+                                  {"mu_hat",        Pymor::ParameterType("mu", 1)}});
+  }
+
+  AcademicBase(const ParametersMapType& parameters)
+    : parameters_(add_parameter_range(parameters))
+    , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
+    , problem_(3)
     , exact_solution_(0)
   {}
 
@@ -317,16 +337,15 @@ public:
   {
     out << "+==========================================================+\n"
         << "|+========================================================+|\n"
-        << "||  Testcase: SPE10, Model1                               ||\n"
-        << "||  (see http://www.spe.org/web/csp/datasets/set01.htm)   ||\n"
+        << "||  Testcase OS2015: academic                             ||\n"
+        << "||  (see Ohlberger, Schindler, 2016, sec. 6)              ||\n"
         << "|+--------------------------------------------------------+|\n"
-        << "||  domain = [0, 5] x [0, 1]                              ||\n"
-        << "||  diffusion: spe10 model 1 scalar data                  ||\n"
-        << "||         |  2000 in [0.55, 0.70] x [0.70, 0.85]         ||\n"
-        << "||  force: | -1000 in [3.00, 3.15] x [0.77, 0.90]         ||\n"
-        << "||         | -1000 in [4.30, 4.45] x [0.50, 0.65]         ||\n"
+        << "||  domain = [-1, 1] x [-1, 1]                            ||\n"
+        << "||  diffusion = 1 + (1 - mu) cos(1/2 pi x) cos(1/2 pi y)  ||\n"
+        << "||  force     = 1/2 pi^2 cos(1/2 pi x) cos(1/2 pi y)      ||\n"
         << "||  dirichlet = 0                                         ||\n"
         << "||  reference solution: discrete solution on finest grid  ||\n"
+        << "||  parameter: mu in [0.1, 1]                             ||\n"
         << "|+========================================================+|\n"
         << "+==========================================================+" << std::endl;
   } // ... print_header(...)
@@ -338,7 +357,7 @@ public:
 
   const ProblemType& problem() const
   {
-    return *problem_;
+    return problem_;
   }
 
   bool provides_exact_solution() const
@@ -350,18 +369,23 @@ public:
   {
     DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
                "Do not call exact_solution() if provides_exact_solution() is false!");
-    return exact_solution_;
+  }
+
+  const ParametersMapType& parameters() const
+  {
+    return parameters_;
   }
 
 protected:
+  const ParametersMapType parameters_;
   const Stuff::Common::Configuration boundary_info_cfg_;
-  const std::unique_ptr< const ProblemType > problem_;
+  const ProblemType problem_;
   const ExactSolutionType exact_solution_;
-}; // class Spe10Model1Base
+}; // class AcademicBase
 
 
 template< class GridType >
-class ParametricModel1Base
+class MultiscaleBase
 {
   static_assert(GridType::dimension == 2, "This test case is only available in 2d!");
 public:
@@ -372,8 +396,8 @@ public:
   static const unsigned int dimRange = 1;
   typedef Problems::OS2015::Spe10Model1< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
   typedef Stuff::Functions::Constant
-      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >                            ExactSolutionType;
-  typedef typename ProblemType::FunctionType::NonparametricType                                       FunctionType;
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ExactSolutionType;
+  typedef typename ProblemType::FunctionType::NonparametricType            FunctionType;
 
   typedef std::map< std::string, Pymor::ParameterType > ParameterTypesMapType;
   typedef std::map< std::string, Pymor::Parameter >     ParametersMapType;
@@ -402,8 +426,8 @@ protected:
 
   static Stuff::Common::Configuration configuration(const std::string filename)
   {
-    auto config = parametric_model1_problem_cfg();
-    config.add(parametric_model1_grid_cfg(), "", true);
+    auto config = multiscale_problem_cfg();
+    config.add(multiscale_grid_cfg(), "", true);
     config["filename"] = filename;
     return config;
   } // ... configuration()
@@ -411,12 +435,12 @@ protected:
 public:
   static ParameterTypesMapType required_parameters()
   {
-    return ParameterTypesMapType({{"mu",            Pymor::ParameterType("mu", 1)},
-                                  {"mu_bar",        Pymor::ParameterType("mu", 1)},
-                                  {"mu_hat",        Pymor::ParameterType("mu", 1)}});
+    return ParameterTypesMapType({{"mu",     Pymor::ParameterType("mu", 1)},
+                                  {"mu_bar", Pymor::ParameterType("mu", 1)},
+                                  {"mu_hat", Pymor::ParameterType("mu", 1)}});
   }
 
-  ParametricModel1Base(const ParametersMapType parameters, const std::string filename)
+  MultiscaleBase(const ParametersMapType parameters, const std::string filename)
     : parameters_(add_parameter_range(parameters))
     , boundary_info_cfg_(Stuff::Grid::BoundaryInfoConfigs::AllDirichlet::default_config())
     , problem_(ProblemType::create(configuration(filename)))
@@ -427,12 +451,13 @@ public:
   {
     out << "+==========================================================+\n"
         << "|+========================================================+|\n"
-        << "||  Testcase: SPE10, parametric Model1                    ||\n"
-        << "||  (see http://www.spe.org/web/csp/datasets/set01.htm)   ||\n"
+        << "||  Testcase OS2015: multiscale                           ||\n"
+        << "||  (see Ohlberger, Schindler, 2016, sec. 6)              ||\n"
         << "|+--------------------------------------------------------+|\n"
         << "||  domain = [0, 5] x [0, 1]                              ||\n"
         << "||  diffusion factor: 1 + (1 - mu)*channel                ||\n"
         << "||  diffusion tensor: spe10 model 1 scalar data           ||\n"
+        << "||    (http://www.spe.org/web/csp/datasets/set01.htm)     ||\n"
         << "||         |  2000 in [0.55, 0.70] x [0.70, 0.85]         ||\n"
         << "||  force: | -1000 in [3.00, 3.15] x [0.77, 0.90]         ||\n"
         << "||         | -1000 in [4.30, 4.45] x [0.50, 0.65]         ||\n"
@@ -475,104 +500,105 @@ protected:
   const Stuff::Common::Configuration boundary_info_cfg_;
   const std::unique_ptr< const ProblemType > problem_;
   const ExactSolutionType exact_solution_;
-}; // class ParametricModel1Base
+}; // class MultiscaleBase
 
 
 } // namespace internal
-
-
-template< class GridType >
-class Model1
-  : public internal::Model1Base< GridType >
-  , public Base< GridType >
-{
-  typedef internal::Model1Base< GridType > Model1BaseType;
-  typedef Base< GridType >                 TestCaseBaseType;
-
-  static std::shared_ptr< GridType > create_initial_grid(const int refinements)
-  {
-    auto grid = Stuff::Grid::Providers::Cube< GridType >::create(Model1BaseType::configuration(""))->grid_ptr();
-    grid->globalRefine(refinements);
-    return grid;
-  } // ... create_initial_grid(...)
-
-public:
-  Model1(const size_t num_refinements = Model1BaseType::default_num_refinements_,
-         const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
-    : Model1BaseType(filename)
-    , TestCaseBaseType(create_initial_grid(Model1BaseType::initial_refinements()), num_refinements)
-  {}
-}; // class Model1
-
-
-template< class GridType >
-class ParametricModel1
-  : public internal::ParametricModel1Base< GridType >
-  , public Base< GridType >
-{
-  typedef internal::ParametricModel1Base< GridType > Model1BaseType;
-  typedef Base< GridType >                           TestCaseBaseType;
-
-  static std::shared_ptr< GridType > create_initial_grid(const int refinements)
-  {
-    auto grid = Stuff::Grid::Providers::Cube< GridType >::create(Model1BaseType::configuration(""))->grid_ptr();
-    grid->globalRefine(refinements);
-    return grid;
-  } // ... create_initial_grid(...)
-
-public:
-  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
-
-  using Model1BaseType::required_parameters;
-  using Model1BaseType::parameters;
-
-  ParametricModel1(const ParametersMapType parameters,
-                   const size_t num_refinements = Model1BaseType::default_num_refinements_,
-                   const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
-    : Model1BaseType(parameters, filename)
-    , TestCaseBaseType(create_initial_grid(Model1BaseType::initial_refinements()), num_refinements)
-  {
-    this->check_parameters(Model1BaseType::required_parameters(), parameters);
-    this->inherit_parameter_type(*this->problem_, "problem");
-  }
-}; // class ParametricModel1
 
 
 #if HAVE_DUNE_GRID_MULTISCALE
 
 
 template< class GridType >
-class BlockModel1
-  : public internal::Model1Base< GridType >
+class Academic
+  : public internal::AcademicBase< GridType >
   , public MultiscaleCubeBase< GridType >
 {
-  typedef internal::Model1Base< GridType > Model1BaseType;
+  typedef internal::AcademicBase< GridType > AcademicBaseType;
   typedef MultiscaleCubeBase< GridType >   TestCaseBaseType;
 
-  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions)
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
+                                                       const size_t oversampling_layers)
   {
-    Stuff::Common::Configuration grid_cfg = Model1BaseType::configuration("");
+    Stuff::Common::Configuration grid_cfg = Stuff::Grid::Providers::Cube< GridType >::default_config();
+    grid_cfg["lower_left"] = "-1";
+    grid_cfg["upper_right"] = "1";
+    grid_cfg["num_elements"] = "4";
     grid_cfg["num_partitions"] = num_partitions;
+    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
     return grid_cfg;
   } // ... initial_grid_cfg(...)
 
 public:
-  BlockModel1(const std::string num_partitions = "[1 1 1]",
-              const size_t num_refinements = Model1BaseType::default_num_refinements_,
-              const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
-    : Model1BaseType(filename)
-    , TestCaseBaseType(initial_grid_cfg(num_partitions), Model1BaseType::initial_refinements(), num_refinements)
-  {}
-}; // class BlockModel1
+  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
+
+  using AcademicBaseType::required_parameters;
+  using AcademicBaseType::parameters;
+
+  Academic(const ParametersMapType parameters,
+                             const std::string num_partitions = "[1 1 1]",
+                             const size_t num_refinements = AcademicBaseType::default_num_refinements_,
+                             const size_t oversampling_layers = 0,
+                             const bool H_with_h = false)
+    : AcademicBaseType(parameters)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
+                       AcademicBaseType::initial_refinements(),
+                       num_refinements,
+                       H_with_h)
+  {
+    this->check_parameters(AcademicBaseType::required_parameters(), parameters);
+    this->inherit_parameter_type(this->problem_, "problem");
+  }
+}; // class Academic
+
+
+template< class GridType >
+class Multiscale
+  : public internal::MultiscaleBase< GridType >
+  , public MultiscaleCubeBase< GridType >
+{
+  typedef internal::MultiscaleBase< GridType > MultiscaleBaseType;
+  typedef MultiscaleCubeBase< GridType >       TestCaseBaseType;
+
+  static Stuff::Common::Configuration initial_grid_cfg(const std::string num_partitions,
+                                                       const size_t oversampling_layers)
+  {
+    Stuff::Common::Configuration grid_cfg = MultiscaleBaseType::configuration("");
+    grid_cfg["num_partitions"] = num_partitions;
+    grid_cfg.set("oversampling_layers", oversampling_layers, /*overwrite=*/true);
+    return grid_cfg;
+  } // ... initial_grid_cfg(...)
+
+public:
+  typedef typename TestCaseBaseType::ParametersMapType ParametersMapType;
+
+  using MultiscaleBaseType::required_parameters;
+  using MultiscaleBaseType::parameters;
+
+  Multiscale(const ParametersMapType parameters,
+             const std::string num_partitions = "[1 1 1]",
+             const size_t num_refinements = MultiscaleBaseType::default_num_refinements_,
+             const size_t oversampling_layers = 0,
+             const bool H_with_h = false,
+             const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
+    : MultiscaleBaseType(parameters, filename)
+    , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
+                       MultiscaleBaseType::initial_refinements(),
+                       num_refinements,
+                       H_with_h)
+  {
+    this->check_parameters(MultiscaleBaseType::required_parameters(), parameters);
+    this->inherit_parameter_type(*this->problem_, "problem");
+  }
+}; // class Multiscale
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
-
-} // namespace Spe10
+} // namespace OS2015
 } // namespace TestCases
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_SPE10_HH
+#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2015_HH

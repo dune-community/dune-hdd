@@ -13,7 +13,7 @@
 // This one has to come first (includes the config.h)!
 #include <dune/stuff/test/main.hxx>
 
-//#if HAVE_ALUGRID
+#if HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
 # include <vector>
 # include <string>
 # include <map>
@@ -22,7 +22,7 @@
 
 # include <dune/pymor/parameters/base.hh>
 
-# include <dune/hdd/linearelliptic/testcases/spe10.hh>
+# include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 
 # include "linearelliptic-block-swipdg.hh"
 # include "linearelliptic-block-swipdg-expectations.hh"
@@ -33,7 +33,7 @@ using namespace HDD;
 
 typedef ALUGrid< 2, 2, simplex, conforming > GridType;
 
-typedef LinearElliptic::TestCases::Spe10::ParametricBlockModel1< GridType > TestCaseType;
+typedef LinearElliptic::TestCases::OS2015::Multiscale< GridType > TestCaseType;
 typedef LinearElliptic::Tests::BlockSWIPDGStudy< TestCaseType >             StudyType;
 
 
@@ -80,7 +80,7 @@ void run_eoc_study(const std::string partitioning,
 {
   const TestCaseType test_case(parameters,
                                partitioning,
-                               2,
+                               3,
                                0,
                                H_with_h);
   if (print_header)
@@ -91,7 +91,7 @@ void run_eoc_study(const std::string partitioning,
 } // ... run_eoc_study(...)
 
 
-TEST(OS2014_parametric_multiscale_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h)
+TEST(OS2015_SISC__6_1__multiscale_example__estimator_study, table_4)
 {
   using Pymor::Parameter;
   run_eoc_study("[25 5 1]",
@@ -102,24 +102,10 @@ TEST(OS2014_parametric_multiscale_convergence_study, not_offline_online_decompos
                 true,
                 "",
                 true);
-} // TEST(OS2014_parametric_multiscale_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h)
+} // TEST(OS2015_SISC__6_1__multiscale_example__estimator_study, table_4)
 
 
-TEST(OS2014_parametric_multiscale_convergence_study, offline_online_decomposable)
-{
-  using Pymor::Parameter;
-  run_eoc_study("[25 5 1]",
-                {"eta_DF_OS2014_*", "eta_OS2014_*", "eff_OS2014_*_mu"},
-                {{"mu_hat", Parameter("mu", 0.1)},
-                 {"mu_bar", Parameter("mu", 1)},
-                 {"mu",     Parameter("mu", 1)}},
-                true,
-                "",
-                true);
-} // TEST(OS2014_parametric_multiscale_convergence_study, offline_online_decomposable)
-
-
-TEST(OS2014_parametric_multiscale_convergence_study, offline_online_decomposable_with_fixed_norm)
+TEST(OS2015_SISC__6_1__multiscale_example__estimator_study, efficiency_page_A2887_bottom)
 {
   using Pymor::Parameter;
   run_eoc_study("[25 5 1]",
@@ -130,19 +116,23 @@ TEST(OS2014_parametric_multiscale_convergence_study, offline_online_decomposable
                 true,
                 "",
                 true);
-} // TEST(OS2014_parametric_multiscale_convergence_study, offline_online_decomposable_with_fixed_norm)
+} // TEST(OS2015_SISC__6_1__multiscale_example__estimator_study, efficiency_page_A2887_bottom)
 
 
 extern template class Dune::HDD::LinearElliptic::Tests::BlockSWIPDGStudyExpectations< TestCaseType >;
 
 
-//#else // HAVE_ALUGRID
+#else // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
 
 
-//TEST(DISABLED_OS2014_parametric_multiscale_convergence_study, not_offline_online_decomposable) {}
-//TEST(DISABLED_OS2014_parametric_multiscale_convergence_study, not_offline_online_decomposable_with_fixed_H_over_h) {}
-//TEST(DISABLED_OS2014_parametric_multiscale_convergence_study, offline_online_decomposable) {}
-//TEST(DISABLED_OS2014_parametric_multiscale_convergence_study, offline_online_decomposable_with_fixed_norm) {}
+TEST(DISABLED_OS2015_SISC__6_1__multiscale_example__estimator_study, table_4)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
+TEST(DISABLED_OS2015_SISC__6_1__multiscale_example__estimator_study, efficiency_page_A2887_bottom)
+{
+  std::cerr << "You are missing dune-fem or dune-grid-multiscale or alugrid!" << std::endl;
+}
 
 
-//#endif // HAVE_ALUGRID
+#endif // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID

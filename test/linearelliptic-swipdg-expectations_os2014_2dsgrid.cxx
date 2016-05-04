@@ -9,7 +9,7 @@
 
 #include <dune/stuff/test/gtest/gtest.h>
 
-#include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
+#include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic-swipdg-expectations.hh"
 
@@ -20,10 +20,10 @@ namespace Tests {
 
 
 template< bool anything >
-class SWIPDGStudyExpectations< TestCases::ESV2007< SGrid< 2, 2 > >, 1, anything >
-  : public internal::SWIPDGStudyExpectationsBase< TestCases::ESV2007< SGrid< 2, 2 > >, 1 >
+class SWIPDGStudyExpectations< TestCases::OS2014< SGrid< 2, 2 > >, 1, anything >
+  : public internal::SWIPDGStudyExpectationsBase< TestCases::OS2014< SGrid< 2, 2 > >, 1 >
 {
-  typedef TestCases::ESV2007< SGrid< 2, 2 > > TestCaseType;
+  typedef TestCases::OS2014< SGrid< 2, 2 > > TestCaseType;
 
 public:
   static std::vector< double > results(const TestCaseType& /*test_case*/, const std::string type)
@@ -41,7 +41,7 @@ public:
 }; // SWIPDGStudyExpectations
 
 
-template class SWIPDGStudyExpectations< TestCases::ESV2007< SGrid< 2, 2 > >, 1 >;
+template class SWIPDGStudyExpectations< TestCases::OS2014< SGrid< 2, 2 > >, 1 >;
 
 
 } // namespace Tests

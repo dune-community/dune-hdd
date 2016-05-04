@@ -18,8 +18,7 @@
 #include "problems/ORS2016.hh"
 #include "problems/ESV2007.hh"
 #include "problems/mixed-boundaries.hh"
-#include "problems/OS2014.hh"
-#include "problems/spe10.hh"
+#include "problems/OS2015.hh"
 #include "problems/thermalblock.hh"
 
 namespace Dune {
@@ -146,8 +145,8 @@ private:
   typedef Problems::ESV2007< E, D, d, R, r >                   ESV2007Type;
   typedef Problems::ORS2016< E, D, d, R, r >                   ORS2016Type;
   typedef Problems::MixedBoundaries< E, D, d, R, r >           MixedBoundariesType;
-  typedef Problems::OS2014::ParametricESV2007< E, D, d, R, r > OS2014ParametricESV2007Type;
-  typedef Problems::Spe10::Model1< E, D, d, R, r >             Spe10Model1Type;
+  typedef Problems::OS2015::ParametricESV2007< E, D, d, R, r > OS2015ParametricESV2007Type;
+  typedef Problems::OS2015::Spe10Model1< E, D, d, R, r >       OS2015Spe10Model1Type;
   typedef Problems::Thermalblock< E, D, d, R, r >              ThermalblockType;
 
 public:
@@ -158,8 +157,8 @@ public:
     ret = call_append< ESV2007Type >(ret);
     ret = call_append< ORS2016Type >(ret);
     ret = call_append< MixedBoundariesType >(ret);
-    ret = call_append< OS2014ParametricESV2007Type >(ret);
-    ret = call_append< Spe10Model1Type >(ret);
+    ret = call_append< OS2015ParametricESV2007Type >(ret);
+    ret = call_append< OS2015Spe10Model1Type >(ret);
     ret = call_append< ThermalblockType >(ret);
     return ret;
   } // ... available(...)
@@ -174,10 +173,10 @@ public:
       return call_default_config< ORS2016Type >(sub_name);
     else if (call_compare< MixedBoundariesType >(type))
       return call_default_config< MixedBoundariesType >(sub_name);
-    else if (call_compare< OS2014ParametricESV2007Type >(type))
-      return call_default_config< OS2014ParametricESV2007Type >(sub_name);
-    else if (call_compare< Spe10Model1Type >(type))
-      return call_default_config< Spe10Model1Type >(sub_name);
+    else if (call_compare< OS2015ParametricESV2007Type >(type))
+      return call_default_config< OS2015ParametricESV2007Type >(sub_name);
+    else if (call_compare< OS2015Spe10Model1Type >(type))
+      return call_default_config< OS2015Spe10Model1Type >(sub_name);
     else if (call_compare< ThermalblockType >(type))
       return call_default_config< ThermalblockType >(sub_name);
     else if (available().empty())
@@ -200,10 +199,10 @@ public:
       return call_create< ORS2016Type >(cfg);
     else if (call_compare< MixedBoundariesType >(type))
       return call_create< MixedBoundariesType >(cfg);
-    else if (call_compare< OS2014ParametricESV2007Type >(type))
-      return call_create< OS2014ParametricESV2007Type >(cfg);
-    else if (call_compare< Spe10Model1Type >(type))
-      return call_create< Spe10Model1Type >(cfg);
+    else if (call_compare< OS2015ParametricESV2007Type >(type))
+      return call_create< OS2015ParametricESV2007Type >(cfg);
+    else if (call_compare< OS2015Spe10Model1Type >(type))
+      return call_create< OS2015Spe10Model1Type >(cfg);
     else if (call_compare< ThermalblockType >(type))
       return call_create< ThermalblockType >(cfg);
     else if (available().empty())
