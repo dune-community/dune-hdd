@@ -13,7 +13,7 @@
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/functions/constant.hh>
 
-#include <dune/hdd/linearelliptic/problems/battery.hh>
+#include <dune/hdd/linearelliptic/problems/ORS2016.hh>
 
 #include "base.hh"
 
@@ -34,7 +34,7 @@ public:
   static const unsigned int                              dimDomain = GridType::dimension;
   typedef double            RangeFieldType;
   static const unsigned int dimRange = 1;
-  typedef Problems::Battery< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef Problems::ORS2016< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
   typedef Stuff::Functions::Constant
       < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >                            ExactSolutionType;
   typedef typename ProblemType::FunctionType::NonparametricType                                       FunctionType;

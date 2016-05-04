@@ -3,8 +3,8 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_BATTERY_HH
-#define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_BATTERY_HH
+#ifndef DUNE_HDD_LINEARELLIPTIC_PROBLEMS_ORS2016_HH
+#define DUNE_HDD_LINEARELLIPTIC_PROBLEMS_ORS2016_HH
 
 #include <iostream>
 #include <vector>
@@ -137,21 +137,21 @@ protected:
 
 
 template< class E, class D, int d, class R, int r = 1 >
-class Battery
+class ORS2016
   : public ProblemInterface< E, D, d, R, r >
 {
-  Battery() { static_assert(AlwaysFalse< E >::value, "Not available for these dimensions!"); }
+  ORS2016() { static_assert(AlwaysFalse< E >::value, "Not available for these dimensions!"); }
 };
 
 
 template< class E, class D, class R >
-class Battery< E, D, 3, R, 1 >
+class ORS2016< E, D, 3, R, 1 >
   : internal::BatteryGeometry< E, D, R >
   , public Problems::Default< E, D, 3, R, 1 >
 {
   typedef internal::BatteryGeometry< E, D, R > DataType;
   typedef Problems::Default< E, D, 3, R, 1 > BaseType;
-  typedef Battery< E, D, 3, R, 1 >           ThisType;
+  typedef ORS2016< E, D, 3, R, 1 >           ThisType;
 public:
   typedef typename BaseType::EntityType      EntityType;
   typedef typename BaseType::DomainFieldType DomainFieldType;
@@ -167,7 +167,7 @@ public:
 
   static std::string static_id()
   {
-    return BaseType::BaseType::static_id() + ".battery";
+    return BaseType::BaseType::static_id() + ".ORS2016";
   }
 
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
@@ -215,7 +215,7 @@ public:
                                         BaseType::create_vector_function("neumann", cfg));
   } // ... create(...)
 
-  Battery(const std::string& filename,
+  ORS2016(const std::string& filename,
           const DomainType& lower_left,
           const DomainType& upper_right,
           const Stuff::Common::FieldVector< size_t, 3 >& num_elements,
@@ -235,7 +235,7 @@ public:
                dir,
                neum)
   {}
-}; // class Battery< ..., 3, ... 1 >
+}; // class ORS2016< ..., 3, ... 1 >
 
 
 } // namespace Problems
