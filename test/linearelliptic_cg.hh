@@ -1,10 +1,10 @@
-﻿// This file is part of the dune-hdd project:
+// This file is part of the dune-hdd project:
 //   http://users.dune-project.org/projects/dune-hdd
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
-#define DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
+#ifndef DUNE_HDD_TEST_LINEARELLIPTIC_CG_HH
+#define DUNE_HDD_TEST_LINEARELLIPTIC_CG_HH
 
 #include <algorithm>
 
@@ -16,13 +16,13 @@
 #include <dune/gdt/products/l2.hh>
 #include <dune/gdt/products/h1.hh>
 #include <dune/gdt/products/elliptic.hh>
-#include <dune/gdt/spaces/fv/default.hh>
+#include <dune/gdt/spaces/cg/pdelab.hh>
 #include <dune/gdt/discretefunction/default.hh>
 
-#include <dune/hdd/linearelliptic/discretizations/swipdg.hh>
+#include <dune/hdd/linearelliptic/discretizations/cg.hh>
 #include <dune/hdd/linearelliptic/estimators/swipdg.hh>
+#include <dune/hdd/linearelliptic/testcases/ESV2007.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
-#include <dune/hdd/linearelliptic/testcases/OS2015.hh>
 
 #include "linearelliptic.hh"
 #include "linearelliptic-swipdg-expectations.hh"
@@ -31,21 +31,33 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace Tests {
+
+
+template< class TestCaseType, int polOrder, bool  = true >
+class CGStudyExpectations
+{
+public:
+  static size_t rate(const TestCaseType& /*test_case*/, const std::string type)
+  {
+    return type == "L2" ? polOrder + 1 : polOrder;
+  } // ... rate(...)
+
+  static std::vector< double > results(const TestCaseType& /*test_case*/, const std::string type)
+  {
+    return {};
+  } // ... results(...)
+}; // CGStudyExpectations
 namespace internal {
-
-
 template< class TestCaseType, int polOrder, GDT::ChooseSpaceBackend space_backend, Stuff::LA::ChooseBackend la_backend >
-class DiscretizationSWIPDG
+class DiscretizationCG
 {
   typedef typename TestCaseType::GridType GridType;
   typedef typename TestCaseType::RangeFieldType RangeFieldType;
   static const unsigned int dimRange = TestCaseType::dimRange;
 public:
-  typedef Discretizations::SWIPDG
+  typedef Discretizations::CG
       < GridType, Stuff::Grid::ChooseLayer::level, RangeFieldType, dimRange, polOrder, space_backend, la_backend > Type;
-  typedef Estimators::SWIPDG
-      < typename Type::AnsatzSpaceType, typename Type::VectorType, typename Type::ProblemType, GridType > EstimatorType;
-}; // class DiscretizationSWIPDG
+}; // class DiscretizationCG
 
 
 } // namespace internal
@@ -53,37 +65,31 @@ public:
 
 template< class TestCaseType,
           int polOrder = 1,
-#if HAVE_DUNE_FEM
-          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
-#else
-# error No space backend available!
-#endif
+          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::default_sparse_backend >
-class SWIPDGStudy
-  : public EocStudyBase< TestCaseType,
-                         typename internal::DiscretizationSWIPDG< TestCaseType,
+class CGStudy
+  : public DHLT::EocStudyBase< TestCaseType,
+                         typename internal::DiscretizationCG< TestCaseType,
                                                                   polOrder,
                                                                   space_backend,
                                                                   la_backend >::Type >
   , public Stuff::Common::LocalizationStudy
 {
-  typedef EocStudyBase< TestCaseType,
-                        typename internal::DiscretizationSWIPDG< TestCaseType,
+  typedef DHLT::EocStudyBase< TestCaseType,
+                        typename internal::DiscretizationCG< TestCaseType,
                                                                  polOrder,
                                                                  space_backend,
                                                                  la_backend >::Type > StudyBaseType;
   typedef Stuff::Common::LocalizationStudy                                            LocalizationBaseType;
-  typedef SWIPDGStudy< TestCaseType, polOrder, space_backend, la_backend >            ThisType;
-
+  typedef CGStudy< TestCaseType, polOrder, space_backend, la_backend >            ThisType;
+public:
   typedef typename StudyBaseType::DiscretizationType DiscretizationType;
-  typedef typename internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::EstimatorType
-                                                     EstimatorType;
   typedef typename StudyBaseType::GridViewType GridViewType;
   typedef typename StudyBaseType::FunctionType FunctionType;
   typedef typename StudyBaseType::VectorType   VectorType;
 
 public:
-  SWIPDGStudy(TestCaseType& test_case,
+  CGStudy(TestCaseType& test_case,
               const std::vector< std::string > only_these_norms = {},
               const std::vector< std::string > only_these_local_norms = {},
               const std::string visualize_prefix = "")
@@ -91,43 +97,47 @@ public:
     , LocalizationBaseType(only_these_local_norms)
   {}
 
-  virtual ~SWIPDGStudy() {}
+  virtual ~CGStudy() {}
 
   virtual std::string identifier() const override final
   {
     return DiscretizationType::static_id() + " (polorder " + Stuff::Common::toString(polOrder) + ")";
   }
 
+  virtual DS::LA::CommonDenseVector< double > compute_indicators(const std::string type) const {
+  return DS::LA::CommonDenseVector< double >();
+}
+
   virtual size_t expected_rate(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
-    // specialization of BlockSWIPDGStudyExpectations!
+    // specialization of BlockCGStudyExpectations!
     // For a new TestCaseType you have to add a specialization in a separate object file
-    // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
+    // (see linearelliptic-block-CG-expectations_os2014_2daluconform.cxx for example) and adjust the
     // CMakeLists.txt accordingly. For a new polOrder add
-    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder >;
+    //     template class BlockCGStudyExpectations< TestCasesType, polOrder >;
     // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
     //
     // Oh: and do not forget to add
-    //   'extern template class BlockSWIPDGStudyExpectations< ... >'
+    //   'extern template class BlockCGStudyExpectations< ... >'
     // to each test source using these results!
-    return SWIPDGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
+    return CGStudyExpectations< TestCaseType, polOrder >::rate(this->test_case_, type);
   } // ... expected_rate(...)
 
   virtual std::vector< double > expected_results(const std::string type) const override final
   {
     // If you get an undefined reference here from the linker you are missing the appropriate
-    // specialization of BlockSWIPDGStudyExpectations!
+    // specialization of BlockCGStudyExpectations!
     // For a new TestCaseType you have to add a specialization in a separate object file
-    // (see linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx for example) and adjust the
+    // (see linearelliptic-block-CG-expectations_os2014_2daluconform.cxx for example) and adjust the
     // CMakeLists.txt accordingly. For a new polOrder add
-    //     template class BlockSWIPDGStudyExpectations< TestCasesType, polOrder >;
+    //     template class BlockCGStudyExpectations< TestCasesType, polOrder >;
     // in the appropriate (existing) object file and implement a specialization for this polOrder, if needed!
     //
     // Oh: and do not forget to add
-    //   'extern template class BlockSWIPDGStudyExpectations< ... >'
+    //   'extern template class BlockCGStudyExpectations< ... >'
     // to each test source using these results!
-    return SWIPDGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
+    return CGStudyExpectations< TestCaseType, polOrder >::results(this->test_case_, type);
   } // ... expected_results(...)
 
   virtual Stuff::LA::CommonDenseVector< double > compute_reference_indicators() const override final
@@ -148,7 +158,7 @@ public:
     assert(this->last_computed_refinement_ == this->current_refinement_);
     assert(this->current_solution_vector_);
     typedef typename StudyBaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
-    const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
+    const ConstDiscreteFunctionType current_solution(this->reference_discretization_->ansatz_space(),
                                                      *this->current_solution_vector_,
                                                      "current solution");
     // compute error
@@ -160,7 +170,7 @@ public:
       assert(this->reference_discretization_);
       assert(this->reference_solution_vector_);
       // get reference solution
-      const ConstDiscreteFunctionType reference_solution(*(this->reference_discretization_->ansatz_space()),
+      const ConstDiscreteFunctionType reference_solution(this->reference_discretization_->ansatz_space(),
                                                          *this->reference_solution_vector_,
                                                          "reference solution");
       // define error norm
@@ -174,7 +184,7 @@ public:
                             difference,
                             *diffusion_factor,
                             *diffusion_tensor,
-                            Estimators::internal::SWIPDG::over_integrate);
+                            false);
       local_energy_norm.prepare();
       // prepare
       const auto& current_grid_view = this->current_discretization_->grid_view();
@@ -223,29 +233,8 @@ public:
 
   virtual std::vector< std::string > provided_indicators() const override final
   {
-    return EstimatorType::available_local();
+    return {};
   }
-
-  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const override final
-  {
-    // get current solution
-    assert(this->current_refinement_ <= this->num_refinements());
-    if (this->last_computed_refinement_ != this->current_refinement_) {
-      const_cast< ThisType& >(*this).compute_on_current_refinement();
-    }
-    assert(this->current_solution_vector_on_level_);
-    auto indicators = EstimatorType::estimate_local(*this->current_discretization_->ansatz_space(),
-                                                    *this->current_solution_vector_on_level_,
-                                                    this->test_case_.problem(),
-                                                    type);
-    if (!this->visualize_prefix_.empty())
-      visualize_indicators(this->current_discretization_->grid_view(),
-                           indicators,
-                           type,
-                           this->visualize_prefix_ + "_indicators_" + type + "_"
-                           + DSC::toString(this->current_refinement_));
-    return indicators;
-  } // ... compute_indicators(...)
 
   std::map< std::string, std::vector< double > > run_eoc(std::ostream& out)
   {
@@ -290,27 +279,12 @@ private:
 
   virtual std::vector< std::string > available_estimators() const override final
   {
-    auto ret = EstimatorType::available();
-    if (std::find(ret.begin(), ret.end(), "eta_ESV2007") != ret.end())
-      ret.push_back("eff_ESV2007");
-    if (std::find(ret.begin(), ret.end(), "eta_ESV2007_alt") != ret.end())
-      ret.push_back("eff_ESV2007_alt");
-    return ret;
+    return {};
   }
 
   virtual double estimate(const VectorType& vector, const std::string type) const override final
   {
-    if (type == "eff_ESV2007")
-      return estimate(vector, "eta_ESV2007") / const_cast< ThisType& >(*this).current_error_norm("energy");
-    else if (type == "eff_ESV2007_alt")
-      return estimate(vector, "eta_ESV2007_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
-    else {
-      assert(this->current_discretization_);
-      return EstimatorType::estimate(*this->current_discretization_->ansatz_space(),
-                                     vector,
-                                     this->test_case_.problem(),
-                                     type);
-    }
+    return 1;
   } // ... estimate(...)
 
   template< class GV, class VV >
@@ -324,7 +298,7 @@ private:
     GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, vector, name);
     discrete_function.visualize(filename);
   } // ... visualize_indicators(...)
-}; // class SWIPDGStudy
+}; // class CGStudy
 
 
 } // namespace Tests
@@ -332,4 +306,4 @@ private:
 } // namespace HDD
 } // namespace Dune
 
-#endif // DUNE_HDD_TEST_LINEARELLIPTIC_SWIPDG_HH
+#endif // DUNE_HDD_TEST_LINEARELLIPTIC_CG_HH

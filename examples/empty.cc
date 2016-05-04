@@ -9,18 +9,36 @@
 
 #include "config.h"
 
+#include <exception>
+
+#include <boost/exception/diagnostic_information.hpp>
+#include <boost/exception/exception.hpp>
+
 #if HAVE_DUNE_FEM
 # include <dune/fem/misc/mpimanager.hh>
 #endif
+
+#include <dune/stuff/common/exceptions.hh>
 
 using namespace Dune;
 
 
 int main(int argc, char** argv)
 {
+  try {
 #if HAVE_DUNE_FEM
-  Fem::MPIManager::initialize(argc, argv);
+    Fem::MPIManager::initialize(argc, argv);
 #endif
 
-  return 0;
+  } catch (Dune::Exception& ee) {
+    std::cerr << ee.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (boost::exception& ee) {
+    std::cerr << boost::diagnostic_information(ee) << std::endl;
+    return EXIT_FAILURE;
+  } catch (std::exception& ee) {
+    std::cerr << ee.what() << std::endl;
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
 } // ... main(...)

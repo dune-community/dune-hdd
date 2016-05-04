@@ -21,7 +21,7 @@
 #include <dune/stuff/la/container.hh>
 #include <dune/stuff/la/solver.hh>
 
-#include <dune/gdt/spaces/continuouslagrange.hh>
+#include <dune/gdt/spaces/cg.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/assembler/system.hh>
 #include <dune/gdt/operators/projections.hh>
@@ -77,8 +77,7 @@ public:
   static const unsigned int polOrder = polynomialOrder;
 
 private:
-  typedef GDT::Spaces::ContinuousLagrangeProvider< GridType, layer, space_backend,
-                                                   polOrder, RangeFieldType, dimRange > SpaceProvider;
+  typedef GDT::Spaces::CGProvider< GridType, layer, space_backend, polOrder, RangeFieldType, dimRange > SpaceProvider;
 
   friend class CG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend >;
 
@@ -112,10 +111,10 @@ public:
   using typename BaseType::RangeFieldType;
   using typename BaseType::PatternType;
 
-private:
+protected:
   typedef typename Traits::SpaceProvider SpaceProvider;
 
-  typedef Stuff::Grid::ProviderInterface< GridType > GridProviderType;
+  typedef Stuff::Grid::ProviderInterface< GridType >      GridProviderType;
 #if HAVE_DUNE_GRID_MULTISCALE
   typedef grid::Multiscale::ProviderInterface< GridType > MsGridProviderType;
 #endif
@@ -134,39 +133,38 @@ public:
   }
 
   CG(GridProviderType& grid_provider,
-     const Stuff::Common::Configuration& bound_inf_cfg,
+     Stuff::Common::Configuration bound_inf_cfg,
      const ProblemType& prob,
      const int level = 0)
-    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
-               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
+    : BaseType(SpaceProvider::create(grid_provider, level),
+               SpaceProvider::create(grid_provider, level),
                bound_inf_cfg,
                prob)
-    , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
+    , pattern_(EllipticOperatorType::pattern(this->test_space(), this->test_space()))
+    , grid_provider_(grid_provider.copy())
   {
-    // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
-    if (this->problem_.diffusion_tensor()->parametric())
-      DUNE_THROW(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor()->has_affine_part())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+    // in that case we would have to build the elliptic operators like the dirichlet shift
+    if (this->problem_.diffusion_factor()->parametric() && this->problem_.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Both parametric diffusion factor and tensor not supported!");
   } // CG(...)
 
 #if HAVE_DUNE_GRID_MULTISCALE
+
   CG(MsGridProviderType& grid_provider,
      const Stuff::Common::Configuration& bound_inf_cfg,
      const ProblemType& prob,
      const int level = 0)
-    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level)),
-               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level)),
+    : BaseType(SpaceProvider::create(grid_provider, level),
+               SpaceProvider::create(grid_provider, level),
                bound_inf_cfg,
                prob)
-    , pattern_(EllipticOperatorType::pattern(*(this->test_space()), *(this->test_space())))
+    , pattern_(EllipticOperatorType::pattern(this->test_space(), this->test_space()))
   {
-    // in case of parametric diffusion tensor we have to build the elliptic operators like the dirichlet shift
-    if (this->problem_.diffusion_tensor()->parametric())
-      DUNE_THROW(NotImplemented, "The diffusion tensor must not be parametric!");
-    if (!this->problem_.diffusion_tensor()->has_affine_part())
-      DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
+    // in that case we would have to build the elliptic operators like the dirichlet shift
+    if (this->problem_.diffusion_factor()->parametric() && this->problem_.diffusion_tensor()->parametric())
+      DUNE_THROW(NotImplemented, "Both parametric diffusion factor and tensor not supported!");
   } // CG(...)
+
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
   const PatternType& pattern() const
@@ -182,7 +180,7 @@ public:
 
       auto& matrix = *(this->matrix_);
       auto& rhs = *(this->rhs_);
-      const auto& space = *(this->test_space_);
+      const auto& space = this->test_space_;
       const auto& grid_view = space.grid_view();
       const auto& boundary_info = *(this->boundary_info_);
 
@@ -223,25 +221,38 @@ public:
       // lhs operator
       const auto& diffusion_factor = *(this->problem_.diffusion_factor());
       const auto& diffusion_tensor = *(this->problem_.diffusion_tensor());
-      assert(!diffusion_tensor.parametric());
-      assert(diffusion_tensor.has_affine_part());
       std::vector< std::unique_ptr< EllipticOperatorType > > elliptic_operators;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-        const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
-                                                                   space.mapper().size(),
-                                                                   pattern_),
-                                                    diffusion_factor.coefficient(qq));
-        elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
-                                                                 *(diffusion_tensor.affine_part()),
-                                                                 *(matrix.component(id)),
-                                                                 space));
-      }
-      if (diffusion_factor.has_affine_part()) {
+      if (diffusion_factor.has_affine_part() && diffusion_tensor.has_affine_part()) {
         matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
         elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
                                                                  *(diffusion_tensor.affine_part()),
                                                                  *(matrix.affine_part()),
                                                                  space));
+      }
+      if (diffusion_factor.parametric() && !diffusion_tensor.parametric()) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+          const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
+                                                                     space.mapper().size(),
+                                                                     pattern_),
+                                                      diffusion_factor.coefficient(qq));
+          elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.component(qq)),
+                                                                   *(diffusion_tensor.affine_part()),
+                                                                   *(matrix.component(id)),
+                                                                   space));
+        }
+      } else if (!diffusion_factor.parametric() && diffusion_tensor.parametric()) {
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_tensor.num_components(); ++qq) {
+          const size_t id = matrix.register_component(new MatrixType(space.mapper().size(),
+                                                                     space.mapper().size(),
+                                                                     pattern_),
+                                                      diffusion_tensor.coefficient(qq));
+          elliptic_operators.emplace_back(new EllipticOperatorType(*(diffusion_factor.affine_part()),
+                                                                   *(diffusion_tensor.component(qq)),
+                                                                   *(matrix.component(id)),
+                                                                   space));
+        }
+      } else if (diffusion_factor.parametric() && diffusion_tensor.parametric()) {
+        DUNE_THROW(Stuff::Exceptions::internal_error, "This should not happen!");
       }
       for (auto& elliptic_operator : elliptic_operators)
         system_assembler.add(*elliptic_operator);
@@ -290,47 +301,38 @@ public:
 
       // products
       // * L2
-      typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType > L2ProductType;
+      typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType >     L2ProductType;
+      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1ProductType;
       auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       l2_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
                                                              space.mapper().size(),
-                                                             L2ProductType::pattern(space)));
+                                                             H1ProductType::pattern(space))); // to allow axpy with h1_semi
       L2ProductType l2_product(*(l2_product_matrix->affine_part()), space);
       system_assembler.add(l2_product);
       // * H1 semi
-      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType > H1ProductType;
       auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       h1_semi_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                             space.mapper().size(),
-                                                             H1ProductType::pattern(space)));
+                                                                  space.mapper().size(),
+                                                                  H1ProductType::pattern(space)));
       H1ProductType h1_product(*(h1_semi_product_matrix->affine_part()), space);
       system_assembler.add(h1_product);
-      // * energy
-      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType > EnergyProductType;
-      auto energy_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      std::vector< std::unique_ptr< EnergyProductType > > energy_products;
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-        const size_t id = energy_product_matrix->register_component(new MatrixType(space.mapper().size(),
-                                                                                   space.mapper().size(),
-                                                                                   EnergyProductType::pattern(space)),
-                                                                    diffusion_factor.coefficient(qq));
-        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->component(id)),
-                                                           space,
-                                                           *(diffusion_factor.component(qq))));
-      }
-      if (diffusion_factor.has_affine_part()) {
-        energy_product_matrix->register_affine_part(new MatrixType(space.mapper().size(),
-                                                                   space.mapper().size(),
-                                                                   EnergyProductType::pattern(space)));
-        energy_products.emplace_back(new EnergyProductType(*(energy_product_matrix->affine_part()),
-                                                           space,
-                                                           *(diffusion_factor.affine_part())));
-      }
-      for (auto& energy_product : energy_products)
-        system_assembler.add(*energy_product);
+
+      // constraints container
+      GDT::Spaces::DirichletConstraints< typename GridViewType::Intersection >
+          clear_and_set_dirichlet_rows(boundary_info, space.mapper().size(), true);
+      GDT::Spaces::DirichletConstraints< typename GridViewType::Intersection >
+          clear_dirichlet_rows(boundary_info, space.mapper().size(), false);
+      system_assembler.add(clear_and_set_dirichlet_rows, new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+      system_assembler.add(clear_dirichlet_rows,         new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
 
       // do the actual assembling
       system_assembler.walk();
+
+      // * H1 product
+      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      h1_product_matrix->register_affine_part(h1_semi_product_matrix->affine_part()->copy());
+      h1_product_matrix->affine_part()->axpy(1, *l2_product_matrix->affine_part());
+
       out << "done (took " << timer.elapsed() << "s)" << std::endl;
 
       out << prefix << "computing dirichlet shift... " << std::flush;
@@ -366,43 +368,39 @@ public:
           const std::string expression = "(" + matrix.coefficient(pp)->expression()
                                          + ")*(" + dirichlet_vector->coefficient(qq)->expression() + ")";
           const size_t ind = rhs.register_component(new VectorType(space.mapper().size()),
-                                                    new Pymor::ParameterFunctional(param,
-                                                                                   expression));
-          matrix.component(pp)->mv(*(dirichlet_vector->component(qq)), tmp);
-          *(rhs.component(ind)) -= tmp;
+                                                    new Pymor::ParameterFunctional(param, expression));
+          const auto& matrix_component = *matrix.component(pp);
+          const auto& dirichlet_component = *dirichlet_vector->component(qq);
+          auto& rhs_component = *rhs.component(ind);
+          rhs_component -= matrix_component * dirichlet_component;
         }
       }
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-      // H1 product
-      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      h1_product_matrix->register_affine_part(h1_semi_product_matrix->affine_part()->copy());
-      h1_product_matrix->affine_part()->axpy(1, *l2_product_matrix->affine_part());
-
       out << prefix << "applying constraints... " << std::flush;
-      GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
-        clear_and_set_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs());
-      GDT::Spaces::Constraints::Dirichlet< typename GridViewType::Intersection, RangeFieldType >
-        clear_dirichlet_rows(boundary_info, space.mapper().maxNumDofs(), space.mapper().maxNumDofs(), false);
       // we always need an affine part in the system matrix for the dirichlet rows
       if (!matrix.has_affine_part())
         matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
-      system_assembler.add(clear_and_set_dirichlet_rows,
-                           *(matrix.affine_part()),
-                           new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+      clear_and_set_dirichlet_rows.apply(*matrix.affine_part());
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-        system_assembler.add(clear_dirichlet_rows, *(matrix.component(qq)),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
+        clear_dirichlet_rows.apply(*matrix.component(qq));
       if (rhs.has_affine_part())
-        system_assembler.add(clear_dirichlet_rows, *(rhs.affine_part()),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < matrix.num_components(); ++qq)
-        system_assembler.add(clear_dirichlet_rows, *(rhs.component(qq)),
-                             new Stuff::Grid::ApplyOn::BoundaryEntities< GridViewType >());
-      system_assembler.add(clear_and_set_dirichlet_rows, *l2_product_matrix->affine_part());
-      system_assembler.add(clear_and_set_dirichlet_rows, *h1_semi_product_matrix->affine_part());
-      system_assembler.add(clear_and_set_dirichlet_rows, *h1_product_matrix->affine_part());
-      system_assembler.walk();
+        clear_dirichlet_rows.apply(*rhs.affine_part());
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < rhs.num_components(); ++qq)
+        clear_dirichlet_rows.apply(*rhs.component(qq));
+      clear_and_set_dirichlet_rows.apply(*l2_product_matrix->affine_part());
+      clear_and_set_dirichlet_rows.apply(*h1_semi_product_matrix->affine_part());
+      clear_and_set_dirichlet_rows.apply(*h1_product_matrix->affine_part());
+      // also clear columns of products
+      auto energy_0_product = std::make_shared<AffinelyDecomposedMatrixType>(matrix.copy());
+      for (const auto& column : clear_and_set_dirichlet_rows.dirichlet_DoFs()) {
+        l2_product_matrix->affine_part()->unit_col(column);
+        h1_semi_product_matrix->affine_part()->unit_col(column);
+        h1_product_matrix->affine_part()->unit_col(column);
+        energy_0_product->affine_part()->unit_col(column);
+        for (DUNE_STUFF_SSIZE_T qq = 0; qq < energy_0_product->num_components(); ++qq)
+          energy_0_product->component(qq)->unit_col(column);
+      }
       out << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
       // build parameter type
@@ -411,13 +409,13 @@ public:
       this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
 
       // finalize
-      this->products_.insert(std::make_pair("l2_0", l2_product_matrix));
-      this->products_.insert(std::make_pair("h1_semi_0", h1_semi_product_matrix));
-      this->products_.insert(std::make_pair("h1_0", h1_semi_product_matrix));
-      this->products_.insert(std::make_pair("energy", energy_product_matrix));
-      this->vectors_.insert(std::make_pair("dirichlet", dirichlet_vector));
+      this->products_.insert(std::make_pair("l2_0",      l2_product_matrix));
+      this->products_.insert(std::make_pair("h1_0_semi", h1_semi_product_matrix));
+      this->products_.insert(std::make_pair("h1_0",      h1_product_matrix));
+      this->products_.insert(std::make_pair("energy_0",  energy_0_product));
+      this->vectors_.insert(std::make_pair( "dirichlet", dirichlet_vector));
 
-      this->container_based_initialized_ = true;
+      this->finalize_init();
     } // if (!this->container_based_initialized_)
   } // ... init(...)
 
@@ -425,6 +423,7 @@ private:
   friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
 
   PatternType pattern_;
+  std::shared_ptr< GridProviderType > grid_provider_;
 }; // class CG
 
 

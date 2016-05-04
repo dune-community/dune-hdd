@@ -78,11 +78,7 @@ void run_eoc_study(const std::string partitioning,
                    const std::string visualization,
                    const bool H_with_h)
 {
-  const TestCaseType test_case(parameters,
-                               partitioning,
-                               3,
-                               0,
-                               H_with_h);
+  TestCaseType test_case(parameters, partitioning, 3, 0, H_with_h);
   if (print_header)
     test_case.print_header(DSC_LOG_INFO);
   print_parameter_information(test_case);

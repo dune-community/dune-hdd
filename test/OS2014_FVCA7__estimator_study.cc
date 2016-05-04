@@ -52,7 +52,7 @@ class OS2014_FVCA7__estimator_study
 protected:
   void ESV2007_fine_triangulation() const
   {
-    const TestCaseType test_case;
+    TestCaseType test_case;
     test_case.print_header(DSC_LOG_INFO);
     DSC_LOG_INFO << std::endl;
     EocStudyType eoc_study(test_case, {"energy", "eta_ESV2007"});
@@ -61,7 +61,7 @@ protected:
 
   void BlockSWIPDG_coarse_triangulation(const std::string partitioning) const
   {
-    const BlockTestCaseType test_case(partitioning);
+    BlockTestCaseType test_case(partitioning);
     BlockEocStudyType eoc_study(test_case, {"energy", "eta_OS2014"});
     Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run_eoc(DSC_LOG_INFO));
   } // ... BlockSWIPDG_coarse_triangulation(...)

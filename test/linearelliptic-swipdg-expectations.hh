@@ -61,7 +61,7 @@ public:
       return polOrder;
     else if (type == "eta_NC_ESV2007")
       return polOrder;
-    else if (type == "eta_R_ESV2007")
+    else if (type.substr(0, 14) == "eta_R_ESV2007")
       return polOrder + 1;
     else if (type == "eta_DF_ESV2007")
       return polOrder;

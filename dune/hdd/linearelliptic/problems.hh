@@ -27,7 +27,7 @@ namespace LinearElliptic {
 
 
 /**
- * \note If you want to add a new function FooBar, do the following: provide a definition that is available for all
+ * \note If you want to add a new problem FooBar, do the following: provide a definition that is available for all
  *       template arguments, like:
 \code
 template< class E, class D, int d, class R, int r = 1 >
@@ -41,7 +41,7 @@ class FooBar
 \code
 static const bool available = true;
 \endcode
- *       This is all you have to do when implementing the function. In addition you have to add the appropriate include
+ *       This is all you have to do when implementing the problem. In addition you have to add the appropriate include
  *       in this file (of course) and the appropriate type below (just like the rest, should be obvious).
  */
 template< class E, class D, int d, class R, int r >

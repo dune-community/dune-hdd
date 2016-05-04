@@ -71,7 +71,7 @@ class BlockSWIPDGStudy
   typedef typename StudyBaseType::VectorType        VectorType;
 
 public:
-  BlockSWIPDGStudy(const TestCaseType& test_case,
+  BlockSWIPDGStudy(TestCaseType& test_case,
                    const std::vector< std::string > only_these_norms = std::vector< std::string >(),
                    const std::vector< std::string > only_these_local_indicators = std::vector< std::string >(),
                    const std::string visualize_prefix = "")
@@ -135,7 +135,6 @@ public:
     const_cast< ThisType& >(*this).compute_on_current_refinement();
     assert(this->last_computed_refinement_ == this->current_refinement_);
     assert(this->current_solution_vector_);
-    typedef typename StudyBaseType::DiscreteFunctionType      DiscreteFunctionType;
     typedef typename StudyBaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
     const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
                                                      *this->current_solution_vector_,
@@ -205,12 +204,12 @@ public:
     } // this->test_case_.provides_exact_solution()
   } // ... compute_reference_indicators(...)
 
-  virtual std::vector< std::string > provided_indicators() const
+  virtual std::vector< std::string > provided_indicators() const override final
   {
     return EstimatorType::available_local();
   }
 
-  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const
+  virtual Stuff::LA::CommonDenseVector< double > compute_indicators(const std::string type) const override final
   {
     // get current solution
     const_cast< ThisType& >(*this).compute_on_current_refinement();
@@ -351,7 +350,7 @@ private:
       const size_t subdomain = ms_grid.subdomainOf(entity);
       fine_vector[index] = vector[subdomain];
     }
-    typedef GDT::Spaces::FiniteVolume::Default< typename MSG::GlobalGridViewType, typename VV::ScalarType, 1 >
+    typedef GDT::Spaces::FV::Default< typename MSG::GlobalGridViewType, typename VV::ScalarType, 1 >
         FVSpaceType;
     const FVSpaceType fv_space(grid_view);
     GDT::ConstDiscreteFunction< FVSpaceType, VV > discrete_function(fv_space, fine_vector, name);

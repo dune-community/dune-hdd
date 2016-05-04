@@ -12,8 +12,11 @@
 
 #include <dune/common/static_assert.hh>
 #include <dune/common/timer.hh>
+#include <dune/common/typetraits.hh>
 
-#include <dune/grid/multiscale/provider/cube.hh>
+#if HAVE_DUNE_GRID_MULTISCALE
+# include <dune/grid/multiscale/provider/cube.hh>
+#endif
 
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/string.hh>
@@ -73,7 +76,7 @@ public:
     checkerboard_config["name"] = "diffusion_factor";
     checkerboard_config["type"] = CheckerboardFunctionType::static_id();
     checkerboard_config["num_elements"] = "[4 4 4]";
-    checkerboard_config["parameter_name"] = "diffusion_factor";
+    checkerboard_config["parameter_name"] = "diffusion";
     config.add(checkerboard_config, "diffusion_factor");
     Stuff::Common::Configuration diffusion_tensor_config = ConstantMatrixFunctionType::default_config();
     diffusion_tensor_config["name"] = "diffusion_tensor";
@@ -204,7 +207,7 @@ private:
   static std::shared_ptr< AffinelyDecomposableDefaultFunctionType > create_diffusion_factor()
   {
     typedef Stuff::Functions::DomainIndicator< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, 1 > IndicatorFunctionType;
-    const Pymor::ParameterType mu("diffusion_factor", 3);
+    const Pymor::ParameterType mu("diffusion", 3);
 
     auto ret = std::make_shared< AffinelyDecomposableDefaultFunctionType >("diffusion_factor");
     ret->register_component(new IndicatorFunctionType({{{{0.0, 0.0}, {0.5, 0.16}}, 1.0},
@@ -265,7 +268,7 @@ public:
     file << "debug = true" << std::endl;
     file << "file  = false" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]" << std::endl;
+    file << "0.diffusion = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]" << std::endl;
     file << GridProviderType::default_config(GridProviderType::static_id());
     file << ProblemType::default_config(ProblemType::static_id());
     file << "[pymor]" << std::endl;
@@ -389,6 +392,9 @@ private:
 }; // class Thermalblock
 
 
+#if HAVE_DUNE_GRID_MULTISCALE
+
+
 template< class GridImp >
 class ThermalblockMultiScale
 {
@@ -416,7 +422,7 @@ public:
     file << "file  = false" << std::endl;
     file << "visualize = false" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]" << std::endl;
+    file << "0.diffusion = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]" << std::endl;
     file << GridProviderType::default_config(GridProviderType::static_id());
     file << ProblemType::default_config(ProblemType::static_id());
     file << "[pymor]" << std::endl;
@@ -572,7 +578,7 @@ public:
     file << "file  = false" << std::endl;
     file << "visualize = false" << std::endl;
     file << "[parameter]" << std::endl;
-    file << "0.diffusion_factor = [1 2 3]" << std::endl;
+    file << "0.diffusion = [1 2 3]" << std::endl;
     file << GridProviderType::default_config(GridProviderType::static_id());
     file << ProblemType::default_config(ProblemType::static_id());
     file << "[pymor]" << std::endl;
@@ -701,6 +707,9 @@ private:
   Stuff::Common::Configuration boundary_info_;
   std::unique_ptr< const ProblemType > problem_;
 }; // class LocalThermalblockMultiScale
+
+
+#endif // HAVE_DUNE_GRID_MULTISCALE
 
 
 } // namespace DiscreteProblems

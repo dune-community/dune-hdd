@@ -23,6 +23,9 @@
 #if HAVE_DUNE_GRID_MULTISCALE
 # include <dune/grid/multiscale/provider/cube.hh>
 #endif
+#if HAVE_DUNE_SPGRID
+# include <dune/grid/spgrid/dgfparser.hh>
+#endif
 
 #include <dune/pymor/parameters/base.hh>
 #include <dune/pymor/common/exceptions.hh>

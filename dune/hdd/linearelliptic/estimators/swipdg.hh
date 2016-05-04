@@ -34,7 +34,8 @@
 #include <dune/gdt/operators/projections.hh>
 #include <dune/gdt/playground/localevaluation/ESV2007.hh>
 #include <dune/gdt/playground/operators/fluxreconstruction.hh>
-#include <dune/gdt/playground/spaces/finitevolume/default.hh>
+#include <dune/gdt/spaces/fv/default.hh>
+#include <dune/gdt/spaces/rt/pdelab.hh>
 
 namespace Dune {
 namespace HDD {
@@ -225,7 +226,7 @@ public:
   typedef typename ProblemType::RangeFieldType RangeFieldType;
 
 private:
-  typedef GDT::Spaces::FiniteVolume::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
+  typedef GDT::Spaces::FV::Default< GridViewType, RangeFieldType, 1, 1 > P0SpaceType;
   typedef GDT::DiscreteFunction< P0SpaceType, VectorType > DiscreteFunctionType;
   typedef typename DiscreteFunctionType::DifferenceType DifferenceType;
 
@@ -356,7 +357,7 @@ public:
 
 private:
   typedef GDT::ConstDiscreteFunction< SpaceType, VectorType > ConstDiscreteFunctionType;
-  typedef GDT::Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+  typedef GDT::Spaces::RT::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
   typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
   typedef typename RTN0DiscreteFunctionType::DivergenceType DivergenceType;
   typedef typename DivergenceType::DifferenceType DifferenceType;
@@ -514,7 +515,7 @@ public:
 
 private:
   typedef GDT::ConstDiscreteFunction< SpaceType, VectorType > ConstDiscreteFunctionType;
-  typedef GDT::Spaces::RaviartThomas::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
+  typedef GDT::Spaces::RT::PdelabBased< GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
   typedef GDT::DiscreteFunction< RTN0SpaceType, VectorType > RTN0DiscreteFunctionType;
 
   typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;

@@ -72,13 +72,13 @@ public:
     return this->as_imp().grid_view();
   }
 
-  const std::shared_ptr< const TestSpaceType >& test_space() const
+  const TestSpaceType& test_space() const
   {
     CHECK_CRTP(this->as_imp().test_space());
     return this->as_imp().test_space();
   }
 
-  const std::shared_ptr< const TestSpaceType >& ansatz_space() const
+  const TestSpaceType& ansatz_space() const
   {
     CHECK_CRTP(this->as_imp().ansatz_space());
     return this->as_imp().ansatz_space();

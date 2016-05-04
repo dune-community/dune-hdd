@@ -6,13 +6,17 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_DEFAULT_HH
 #define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_DEFAULT_HH
 
+#ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
+# define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING 0
+#endif
+
 #include <map>
 #include <algorithm>
 
 #include <dune/stuff/common/crtp.hh>
 #include <dune/stuff/common/exceptions.hh>
-#include <dune/stuff/la/solver.hh>
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/la/solver.hh>
 
 #include <dune/pymor/operators/base.hh>
 #include <dune/pymor/operators/affine.hh>
@@ -71,9 +75,9 @@ private:
 public:
   static std::string static_id() { return "hdd.linearelliptic.discretizations.cached"; }
 
-  CachedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
-                const std::shared_ptr< const AnsatzSpaceType > ansatz_spc,
-                const Stuff::Common::Configuration& bnd_inf_cfg,
+  CachedDefault(TestSpaceType test_spc,
+                AnsatzSpaceType ansatz_spc,
+                Stuff::Common::Configuration bnd_inf_cfg,
                 const ProblemType& prb)
     : BaseType(prb)
     , test_space_(test_spc)
@@ -87,12 +91,12 @@ public:
 
   ThisType& operator=(const ThisType& other) = delete;
 
-  const std::shared_ptr< const TestSpaceType >& test_space() const
+  const TestSpaceType& test_space() const
   {
     return test_space_;
   }
 
-  const std::shared_ptr< const AnsatzSpaceType >& ansatz_space() const
+  const AnsatzSpaceType& ansatz_space() const
   {
     return test_space_;
   }
@@ -119,7 +123,7 @@ public:
 
   VectorType create_vector() const
   {
-    return VectorType(ansatz_space_->mapper().size());
+    return VectorType(ansatz_space_.mapper().size());
   }
 
   void visualize(const VectorType& vector,
@@ -141,9 +145,9 @@ public:
       } else {
         tmp += *(dirichlet_vector.affine_part());
       }
-      GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >(*ansatz_space_, tmp, name).visualize(filename);
+      GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >(ansatz_space_, tmp, name).visualize(filename);
     } else {
-      GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >(*ansatz_space_, vector, name).visualize(filename);
+      GDT::ConstDiscreteFunction< AnsatzSpaceType, VectorType >(ansatz_space_, vector, name).visualize(filename);
     }
   } // ... visualize(...)
 
@@ -160,6 +164,7 @@ public:
   void solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu = Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get(static_id());
+#if !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
     const auto options_in_cache = cache_.find(options);
     bool exists = (options_in_cache != cache_.end());
     typename std::map< Pymor::Parameter, std::shared_ptr< VectorType > >::const_iterator options_and_mu_in_cache;
@@ -168,6 +173,7 @@ public:
       exists = (options_and_mu_in_cache != options_in_cache->second.end());
     }
     if (!exists) {
+#endif // !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
       logger.info() << "solving";
       if (options.has_key("type"))
         logger.info() << " with '" << options.get< std::string >("type") << "'";
@@ -175,6 +181,7 @@ public:
         logger.info() << " for mu = " << mu;
       logger.info() << "... " << std::endl;
       uncached_solve(options, vector, mu);
+#if !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
       cache_[options][mu] = Stuff::Common::make_unique< VectorType >(vector.copy());
     } else {
       logger.info() << "retrieving solution ";
@@ -184,6 +191,7 @@ public:
       const auto& result = *(options_and_mu_in_cache->second);
       vector = result;
     }
+#endif // !DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BASE_DISABLE_CACHING
   } // ... solve(...)
 
   void uncached_solve(const DSC::Configuration options, VectorType& vector, const Pymor::Parameter mu) const
@@ -192,8 +200,8 @@ public:
   }
 
 protected:
-  const std::shared_ptr< const TestSpaceType > test_space_;
-  const std::shared_ptr< const AnsatzSpaceType > ansatz_space_;
+  const TestSpaceType test_space_;
+  const AnsatzSpaceType ansatz_space_;
   const Stuff::Common::Configuration boundary_info_cfg_;
   const std::shared_ptr< const BoundaryInfoType > boundary_info_;
   const ProblemType& problem_;
@@ -231,8 +239,8 @@ protected:
 public:
   static std::string static_id() { return "hdd.linearelliptic.discretizations.containerbased"; }
 
-  ContainerBasedDefault(const std::shared_ptr< const TestSpaceType >& test_spc,
-                        const std::shared_ptr< const AnsatzSpaceType >& ansatz_spc,
+  ContainerBasedDefault(TestSpaceType test_spc,
+                        AnsatzSpaceType ansatz_spc,
                         const Stuff::Common::Configuration& bnd_inf_cfg,
                         const ProblemType& prb)
     : BaseType(test_spc, ansatz_spc, bnd_inf_cfg, prb)
@@ -376,12 +384,22 @@ public:
   } // ... uncached_solve(...)
 
 protected:
+  void finalize_init()
+  {
+    if (!container_based_initialized_) {
+      matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(matrix_->pruned());
+      for (auto& element : products_)
+        element.second = std::make_shared< AffinelyDecomposedMatrixType >(element.second->pruned());
+      container_based_initialized_ = true;
+    }
+  } // ... finalize_init(...)
+
   void assert_everything_is_ready() const
   {
     if (!container_based_initialized_)
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-                 "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and set "
-                 << "container_based_initialized_ to true!\n"
+                 "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and call "
+                 << "finalize_init()!\n"
                  << "The user has to call init() before calling any other method!");
   } // ... assert_everything_is_ready()
 

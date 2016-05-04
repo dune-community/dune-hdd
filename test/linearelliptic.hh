@@ -13,16 +13,10 @@
 
 #include <dune/common/timer.hh>
 
-#if HAVE_DUNE_FEM
-# include <dune/fem/misc/gridwidth.hh>
-#else
-# error "We need dune-fem until we have a reliable and fast method to compute the grid width!"
-#endif
-
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/convergence-study.hh>
 #include <dune/stuff/grid/layers.hh>
-
+#include <dune/stuff/grid/information.hh>
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/operators/prolongations.hh>
 
@@ -50,7 +44,7 @@ class EocStudyBase
   : public Stuff::Common::ConvergenceStudy
 {
   typedef Stuff::Common::ConvergenceStudy BaseType;
-protected:
+public:
 
   typedef DiscretizationImp DiscretizationType;
   typedef typename DiscretizationType::VectorType VectorType;
@@ -63,7 +57,7 @@ protected:
   typedef typename TestCaseType::FunctionType FunctionType;
 
 public:
-  EocStudyBase(const TestCaseType& test_case,
+  EocStudyBase(TestCaseType& test_case,
                const std::vector< std::string > only_these_norms = {},
                const std::string visualize_prefix = "")
     : BaseType(only_these_norms)
@@ -116,7 +110,7 @@ public:
         compute_reference_solution();
         assert(reference_discretization_);
         assert(reference_solution_vector_);
-        const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
+        const ConstDiscreteFunctionType reference_solution(reference_discretization_->ansatz_space(),
                                                            *reference_solution_vector_,
                                                            "reference solution");
         return compute_norm(test_case_.reference_grid_view(), reference_solution, type);
@@ -129,15 +123,16 @@ public:
   {
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
-    return test_case_.grid().size(level, 0);
+    auto size = test_case_.grid().size(level, 0);
+    return test_case_.grid().comm().sum(size);
   } // ... current_grid_size(...)
 
   virtual double current_grid_width() const override final
   {
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
-    const auto grid_part = test_case_.template level< Stuff::Grid::ChoosePartView::part >(level);
-    return Fem::GridWidth::calcGridWidth(grid_part);
+    const auto grid_part = test_case_.template level< Stuff::Grid::ChoosePartView::view >(level);
+    return DSG::dimensions(grid_part).entity_width.max();
   } // ... current_grid_width(...)
 
   virtual double compute_on_current_refinement() override final
@@ -158,7 +153,7 @@ public:
           = Stuff::Common::make_unique< VectorType >(current_discretization_->create_vector());
       current_discretization_->solve(*current_solution_vector_on_level_);
       time_to_solution_ = timer.elapsed();
-      const ConstDiscreteFunctionType current_refinement_solution(*current_discretization_->ansatz_space(),
+      const ConstDiscreteFunctionType current_refinement_solution(current_discretization_->ansatz_space(),
                                                                   *current_solution_vector_on_level_,
                                                                   "solution on current level");
       // prolong to reference grid part
@@ -169,7 +164,7 @@ public:
       assert(reference_discretization_);
       if (!current_solution_vector_)
         current_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
-      DiscreteFunctionType reference_refinement_solution(*(reference_discretization_->ansatz_space()),
+      DiscreteFunctionType reference_refinement_solution(reference_discretization_->ansatz_space(),
                                                          *current_solution_vector_,
                                                          "solution on reference grid part");
       prolongation_operator.apply(current_refinement_solution, reference_refinement_solution);
@@ -197,7 +192,7 @@ public:
       if (!reference_solution_computed_)
         compute_reference_solution();
       assert(reference_discretization_);
-      const ConstDiscreteFunctionType current_solution(*(reference_discretization_->ansatz_space()),
+      const ConstDiscreteFunctionType current_solution(reference_discretization_->ansatz_space(),
                                                        *current_solution_vector_,
                                                        "current solution");
       // compute error
@@ -208,7 +203,7 @@ public:
         compute_reference_solution();
         assert(reference_discretization_);
         assert(reference_solution_vector_);
-        const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
+        const ConstDiscreteFunctionType reference_solution(reference_discretization_->ansatz_space(),
                                                            *reference_solution_vector_,
                                                            "reference solution");
         return compute_norm(test_case_.reference_grid_view(), reference_solution- current_solution, type);
@@ -225,7 +220,7 @@ public:
       ++current_refinement_;
   } // ... refine()
 
-  virtual std::vector< double > expected_results(const std::string type) const = 0;
+  virtual std::vector< double > expected_results(const std::string type) const override = 0;
 
   std::map< std::string, std::vector< double > > run(std::ostream& out, const bool print_timings = false)
   {
@@ -249,7 +244,7 @@ protected:
       if (!visualize_prefix_.empty()) {
         this->test_case_.problem().visualize(reference_discretization_->grid_view(),
                                              visualize_prefix_ + "_problem_reference");
-        ConstDiscreteFunctionType(*reference_discretization_->ansatz_space(),
+        ConstDiscreteFunctionType(reference_discretization_->ansatz_space(),
                                   *reference_solution_vector_,
                                   "reference solution").visualize(visualize_prefix_ + "_reference_solution");
       }
@@ -272,7 +267,7 @@ protected:
                               const FunctionType& function,
                               const std::string type) const = 0;
 
-  const TestCaseType& test_case_;
+  TestCaseType& test_case_;
   size_t current_refinement_;
   size_t last_computed_refinement_;
   double time_to_solution_;
@@ -391,7 +386,8 @@ public:
     assert(current_refinement_ <= num_refinements());
     const auto grid_part
         = test_case_.level_provider(current_refinement_)->template global< Stuff::Grid::ChoosePartView::part >();
-    return grid_part.gridView().size(0);
+    auto size = grid_part.gridView().size(0);
+    return grid_part.gridView().grid().comm().sum(size);
   } // ... current_grid_size(...)
 
   virtual double current_grid_width() const override final
@@ -488,7 +484,7 @@ public:
       ++current_refinement_;
   } // ... refine()
 
-  virtual std::vector< double > expected_results(const std::string type) const = 0;
+  virtual std::vector< double > expected_results(const std::string type) const override = 0;
 
   std::map< std::string, std::vector< double > > run(std::ostream& out, const bool print_timings = false)
   {
@@ -556,4 +552,5 @@ protected:
 } // namespace HDD
 } // namespace Dune
 
+namespace DHLT = Dune::HDD::LinearElliptic::Tests;
 #endif // DUNE_HDD_test_case_LINEARELLIPTIC_EOC_STUDY_HH
