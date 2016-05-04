@@ -40,7 +40,7 @@ from simdb.run import new_dataset, add_values, add_logfile
 logfile = NamedTemporaryFile(delete=False).name
 pymor.core.logger.FILENAME = logfile
 
-logger = getLogger('.battery.main')
+logger = getLogger('.ORS2016__3_3.main')
 logger.setLevel('INFO')
 
 
@@ -69,7 +69,7 @@ config= {'subdomains': '[1 1 1]',
          'num_training_samples' : 50,
          'max_rb_size' : 500,
          'target_error': 1e-10}
-new_dataset('parabolic_LRBMS_ENUMATH2015', **config)
+new_dataset('ORS2016__3_3', **config)
 
 logger.info('initializing DUNE module ...')
 from generic import dune_module, examples, wrapper
@@ -105,7 +105,7 @@ boundary_cfg.set('dirichlet.0', '[-1 0 0]')
 boundary_cfg.set('dirichlet.1', '[1 0 0]')
 
 dirichlet_value = '0'
-problem_cfg = Example.problem_options('hdd.linearelliptic.problem.battery')
+problem_cfg = Example.problem_options('hdd.linearelliptic.problem.ORS2016')
 problem_cfg.set('diffusion_factor.lower_left', battery_geometry['lower_left'], True)
 problem_cfg.set('diffusion_factor.upper_right', battery_geometry['upper_right'], True)
 problem_cfg.set('diffusion_factor.num_elements', battery_geometry['num_elements'], True)
