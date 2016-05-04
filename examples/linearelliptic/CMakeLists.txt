@@ -52,9 +52,9 @@
 #                    cg_bindings_generator.py
 #                    cg.hh
 #                    dunehdd-linearelliptic-cg)
-add_python_bindings(linearellipticexamplethermalblock
-                    thermalblock_bindings_generator.py
-                    thermalblock_bindings_generator.hh
+add_python_bindings(linearellipticexampleMRS201651
+                    MRS2016__5_1_bindings_generator.py
+                    MRS2016__5_1_bindings_generator.hh
                     "")
 #add_python_bindings(mpi_cg_bindings
 #                    mpi_cg_bindings_generator.py
@@ -68,7 +68,7 @@ add_python_bindings(linearellipticexamplethermalblock
 add_python_bindings(linearellipticexamplespe10 spe10_bindings_generator.py spe10_bindings_generator.hh "")
 
 foreach(target
-        linearellipticexamplethermalblock
+        linearellipticexampleMRS201651
 	linearellipticexamplespe10)
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})

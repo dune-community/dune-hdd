@@ -3,8 +3,8 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_BINDINGS_GENERATOR_HH
-#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_BINDINGS_GENERATOR_HH
+#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__5_1_BINDINGS_GENERATOR_HH
+#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__5_1_BINDINGS_GENERATOR_HH
 
 #ifdef ENABLE_MPI
 # undef ENABLE_MPI
@@ -24,7 +24,7 @@
 # endif
 # include <dune/grid/yaspgrid.hh>
 
-# include "thermalblock.hh"
+# include "MRS2016__5_1.hh"
 
 
 template< class G, Dune::GDT::ChooseSpaceBackend s, Dune::Stuff::LA::ChooseBackend l >
@@ -47,4 +47,4 @@ public:
   }
 }; // class PbCgExample
 
-#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_BINDINGS_GENERATOR_HH
+#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__5_1_BINDINGS_GENERATOR_HH

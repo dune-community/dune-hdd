@@ -3,8 +3,8 @@
 // Copyright holders: Felix Schindler
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
-#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
-#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
+#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__5_1_HH
+#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__5_1_HH
 
 #include <boost/numeric/conversion/cast.hpp>
 
@@ -354,4 +354,4 @@ std::vector< VectorType > gram_schmidt(const std::vector< VectorType >& A,
   return ret;
 } // ... gram_schmidt(...)
 
-#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_THERMALBLOCK_HH
+#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__5_1_HH
