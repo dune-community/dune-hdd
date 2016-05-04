@@ -1,5 +1,5 @@
-#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_SPE10_HH
-#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_SPE10_HH
+#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__4_3_HH
+#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__4_3_HH
 
 #include <dune/stuff/common/fvector.hh>
 #include <dune/stuff/common/string.hh>
@@ -86,4 +86,4 @@ public:
 }; // class Spe10Example
 
 
-#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_SPE10_HH
+#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_MRS2016__4_3_HH

@@ -9,7 +9,7 @@ from __future__ import division, print_function
 
 from dune.pymor.core import wrap_module
 
-import linearellipticexamplespe10 as dune_module
+import linearellipticexampleMRS201643 as dune_module
 _, wrapper = wrap_module(dune_module)
 
 examples = {}

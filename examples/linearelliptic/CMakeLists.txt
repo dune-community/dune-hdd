@@ -65,11 +65,14 @@ add_python_bindings(linearellipticexampleMRS201651
 #                    OS2014_bindings_generator.hh
 #                    "")
 #add_python_bindings(linearellipticexamplegeneric generic_bindings_generator.py generic_bindings_generator.hh "")
-add_python_bindings(linearellipticexamplespe10 spe10_bindings_generator.py spe10_bindings_generator.hh "")
+add_python_bindings(linearellipticexampleMRS201643
+                    MRS2016__4_3_bindings_generator.py
+                    MRS2016__4_3_bindings_generator.hh
+                    "")
 
 foreach(target
         linearellipticexampleMRS201651
-	linearellipticexamplespe10)
+        linearellipticexampleMRS201643)
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})
   add_dune_umfpack_flags(${target})
