@@ -1,5 +1,5 @@
-#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_BINDINGS_GENERATOR_HH
-#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_BINDINGS_GENERATOR_HH
+#ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_BINDINGS_GENERATOR_HH
+#define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_BINDINGS_GENERATOR_HH
 
 #ifdef ENABLE_MPI
 # undef ENABLE_MPI
@@ -24,19 +24,19 @@
 
 # include <dune/pymor/bindings/pymor.hh>
 
-# include "generic.hh"
+# include "generic_multiscale.hh"
 
 
 template< class G, Dune::GDT::ChooseSpaceBackend s, Dune::Stuff::LA::ChooseBackend l >
-class PbGenericLinearellipticExample
-  : public GenericLinearellipticExample< G, s, l >
+class PbGenericLinearellipticMultiscaleExample
+  : public GenericLinearellipticMultiscaleExample< G, s, l >
 {
-  typedef GenericLinearellipticExample< G, s, l > BaseType;
+  typedef GenericLinearellipticMultiscaleExample< G, s, l > BaseType;
 public:
   using typename BaseType::DiscretizationType;
 
   template< class... Args >
-  explicit PbGenericLinearellipticExample(Args&& ...args)
+  explicit PbGenericLinearellipticMultiscaleExample(Args&& ...args)
     : BaseType(std::forward< Args >(args)...)
   {}
 
@@ -44,6 +44,6 @@ public:
   {
     return new DiscretizationType(this->discretization());
   }
-}; // class PbGenericLinearellipticExample
+}; // class PbGenericLinearellipticMultiscaleExample
 
-#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_BINDINGS_GENERATOR_HH
+#endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_BINDINGS_GENERATOR_HH
