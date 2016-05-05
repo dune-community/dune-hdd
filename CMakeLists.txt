@@ -86,7 +86,7 @@ find_file(SPE10MODEL2DATA
           DOC "Location of spe_perm.dat"
           NO_DEFAULT_PATH)
 add_subdirectory(examples EXCLUDE_FROM_ALL)
-add_subdirectory(test EXCLUDE_FROM_ALL)
+add_subdirectory(dune)
 
 finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
 
