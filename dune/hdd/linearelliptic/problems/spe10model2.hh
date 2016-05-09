@@ -42,7 +42,7 @@ class Model2< EntityImp, DomainFieldImp, 3, RangeFieldImp, 1 >
   typedef Default< EntityImp, DomainFieldImp, 3, RangeFieldImp, 1 > BaseType;
   typedef Model2< EntityImp, DomainFieldImp, 3, RangeFieldImp, 1 > ThisType;
   typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, 3, RangeFieldImp, 1 >  ScalarConstantFunctionType;
-  typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, 3, RangeFieldImp, 1 > ScalarIndicatorFunctionType;
+  typedef Stuff::Functions::DomainIndicator< EntityImp, DomainFieldImp, 3, RangeFieldImp, 1 > ScalarIndicatorFunctionType;
   typedef typename ScalarConstantFunctionType::DomainType DomainType;
   typedef Stuff::Functions::Spe10::Model2< EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3 > Spe10FunctionType;
   using typename BaseType::DiffusionFactorWrapperType;
@@ -109,7 +109,7 @@ private:
                                                       filename, "spe10", {0., 0., 0.}, upper_right));
     diffusion_tensor->register_affine_part(spe10);
     if (channel_width > 0) {
-      typedef Stuff::Functions::Indicator< EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3 > TensorIndicatorFunctionType;
+      typedef Stuff::Functions::DomainIndicator< EntityImp, DomainFieldImp, 3, RangeFieldImp, 3, 3 > TensorIndicatorFunctionType;
       auto one = std::make_shared<ScalarConstantFunctionType>(1, "one");
 
       auto channel_x = std::shared_ptr<ScalarIndicatorFunctionType>(new ScalarIndicatorFunctionType(
