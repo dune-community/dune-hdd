@@ -13,10 +13,13 @@
 
 #include <dune/common/timer.hh>
 
+#include <dune/fem/misc/gridwidth.hh>
+
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/convergence-study.hh>
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/information.hh>
+
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/operators/prolongations.hh>
 
