@@ -22,10 +22,6 @@ add_library(obj_test_linearelliptic-swipdg-expectations_os2014_2daluconform
             OBJECT
             EXCLUDE_FROM_ALL
             linearelliptic-swipdg-expectations_os2014_2daluconform.cxx)
-add_library(obj_test_linearelliptic-swipdg-expectations_os2014_2dsgrid
-            OBJECT
-            EXCLUDE_FROM_ALL
-            linearelliptic-swipdg-expectations_os2014_2dsgrid.cxx)
 
 # test target libs
 add_library(lib_test_OS2015_SISC__6_1__academic_example__estimator_study

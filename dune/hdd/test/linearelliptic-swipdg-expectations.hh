@@ -20,29 +20,6 @@
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
-namespace TestCases {
-
-
-// forwards
-template< class GridType >
-class ESV2007;
-
-
-namespace Spe10 {
-
-
-template< class GridType >
-class Model1;
-
-
-template< class GridType >
-class ParametricModel1;
-
-
-} // namespace Spe10
-
-
-} // namespace TestCases
 namespace Tests {
 namespace internal {
 
