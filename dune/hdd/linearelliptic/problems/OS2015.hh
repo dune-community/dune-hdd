@@ -181,6 +181,7 @@ public:
                           "forces.2.domain = [4.25 4.40; 0.25 0.40]\n"
                           "forces.2.value = -1000");
     Stuff::Common::Configuration config(ss);
+    config["type"] = static_id();
     config["filename"]    = Stuff::Functions::Spe10::internal::model1_filename;
     config["lower_left"]  = "[0.0 0.0]";
     config["upper_right"] = "[5.0 1.0]";

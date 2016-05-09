@@ -72,6 +72,7 @@ public:
     typedef Stuff::Functions::Constant< EntityImp, DomainFieldImp, domainDim, RangeFieldImp, domainDim, domainDim >
         ConstantMatrixFunctionType;
     Stuff::Common::Configuration config;
+    config["type"] = static_id();
     Stuff::Common::Configuration checkerboard_config = CheckerboardFunctionType::default_config();
     checkerboard_config["name"] = "diffusion_factor";
     checkerboard_config["type"] = CheckerboardFunctionType::static_id();

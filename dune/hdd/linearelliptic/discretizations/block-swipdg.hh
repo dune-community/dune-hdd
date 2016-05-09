@@ -123,7 +123,7 @@ public:
                                                                           zero_boundary_problem_,
                                                                           ss,
                                                                           only_these_products);
-      local_test_spaces_[ss]   = std::make_shared< TestSpaceType >(local_discretizations_[ss]->test_space());
+      local_test_spaces_[ss]   = std::make_shared< TestSpaceType >(  local_discretizations_[ss]->test_space());
       local_ansatz_spaces_[ss] = std::make_shared< AnsatzSpaceType >(local_discretizations_[ss]->ansatz_space());
     }
   }
@@ -232,8 +232,8 @@ public:
               const ProblemType& prob,
               const std::vector< std::string >& only_these_products = {})
     : LocalDiscretizationsBaseType(grid_provider, prob, only_these_products)
-    , BaseType(*std::make_shared< TestSpaceType >(grid_provider.ms_grid(), this->local_test_spaces_),
-               *std::make_shared< AnsatzSpaceType >(grid_provider.ms_grid(), this->local_ansatz_spaces_),
+    , BaseType(TestSpaceType(grid_provider.ms_grid(), this->local_test_spaces_),
+               AnsatzSpaceType(grid_provider.ms_grid(), this->local_ansatz_spaces_),
                bound_inf_cfg,
                this->zero_boundary_problem_)
     , grid_provider_(grid_provider)
@@ -261,304 +261,295 @@ public:
 
   void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
   {
-    if (!this->container_based_initialized_) {
-      const size_t subdomains = ms_grid_->size();
-      // walk the subdomains for the first time
-      //   * to initialize the coupling pattern,
-      //   * to finalize the global sparsity pattern
-      out << prefix << "walking subdomains for the first time... " << std::flush;
-      Dune::Timer timer;
-      for (size_t ss = 0; ss < subdomains; ++ss) {
-        // init the local discretizations (assembles matrices and patterns)
-        this->local_discretizations_[ss]->init();
-        // and create the local containers
-        // * the matrices
-        //   * just copy those from the local discretizations
-        const auto local_operator = this->local_discretizations_[ss]->get_operator();
-        local_matrices_[ss] = std::make_shared< AffinelyDecomposedMatrixType >();
-        //   * we take the affine part only if the diffusion has one, otherwise it contains only the dirichlet rows,
-        //     thus it is empty, since the local problems are purely neumann
-        if (this->problem().diffusion_factor()->has_affine_part()) {
-          if (!local_operator.has_affine_part())
-            DUNE_THROW(Stuff::Exceptions::internal_error, "The local operator is missing the affine part!");
-          local_matrices_[ss]->register_affine_part(new MatrixType(*(local_operator.affine_part().container())));
-        }
-        if (local_operator.num_components() < this->problem().diffusion_factor()->num_components())
-          DUNE_THROW(Stuff::Exceptions::requirements_not_met,
-                     "The local operator should have " << this->problem().diffusion_factor()->num_components()
-                     << " components (but has only " << local_operator.num_components() << ")!");
-        for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq)
-          local_matrices_[ss]->register_component(new MatrixType(
-              local_operator.component(qq).container()->backend()),
-              this->problem().diffusion_factor()->coefficient(qq));
-        // * and the vectors
-        const auto local_functional = this->local_discretizations_[ss]->get_rhs();
-        local_vectors_[ss] = std::make_shared< AffinelyDecomposedVectorType >();
-        for (size_t qq = 0; qq < boost::numeric_cast< size_t >(local_functional.num_components()); ++qq)
-          local_vectors_[ss]->register_component(new VectorType(*(local_functional.component(qq).container())),
-                                                 new Pymor::ParameterFunctional(local_functional.coefficient(qq)));
-        if (local_functional.has_affine_part())
-          local_vectors_[ss]->register_affine_part(new VectorType(*(local_functional.affine_part().container())));
+    if (this->container_based_initialized_)
+      return;
 
-        // create and copy the local patterns
-        add_local_to_global_pattern(this->local_discretizations_[ss]->pattern(), ss, ss, pattern_);
-        const auto& inner_test_space = this->local_discretizations_[ss]->test_space();
-        const auto& inner_ansatz_space = this->local_discretizations_[ss]->ansatz_space();
-        // walk the neighbors
-        for (const size_t& nn : ms_grid_->neighborsOf(ss)) {
-          // visit each coupling only once (assemble primally)
-          if (ss < nn) {
-            const auto& outer_test_space = this->local_discretizations_[nn]->test_space();
-            const auto& outer_ansatz_space = this->local_discretizations_[nn]->ansatz_space();
-            const auto inside_outside_grid_part = ms_grid_->couplingGridPart(ss, nn);
-            const auto outside_inside_grid_part = ms_grid_->couplingGridPart(nn, ss);
-            // create the coupling patterns
-            auto inside_outside_pattern = std::make_shared< PatternType >(
-                  inner_test_space.compute_face_pattern(inside_outside_grid_part, outer_ansatz_space));
-            inside_outside_patterns_[ss].insert(std::make_pair(nn, inside_outside_pattern));
-            auto outside_inside_pattern = std::make_shared< PatternType >(
-                  outer_test_space.compute_face_pattern(outside_inside_grid_part, inner_ansatz_space));
-            outside_inside_patterns_[nn].insert(std::make_pair(ss, outside_inside_pattern));
-            // and copy them
-            add_local_to_global_pattern(*inside_outside_pattern,  ss, nn, pattern_);
-            add_local_to_global_pattern(*outside_inside_pattern,  nn, ss, pattern_);
-          } // visit each coupling only once (assemble primaly)
-        } // walk the neighbors
-      } // walk the subdomains for the first time
-      out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
+    const size_t subdomains = ms_grid_->size();
+    // walk the subdomains for the first time
+    //   * to initialize the coupling pattern,
+    //   * to finalize the global sparsity pattern
+    out << prefix << "walking subdomains for the first time... " << std::flush;
+    Dune::Timer timer;
+    for (size_t ss = 0; ss < subdomains; ++ss) {
+      // init the local discretizations (assembles matrices and patterns)
+      this->local_discretizations_[ss]->init();
+      // and create the local containers
+      // * the matrices
+      //   * just copy those from the local discretizations
+      const auto local_operator = this->local_discretizations_[ss]->get_operator();
+      local_matrices_[ss] = std::make_shared< AffinelyDecomposedMatrixType >();
+      //   * we take the affine part only if the diffusion has one, otherwise it contains only the dirichlet rows,
+      //     thus it is empty, since the local problems are purely neumann
+      if (this->problem().diffusion_factor()->has_affine_part()) {
+        if (!local_operator.has_affine_part())
+          DUNE_THROW(Stuff::Exceptions::internal_error, "The local operator is missing the affine part!");
+        local_matrices_[ss]->register_affine_part(new MatrixType(*(local_operator.affine_part().container())));
+      }
+      if (local_operator.num_components() < this->problem().diffusion_factor()->num_components())
+        DUNE_THROW(Stuff::Exceptions::requirements_not_met,
+                   "The local operator should have " << this->problem().diffusion_factor()->num_components()
+                   << " components (but has only " << local_operator.num_components() << ")!");
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq)
+        local_matrices_[ss]->register_component(new MatrixType(
+            local_operator.component(qq).container()->backend()),
+            this->problem().diffusion_factor()->coefficient(qq));
+      // * and the vectors
+      const auto local_functional = this->local_discretizations_[ss]->get_rhs();
+      local_vectors_[ss] = std::make_shared< AffinelyDecomposedVectorType >();
+      for (size_t qq = 0; qq < boost::numeric_cast< size_t >(local_functional.num_components()); ++qq)
+        local_vectors_[ss]->register_component(new VectorType(*(local_functional.component(qq).container())),
+                                               new Pymor::ParameterFunctional(local_functional.coefficient(qq)));
+      if (local_functional.has_affine_part())
+        local_vectors_[ss]->register_affine_part(new VectorType(*(local_functional.affine_part().container())));
 
-      // walk the subdomains for the second time
-      //   * to assemble the boundary matrices and vectors and
-      //   * to assemble the coupling matrices
-      out << prefix << "walking subdomains for the second time... " << std::flush;
-      for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
-        const auto& inner_test_mapper = this->local_discretizations_[ss]->test_space().mapper();
-        const auto& inner_ansatz_mapper = this->local_discretizations_[ss]->ansatz_space().mapper();
-        if (ms_grid_->boundary(ss))
-          assemble_boundary_contributions(ss);
-        // walk the neighbors
-        for (const size_t& nn : ms_grid_->neighborsOf(ss)) {
-          // visit each coupling only once (assemble primaly)
-          if (ss < nn) {
-            const auto& outer_test_mapper = this->local_discretizations_[nn]->test_space().mapper();
-            const auto& outer_ansatz_mapper = this->local_discretizations_[nn]->ansatz_space().mapper();
-            // get the patterns
-            const auto in_out_result = inside_outside_patterns_[ss].find(nn);
-            if (in_out_result == inside_outside_patterns_[ss].end())
-              DUNE_THROW(Stuff::Exceptions::internal_error, "subdomain " << ss << ", neighbour " << nn);
-            const auto& inside_outside_pattern = *(in_out_result->second);
-            const auto out_in_result = outside_inside_patterns_[nn].find(ss);
-            if (out_in_result == outside_inside_patterns_[nn].end())
-              DUNE_THROW(Stuff::Exceptions::internal_error, "subdomain " << ss << ", neighbour " << nn);
-            const auto& outside_inside_pattern = *(out_in_result->second);
-            // create the coupling matrices
-            auto inside_outside_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-            auto outside_inside_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-            if (this->problem().diffusion_factor()->has_affine_part()) {
-              inside_outside_matrix->register_affine_part(new MatrixType(inner_test_mapper.size(),
-                                                                         outer_ansatz_mapper.size(),
-                                                                         inside_outside_pattern));
-              outside_inside_matrix->register_affine_part(new MatrixType(outer_test_mapper.size(),
-                                                                         inner_ansatz_mapper.size(),
-                                                                         outside_inside_pattern));
-            }
-            for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
-              inside_outside_matrix->register_component(new MatrixType(inner_test_mapper.size(),
+      // create and copy the local patterns
+      add_local_to_global_pattern(this->local_discretizations_[ss]->pattern(), ss, ss, pattern_);
+      const auto& inner_test_space = this->local_discretizations_[ss]->test_space();
+      const auto& inner_ansatz_space = this->local_discretizations_[ss]->ansatz_space();
+      // walk the neighbors
+      for (const size_t& nn : ms_grid_->neighborsOf(ss)) {
+        // visit each coupling only once (assemble primally)
+        if (ss < nn) {
+          const auto& outer_test_space = this->local_discretizations_[nn]->test_space();
+          const auto& outer_ansatz_space = this->local_discretizations_[nn]->ansatz_space();
+          const auto inside_outside_grid_part = ms_grid_->couplingGridPart(ss, nn);
+          const auto outside_inside_grid_part = ms_grid_->couplingGridPart(nn, ss);
+          // create the coupling patterns
+          auto inside_outside_pattern = std::make_shared< PatternType >(
+                inner_test_space.compute_face_pattern(inside_outside_grid_part, outer_ansatz_space));
+          inside_outside_patterns_[ss].insert(std::make_pair(nn, inside_outside_pattern));
+          auto outside_inside_pattern = std::make_shared< PatternType >(
+                outer_test_space.compute_face_pattern(outside_inside_grid_part, inner_ansatz_space));
+          outside_inside_patterns_[nn].insert(std::make_pair(ss, outside_inside_pattern));
+          // and copy them
+          add_local_to_global_pattern(*inside_outside_pattern,  ss, nn, pattern_);
+          add_local_to_global_pattern(*outside_inside_pattern,  nn, ss, pattern_);
+        } // visit each coupling only once (assemble primaly)
+      } // walk the neighbors
+    } // walk the subdomains for the first time
+    out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
+
+    // walk the subdomains for the second time
+    //   * to assemble the boundary matrices and vectors and
+    //   * to assemble the coupling matrices
+    out << prefix << "walking subdomains for the second time... " << std::flush;
+    for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
+      const auto& inner_test_mapper = this->local_discretizations_[ss]->test_space().mapper();
+      const auto& inner_ansatz_mapper = this->local_discretizations_[ss]->ansatz_space().mapper();
+      if (ms_grid_->boundary(ss))
+        assemble_boundary_contributions(ss);
+      // walk the neighbors
+      for (const size_t& nn : ms_grid_->neighborsOf(ss)) {
+        // visit each coupling only once (assemble primaly)
+        if (ss < nn) {
+          const auto& outer_test_mapper = this->local_discretizations_[nn]->test_space().mapper();
+          const auto& outer_ansatz_mapper = this->local_discretizations_[nn]->ansatz_space().mapper();
+          // get the patterns
+          const auto in_out_result = inside_outside_patterns_[ss].find(nn);
+          if (in_out_result == inside_outside_patterns_[ss].end())
+            DUNE_THROW(Stuff::Exceptions::internal_error, "subdomain " << ss << ", neighbour " << nn);
+          const auto& inside_outside_pattern = *(in_out_result->second);
+          const auto out_in_result = outside_inside_patterns_[nn].find(ss);
+          if (out_in_result == outside_inside_patterns_[nn].end())
+            DUNE_THROW(Stuff::Exceptions::internal_error, "subdomain " << ss << ", neighbour " << nn);
+          const auto& outside_inside_pattern = *(out_in_result->second);
+          // create the coupling matrices
+          auto inside_outside_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+          auto outside_inside_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+          if (this->problem().diffusion_factor()->has_affine_part()) {
+            inside_outside_matrix->register_affine_part(new MatrixType(inner_test_mapper.size(),
                                                                        outer_ansatz_mapper.size(),
-                                                                       inside_outside_pattern),
-                                                        this->problem().diffusion_factor()->coefficient(qq));
-              outside_inside_matrix->register_component(new MatrixType(outer_test_mapper.size(),
+                                                                       inside_outside_pattern));
+            outside_inside_matrix->register_affine_part(new MatrixType(outer_test_mapper.size(),
                                                                        inner_ansatz_mapper.size(),
-                                                                       outside_inside_pattern),
-                                                        this->problem().diffusion_factor()->coefficient(qq));
-            }
-            // and assemble them
-            assemble_coupling_contributions(ss, nn,
-                                            *(local_matrices_[ss]),
-                                            *(inside_outside_matrix),
-                                            *(outside_inside_matrix),
-                                            *(local_matrices_[nn]));
-            inside_outside_matrices_[ss].insert(std::make_pair(nn, inside_outside_matrix));
-            outside_inside_matrices_[nn].insert(std::make_pair(ss, outside_inside_matrix));
-          } // visit each coupling only once
-        } // walk the neighbors
-      } // walk the subdomains for the second time
-      out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
+                                                                       outside_inside_pattern));
+          }
+          for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
+            inside_outside_matrix->register_component(new MatrixType(inner_test_mapper.size(),
+                                                                     outer_ansatz_mapper.size(),
+                                                                     inside_outside_pattern),
+                                                      this->problem().diffusion_factor()->coefficient(qq));
+            outside_inside_matrix->register_component(new MatrixType(outer_test_mapper.size(),
+                                                                     inner_ansatz_mapper.size(),
+                                                                     outside_inside_pattern),
+                                                      this->problem().diffusion_factor()->coefficient(qq));
+          }
+          // and assemble them
+          assemble_coupling_contributions(ss, nn,
+                                          *(local_matrices_[ss]),
+                                          *(inside_outside_matrix),
+                                          *(outside_inside_matrix),
+                                          *(local_matrices_[nn]));
+          inside_outside_matrices_[ss].insert(std::make_pair(nn, inside_outside_matrix));
+          outside_inside_matrices_[nn].insert(std::make_pair(ss, outside_inside_matrix));
+        } // visit each coupling only once
+      } // walk the neighbors
+    } // walk the subdomains for the second time
+    out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
 
-      // build global containers
-      pattern_.sort();
-      build_global_containers();
+    // build global containers
+    pattern_.sort();
+    build_global_containers();
 
-      // products
-      typedef typename MsGridType::GlobalGridPartType::GridViewType GlobalGridViewType;
-      const auto global_grid_part = ms_grid_->globalGridPart();
-      const auto global_grid_view = global_grid_part.gridView();
-      GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(this->test_space(),
-                                                                                                  this->ansatz_space(),
-                                                                                                  global_grid_view);
-      const size_t over_integrate = 2;
-      // * L2
-      typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
-          L2ProductType;
-      std::unique_ptr< L2ProductType > l2_product;
-      auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()
-          || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
-        l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                this->ansatz_space().mapper().size(),
-                                                L2ProductType::pattern(this->test_space(),
-                                                                       this->ansatz_space()));
-        l2_product = DSC::make_unique< L2ProductType >(*(l2_product_matrix->affine_part()),
-                                                       this->test_space(),
-                                                       global_grid_view,
-                                                       this->ansatz_space(),
-                                                       over_integrate);
-        system_assembler.add(*l2_product);
-      }
-      // * H1 semi
-      typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
-          H1ProductType;
-      std::unique_ptr< H1ProductType > h1_product;
-      auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()
-          || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
-        h1_semi_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                this->ansatz_space().mapper().size(),
-                                                H1ProductType::pattern(this->test_space(),
-                                                                       this->ansatz_space()));
-        h1_product = DSC::make_unique< H1ProductType >(*(h1_semi_product_matrix->affine_part()),
-                                                       this->test_space(),
-                                                       global_grid_view,
-                                                       this->ansatz_space(),
-                                                       over_integrate);
-        system_assembler.add(*h1_product);
-      }
-      // * elliptic
-      typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-      typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-      const auto diffusion_factor = this->problem().diffusion_factor();
-      const auto diffusion_tensor = this->problem().diffusion_tensor();
-      assert(!diffusion_tensor->parametric());
-      typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType, GlobalGridViewType,
-                                                  AnsatzSpaceType, RangeFieldType, DiffusionTensorType >
-          EllipticProductType;
-      std::vector< std::unique_ptr< EllipticProductType > > elliptic_products;
-      auto elliptic_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end()) {
-        for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
-          const auto id = elliptic_product_matrix->register_component(diffusion_factor->coefficient(qq),
-                                                                      this->test_space().mapper().size(),
-                                                                      this->ansatz_space().mapper().size(),
-                                                                      EllipticProductType::pattern(this->test_space(),
-                                                                                                   this->ansatz_space()));
-          elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->component(id),
-                                                                 this->test_space(),
-                                                                 global_grid_view,
-                                                                 this->ansatz_space(),
-                                                                 *diffusion_factor->component(qq),
-                                                                 *diffusion_tensor->affine_part(),
-                                                                 over_integrate));
-        }
-        if (diffusion_factor->has_affine_part()) {
-          elliptic_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                        this->ansatz_space().mapper().size(),
-                                                        EllipticProductType::pattern(this->test_space(),
-                                                                                     this->ansatz_space()));
-          elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->affine_part(),
-                                                                 this->test_space(),
-                                                                 global_grid_view,
-                                                                 this->ansatz_space(),
-                                                                 *diffusion_factor->affine_part(),
-                                                                 *diffusion_tensor->affine_part(),
-                                                                 over_integrate));
-        }
-        for (auto& product : elliptic_products)
-          system_assembler.add(*product);
-      }
-      // * boundary L2
-      typedef GDT::Products::BoundaryL2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
-          BoundaryL2ProductType;
-      std::unique_ptr< BoundaryL2ProductType > boundary_l2_product;
-      auto boundary_l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end()) {
-        boundary_l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                         this->ansatz_space().mapper().size(),
-                                                         BoundaryL2ProductType::pattern(this->test_space(),
-                                                                                        this->ansatz_space()));
-        boundary_l2_product = DSC::make_unique< BoundaryL2ProductType >(*(boundary_l2_product_matrix->affine_part()),
-                                                                        this->test_space(),
-                                                                        global_grid_view,
-                                                                        this->ansatz_space(),
-                                                                        over_integrate);
-        system_assembler.add(*boundary_l2_product);
-      }
-      // * penalty term
-      typedef GDT::Products::SwipdgPenaltyAssemblable
-          < MatrixType, DiffusionFactorType, DiffusionTensorType, TestSpaceType > PenaltyProductType;
-      std::vector< std::unique_ptr< PenaltyProductType > > penalty_products;
-      auto penalty_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end()) {
-        for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
-          const auto id = penalty_product_matrix->register_component(diffusion_factor->coefficient(qq),
-                                                                     this->test_space().mapper().size(),
-                                                                     this->ansatz_space().mapper().size(),
-                                                                     PenaltyProductType::pattern(this->test_space(),
+    // products
+    typedef typename MsGridType::GlobalGridPartType::GridViewType GlobalGridViewType;
+    const auto global_grid_part = ms_grid_->globalGridPart();
+    const auto global_grid_view = global_grid_part.gridView();
+    GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(this->test_space(),
+                                                                                                this->ansatz_space(),
+                                                                                                global_grid_view);
+    const size_t over_integrate = 2;
+    // * L2
+    typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
+        L2ProductType;
+    std::unique_ptr< L2ProductType > l2_product;
+    auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()) {
+      l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                              this->ansatz_space().mapper().size(),
+                                              L2ProductType::pattern(this->test_space(),
+                                                                     this->ansatz_space()));
+      l2_product = DSC::make_unique< L2ProductType >(*(l2_product_matrix->affine_part()),
+                                                     this->test_space(),
+                                                     global_grid_view,
+                                                     this->ansatz_space(),
+                                                     over_integrate);
+      system_assembler.add(*l2_product);
+    }
+    // * H1 semi
+    typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
+        H1ProductType;
+    std::unique_ptr< H1ProductType > h1_product;
+    auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()) {
+      h1_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                              this->ansatz_space().mapper().size(),
+                                              H1ProductType::pattern(this->test_space(),
+                                                                     this->ansatz_space()));
+      h1_product = DSC::make_unique< H1ProductType >(*(h1_product_matrix->affine_part()),
+                                                     this->test_space(),
+                                                     global_grid_view,
+                                                     this->ansatz_space(),
+                                                     over_integrate);
+      system_assembler.add(*h1_product);
+    }
+    // * elliptic
+    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
+    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
+    const auto diffusion_factor = this->problem().diffusion_factor();
+    const auto diffusion_tensor = this->problem().diffusion_tensor();
+    assert(!diffusion_tensor->parametric());
+    typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType, GlobalGridViewType,
+                                                AnsatzSpaceType, RangeFieldType, DiffusionTensorType >
+        EllipticProductType;
+    std::vector< std::unique_ptr< EllipticProductType > > elliptic_products;
+    auto elliptic_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
+        const auto id = elliptic_product_matrix->register_component(diffusion_factor->coefficient(qq),
+                                                                    this->test_space().mapper().size(),
+                                                                    this->ansatz_space().mapper().size(),
+                                                                    EllipticProductType::pattern(this->test_space(),
                                                                                                  this->ansatz_space()));
-          penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
+        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->component(id),
                                                                this->test_space(),
                                                                global_grid_view,
                                                                this->ansatz_space(),
                                                                *diffusion_factor->component(qq),
                                                                *diffusion_tensor->affine_part(),
                                                                over_integrate));
-        }
-        if (diffusion_factor->has_affine_part()) {
-          penalty_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                       this->ansatz_space().mapper().size(),
-                                                       PenaltyProductType::pattern(this->test_space(),
+      }
+      if (diffusion_factor->has_affine_part()) {
+        elliptic_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                      this->ansatz_space().mapper().size(),
+                                                      EllipticProductType::pattern(this->test_space(),
                                                                                    this->ansatz_space()));
-          penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
+        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->affine_part(),
                                                                this->test_space(),
                                                                global_grid_view,
                                                                this->ansatz_space(),
                                                                *diffusion_factor->affine_part(),
                                                                *diffusion_tensor->affine_part(),
                                                                over_integrate));
-        }
-        for (auto& product : penalty_products)
-          system_assembler.add(*product);
       }
-
-      // do the actual work
-      system_assembler.assemble();
-
-      // finalize
-      auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
-        h1_product_matrix->register_affine_part(h1_semi_product_matrix->affine_part()->copy());
-        h1_product_matrix->affine_part()->axpy(1, *l2_product_matrix->affine_part());
+      for (auto& product : elliptic_products)
+        system_assembler.add(*product);
+    }
+    // * boundary L2
+    typedef GDT::Products::BoundaryL2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
+        BoundaryL2ProductType;
+    std::unique_ptr< BoundaryL2ProductType > boundary_l2_product;
+    auto boundary_l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end()) {
+      boundary_l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                       this->ansatz_space().mapper().size(),
+                                                       BoundaryL2ProductType::pattern(this->test_space(),
+                                                                                      this->ansatz_space()));
+      boundary_l2_product = DSC::make_unique< BoundaryL2ProductType >(*(boundary_l2_product_matrix->affine_part()),
+                                                                      this->test_space(),
+                                                                      global_grid_view,
+                                                                      this->ansatz_space(),
+                                                                      over_integrate);
+      system_assembler.add(*boundary_l2_product);
+    }
+    // * penalty term
+    typedef GDT::Products::SwipdgPenaltyAssemblable
+        < MatrixType, DiffusionFactorType, DiffusionTensorType, TestSpaceType > PenaltyProductType;
+    std::vector< std::unique_ptr< PenaltyProductType > > penalty_products;
+    auto penalty_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
+        const auto id = penalty_product_matrix->register_component(diffusion_factor->coefficient(qq),
+                                                                   this->test_space().mapper().size(),
+                                                                   this->ansatz_space().mapper().size(),
+                                                                   PenaltyProductType::pattern(this->test_space(),
+                                                                                               this->ansatz_space()));
+        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
+                                                             this->test_space(),
+                                                             global_grid_view,
+                                                             this->ansatz_space(),
+                                                             *diffusion_factor->component(qq),
+                                                             *diffusion_tensor->affine_part(),
+                                                             over_integrate));
       }
+      if (diffusion_factor->has_affine_part()) {
+        penalty_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                     this->ansatz_space().mapper().size(),
+                                                     PenaltyProductType::pattern(this->test_space(),
+                                                                                 this->ansatz_space()));
+        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
+                                                             this->test_space(),
+                                                             global_grid_view,
+                                                             this->ansatz_space(),
+                                                             *diffusion_factor->affine_part(),
+                                                             *diffusion_tensor->affine_part(),
+                                                             over_integrate));
+      }
+      for (auto& product : penalty_products)
+        system_assembler.add(*product);
+    }
 
-      this->inherit_parameter_type(*(this->matrix_), "lhs");
-      this->inherit_parameter_type(*(this->rhs_), "rhs");
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end())
-        this->products_.insert(std::make_pair("l2", l2_product_matrix));
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end())
-        this->products_.insert(std::make_pair("h1_semi", h1_semi_product_matrix));
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end())
-        this->products_.insert(std::make_pair("h1", h1_product_matrix));
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end())
-        this->products_.insert(std::make_pair("elliptic", elliptic_product_matrix));
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end())
-        this->products_.insert(std::make_pair("boundary_l2", boundary_l2_product_matrix));
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end())
-        this->products_.insert(std::make_pair("penalty", penalty_product_matrix));
-      if (std::find(only_these_products_.begin(), only_these_products_.end(), "energy") != only_these_products_.end())
-        this->products_.insert(std::make_pair("energy",
-                                              std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
+    // do the actual work
+    system_assembler.assemble();
 
-      this->finalize_init();
-    } // if (!this->container_based_initialized_)
+    // finalize
+    this->inherit_parameter_type(*(this->matrix_), "lhs");
+    this->inherit_parameter_type(*(this->rhs_), "rhs");
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end())
+      this->products_.insert(std::make_pair("l2", l2_product_matrix));
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end())
+      this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end())
+      this->products_.insert(std::make_pair("elliptic", elliptic_product_matrix));
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end())
+      this->products_.insert(std::make_pair("boundary_l2", boundary_l2_product_matrix));
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end())
+      this->products_.insert(std::make_pair("penalty", penalty_product_matrix));
+    if (std::find(only_these_products_.begin(), only_these_products_.end(), "energy") != only_these_products_.end())
+      this->products_.insert(std::make_pair("energy",
+                                            std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
+
+    this->finalize_init();
   } // ... init(...)
 
   DUNE_STUFF_SSIZE_T num_subdomains() const
@@ -738,7 +729,7 @@ public:
     oversampled_discretization.init();
 
     DiscreteFunction< typename OversampledDiscretizationType::AnsatzSpaceType, VectorType >
-        current_oversampled_solution(*oversampled_discretization.ansatz_space());
+        current_oversampled_solution(oversampled_discretization.ansatz_space());
     const Operators::Projection< typename OversampledDiscretizationType::GridViewType >
         oversampled_projection_operator(oversampled_discretization.grid_view());
     oversampled_projection_operator.apply(current_global_solution, current_oversampled_solution);
@@ -760,7 +751,7 @@ public:
 //    current_oversampled_solution.visualize(prefix + "correction_oversampled");
 
     DiscreteFunction< typename LocalDiscretizationType::AnsatzSpaceType, VectorType >
-        local_solution(*this->local_discretizations_[subdomain]->ansatz_space());
+        local_solution(this->local_discretizations_[subdomain]->ansatz_space());
     const Operators::Projection< typename LocalDiscretizationType::GridViewType >
         local_projection_operator(this->local_discretizations_[subdomain]->grid_view());
     local_projection_operator.apply(current_oversampled_solution, local_solution);
@@ -1083,8 +1074,8 @@ private:
     if (local_matrix.has_affine_part()) {
       if (!global_matrix.has_affine_part())
         global_matrix.register_affine_part(this->test_space_.mapper().size(),
-                                    this->ansatz_space_.mapper().size(),
-                                    pattern_);
+                                           this->ansatz_space_.mapper().size(),
+                                           pattern_);
       copy_local_to_global_matrix(*(local_matrix.affine_part()),
                                   local_pattern,
                                   subdomain,
@@ -1169,20 +1160,20 @@ private:
     typedef GDT::LocalOperator::Codim1BoundaryIntegral< GDT::LocalEvaluation::SWIPDG::BoundaryLHS< DiffusionFactorType, DiffusionTensorType > >
         DirichletOperatorType;
     typedef GDT::LocalAssembler::Codim1BoundaryMatrix< DirichletOperatorType > DirichletMatrixAssemblerType;
-    std::vector< DirichletOperatorType* > dirichlet_operators;
-    std::vector< DirichletMatrixAssemblerType* > dirichlet_matrix_assemblers;
+    std::vector< std::unique_ptr< DirichletOperatorType > > dirichlet_operators;
+    std::vector< std::unique_ptr< DirichletMatrixAssemblerType > > dirichlet_matrix_assemblers;
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
-      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->component(qq)),
-                                                              *(diffusion_tensor.affine_part())));
-      dirichlet_matrix_assemblers.push_back(new DirichletMatrixAssemblerType(*(dirichlet_operators[qq])));
+      dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->component(qq)),
+                                                                 *(diffusion_tensor.affine_part())));
+      dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*(dirichlet_operators[qq])));
       boundary_assembler.add(*(dirichlet_matrix_assemblers[qq]),
                              *(local_matrix.component(qq)),
                              new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
     if (this->problem().diffusion_factor()->has_affine_part()) {
-      dirichlet_operators.push_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->affine_part()),
-                                                              *(diffusion_tensor.affine_part())));
-      dirichlet_matrix_assemblers.push_back(new DirichletMatrixAssemblerType(*(
+      dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->affine_part()),
+                                                                 *(diffusion_tensor.affine_part())));
+      dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*(
           dirichlet_operators[dirichlet_operators.size() - 1])));
       boundary_assembler.add(*(dirichlet_matrix_assemblers[dirichlet_matrix_assemblers.size() - 1]),
                              *(local_matrix.affine_part()),
@@ -1194,40 +1185,40 @@ private:
     typedef typename ProblemType::FunctionType::NonparametricType NeumannType;
     typedef GDT::LocalFunctional::Codim1Integral< GDT::LocalEvaluation::Product< NeumannType > > NeumannFunctionalType;
     typedef GDT::LocalAssembler::Codim1Vector< NeumannFunctionalType > NeumannVectorAssemblerType;
-    std::vector< NeumannFunctionalType* > neumann_functionals;
-    std::vector< NeumannVectorAssemblerType* > neumann_vector_assemblers;
+    std::vector< std::unique_ptr< NeumannFunctionalType > > neumann_functionals;
+    std::vector< std::unique_ptr< NeumannVectorAssemblerType > > neumann_vector_assemblers;
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().neumann()->num_components(); ++qq) {
-      neumann_functionals.push_back(new NeumannFunctionalType(*(this->problem().neumann()->component(qq))));
-      neumann_vector_assemblers.push_back(new NeumannVectorAssemblerType(*(neumann_functionals[qq])));
+      neumann_functionals.emplace_back(new NeumannFunctionalType(*(this->problem().neumann()->component(qq))));
+      neumann_vector_assemblers.emplace_back(new NeumannVectorAssemblerType(*(neumann_functionals[qq])));
       boundary_assembler.add(*(neumann_vector_assemblers[qq]),
                              *(local_vector.component(this->problem().force()->num_components() + qq)),
                              new Stuff::Grid::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
     if (this->problem().neumann()->has_affine_part()) {
-      neumann_functionals.push_back(new NeumannFunctionalType(*(this->problem().neumann()->affine_part())));
-      neumann_vector_assemblers.push_back(new NeumannVectorAssemblerType(*(
-          neumann_functionals[neumann_functionals.size() - 1])));
+      neumann_functionals.emplace_back(new NeumannFunctionalType(*(this->problem().neumann()->affine_part())));
+      neumann_vector_assemblers.emplace_back(new NeumannVectorAssemblerType(*(
+        neumann_functionals[neumann_functionals.size() - 1])));
       boundary_assembler.add(*(neumann_vector_assemblers[neumann_vector_assemblers.size() - 1]),
                              *(local_vector.affine_part()),
                              new Stuff::Grid::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
 
     // * dirichlet boundary terms
-    typedef typename ProblemType::FunctionType::NonparametricType  DirichletType;
+    typedef typename ProblemType::FunctionType::NonparametricType DirichletType;
     typedef GDT::LocalFunctional::Codim1Integral< GDT::LocalEvaluation::SWIPDG::BoundaryRHS< DiffusionFactorType,
                                                                                              DirichletType,
                                                                                              DiffusionTensorType > >
         DirichletFunctionalType;
     typedef GDT::LocalAssembler::Codim1Vector< DirichletFunctionalType > DirichletVectorAssemblerType;
-    std::vector< DirichletFunctionalType* > dirichlet_functionals;
-    std::vector< DirichletVectorAssemblerType* > dirichlet_vector_assemblers;
+    std::vector< std::unique_ptr< DirichletFunctionalType > > dirichlet_functionals;
+    std::vector< std::unique_ptr< DirichletVectorAssemblerType > > dirichlet_vector_assemblers;
     size_t component_index = this->problem().force()->num_components() + this->problem().neumann()->num_components();
     if (this->problem().diffusion_factor()->has_affine_part()) {
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet()->num_components(); ++qq) {
-        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->affine_part()),
-                                                                    *(diffusion_tensor.affine_part()),
-                                                                    *(this->problem().dirichlet()->component(qq))));
-        dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
+        dirichlet_functionals.emplace_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->affine_part()),
+                                                                       *(diffusion_tensor.affine_part()),
+                                                                       *(this->problem().dirichlet()->component(qq))));
+        dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
                                *(local_vector.component(component_index)),
@@ -1237,10 +1228,10 @@ private:
     }
     if (this->problem().dirichlet()->has_affine_part()) {
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
-        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(qq)),
-                                                                    *(diffusion_tensor.affine_part()),
-                                                                    *(this->problem().dirichlet()->affine_part())));
-        dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
+        dirichlet_functionals.emplace_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(qq)),
+                                                                       *(diffusion_tensor.affine_part()),
+                                                                       *(this->problem().dirichlet()->affine_part())));
+        dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
                                *(local_vector.component(component_index)),
@@ -1250,10 +1241,10 @@ private:
     }
     for (DUNE_STUFF_SSIZE_T pp = 0; pp < this->problem().diffusion_factor()->num_components(); ++ pp) {
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().dirichlet()->num_components(); ++qq) {
-        dirichlet_functionals.push_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(pp)),
-                                                                    *(diffusion_tensor.affine_part()),
-                                                                    *(this->problem().dirichlet()->component(qq))));
-        dirichlet_vector_assemblers.push_back(new DirichletVectorAssemblerType(*(
+        dirichlet_functionals.emplace_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(pp)),
+                                                                       *(diffusion_tensor.affine_part()),
+                                                                       *(this->problem().dirichlet()->component(qq))));
+        dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(
             dirichlet_functionals[dirichlet_functionals.size() - 1])));
         boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
                                *(local_vector.component(component_index)),
@@ -1264,14 +1255,6 @@ private:
 
     // do the actual work
     boundary_assembler.assemble();
-
-    // clean up
-    for (auto& element : dirichlet_vector_assemblers) delete element;
-    for (auto& element : dirichlet_functionals)       delete element;
-    for (auto& element : neumann_vector_assemblers)   delete element;
-    for (auto& element : neumann_functionals)         delete element;
-    for (auto& element : dirichlet_matrix_assemblers) delete element;
-    for (auto& element : dirichlet_operators)         delete element;
   } // ... assemble_boundary_contributions(...)
 
   /**
@@ -1304,12 +1287,12 @@ private:
                                                                                              DiffusionTensorType > >
         CouplingOperatorType;
     typedef GDT::LocalAssembler::Codim1CouplingMatrix< CouplingOperatorType > CouplingMatrixAssemblerType;
-    std::vector< CouplingOperatorType* > coupling_operators;
-    std::vector< CouplingMatrixAssemblerType* > coupling_matrix_assemblers;
+    std::vector< std::unique_ptr< CouplingOperatorType > > coupling_operators;
+    std::vector< std::unique_ptr< CouplingMatrixAssemblerType > > coupling_matrix_assemblers;
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
-      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor()->component(qq)),
-                                                            *(diffusion_tensor.affine_part())));
-      coupling_matrix_assemblers.push_back(new CouplingMatrixAssemblerType(*(coupling_operators[qq])));
+      coupling_operators.emplace_back(new CouplingOperatorType(*(this->problem().diffusion_factor()->component(qq)),
+                                                               *(diffusion_tensor.affine_part())));
+      coupling_matrix_assemblers.emplace_back(new CouplingMatrixAssemblerType(*(coupling_operators[qq])));
       coupling_assembler.addLocalAssembler(*(coupling_matrix_assemblers[qq]),
                                            *(inside_inside_matrix.component(qq)),
                                            *(inside_outside_matrix.component(qq)),
@@ -1317,9 +1300,9 @@ private:
                                            *(outside_outside_matrix.component(qq)));
     }
     if (this->problem().diffusion_factor()->has_affine_part()) {
-      coupling_operators.push_back(new CouplingOperatorType(*(this->problem().diffusion_factor()->affine_part()),
-                                                            *(diffusion_tensor.affine_part())));
-      coupling_matrix_assemblers.push_back(new CouplingMatrixAssemblerType(*(
+      coupling_operators.emplace_back(new CouplingOperatorType(*(this->problem().diffusion_factor()->affine_part()),
+                                                               *(diffusion_tensor.affine_part())));
+      coupling_matrix_assemblers.emplace_back(new CouplingMatrixAssemblerType(*(
           coupling_operators[coupling_operators.size() - 1])));
       coupling_assembler.addLocalAssembler(*(coupling_matrix_assemblers[coupling_matrix_assemblers.size() - 1]),
                                            *(inside_inside_matrix.affine_part()),
@@ -1330,10 +1313,6 @@ private:
 
     // do the actual work
     coupling_assembler.assemble();
-
-    // clean up
-    for (auto& element : coupling_matrix_assemblers)  delete element;
-    for (auto& element : coupling_operators)          delete element;
   } // ... assemble_coupling_contributions(...)
 
   void build_global_containers()

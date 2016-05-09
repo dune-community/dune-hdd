@@ -72,6 +72,7 @@ public:
   static Stuff::Common::Configuration default_config(const std::string sub_name = "")
   {
     Stuff::Common::Configuration config;
+    config["type"] = static_id();
     // diffusion factor
     typedef Pymor::Functions::Checkerboard< EntityType, DomainFieldType, dimDomain, RangeFieldType, 1 >
         CheckerBoardFunctionType;

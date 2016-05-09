@@ -3,6 +3,9 @@
 # Copyright Holders: Felix Schindler
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
+add_executable(example_linearelliptic_kuehlergrill "kuehlergrill.cc" ${COMMON_HEADER})
+target_link_libraries(example_linearelliptic_kuehlergrill ${COMMON_LIBS})
+
 add_executable(example_linearelliptic_OS2014_FVCA7__visualization "OS2014_FVCA7__visualization.cc" ${COMMON_HEADER})
 target_link_libraries(example_linearelliptic_OS2014_FVCA7__visualization ${COMMON_LIBS})
 
@@ -25,6 +28,7 @@ add_python_bindings(linearellipticexampleOS2015SISC62
                     OS2015_SISC__6_2__bindings_generator.hh "")
 
 foreach(target
+        example_linearelliptic_kuehlergrill
         example_linearelliptic_OS2014_FVCA7__visualization
         example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
         linearellipticexamplegenericmultiscale
