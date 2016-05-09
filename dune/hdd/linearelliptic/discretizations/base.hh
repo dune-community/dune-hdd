@@ -103,7 +103,7 @@ public:
 
   const GridViewType& grid_view() const
   {
-    return test_space_->grid_view();
+    return test_space_.grid_view();
   }
 
   const Stuff::Common::Configuration& boundary_info_cfg() const

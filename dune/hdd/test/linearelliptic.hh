@@ -372,7 +372,7 @@ public:
         compute_reference_solution();
         assert(reference_discretization_);
         assert(reference_solution_vector_);
-        const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
+        const ConstDiscreteFunctionType reference_solution(reference_discretization_->ansatz_space(),
                                                            *reference_solution_vector_,
                                                            "reference solution");
         return compute_norm(reference_grid_view, reference_solution, type);
@@ -415,7 +415,7 @@ public:
           = Stuff::Common::make_unique< VectorType >(current_discretization_->create_vector());
       current_discretization_->solve(*current_solution_vector_on_level_);
       time_to_solution_ = timer.elapsed();
-      const ConstDiscreteFunctionType current_refinement_solution(*current_discretization_->ansatz_space(),
+      const ConstDiscreteFunctionType current_refinement_solution(current_discretization_->ansatz_space(),
                                                                   *current_solution_vector_on_level_,
                                                                   "solution on current level");
       // prolong to reference grid part
@@ -426,7 +426,7 @@ public:
       const Operators::Prolongation< GridViewType > prolongation_operator(reference_grid_view);
       if (!current_solution_vector_)
         current_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
-      DiscreteFunctionType reference_refinement_solution(*(reference_discretization_->ansatz_space()),
+      DiscreteFunctionType reference_refinement_solution(reference_discretization_->ansatz_space(),
                                                          *current_solution_vector_,
                                                          "solution on reference grid part");
       prolongation_operator.apply(current_refinement_solution, reference_refinement_solution);
@@ -454,7 +454,7 @@ public:
       if (!reference_solution_computed_)
         compute_reference_solution();
       assert(reference_discretization_);
-      const ConstDiscreteFunctionType current_solution(*(reference_discretization_->ansatz_space()),
+      const ConstDiscreteFunctionType current_solution(reference_discretization_->ansatz_space(),
                                                        *current_solution_vector_,
                                                        "current solution");
       // compute error
@@ -467,7 +467,7 @@ public:
         compute_reference_solution();
         assert(reference_discretization_);
         assert(reference_solution_vector_);
-        const ConstDiscreteFunctionType reference_solution(*(reference_discretization_->ansatz_space()),
+        const ConstDiscreteFunctionType reference_solution(reference_discretization_->ansatz_space(),
                                                            *reference_solution_vector_,
                                                            "reference solution");
         return compute_norm(reference_grid_view, reference_solution- current_solution, type);
@@ -507,7 +507,7 @@ protected:
       if (!visualize_prefix_.empty()) {
         this->test_case_.problem().visualize(reference_discretization_->grid_view(),
                                              visualize_prefix_ + "_problem_reference");
-        ConstDiscreteFunctionType(*reference_discretization_->ansatz_space(),
+        ConstDiscreteFunctionType(reference_discretization_->ansatz_space(),
                                   *reference_solution_vector_,
                                   "reference solution").visualize(visualize_prefix_ + "_reference_solution");
       }

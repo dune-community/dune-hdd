@@ -123,8 +123,8 @@ public:
                                                                           zero_boundary_problem_,
                                                                           ss,
                                                                           only_these_products);
-      local_test_spaces_[ss] = local_discretizations_[ss]->test_space();
-      local_ansatz_spaces_[ss] = local_discretizations_[ss]->ansatz_space();
+      local_test_spaces_[ss]   = std::make_shared< TestSpaceType >(local_discretizations_[ss]->test_space());
+      local_ansatz_spaces_[ss] = std::make_shared< AnsatzSpaceType >(local_discretizations_[ss]->ansatz_space());
     }
   }
 
@@ -232,14 +232,14 @@ public:
               const ProblemType& prob,
               const std::vector< std::string >& only_these_products = {})
     : LocalDiscretizationsBaseType(grid_provider, prob, only_these_products)
-    , BaseType(std::make_shared< TestSpaceType >(grid_provider.ms_grid(), this->local_test_spaces_),
-               std::make_shared< AnsatzSpaceType >(grid_provider.ms_grid(), this->local_ansatz_spaces_),
+    , BaseType(*std::make_shared< TestSpaceType >(grid_provider.ms_grid(), this->local_test_spaces_),
+               *std::make_shared< AnsatzSpaceType >(grid_provider.ms_grid(), this->local_ansatz_spaces_),
                bound_inf_cfg,
                this->zero_boundary_problem_)
     , grid_provider_(grid_provider)
     , ms_grid_(grid_provider.ms_grid())
     , only_these_products_(only_these_products)
-    , pattern_(BaseType::test_space()->mapper().size())
+    , pattern_(BaseType::test_space().mapper().size())
     , local_matrices_(ms_grid_->size())
     , local_vectors_(ms_grid_->size())
     , inside_outside_patterns_(ms_grid_->size())
@@ -302,14 +302,14 @@ public:
 
         // create and copy the local patterns
         add_local_to_global_pattern(this->local_discretizations_[ss]->pattern(), ss, ss, pattern_);
-        const auto& inner_test_space = *(this->local_discretizations_[ss]->test_space());
-        const auto& inner_ansatz_space = *(this->local_discretizations_[ss]->ansatz_space());
+        const auto& inner_test_space = this->local_discretizations_[ss]->test_space();
+        const auto& inner_ansatz_space = this->local_discretizations_[ss]->ansatz_space();
         // walk the neighbors
         for (const size_t& nn : ms_grid_->neighborsOf(ss)) {
           // visit each coupling only once (assemble primally)
           if (ss < nn) {
-            const auto& outer_test_space = *(this->local_discretizations_[nn]->test_space());
-            const auto& outer_ansatz_space = *(this->local_discretizations_[nn]->ansatz_space());
+            const auto& outer_test_space = this->local_discretizations_[nn]->test_space();
+            const auto& outer_ansatz_space = this->local_discretizations_[nn]->ansatz_space();
             const auto inside_outside_grid_part = ms_grid_->couplingGridPart(ss, nn);
             const auto outside_inside_grid_part = ms_grid_->couplingGridPart(nn, ss);
             // create the coupling patterns
@@ -332,16 +332,16 @@ public:
       //   * to assemble the coupling matrices
       out << prefix << "walking subdomains for the second time... " << std::flush;
       for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
-        const auto& inner_test_mapper = this->local_discretizations_[ss]->test_space()->mapper();
-        const auto& inner_ansatz_mapper = this->local_discretizations_[ss]->ansatz_space()->mapper();
+        const auto& inner_test_mapper = this->local_discretizations_[ss]->test_space().mapper();
+        const auto& inner_ansatz_mapper = this->local_discretizations_[ss]->ansatz_space().mapper();
         if (ms_grid_->boundary(ss))
           assemble_boundary_contributions(ss);
         // walk the neighbors
         for (const size_t& nn : ms_grid_->neighborsOf(ss)) {
           // visit each coupling only once (assemble primaly)
           if (ss < nn) {
-            const auto& outer_test_mapper = this->local_discretizations_[nn]->test_space()->mapper();
-            const auto& outer_ansatz_mapper = this->local_discretizations_[nn]->ansatz_space()->mapper();
+            const auto& outer_test_mapper = this->local_discretizations_[nn]->test_space().mapper();
+            const auto& outer_ansatz_mapper = this->local_discretizations_[nn]->ansatz_space().mapper();
             // get the patterns
             const auto in_out_result = inside_outside_patterns_[ss].find(nn);
             if (in_out_result == inside_outside_patterns_[ss].end())
@@ -393,8 +393,8 @@ public:
       typedef typename MsGridType::GlobalGridPartType::GridViewType GlobalGridViewType;
       const auto global_grid_part = ms_grid_->globalGridPart();
       const auto global_grid_view = global_grid_part.gridView();
-      GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(*this->test_space(),
-                                                                                                  *this->ansatz_space(),
+      GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(this->test_space(),
+                                                                                                  this->ansatz_space(),
                                                                                                   global_grid_view);
       const size_t over_integrate = 2;
       // * L2
@@ -404,14 +404,14 @@ public:
       auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()
           || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
-        l2_product_matrix->register_affine_part(this->test_space()->mapper().size(),
-                                                this->ansatz_space()->mapper().size(),
-                                                L2ProductType::pattern(*this->test_space(),
-                                                                       *this->ansatz_space()));
+        l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                this->ansatz_space().mapper().size(),
+                                                L2ProductType::pattern(this->test_space(),
+                                                                       this->ansatz_space()));
         l2_product = DSC::make_unique< L2ProductType >(*(l2_product_matrix->affine_part()),
-                                                       *this->test_space(),
+                                                       this->test_space(),
                                                        global_grid_view,
-                                                       *this->ansatz_space(),
+                                                       this->ansatz_space(),
                                                        over_integrate);
         system_assembler.add(*l2_product);
       }
@@ -422,14 +422,14 @@ public:
       auto h1_semi_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()
           || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
-        h1_semi_product_matrix->register_affine_part(this->test_space()->mapper().size(),
-                                                this->ansatz_space()->mapper().size(),
-                                                H1ProductType::pattern(*this->test_space(),
-                                                                       *this->ansatz_space()));
+        h1_semi_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                this->ansatz_space().mapper().size(),
+                                                H1ProductType::pattern(this->test_space(),
+                                                                       this->ansatz_space()));
         h1_product = DSC::make_unique< H1ProductType >(*(h1_semi_product_matrix->affine_part()),
-                                                       *this->test_space(),
+                                                       this->test_space(),
                                                        global_grid_view,
-                                                       *this->ansatz_space(),
+                                                       this->ansatz_space(),
                                                        over_integrate);
         system_assembler.add(*h1_product);
       }
@@ -447,27 +447,27 @@ public:
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end()) {
         for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
           const auto id = elliptic_product_matrix->register_component(diffusion_factor->coefficient(qq),
-                                                                      this->test_space()->mapper().size(),
-                                                                      this->ansatz_space()->mapper().size(),
-                                                                      EllipticProductType::pattern(*this->test_space(),
-                                                                                                   *this->ansatz_space()));
+                                                                      this->test_space().mapper().size(),
+                                                                      this->ansatz_space().mapper().size(),
+                                                                      EllipticProductType::pattern(this->test_space(),
+                                                                                                   this->ansatz_space()));
           elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->component(id),
-                                                                 *this->test_space(),
+                                                                 this->test_space(),
                                                                  global_grid_view,
-                                                                 *this->ansatz_space(),
+                                                                 this->ansatz_space(),
                                                                  *diffusion_factor->component(qq),
                                                                  *diffusion_tensor->affine_part(),
                                                                  over_integrate));
         }
         if (diffusion_factor->has_affine_part()) {
-          elliptic_product_matrix->register_affine_part(this->test_space()->mapper().size(),
-                                                        this->ansatz_space()->mapper().size(),
-                                                        EllipticProductType::pattern(*this->test_space(),
-                                                                                     *this->ansatz_space()));
+          elliptic_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                        this->ansatz_space().mapper().size(),
+                                                        EllipticProductType::pattern(this->test_space(),
+                                                                                     this->ansatz_space()));
           elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->affine_part(),
-                                                                 *this->test_space(),
+                                                                 this->test_space(),
                                                                  global_grid_view,
-                                                                 *this->ansatz_space(),
+                                                                 this->ansatz_space(),
                                                                  *diffusion_factor->affine_part(),
                                                                  *diffusion_tensor->affine_part(),
                                                                  over_integrate));
@@ -481,14 +481,14 @@ public:
       std::unique_ptr< BoundaryL2ProductType > boundary_l2_product;
       auto boundary_l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end()) {
-        boundary_l2_product_matrix->register_affine_part(this->test_space()->mapper().size(),
-                                                         this->ansatz_space()->mapper().size(),
-                                                         BoundaryL2ProductType::pattern(*this->test_space(),
-                                                                                        *this->ansatz_space()));
+        boundary_l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                         this->ansatz_space().mapper().size(),
+                                                         BoundaryL2ProductType::pattern(this->test_space(),
+                                                                                        this->ansatz_space()));
         boundary_l2_product = DSC::make_unique< BoundaryL2ProductType >(*(boundary_l2_product_matrix->affine_part()),
-                                                                        *this->test_space(),
+                                                                        this->test_space(),
                                                                         global_grid_view,
-                                                                        *this->ansatz_space(),
+                                                                        this->ansatz_space(),
                                                                         over_integrate);
         system_assembler.add(*boundary_l2_product);
       }
@@ -500,27 +500,27 @@ public:
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end()) {
         for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
           const auto id = penalty_product_matrix->register_component(diffusion_factor->coefficient(qq),
-                                                                     this->test_space()->mapper().size(),
-                                                                     this->ansatz_space()->mapper().size(),
-                                                                     PenaltyProductType::pattern(*this->test_space(),
-                                                                                                 *this->ansatz_space()));
+                                                                     this->test_space().mapper().size(),
+                                                                     this->ansatz_space().mapper().size(),
+                                                                     PenaltyProductType::pattern(this->test_space(),
+                                                                                                 this->ansatz_space()));
           penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
-                                                               *this->test_space(),
+                                                               this->test_space(),
                                                                global_grid_view,
-                                                               *this->ansatz_space(),
+                                                               this->ansatz_space(),
                                                                *diffusion_factor->component(qq),
                                                                *diffusion_tensor->affine_part(),
                                                                over_integrate));
         }
         if (diffusion_factor->has_affine_part()) {
-          penalty_product_matrix->register_affine_part(this->test_space()->mapper().size(),
-                                                       this->ansatz_space()->mapper().size(),
-                                                       PenaltyProductType::pattern(*this->test_space(),
-                                                                                   *this->ansatz_space()));
+          penalty_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                       this->ansatz_space().mapper().size(),
+                                                       PenaltyProductType::pattern(this->test_space(),
+                                                                                   this->ansatz_space()));
           penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
-                                                               *this->test_space(),
+                                                               this->test_space(),
                                                                global_grid_view,
-                                                               *this->ansatz_space(),
+                                                               this->ansatz_space(),
                                                                *diffusion_factor->affine_part(),
                                                                *diffusion_tensor->affine_part(),
                                                                over_integrate));
@@ -580,14 +580,14 @@ public:
     if ((std::make_signed< size_t >::type)(ss) >= num_subdomains())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "0 <= ss < num_subdomains() = " << num_subdomains() << " is not true for ss = " << ss << "!");
-    if (global_vector.size() != this->ansatz_space()->mapper().size())
+    if (global_vector.size() != this->ansatz_space().mapper().size())
       DUNE_THROW(Stuff::Exceptions::index_out_of_range,
                  "The size() of global_vector (" << global_vector.dim()
-                 << ") does not match the size() of the ansatz space (" << this->ansatz_space()->mapper().size() << ")!");
+                 << ") does not match the size() of the ansatz space (" << this->ansatz_space().mapper().size() << ")!");
     assert(ss < this->local_discretizations_.size());
     VectorType local_vector = this->local_discretizations_[ss]->create_vector();
     for (size_t ii = 0; ii < local_vector.size(); ++ii)
-      local_vector.set_entry(ii, global_vector.get_entry(this->ansatz_space()->mapper().mapToGlobal(ss, ii)));
+      local_vector.set_entry(ii, global_vector.get_entry(this->ansatz_space().mapper().mapToGlobal(ss, ii)));
     return local_vector;
   } // ... localize_vetor(...)
 
@@ -597,14 +597,14 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given,
                  "Given local_vectors has wrong size (is " << local_vectors.size() << ", should be "
                  << num_subdomains() << ")!");
-    VectorType ret(this->ansatz_space()->mapper().size());
+    VectorType ret(this->ansatz_space().mapper().size());
     for (size_t ss = 0; ss < boost::numeric_cast< size_t >(num_subdomains()); ++ss) {
       const auto& local_vector = local_vectors[ss];
-      if (local_vector.size() != this->local_discretizations_[ss]->ansatz_space()->mapper().size())
+      if (local_vector.size() != this->local_discretizations_[ss]->ansatz_space().mapper().size())
         DUNE_THROW(Stuff::Exceptions::wrong_input_given,
                    "Given local_vectors[" << ss << "] has wrong size (is "
                    << local_vector.size() << ", should be "
-                   << this->local_discretizations_[ss]->ansatz_space()->mapper().size() << ")!");
+                   << this->local_discretizations_[ss]->ansatz_space().mapper().size() << ")!");
       copy_local_to_global_vector(local_vector, ss, ret);
     }
     return ret;
@@ -713,12 +713,12 @@ public:
     if (local_vectors.size() != ms_grid_->size())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given,
                  "local_vectors is of size " << local_vectors.size() << " and should be of size " << ms_grid_->size());
-    VectorType vector(this->ansatz_space()->mapper().size());
+    VectorType vector(this->ansatz_space().mapper().size());
     for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
-      if (local_vectors[ss].size() != this->local_discretizations_[ss]->ansatz_space()->mapper().size())
+      if (local_vectors[ss].size() != this->local_discretizations_[ss]->ansatz_space().mapper().size())
         DUNE_THROW(Stuff::Exceptions::wrong_input_given,
                    "local_vectors[" << ss << "] is of size " << local_vectors[ss].size() << " and should be of size "
-                   << this->local_discretizations_[ss]->ansatz_space()->mapper().size());
+                   << this->local_discretizations_[ss]->ansatz_space().mapper().size());
       if (!local_vectors[ss].valid())
         DUNE_THROW(Stuff::Exceptions::wrong_input_given, "local_vectors[" << ss << "] contains NaN or INF!");
       copy_local_to_global_vector(local_vectors[ss], ss, vector);
@@ -726,7 +726,7 @@ public:
 
 //    const std::string prefix = "subdomain_" + DSC::toString(subdomain) + "_";
 
-    const ConstDiscreteFunction< AnsatzSpaceType, VectorType > current_global_solution(*this->ansatz_space(), vector);
+    const ConstDiscreteFunction< AnsatzSpaceType, VectorType > current_global_solution(this->ansatz_space(), vector);
 //    current_global_solution.visualize(prefix + "current_solution_global");
 
     typedef SWIPDG< typename MsGridType::GridType, Stuff::Grid::ChooseLayer::local_oversampled, RangeFieldType, dimRange
@@ -745,7 +745,7 @@ public:
 //    current_oversampled_solution.visualize(prefix + "current_solution_oversampled");
 
     if (!oversampled_discretization.rhs()->has_affine_part())
-      oversampled_discretization.rhs()->register_affine_part(oversampled_discretization.test_space()->mapper().size());
+      oversampled_discretization.rhs()->register_affine_part(oversampled_discretization.test_space().mapper().size());
     if (oversampled_discretization.system_matrix()->parametric()) {
       const auto oversampled_system_matrix = oversampled_discretization.system_matrix()->freeze_parameter(mu);
       *(oversampled_discretization.rhs()->affine_part())
@@ -1050,10 +1050,10 @@ private:
                                    PatternType& global) const
   {
     for (size_t local_ii = 0; local_ii < local.size(); ++local_ii) {
-      const size_t global_ii = this->test_space()->mapper().mapToGlobal(test_subdomain, local_ii);
+      const size_t global_ii = this->test_space().mapper().mapToGlobal(test_subdomain, local_ii);
       const auto& local_rows = local.inner(local_ii);
       for (const auto& local_jj : local_rows) {
-        const size_t global_jj = this->ansatz_space()->mapper().mapToGlobal(ansatz_subdomain, local_jj);
+        const size_t global_jj = this->ansatz_space().mapper().mapToGlobal(ansatz_subdomain, local_jj);
         global.insert(global_ii, global_jj);
       }
     }
@@ -1070,8 +1070,8 @@ private:
       ssize_t comp = find_component(global_matrix, *coefficient);
       if (comp < 0)
         comp = global_matrix.register_component(coefficient,
-                                                this->test_space()->mapper().size(),
-                                                this->ansatz_space()->mapper().size(),
+                                                this->test_space().mapper().size(),
+                                                this->ansatz_space().mapper().size(),
                                                 pattern_);
       assert(comp >= 0);
       copy_local_to_global_matrix(*(local_matrix.component(qq)),
@@ -1082,8 +1082,8 @@ private:
     }
     if (local_matrix.has_affine_part()) {
       if (!global_matrix.has_affine_part())
-        global_matrix.register_affine_part(this->test_space_->mapper().size(),
-                                    this->ansatz_space_->mapper().size(),
+        global_matrix.register_affine_part(this->test_space_.mapper().size(),
+                                    this->ansatz_space_.mapper().size(),
                                     pattern_);
       copy_local_to_global_matrix(*(local_matrix.affine_part()),
                                   local_pattern,
@@ -1101,9 +1101,9 @@ private:
                                    Stuff::LA::MatrixInterface< MG >& global_matrix) const
   {
     for (size_t local_ii = 0; local_ii < local_pattern.size(); ++local_ii) {
-      const size_t global_ii = this->test_space()->mapper().mapToGlobal(test_subdomain, local_ii);
+      const size_t global_ii = this->test_space().mapper().mapToGlobal(test_subdomain, local_ii);
       for (const size_t& local_jj : local_pattern.inner(local_ii)) {
-        const size_t global_jj = this->ansatz_space()->mapper().mapToGlobal(ansatz_subdomain, local_jj);
+        const size_t global_jj = this->ansatz_space().mapper().mapToGlobal(ansatz_subdomain, local_jj);
         global_matrix.add_to_entry(global_ii, global_jj, local_matrix.get_entry(local_ii, local_jj));
       }
     }
@@ -1118,7 +1118,7 @@ private:
       ssize_t comp = find_component(global_vector, *coefficient);
       if (comp < 0)
         comp = global_vector.register_component(coefficient,
-                                                this->test_space()->mapper().size());
+                                                this->test_space().mapper().size());
       assert(comp >= 0);
       copy_local_to_global_vector(*(local_vector.component(qq)),
                                   subdomain,
@@ -1126,7 +1126,7 @@ private:
     }
     if (local_vector.has_affine_part()) {
       if (!global_vector.has_affine_part())
-        global_vector.register_affine_part(this->test_space()->mapper().size());
+        global_vector.register_affine_part(this->test_space().mapper().size());
       copy_local_to_global_vector(*(local_vector.affine_part()),
                                   subdomain,
                                   *(global_vector.affine_part()));
@@ -1139,7 +1139,7 @@ private:
                                    Stuff::LA::VectorInterface< VG >& global_vector) const
   {
     for (size_t local_ii = 0; local_ii < local_vector.size(); ++local_ii) {
-      const size_t global_ii = this->test_space()->mapper().mapToGlobal(subdomain, local_ii);
+      const size_t global_ii = this->test_space().mapper().mapToGlobal(subdomain, local_ii);
       global_vector.add_to_entry(global_ii, local_vector.get_entry(local_ii));
     }
   } // ... copy_local_to_global_vector(...)
@@ -1149,8 +1149,8 @@ private:
     typedef typename MsGridType::BoundaryGridPartType BoundaryGridPartType;
     typedef typename LocalDiscretizationType::TestSpaceType   LocalTestSpaceType;
     typedef typename LocalDiscretizationType::AnsatzSpaceType LocalAnsatzSpaceType;
-    const LocalTestSpaceType&   local_test_space   = *(this->local_discretizations_[subdomain]->test_space());
-    const LocalAnsatzSpaceType& local_ansatz_space = *(this->local_discretizations_[subdomain]->ansatz_space());
+    const LocalTestSpaceType&   local_test_space   = this->local_discretizations_[subdomain]->test_space();
+    const LocalAnsatzSpaceType& local_ansatz_space = this->local_discretizations_[subdomain]->ansatz_space();
     typedef GDT::SystemAssembler< LocalTestSpaceType, BoundaryGridPartType, LocalAnsatzSpaceType > BoundaryAssemblerType;
     BoundaryAssemblerType boundary_assembler(local_test_space,
                                              local_ansatz_space,
@@ -1287,10 +1287,10 @@ private:
   {
     typedef typename LocalDiscretizationType::TestSpaceType   LocalTestSpaceType;
     typedef typename LocalDiscretizationType::AnsatzSpaceType LocalAnsatzSpaceType;
-    const LocalTestSpaceType&   inner_test_space   = *(this->local_discretizations_[subdomain]->test_space());
-    const LocalAnsatzSpaceType& inner_ansatz_space = *(this->local_discretizations_[subdomain]->ansatz_space());
-    const LocalTestSpaceType&   outer_test_space   = *(this->local_discretizations_[neighbour]->test_space());
-    const LocalAnsatzSpaceType& outer_ansatz_space = *(this->local_discretizations_[neighbour]->ansatz_space());
+    const LocalTestSpaceType&   inner_test_space   = this->local_discretizations_[subdomain]->test_space();
+    const LocalAnsatzSpaceType& inner_ansatz_space = this->local_discretizations_[subdomain]->ansatz_space();
+    const LocalTestSpaceType&   outer_test_space   = this->local_discretizations_[neighbour]->test_space();
+    const LocalAnsatzSpaceType& outer_ansatz_space = this->local_discretizations_[neighbour]->ansatz_space();
     CouplingAssembler coupling_assembler(inner_test_space, inner_ansatz_space,
                                          outer_test_space, outer_ansatz_space,
                                          ms_grid_->couplingGridPart(subdomain, neighbour));

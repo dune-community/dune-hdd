@@ -136,7 +136,7 @@ public:
     assert(this->last_computed_refinement_ == this->current_refinement_);
     assert(this->current_solution_vector_);
     typedef typename StudyBaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
-    const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
+    const ConstDiscreteFunctionType current_solution(this->reference_discretization_->ansatz_space(),
                                                      *this->current_solution_vector_,
                                                      "current solution");
     // compute error
@@ -147,7 +147,7 @@ public:
       assert(this->reference_discretization_);
       assert(this->reference_solution_vector_);
       // get reference solution
-      const ConstDiscreteFunctionType reference_solution(*(this->reference_discretization_->ansatz_space()),
+      const ConstDiscreteFunctionType reference_solution(this->reference_discretization_->ansatz_space(),
                                                          *this->reference_solution_vector_,
                                                          "reference solution");
       // define error norm
@@ -164,7 +164,7 @@ public:
                             Estimators::internal::SWIPDG::over_integrate);
       // prepare
       local_energy_norm.prepare();
-      const auto ms_grid = this->current_discretization_->ansatz_space()->ms_grid();
+      const auto ms_grid = this->current_discretization_->ansatz_space().ms_grid();
       const auto current_grid_view = this->current_discretization_->grid_view();
       Stuff::Grid::EntityInlevelSearch< typename DiscretizationType::GridViewType > entity_search(current_grid_view);
       Stuff::LA::CommonDenseVector< double > error_indicators(ms_grid->size(), 0.0);
@@ -214,13 +214,13 @@ public:
     // get current solution
     const_cast< ThisType& >(*this).compute_on_current_refinement();
     assert(this->current_solution_vector_on_level_);
-    auto indicators = EstimatorType::estimate_local(*this->current_discretization_->ansatz_space(),
+    auto indicators = EstimatorType::estimate_local(this->current_discretization_->ansatz_space(),
                                                     *this->current_solution_vector_on_level_,
                                                     this->test_case_.problem(),
                                                     type,
                                                     this->test_case_.parameters());
     if (!this->visualize_prefix_.empty())
-      visualize_indicators(*this->current_discretization_->ansatz_space()->ms_grid(),
+      visualize_indicators(*this->current_discretization_->ansatz_space().ms_grid(),
                            indicators,
                            type,
                            this->visualize_prefix_ + "_indicators_" + type + "_"
@@ -329,7 +329,7 @@ private:
     }
     // else we have a normal estimator
     assert(this->current_discretization_);
-    return EstimatorType::estimate(*this->current_discretization_->ansatz_space(),
+    return EstimatorType::estimate(this->current_discretization_->ansatz_space(),
                                    vector,
                                    this->test_case_.problem(),
                                    type,

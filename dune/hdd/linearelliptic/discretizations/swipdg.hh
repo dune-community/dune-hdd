@@ -176,17 +176,18 @@ public:
   } // SWIPDG(...)
 
 #if HAVE_DUNE_GRID_MULTISCALE
+
   SWIPDG(const MsGridProviderType& grid_provider,
          const Stuff::Common::Configuration& bound_inf_cfg,
          const ProblemType& prob,
          const int level_or_subdomain = 0,
          const std::vector< std::string >& only_these_products = {})
-    : BaseType(std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
-               std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
+    : BaseType(*std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
+               *std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
                bound_inf_cfg,
                prob)
     , beta_(GDT::LocalEvaluation::SIPDG::internal::default_beta(dimDomain))
-    , pattern_(EllipticOperatorType::pattern(*(BaseType::test_space()), *(BaseType::ansatz_space())))
+    , pattern_(EllipticOperatorType::pattern(BaseType::test_space(), BaseType::ansatz_space()))
     , only_these_products_(only_these_products)
   {
     // in case of parametric diffusion tensor this discretization is not affinely decomposable any more
@@ -195,6 +196,7 @@ public:
     if (!this->problem_.diffusion_tensor()->has_affine_part())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "The diffusion tensor must not be empty!");
   } // SWIPDG(...)
+
 #endif // HAVE_DUNE_GRID_MULTISCALE
 
   const PatternType& pattern() const

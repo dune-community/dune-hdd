@@ -148,7 +148,7 @@ public:
     assert(this->last_computed_refinement_ == this->current_refinement_);
     assert(this->current_solution_vector_);
     typedef typename StudyBaseType::ConstDiscreteFunctionType ConstDiscreteFunctionType;
-    const ConstDiscreteFunctionType current_solution(*(this->reference_discretization_->ansatz_space()),
+    const ConstDiscreteFunctionType current_solution(this->reference_discretization_->ansatz_space(),
                                                      *this->current_solution_vector_,
                                                      "current solution");
     // compute error
@@ -160,7 +160,7 @@ public:
       assert(this->reference_discretization_);
       assert(this->reference_solution_vector_);
       // get reference solution
-      const ConstDiscreteFunctionType reference_solution(*(this->reference_discretization_->ansatz_space()),
+      const ConstDiscreteFunctionType reference_solution(this->reference_discretization_->ansatz_space(),
                                                          *this->reference_solution_vector_,
                                                          "reference solution");
       // define error norm
@@ -234,7 +234,7 @@ public:
       const_cast< ThisType& >(*this).compute_on_current_refinement();
     }
     assert(this->current_solution_vector_on_level_);
-    auto indicators = EstimatorType::estimate_local(*this->current_discretization_->ansatz_space(),
+    auto indicators = EstimatorType::estimate_local(this->current_discretization_->ansatz_space(),
                                                     *this->current_solution_vector_on_level_,
                                                     this->test_case_.problem(),
                                                     type);
@@ -306,7 +306,7 @@ private:
       return estimate(vector, "eta_ESV2007_alt") / const_cast< ThisType& >(*this).current_error_norm("energy");
     else {
       assert(this->current_discretization_);
-      return EstimatorType::estimate(*this->current_discretization_->ansatz_space(),
+      return EstimatorType::estimate(this->current_discretization_->ansatz_space(),
                                      vector,
                                      this->test_case_.problem(),
                                      type);
