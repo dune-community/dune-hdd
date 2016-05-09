@@ -67,6 +67,8 @@ public:
   } // ... compute(...)
 }; // class Minimum< ..., 1, 1 >
 
+#if HAVE_EIGEN
+
 template< class FunctionType, class EntityType, int dimDomain >
 class Minimum< FunctionType, EntityType, dimDomain, dimDomain >
 {
@@ -75,7 +77,6 @@ class Minimum< FunctionType, EntityType, dimDomain, dimDomain >
 public:
   static RangeFieldType compute(const FunctionType& function, const EntityType& entity)
   {
-#if HAVE_EIGEN
     const auto local_function = function.local_function(entity);
     assert(local_function->order() == 0);
     const auto& reference_element = ReferenceElements< typename FunctionType::DomainFieldType
@@ -96,11 +97,18 @@ public:
       min_ev = std::min(min_ev, eigenvalue);
     }
     return min_ev;
-#else
-    static_assert(AlwaysFalse< FunctionType >::value, "You are missing eigen!");
-#endif
   } // ... compute(...)
 }; // class Minimum< ..., dimDomain, dimDomain >
+
+#else // HAVE_EIGEN
+
+template< class FunctionType, class EntityType, int dimDomain >
+class Minimum< FunctionType, EntityType, dimDomain, dimDomain >
+{
+  static_assert(AlwaysFalse< FunctionType >::value, "You are missing eigen!");
+};
+
+#endif // HAVE_EIGEN
 
 
 template< class FunctionType, class EntityType >
