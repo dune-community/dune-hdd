@@ -9,38 +9,32 @@ DEPENDENCYCHECK()
 BEGIN_TESTCASES()
 END_TESTCASES()
 
-# expectation targets
-add_library(obj_test_linearelliptic-block-swipdg-expectations_os2015_2daluconform
-            OBJECT
-            EXCLUDE_FROM_ALL
-            linearelliptic-block-swipdg-expectations_os2015_2daluconform.cxx)
-add_library(obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform
-            OBJECT
-            EXCLUDE_FROM_ALL
-            linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx)
-add_library(obj_test_linearelliptic-swipdg-expectations_os2014_2daluconform
-            OBJECT
-            EXCLUDE_FROM_ALL
-            linearelliptic-swipdg-expectations_os2014_2daluconform.cxx)
-
 # test target libs
 add_library(lib_test_OS2015_SISC__6_1__academic_example__estimator_study
             STATIC
             EXCLUDE_FROM_ALL
-            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2015_2daluconform>)
-add_dune_alugrid_flags(lib_test_OS2015_SISC__6_1__academic_example__estimator_study)
-
+            linearelliptic-block-swipdg-expectations_os2015_2daluconform.cxx)
 add_library(lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study
             STATIC
             EXCLUDE_FROM_ALL
-            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2015_2daluconform>)
-add_dune_alugrid_flags(lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study)
+            linearelliptic-block-swipdg-expectations_os2015_2daluconform.cxx)
 add_library(lib_test_OS2014_FVCA7__estimator_study
             STATIC
             EXCLUDE_FROM_ALL
-            $<TARGET_OBJECTS:obj_test_linearelliptic-swipdg-expectations_os2014_2daluconform>
-            $<TARGET_OBJECTS:obj_test_linearelliptic-block-swipdg-expectations_os2014_2daluconform>)
-add_dune_alugrid_flags(lib_test_OS2014_FVCA7__estimator_study)
+            linearelliptic-swipdg-expectations_os2014_2daluconform.cxx
+            linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx)
+
+foreach(target
+        lib_test_OS2015_SISC__6_1__academic_example__estimator_study
+        lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study
+        lib_test_OS2014_FVCA7__estimator_study)
+  add_dune_alugrid_flags(${target})
+  add_dune_mpi_flags(${target})
+  add_dune_parmetis_flags(${target})
+  add_dune_superlu_flags(${target})
+  add_dune_tbb_flags(${target})
+  add_dune_umfpack_flags(${target})
+endforeach(target)
 
 # test targets
 target_link_libraries(test_OS2015_SISC__6_1__academic_example__estimator_study
