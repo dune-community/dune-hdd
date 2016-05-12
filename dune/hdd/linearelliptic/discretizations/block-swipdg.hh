@@ -1200,8 +1200,8 @@ private:
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
       dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->component(qq)),
                                                                  *(diffusion_tensor.affine_part())));
-      dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*(dirichlet_operators[qq])));
-      boundary_assembler.add(*(dirichlet_matrix_assemblers[qq]),
+      dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*dirichlet_operators.back()));
+      boundary_assembler.add(*dirichlet_matrix_assemblers.back(),
                              *(local_matrix.component(qq)),
                              new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
@@ -1209,9 +1209,8 @@ private:
       logger.debug() << "  assembling dirichlet operator for diffusion affine part..." << std::endl;
       dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->affine_part()),
                                                                  *(diffusion_tensor.affine_part())));
-      dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*(
-          dirichlet_operators[dirichlet_operators.size() - 1])));
-      boundary_assembler.add(*(dirichlet_matrix_assemblers[dirichlet_matrix_assemblers.size() - 1]),
+      dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*dirichlet_operators.back()));
+      boundary_assembler.add(*dirichlet_matrix_assemblers.back(),
                              *(local_matrix.affine_part()),
                              new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
