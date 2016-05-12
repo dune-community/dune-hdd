@@ -160,8 +160,8 @@ public:
          const ProblemType& prob,
          const int level_or_subdomain = 0,
          const std::vector< std::string >& only_these_products = {})
-    : BaseType(*std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
-               *std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
+    : BaseType(SpaceProvider::create(grid_provider, level_or_subdomain),
+               SpaceProvider::create(grid_provider, level_or_subdomain),
                bound_inf_cfg,
                prob)
     , beta_(GDT::LocalEvaluation::SIPDG::internal::default_beta(dimDomain))
@@ -182,8 +182,8 @@ public:
          const ProblemType& prob,
          const int level_or_subdomain = 0,
          const std::vector< std::string >& only_these_products = {})
-    : BaseType(*std::make_shared< TestSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
-               *std::make_shared< AnsatzSpaceType >(SpaceProvider::create(grid_provider, level_or_subdomain)),
+    : BaseType(SpaceProvider::create(grid_provider, level_or_subdomain),
+               SpaceProvider::create(grid_provider, level_or_subdomain),
                bound_inf_cfg,
                prob)
     , beta_(GDT::LocalEvaluation::SIPDG::internal::default_beta(dimDomain))
