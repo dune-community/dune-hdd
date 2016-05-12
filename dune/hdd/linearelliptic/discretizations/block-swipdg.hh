@@ -35,6 +35,7 @@
 #include <dune/grid/multiscale/provider.hh>
 
 #include <dune/stuff/common/logging.hh>
+#include <dune/stuff/common/timedlogging.hh>
 #include <dune/stuff/common/configuration.hh>
 #include <dune/stuff/common/float_cmp.hh>
 #include <dune/stuff/common/fixed_map.hh>
@@ -259,17 +260,19 @@ public:
     return this->local_discretizations_;
   }
 
-  void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
+  void init(std::ostream& /*out*/ = Stuff::Common::Logger().devnull(), const std::string /*prefix*/ = "")
   {
     if (this->container_based_initialized_)
       return;
 
+    auto logger = Stuff::Common::TimedLogger().get("hdd.linearelliptic.discretizations.block-swipdg.init");
+
     const size_t subdomains = ms_grid_->size();
+    logger.info() << "discretizing on " << subdomains << " subdomains..." << std::endl;
     // walk the subdomains for the first time
     //   * to initialize the coupling pattern,
     //   * to finalize the global sparsity pattern
-    out << prefix << "walking subdomains for the first time... " << std::flush;
-    Dune::Timer timer;
+    logger.info() << "  computing patterns and local contributions... " << std::endl;
     for (size_t ss = 0; ss < subdomains; ++ss) {
       // init the local discretizations (assembles matrices and patterns)
       this->local_discretizations_[ss]->init();
@@ -327,12 +330,11 @@ public:
         } // visit each coupling only once (assemble primaly)
       } // walk the neighbors
     } // walk the subdomains for the first time
-    out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
 
     // walk the subdomains for the second time
     //   * to assemble the boundary matrices and vectors and
     //   * to assemble the coupling matrices
-    out << prefix << "walking subdomains for the second time... " << std::flush;
+    logger.info() << "computing coupling and boundary contributions... " << std::endl;
     for (size_t ss = 0; ss < ms_grid_->size(); ++ss) {
       const auto& inner_test_mapper = this->local_discretizations_[ss]->test_space().mapper();
       const auto& inner_ansatz_mapper = this->local_discretizations_[ss]->ansatz_space().mapper();
@@ -385,13 +387,13 @@ public:
         } // visit each coupling only once
       } // walk the neighbors
     } // walk the subdomains for the second time
-    out<< "done (took " << timer.elapsed() << " sek)" << std::endl;
 
     // build global containers
     pattern_.sort();
     build_global_containers();
 
     // products
+    logger.info() << "assembling products... " << std::endl;
     typedef typename MsGridType::GlobalGridPartType::GridViewType GlobalGridViewType;
     const auto global_grid_part = ms_grid_->globalGridPart();
     const auto global_grid_view = global_grid_part.gridView();
@@ -550,6 +552,7 @@ public:
                                             std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
 
     this->finalize_init();
+    logger.info() << "finished!" << std::endl;
   } // ... init(...)
 
   DUNE_STUFF_SSIZE_T num_subdomains() const
