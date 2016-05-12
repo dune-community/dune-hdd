@@ -535,12 +535,12 @@ public:
   using AcademicBaseType::required_parameters;
   using AcademicBaseType::parameters;
 
-  Academic(const ParametersMapType parameters,
-                             const std::string num_partitions = "[1 1 1]",
-                             const size_t num_refinements = AcademicBaseType::default_num_refinements_,
-                             const size_t oversampling_layers = 0,
-                             const bool H_with_h = false)
-    : AcademicBaseType(parameters)
+  Academic(const ParametersMapType params,
+           const std::string num_partitions = "[1 1 1]",
+           const size_t num_refinements = AcademicBaseType::default_num_refinements_,
+           const size_t oversampling_layers = 0,
+           const bool H_with_h = false)
+    : AcademicBaseType(params)
     , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
                        AcademicBaseType::initial_refinements(),
                        num_refinements,
@@ -575,19 +575,19 @@ public:
   using MultiscaleBaseType::required_parameters;
   using MultiscaleBaseType::parameters;
 
-  Multiscale(const ParametersMapType parameters,
+  Multiscale(const ParametersMapType params,
              const std::string num_partitions = "[1 1 1]",
              const size_t num_refinements = MultiscaleBaseType::default_num_refinements_,
              const size_t oversampling_layers = 0,
              const bool H_with_h = false,
              const std::string filename = Stuff::Functions::Spe10::internal::model1_filename)
-    : MultiscaleBaseType(parameters, filename)
+    : MultiscaleBaseType(params, filename)
     , TestCaseBaseType(initial_grid_cfg(num_partitions, oversampling_layers),
                        MultiscaleBaseType::initial_refinements(),
                        num_refinements,
                        H_with_h)
   {
-    this->check_parameters(MultiscaleBaseType::required_parameters(), parameters);
+    this->check_parameters(MultiscaleBaseType::required_parameters(), params);
     this->inherit_parameter_type(*this->problem_, "problem");
   }
 }; // class Multiscale
