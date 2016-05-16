@@ -260,7 +260,7 @@ public:
     return this->local_discretizations_;
   }
 
-  void init(std::ostream& /*out*/ = Stuff::Common::Logger().devnull(), const std::string /*prefix*/ = "")
+  void init(const bool prune = true)
   {
     if (this->container_based_initialized_)
       return;
@@ -275,7 +275,7 @@ public:
     logger.info() << "  computing patterns and local contributions... " << std::endl;
     for (size_t ss = 0; ss < subdomains; ++ss) {
       // init the local discretizations (assembles matrices and patterns)
-      this->local_discretizations_[ss]->init();
+      this->local_discretizations_[ss]->init(false);
       // and create the local containers
       // * the matrices
       //   * just copy those from the local discretizations
@@ -570,7 +570,7 @@ public:
       this->products_.insert(std::make_pair("energy",
                                             std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
 
-    this->finalize_init();
+    this->finalize_init(prune);
     logger.info() << "finished!" << std::endl;
   } // ... init(...)
 

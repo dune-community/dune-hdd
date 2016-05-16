@@ -16,6 +16,7 @@
 #endif
 
 #include <dune/stuff/common/configuration.hh>
+#include <dune/stuff/common/timedlogging.hh>
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/la/container.hh>
@@ -177,13 +178,14 @@ public:
     return pattern_;
   }
 
-  void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
+  void init(const bool prune = true)
   {
     if (this->container_based_initialized_)
       return;
 
     using namespace Dune::GDT;
     Dune::Timer timer;
+    auto logger = Stuff::Common::TimedLogger().get("hdd.linearelliptic.discretizations.block-swipdg.init");
     auto dirichlet_vector = std::make_shared< AffinelyDecomposedVectorType >();
 
     auto& matrix = *(this->matrix_);
@@ -192,7 +194,7 @@ public:
     const auto& grid_view = space.grid_view();
     const auto& boundary_info = *(this->boundary_info_);
 
-    out << prefix << "assembling... " << std::flush;
+    logger.info() << "assembling... " << std::flush;
     timer.reset();
     GDT::SystemAssembler< TestSpaceType > system_assembler(space);
 
@@ -363,9 +365,9 @@ public:
       h1_product_matrix->affine_part()->axpy(1.0, *semi_h1_product_matrix->affine_part());
     }
 
-    out << "done (took " << timer.elapsed() << "s)" << std::endl;
+    logger.info() << "done (took " << timer.elapsed() << "s)" << std::endl;
 
-    out << prefix << "computing dirichlet shift... " << std::flush;
+    logger.info() << "computing dirichlet shift... " << std::flush;
     VectorType tmp(space.mapper().size());
     if (matrix.has_affine_part() && dirichlet_vector->has_affine_part()) {
       if (!rhs.has_affine_part())
@@ -405,9 +407,9 @@ public:
         rhs_component -= matrix_component * dirichlet_component;
       }
     }
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    logger.info() << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    out << prefix << "applying constraints... " << std::flush;
+    logger.info() << "applying constraints... " << std::flush;
     // we always need an affine part in the system matrix for the dirichlet rows
     if (!matrix.has_affine_part())
       matrix.register_affine_part(new MatrixType(space.mapper().size(), space.mapper().size(), pattern_));
@@ -418,7 +420,7 @@ public:
       clear_dirichlet_rows.apply(*(rhs.affine_part()));
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < rhs.num_components(); ++qq)
       clear_dirichlet_rows.apply(*(rhs.component(qq)));
-    out << "done (took " << timer.elapsed() << " sec)" << std::endl;
+    logger.info() << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
     // build parameter type
     this->inherit_parameter_type(matrix.parameter_type(), "lhs");
@@ -455,7 +457,7 @@ public:
     if (std::find(only_these_products_.begin(), only_these_products_.end(), "energy") != only_these_products_.end())
       this->products_.insert(std::make_pair("energy",
                                             std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
-    this->finalize_init();
+    this->finalize_init(prune);
   } // ... init(...)
 
 private:

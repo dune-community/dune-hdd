@@ -384,10 +384,11 @@ public:
   } // ... uncached_solve(...)
 
 protected:
-  void finalize_init()
+  void finalize_init(const bool prune)
   {
     if (!container_based_initialized_) {
-      matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(matrix_->pruned());
+      if (prune)
+        matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(matrix_->pruned());
       for (auto& element : products_)
         element.second = std::make_shared< AffinelyDecomposedMatrixType >(element.second->pruned());
       container_based_initialized_ = true;

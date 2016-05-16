@@ -108,9 +108,9 @@ public:
     return this->as_imp().model();
   }
 
-  void init(std::ostream& out = Dune::Stuff::Common::Logger().devnull(), const std::string prefix = "")
+  void init(const bool prune = true)
   {
-    CHECK_AND_CALL_CRTP(this->as_imp().init(out, prefix));
+    CHECK_AND_CALL_CRTP(this->as_imp().init(prune));
   }
 }; // class DiscretizationInterface
 

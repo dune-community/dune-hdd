@@ -25,6 +25,7 @@
 #endif
 
 #include <dune/stuff/common/configuration.hh>
+#include <dune/stuff/common/timedlogging.hh>
 #include <dune/stuff/grid/layers.hh>
 #include <dune/stuff/grid/provider.hh>
 #include <dune/stuff/la/container.hh>
@@ -204,17 +205,19 @@ public:
     return pattern_;
   }
 
-  void init(std::ostream& out = Stuff::Common::Logger().devnull(), const std::string prefix = "")
+  void init(const bool prune = true)
   {
     if (!this->container_based_initialized_) {
       using namespace GDT;
+
+      auto logger = Stuff::Common::TimedLogger().get("hdd.linearelliptic.discretizations.block-swipdg.init");
 
       auto& matrix = *(this->matrix_);
       auto& rhs = *(this->rhs_);
       const auto& space = this->test_space_;
       const auto& boundary_info = *(this->boundary_info_);
 
-      out << prefix << "assembling... " << std::flush;
+      logger.info() << "assembling... " << std::flush;
       Dune::Timer timer;
       SystemAssembler< TestSpaceType > system_assembler(space);
       Stuff::Grid::Functor::DirichletDetector< GridViewType > dirichlet_detector(this->boundary_info());
@@ -486,7 +489,7 @@ public:
       }
       // do the actual assembling
       system_assembler.walk();
-      out << "done (took " << timer.elapsed() << "s)" << std::endl;
+      logger.info() << "done (took " << timer.elapsed() << "s)" << std::endl;
 
       if (!dirichlet_detector.found())
         this->purely_neumann_ = true;
@@ -518,7 +521,7 @@ public:
         this->products_.insert(std::make_pair("energy",
                                               std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
 
-      this->finalize_init();
+      this->finalize_init(prune);
     } // if (!this->container_based_initialized_)
   } // ... init(...)
 
