@@ -546,7 +546,7 @@ public:
                        num_refinements,
                        H_with_h)
   {
-    this->check_parameters(AcademicBaseType::required_parameters(), parameters);
+    this->check_parameters(AcademicBaseType::required_parameters(), params);
     this->inherit_parameter_type(this->problem_, "problem");
   }
 }; // class Academic
