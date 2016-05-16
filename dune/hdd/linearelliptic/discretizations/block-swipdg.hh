@@ -291,8 +291,6 @@ public:
         logger.debug() << "    size: " << local_matrices_[ss]->affine_part()->rows() << "x"
                        << local_matrices_[ss]->affine_part()->cols() << std::endl;
         logger.debug() << "    non_zeros(): " << local_matrices_[ss]->affine_part()->non_zeros() << std::endl;
-        logger.debug() << "    pattern(): ";
-        local_matrices_[ss]->affine_part()->pattern().report(logger.debug());
         logger.debug() << std::flush;
       }
       if (local_operator.num_components() < this->problem().diffusion_factor()->num_components())
@@ -311,8 +309,6 @@ public:
         logger.debug() << "    size: " << local_matrices_[ss]->component(qq)->rows() << "x"
                        << local_matrices_[ss]->component(qq)->cols() << std::endl;
         logger.debug() << "    non_zeros(): " << local_matrices_[ss]->component(qq)->non_zeros() << std::endl;
-        logger.debug() << "    pattern(): ";
-        local_matrices_[ss]->component(qq)->pattern().report(logger.debug());
         logger.debug() << std::flush;
       }
       // * and the vectors
@@ -1180,8 +1176,6 @@ private:
     logger.debug() << "local_matrix: " << local_matrix.affine_part()->rows() << "x"
                    << local_matrix.affine_part()->cols() << std::endl;
     logger.debug() << "local_matrix.affine_part()->non_zeros(): " << local_matrix.affine_part()->non_zeros() << std::endl;
-    logger.debug() << "local_matrix.affine_part()->pattern(): ";
-    local_matrix.affine_part()->pattern().report(logger.debug());
 
     // lhs
     // * dirichlet boundary terms
