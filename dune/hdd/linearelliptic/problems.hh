@@ -14,7 +14,6 @@
 #include <dune/stuff/common/exceptions.hh>
 
 #include "problems/interfaces.hh"
-#include "problems/battery.hh"
 #include "problems/default.hh"
 #include "problems/ORS2016.hh"
 #include "problems/ESV2007.hh"
@@ -143,7 +142,6 @@ private:
   } // ... available_as_str(...)
 
   typedef Problems::Default< E, D, d, R, r >                   DefaultType;
-  typedef Problems::Battery< E, D, d, R, r >                   BatteryType;
   typedef Problems::ESV2007< E, D, d, R, r >                   ESV2007Type;
   typedef Problems::ORS2016< E, D, d, R, r >                   ORS2016Type;
   typedef Problems::MixedBoundaries< E, D, d, R, r >           MixedBoundariesType;
@@ -156,7 +154,6 @@ public:
   {
     std::vector< std::string > ret;
     ret = call_append< DefaultType >(ret);
-    ret = call_append< BatteryType >(ret);
     ret = call_append< ESV2007Type >(ret);
     ret = call_append< ORS2016Type >(ret);
     ret = call_append< MixedBoundariesType >(ret);
@@ -170,8 +167,6 @@ public:
   {
     if (call_compare< DefaultType >(type))
       return call_default_config< DefaultType >(sub_name);
-    else if (call_compare< BatteryType >(type))
-      return call_default_config< BatteryType >(sub_name);
     else if (call_compare< ESV2007Type >(type))
       return call_default_config< ESV2007Type >(sub_name);
     else if (call_compare< ORS2016Type >(type))
@@ -203,8 +198,6 @@ public:
   {
     if (call_compare< DefaultType >(type))
       return call_create< DefaultType >(cfg);
-    else if (call_compare< BatteryType >(type))
-      return call_create< BatteryType >(cfg);
     else if (call_compare< ESV2007Type >(type))
       return call_create< ESV2007Type >(cfg);
     else if (call_compare< ORS2016Type >(type))
