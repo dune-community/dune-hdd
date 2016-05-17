@@ -22,8 +22,8 @@
 
 # include <dune/gdt/operators/prolongations.hh>
 # include <dune/gdt/playground/operators/fluxreconstruction.hh>
-# include <dune/gdt/playground/spaces/finitevolume/default.hh>
-# include <dune/gdt/playground/spaces/raviartthomas/pdelab.hh>
+# include <dune/gdt/spaces/fv/default.hh>
+# include <dune/gdt/spaces/rt/pdelab.hh>
 # include <dune/gdt/products/elliptic.hh>
 
 # include <dune/hdd/linearelliptic/testcases/OS2015.hh>
@@ -105,7 +105,7 @@ Stuff::LA::CommonDenseVector< double > compute_error_distribution(const Discreti
                                     error_product.compute_locally(entity));
   }
   // sum local errors on the subdomain level
-  const auto ms_grid = discretization.ansatz_space()->ms_grid();
+  const auto ms_grid = discretization.ansatz_space().ms_grid();
   auto error_distribution_on_subdomains = Stuff::LA::CommonDenseVector< double >(ms_grid->size(), 0.0);
   error_distribution_on_subdomains *= 0.0;
   for (size_t ss = 0; ss < ms_grid->size(); ++ss)
@@ -158,10 +158,10 @@ int main(int argc, char** argv)
 
     logger.info() << "solving for " << mu_min << " ..." << std::endl;
     typedef typename decltype(disc)::VectorType VectorType;
-    auto pressure_mu_min = make_discrete_function< VectorType >(*disc.ansatz_space(), "pressure");
+    auto pressure_mu_min = make_discrete_function< VectorType >(disc.ansatz_space(), "pressure");
     disc.solve(pressure_mu_min.vector(), mu_min);
     logger.info() << "solving for " << mu_max << " ..." << std::endl;
-    auto pressure_mu_max = make_discrete_function< VectorType >(*disc.ansatz_space(), "pressure");
+    auto pressure_mu_max = make_discrete_function< VectorType >(disc.ansatz_space(), "pressure");
     disc.solve(pressure_mu_max.vector(), mu_max);
 
     logger.info() << "visualizing solutions ..." << std::endl;
@@ -169,8 +169,8 @@ int main(int argc, char** argv)
     pressure_mu_max.visualize("pressure_mu_max");
 
     logger.info() << "reconstructing diffusive fluxes ..." << std::endl;
-    Spaces::RaviartThomas::PdelabBased< typename std::remove_reference< decltype(disc) >::type::GridViewType,
-                                        0, double, 2 > rt_space(disc.grid_view());
+    Spaces::RT::PdelabBased< typename std::remove_reference< decltype(disc) >::type::GridViewType, 0, double, 2 >
+        rt_space(disc.grid_view());
     auto reconstruction_mu_min = GDT::Operators::make_diffusive_flux_reconstruction(disc.grid_view(),
                                                                                     *problem_mu_min->diffusion_factor()->affine_part(),
                                                                                     *problem_mu_min->diffusion_tensor()->affine_part(),
@@ -189,14 +189,14 @@ int main(int argc, char** argv)
     velocity_mu_max.visualize("velocity_mu_max");
 
     logger.info() << "computing local estimator contributions ..." << std::endl;
-    const auto eta_Ts_mu_min = compute_indicator_distribution(*disc.ansatz_space(),
-                                                                    pressure_mu_min.vector(),
-                                                                    problem,
-                                                                    mu_min);
-    const auto eta_Ts_mu_max = compute_indicator_distribution(*disc.ansatz_space(),
-                                                                    pressure_mu_max.vector(),
-                                                                    problem,
-                                                                    mu_max);
+    const auto eta_Ts_mu_min = compute_indicator_distribution(disc.ansatz_space(),
+                                                              pressure_mu_min.vector(),
+                                                              problem,
+                                                              mu_min);
+    const auto eta_Ts_mu_max = compute_indicator_distribution(disc.ansatz_space(),
+                                                              pressure_mu_max.vector(),
+                                                              problem,
+                                                              mu_max);
 
     logger.info() << "computing reference solutions ..." << std::endl;
     auto reference_disc = LinearElliptic::Discretizations::make_block_swipdg< Stuff::LA::ChooseBackend::eigen_sparse >(
@@ -204,14 +204,14 @@ int main(int argc, char** argv)
                   test_case.boundary_info(),
                   problem);
     reference_disc.init();
-    auto reference_pressure_mu_min = make_discrete_function< VectorType >(*reference_disc.ansatz_space());
-    auto reference_pressure_mu_max = make_discrete_function< VectorType >(*reference_disc.ansatz_space());
+    auto reference_pressure_mu_min = make_discrete_function< VectorType >(reference_disc.ansatz_space());
+    auto reference_pressure_mu_max = make_discrete_function< VectorType >(reference_disc.ansatz_space());
     reference_disc.solve(reference_pressure_mu_min.vector(), mu_min);
     reference_disc.solve(reference_pressure_mu_max.vector(), mu_max);
 
     logger.info() << "prolonging solutions to reference grid ..." << std::endl;
-    auto pressure_mu_min_on_reference = make_discrete_function< VectorType >(*reference_disc.ansatz_space());
-    auto pressure_mu_max_on_reference = make_discrete_function< VectorType >(*reference_disc.ansatz_space());
+    auto pressure_mu_min_on_reference = make_discrete_function< VectorType >(reference_disc.ansatz_space());
+    auto pressure_mu_max_on_reference = make_discrete_function< VectorType >(reference_disc.ansatz_space());
     GDT::Operators::prolong(pressure_mu_min, pressure_mu_min_on_reference);
     GDT::Operators::prolong(pressure_mu_max, pressure_mu_max_on_reference);
 
@@ -230,13 +230,13 @@ int main(int argc, char** argv)
                                      *problem_mu_bar->diffusion_tensor()->affine_part());
 
     logger.info() << "visualizing local errors and indicators ..." << std::endl;
-    Spaces::FiniteVolume::Default< typename std::remove_reference< decltype(disc) >::type::GridViewType,
-                                   double, 1 > fv_space(disc.grid_view());
+    Spaces::FV::Default< typename std::remove_reference< decltype(disc) >::type::GridViewType, double, 1 >
+        fv_space(disc.grid_view());
     auto indicator_visualization_mu_min = make_discrete_function< VectorType >(fv_space, "distribution");
     auto indicator_visualization_mu_max = make_discrete_function< VectorType >(fv_space, "distribution");
     auto error_visualization_mu_min = make_discrete_function< VectorType >(fv_space, "distribution");
     auto error_visualization_mu_max = make_discrete_function< VectorType >(fv_space, "distribution");
-    const auto ms_grid = disc.ansatz_space()->ms_grid();
+    const auto ms_grid = disc.ansatz_space().ms_grid();
     for (size_t ss = 0; ss < ms_grid->size(); ++ss)
       for (const auto& entity : DSC::entityRange(ms_grid->localGridPart(ss))) {
         const auto index = disc.grid_view().indexSet().index(entity);
