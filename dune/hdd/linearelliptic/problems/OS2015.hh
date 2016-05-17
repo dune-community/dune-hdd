@@ -214,8 +214,8 @@ public:
   Spe10Model1(const std::string filename,
               const DomainType& lower_left,
               const DomainType& upper_right,
-              const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& channel_values,
-              const std::vector< std::tuple< DomainType, DomainType, RangeFieldType > >& force_values,
+              const std::vector< std::tuple< DomainType, DomainType, typename IndicatorFunctionType::RangeType > >& channel_values,
+              const std::vector< std::tuple< DomainType, DomainType, typename IndicatorFunctionType::RangeType > >& force_values,
               const DomainType& channel_boundary_layer = default_config().get< DomainType >("channel_boundary_layer"),
               const bool parametric_channel = default_config().get< bool >("parametric_channel"))
     : BaseType(create_base(filename,
@@ -228,7 +228,7 @@ public:
   {}
 
 private:
-  typedef std::vector< std::tuple< DomainType, DomainType, RangeFieldType > > Values;
+  typedef std::vector< std::tuple< DomainType, DomainType, typename IndicatorFunctionType::RangeType > > Values;
   typedef typename BaseType::DiffusionFactorType::NonparametricType FlatTopIndicatorType;
 
   static BaseType create_base(const std::string filename,
@@ -304,7 +304,7 @@ private:
           tmp_lower[1] = domains[1][0];
           tmp_upper[0] = domains[0][1];
           tmp_upper[1] = domains[1][1];
-          auto val = local_cfg.get< RangeFieldType >("value");
+          auto val = local_cfg.get< typename IndicatorFunctionType::RangeType >("value");
           values.emplace_back(tmp_lower, tmp_upper, val);
         } else
           break;
