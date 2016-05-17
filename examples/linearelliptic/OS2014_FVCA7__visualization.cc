@@ -38,6 +38,7 @@
 #include <dune/gdt/discretefunction/default.hh>
 #include <dune/gdt/products/elliptic.hh>
 #include <dune/gdt/operators/fluxreconstruction.hh>
+#include <dune/gdt/spaces/rt/pdelab.hh>
 
 #include <dune/hdd/linearelliptic/problems/default.hh>
 #include <dune/hdd/linearelliptic/discretizations/block-swipdg.hh>
@@ -104,11 +105,6 @@ public:
   {}
 
   virtual ~IndicatorFunction() {}
-
-  virtual ThisType* copy() const override final
-  {
-    DUNE_THROW(NotImplemented, "");
-  }
 
   virtual std::string name() const override final
   {
@@ -225,14 +221,13 @@ int main(int argc, char** argv)
     typedef typename DiscretizationType::AnsatzSpaceType SpaceType;
     typedef typename SpaceType::GridViewType GridViewType;
     typedef typename DiscretizationType::VectorType VectorType;
-    ConstDiscreteFunction< SpaceType, VectorType > discrete_solution_on_level(*discretization.ansatz_space(),
+    ConstDiscreteFunction< SpaceType, VectorType > discrete_solution_on_level(discretization.ansatz_space(),
                                                                               solution);
     discrete_solution_on_level.visualize("solution_grid_"
                                          + DSC::toString(discrete_solution_on_level.space().grid_view().indexSet().size(0))
                                          + "_msgrid_" + x_elements + "x" + y_elements);
 
-    typedef Spaces::RaviartThomas::PdelabBased< typename SpaceType::GridViewType, 0, RangeFieldType, dimDomain >
-        RTN0SpaceType;
+    typedef Spaces::RT::PdelabBased< typename SpaceType::GridViewType, 0, RangeFieldType, dimDomain > RTN0SpaceType;
     const RTN0SpaceType rtn0_space(discretization.grid_view());
     VectorType diffusive_flux_vector(rtn0_space.mapper().size());
     DiscreteFunction< RTN0SpaceType, VectorType > diffusive_flux(rtn0_space, diffusive_flux_vector);
@@ -246,19 +241,19 @@ int main(int argc, char** argv)
                              + "_msgrid_" + x_elements + "x" + y_elements);
 
     auto solution_on_reference_level = reference_discretization.create_vector();
-    const auto& reference_grid_view = reference_discretization.ansatz_space()->grid_view();
-    DiscreteFunction< SpaceType, VectorType > discrete_solution_on_reference_level(*reference_discretization.ansatz_space(),
+    const auto& reference_grid_view = reference_discretization.ansatz_space().grid_view();
+    DiscreteFunction< SpaceType, VectorType > discrete_solution_on_reference_level(reference_discretization.ansatz_space(),
                                                                                    solution_on_reference_level);
     Operators::Prolongation< GridViewType >(reference_grid_view).apply(discrete_solution_on_level,
                                                                        discrete_solution_on_reference_level);
     std::cout << "done (took " << timer.elapsed() << "s)" << std::endl;
 
-    ConstDiscreteFunction< SpaceType, VectorType > discrete_reference_solution(*reference_discretization.ansatz_space(),
+    ConstDiscreteFunction< SpaceType, VectorType > discrete_reference_solution(reference_discretization.ansatz_space(),
                                                                                reference_solution);
     auto difference_vector = discrete_solution_on_reference_level.vector() - discrete_reference_solution.vector();
     for (auto& element : difference_vector)
       element = std::abs(element);
-    ConstDiscreteFunction< SpaceType, VectorType > difference(*reference_discretization.ansatz_space(),
+    ConstDiscreteFunction< SpaceType, VectorType > difference(reference_discretization.ansatz_space(),
                                                               difference_vector);
     difference.visualize("difference_grid_"
                          + DSC::toString(discrete_reference_solution.space().grid_view().indexSet().size(0))
@@ -274,7 +269,7 @@ int main(int argc, char** argv)
     std::cout << "estimating error... " << std::flush;
     timer.reset();
     typedef LinearElliptic::Estimators::BlockSWIPDG< SpaceType, VectorType, ProblemType, GridType > Estimator;
-    const RangeFieldType estimate = Estimator::estimate(*discretization.ansatz_space(),
+    const RangeFieldType estimate = Estimator::estimate(discretization.ansatz_space(),
                                                         solution,
                                                         problem,
                                                         "eta_OS2014");
@@ -284,7 +279,7 @@ int main(int argc, char** argv)
     timer.reset();
     // walk the multiscale grid
     std::vector< RangeFieldType > local_error_contributions(reference_level_provider.ms_grid()->size());
-    auto local_estimator_contributions = Estimator::estimate_local(*discretization.ansatz_space(),
+    auto local_estimator_contributions = Estimator::estimate_local(discretization.ansatz_space(),
                                                                    solution,
                                                                    problem,
                                                                    "eta_OS2014");
@@ -295,16 +290,16 @@ int main(int argc, char** argv)
       const auto& local_reference_discretization = *local_reference_discretizations[ss];
       typedef typename LocalDiscretizationType::AnsatzSpaceType LocalAnsatzSpaceType;
       typedef typename LocalAnsatzSpaceType::GridViewType LocalGridViewType;
-      const auto local_grid_view = local_reference_discretization.ansatz_space()->grid_view();
+      const auto local_grid_view = local_reference_discretization.ansatz_space().grid_view();
       // project level and reference solutions to local reference grid parts
       auto local_level_solution_vector = local_reference_discretization.create_vector();
       DiscreteFunction< LocalAnsatzSpaceType, VectorType >
-          local_level_solution(*local_reference_discretization.ansatz_space(), local_level_solution_vector);
+          local_level_solution(local_reference_discretization.ansatz_space(), local_level_solution_vector);
       Operators::Prolongation< LocalGridViewType >(local_grid_view).apply(discrete_solution_on_level,
                                                                           local_level_solution);
       auto local_reference_solution_vector = local_reference_discretization.create_vector();
       DiscreteFunction< LocalAnsatzSpaceType, VectorType >
-          local_reference_solution(*local_reference_discretization.ansatz_space(), local_reference_solution_vector);
+          local_reference_solution(local_reference_discretization.ansatz_space(), local_reference_solution_vector);
       Operators::Prolongation< LocalGridViewType >(local_grid_view).apply(discrete_reference_solution,
                                                                           local_reference_solution);
       // compute energy error
