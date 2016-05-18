@@ -205,7 +205,7 @@ public:
     return pattern_;
   }
 
-  void init(const bool prune = true)
+  void init(const bool prune = false)
   {
     if (!this->container_based_initialized_) {
       using namespace GDT;

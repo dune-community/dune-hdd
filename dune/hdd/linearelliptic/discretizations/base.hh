@@ -387,10 +387,11 @@ protected:
   void finalize_init(const bool prune)
   {
     if (!container_based_initialized_) {
-      if (prune)
+      if (prune) {
         matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(matrix_->pruned());
-      for (auto& element : products_)
-        element.second = std::make_shared< AffinelyDecomposedMatrixType >(element.second->pruned());
+        for (auto& element : products_)
+          element.second = std::make_shared< AffinelyDecomposedMatrixType >(element.second->pruned());
+      }
       container_based_initialized_ = true;
     }
   } // ... finalize_init(...)

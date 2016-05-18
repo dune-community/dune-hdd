@@ -108,7 +108,7 @@ public:
     return this->as_imp().model();
   }
 
-  void init(const bool prune = true)
+  void init(const bool prune = false)
   {
     CHECK_AND_CALL_CRTP(this->as_imp().init(prune));
   }
