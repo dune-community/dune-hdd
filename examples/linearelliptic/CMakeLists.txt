@@ -17,6 +17,9 @@ target_link_libraries(example_linearelliptic_OS2015_SISC__6_1__multiscale_exampl
 add_python_bindings(linearellipticexamplegenericmultiscale
                     generic_multiscale_bindings_generator.py
                     generic_multiscale_bindings_generator.hh "")
+add_python_bindings(linearellipticexamplegeneric
+                    generic_bindings_generator.py
+                    generic_bindings_generator.hh "")
 add_python_bindings(linearellipticexampleMRS201643
                     MRS2016__4_3_bindings_generator.py
                     MRS2016__4_3_bindings_generator.hh "")
@@ -32,6 +35,7 @@ foreach(target
         example_linearelliptic_OS2014_FVCA7__visualization
         example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
         linearellipticexamplegenericmultiscale
+        linearellipticexamplegeneric
         linearellipticexampleMRS201651
         linearellipticexampleMRS201643
         linearellipticexampleOS2015SISC62)
@@ -45,6 +49,7 @@ endforeach(target)
 
 foreach(file
         "generic_multiscale.py"
+        "generic.py"
         "OS2015_SISC__6_2__academic_example.py"
         "OS2015_SISC__6_2__multiscale_example.py")
   if (NOT EXISTS ${file})
