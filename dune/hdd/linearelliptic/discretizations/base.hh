@@ -23,6 +23,10 @@
 #include <dune/pymor/functionals/affine.hh>
 
 #include <dune/gdt/discretefunction/default.hh>
+#include <dune/gdt/products/boundaryl2.hh>
+#include <dune/gdt/products/elliptic.hh>
+#include <dune/gdt/products/h1.hh>
+#include <dune/gdt/products/l2.hh>
 
 #include "interfaces.hh"
 
@@ -229,6 +233,7 @@ public:
   using typename BaseType::TestSpaceType;
   using typename BaseType::AnsatzSpaceType;
   using typename BaseType::VectorType;
+  using typename BaseType::PatternType;
   typedef typename VectorType::ScalarType RangeFieldType;
 
 protected:
@@ -248,6 +253,7 @@ public:
     , purely_neumann_(false)
     , matrix_(std::make_shared< AffinelyDecomposedMatrixType >())
     , rhs_(std::make_shared< AffinelyDecomposedVectorType >())
+    , pattern_(nullptr)
   {}
 
   ContainerBasedDefault(const ThisType& other) = default;
@@ -272,6 +278,11 @@ public:
   const std::shared_ptr< const AffinelyDecomposedVectorType >& rhs() const
   {
     return rhs_;
+  }
+
+  const PatternType& pattern() const
+  {
+    return *pattern_;
   }
 
   OperatorType get_operator() const
@@ -384,6 +395,186 @@ public:
   } // ... uncached_solve(...)
 
 protected:
+  template< class SetConstraints, class ClearConstraints >
+  std::shared_ptr< AffinelyDecomposedMatrixType >
+  make_zero_dirichlet_product(const std::shared_ptr< AffinelyDecomposedMatrixType >& prod,
+                              const SetConstraints& set,
+                              const ClearConstraints& clear)
+  {
+    auto ret = std::make_shared<AffinelyDecomposedMatrixType>(prod->copy());
+    for (ssize_t qq = 0; qq < ret->num_components(); ++qq) {
+      // clear rows
+      clear.apply(*ret->component(qq));
+      // clear columns
+      for (const auto& column : clear.dirichlet_DoFs())
+        ret->component(qq)->unit_col(column);
+    }
+    if (!ret->has_affine_part()) {
+      // we can assume that there is at least one component
+      assert(ret->num_components() > 0);
+      ret->register_affine_part(new MatrixType(ret->component(0)->copy()));
+      *ret->affine_part() *= 0;
+    }
+    // set rows
+    set.apply(*ret->affine_part());
+    // set columns
+    for (const auto& column : set.dirichlet_DoFs())
+      ret->affine_part()->unit_col(column);
+    return ret;
+  } // ... make_zero_dirichlet_product(...)
+
+  void assemble_products(const std::vector< std::string > only_these_products, const size_t over_integrate = 2)
+  {
+    using namespace GDT;
+
+    if (only_these_products.size() == 0)
+      return;
+
+    GDT::SystemAssembler< TestSpaceType, GridViewType, AnsatzSpaceType > system_assembler(this->test_space(),
+                                                                                          this->ansatz_space(),
+                                                                                          this->grid_view());
+    // L2
+    typedef Products::L2Assemblable< MatrixType, TestSpaceType, GridViewType, AnsatzSpaceType > L2ProductType;
+    std::unique_ptr< L2ProductType > l2_product;
+    auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (   std::find(only_these_products.begin(), only_these_products.end(), "l2") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "l2_0") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "h1") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "h1_0") != only_these_products.end()) {
+      l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                              this->ansatz_space().mapper().size(),
+                                              *pattern_);
+      l2_product = DSC::make_unique< L2ProductType >(*l2_product_matrix->affine_part(),
+                                                     this->test_space(),
+                                                     this->grid_view(),
+                                                     this->ansatz_space(),
+                                                     over_integrate);
+      system_assembler.add(*l2_product);
+    }
+    // H1 semi
+    typedef Products::H1SemiAssemblable< MatrixType, TestSpaceType, GridViewType, AnsatzSpaceType >
+        SemiH1ProductType;
+    std::unique_ptr< SemiH1ProductType > semi_h1_product;
+    auto semi_h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (   std::find(only_these_products.begin(), only_these_products.end(), "h1_semi") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "h1_semi_0") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "h1") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "h1_0") != only_these_products.end()) {
+      semi_h1_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                   this->ansatz_space().mapper().size(),
+                                                   *pattern_);
+      semi_h1_product = DSC::make_unique< SemiH1ProductType >(*(semi_h1_product_matrix->affine_part()),
+                                                              this->test_space(),
+                                                              this->grid_view(),
+                                                              this->ansatz_space(),
+                                                              over_integrate);
+      system_assembler.add(*semi_h1_product);
+    }
+    // elliptic
+    const auto& diffusion_factor = *this->problem().diffusion_factor();
+    const auto& diffusion_tensor = *this->problem().diffusion_tensor();
+    assert(!diffusion_tensor.parametric());
+    typedef Products::EllipticAssemblable< MatrixType, typename ProblemType::DiffusionFactorType::NonparametricType,
+                                           TestSpaceType, GridViewType, AnsatzSpaceType, RangeFieldType,
+                                           typename ProblemType::DiffusionTensorType::NonparametricType > EllipticProductType;
+    std::vector< std::unique_ptr< EllipticProductType > > elliptic_products;
+    auto elliptic_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (   std::find(only_these_products.begin(), only_these_products.end(), "elliptic") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "elliptic_0") != only_these_products.end()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+        const auto id = elliptic_product_matrix->register_component(diffusion_factor.coefficient(qq),
+                                                                    this->test_space().mapper().size(),
+                                                                    this->ansatz_space().mapper().size(),
+                                                                    *pattern_);
+        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->component(id),
+                                                               this->test_space(),
+                                                               this->grid_view(),
+                                                               this->ansatz_space(),
+                                                               *diffusion_factor.component(qq),
+                                                               *diffusion_tensor.affine_part(),
+                                                               over_integrate));
+      }
+      if (diffusion_factor.has_affine_part()) {
+        elliptic_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                      this->ansatz_space().mapper().size(),
+                                                      *pattern_);
+        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->affine_part(),
+                                                               this->test_space(),
+                                                               this->grid_view(),
+                                                               this->ansatz_space(),
+                                                               *diffusion_factor.affine_part(),
+                                                               *diffusion_tensor.affine_part(),
+                                                               over_integrate));
+      }
+      for (auto& product : elliptic_products)
+        system_assembler.add(*product);
+    }
+    // boundary L2
+    typedef Products::BoundaryL2Assemblable< MatrixType, TestSpaceType, GridViewType, AnsatzSpaceType >
+        BoundaryL2ProductType;
+    std::unique_ptr< BoundaryL2ProductType > boundary_l2_product;
+    auto boundary_l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (   std::find(only_these_products.begin(), only_these_products.end(), "boundary_l2") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "boundary_l2_0") != only_these_products.end()) {
+      boundary_l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                       this->ansatz_space().mapper().size(),
+                                                       *pattern_);
+      boundary_l2_product = DSC::make_unique< BoundaryL2ProductType >(*(boundary_l2_product_matrix->affine_part()),
+                                                                      this->test_space(),
+                                                                      this->grid_view(),
+                                                                      this->ansatz_space(),
+                                                                      over_integrate);
+      system_assembler.add(*boundary_l2_product);
+    }
+    // walk the grid
+    system_assembler.assemble();
+    // register the products
+    for (auto&& key_value_pair : {std::make_pair("l2", l2_product_matrix),
+                                  std::make_pair("h1_semi", semi_h1_product_matrix),
+                                  std::make_pair("elliptic", elliptic_product_matrix)})  {
+      auto key = std::string(key_value_pair.first);
+      auto value = key_value_pair.second;
+      if (   std::find(only_these_products.begin(), only_these_products.end(), key) != only_these_products.end()
+          || std::find(only_these_products.begin(), only_these_products.end(), key + "_0") != only_these_products.end())
+        products_.insert(std::make_pair(key, value));
+    }
+    // energy product is the system matrix
+    if (   std::find(only_these_products.begin(), only_these_products.end(), "energy") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "energy_") != only_these_products.end())
+      products_.insert(std::make_pair("energy", std::make_shared<AffinelyDecomposedMatrixType>(matrix_->copy())));
+    // h1 product is l2 product + h1_semi product
+    if (   std::find(only_these_products.begin(), only_these_products.end(), "h1") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "h1_0") != only_these_products.end()) {
+      auto h1_product_matrix
+          = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(l2_product_matrix->affine_part()->backend()));
+      h1_product_matrix->affine_part()->axpy(1.0, *semi_h1_product_matrix->affine_part());
+      products_.insert(std::make_pair("h1", h1_product_matrix));
+    }
+  } // ... assemble_products(...)
+
+  template< class I >
+  void assemble_products(const std::vector< std::string > only_these_products,
+                         const GDT::Spaces::DirichletConstraints< I >& clear_and_set_dirichlet_rows,
+                         const GDT::Spaces::DirichletConstraints< I >& clear_dirichlet_rows,
+                         const size_t over_integrate = 2)
+  {
+    using namespace GDT;
+
+    if (only_these_products.size() == 0)
+      return;
+
+    assemble_products(only_these_products, over_integrate);
+
+    for (const std::string& prod_0 : only_these_products) {
+      if (prod_0.size() > 2 && prod_0.substr(prod_0.size() - 2, 2) == "_0") {
+        const auto prod = prod_0.substr(0, prod_0.size() - 2);
+        products_.insert(std::make_pair(prod_0, make_zero_dirichlet_product(products_.at(prod),
+                                                                            clear_and_set_dirichlet_rows,
+                                                                            clear_dirichlet_rows)));
+      }
+    }
+  } // assemble_product(...)
+
   void finalize_init(const bool prune)
   {
     if (!container_based_initialized_) {
@@ -400,7 +591,7 @@ protected:
   {
     if (!container_based_initialized_)
       DUNE_THROW(Stuff::Exceptions::you_are_using_this_wrong,
-                 "The implemented discretization has to fill 'matrix_' and 'rhs_' during init() and call "
+                 "The implemented discretization has to fill 'matrix_', 'rhs_' and 'pattern_' during init() and call "
                  << "finalize_init()!\n"
                  << "The user has to call init() before calling any other method!");
   } // ... assert_everything_is_ready()
@@ -409,6 +600,7 @@ protected:
   bool purely_neumann_;
   std::shared_ptr< AffinelyDecomposedMatrixType > matrix_;
   std::shared_ptr< AffinelyDecomposedVectorType > rhs_;
+  std::shared_ptr< PatternType > pattern_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedMatrixType > > products_;
   mutable std::map< std::string, std::shared_ptr< AffinelyDecomposedVectorType > > vectors_;
 }; // class ContainerBasedDefault

@@ -240,7 +240,6 @@ public:
     , grid_provider_(grid_provider)
     , ms_grid_(grid_provider.ms_grid())
     , only_these_products_(only_these_products)
-    , pattern_(BaseType::test_space().mapper().size())
     , local_matrices_(ms_grid_->size())
     , local_vectors_(ms_grid_->size())
     , inside_outside_patterns_(ms_grid_->size())
@@ -266,6 +265,8 @@ public:
       return;
 
     auto logger = Stuff::Common::TimedLogger().get("hdd.linearelliptic.discretizations.block-swipdg.init");
+
+    pattern_ = std::make_shared< PatternType >(BaseType::test_space().mapper().size());
 
     const size_t subdomains = ms_grid_->size();
     logger.info() << "discretizing on " << subdomains << " subdomains..." << std::endl;
@@ -321,7 +322,7 @@ public:
         local_vectors_[ss]->register_affine_part(new VectorType(*(local_functional.affine_part().container())));
 
       // create and copy the local patterns
-      add_local_to_global_pattern(this->local_discretizations_[ss]->pattern(), ss, ss, pattern_);
+      add_local_to_global_pattern(this->local_discretizations_[ss]->pattern(), ss, ss, *pattern_);
       const auto& inner_test_space = this->local_discretizations_[ss]->test_space();
       const auto& inner_ansatz_space = this->local_discretizations_[ss]->ansatz_space();
       // walk the neighbors
@@ -340,8 +341,8 @@ public:
                 outer_test_space.compute_face_pattern(outside_inside_grid_part, inner_ansatz_space));
           outside_inside_patterns_[nn].insert(std::make_pair(ss, outside_inside_pattern));
           // and copy them
-          add_local_to_global_pattern(*inside_outside_pattern,  ss, nn, pattern_);
-          add_local_to_global_pattern(*outside_inside_pattern,  nn, ss, pattern_);
+          add_local_to_global_pattern(*inside_outside_pattern,  ss, nn, *pattern_);
+          add_local_to_global_pattern(*outside_inside_pattern,  nn, ss, *pattern_);
         } // visit each coupling only once (assemble primaly)
       } // walk the neighbors
     } // walk the subdomains for the first time
@@ -404,161 +405,13 @@ public:
     } // walk the subdomains for the second time
 
     // build global containers
-    pattern_.sort();
+    pattern_->sort();
     build_global_containers();
 
-    // products
     logger.info() << "assembling products... " << std::endl;
-    typedef typename MsGridType::GlobalGridPartType::GridViewType GlobalGridViewType;
-    const auto global_grid_part = ms_grid_->globalGridPart();
-    const auto global_grid_view = global_grid_part.gridView();
-    GDT::SystemAssembler< TestSpaceType, GlobalGridViewType, AnsatzSpaceType > system_assembler(this->test_space(),
-                                                                                                this->ansatz_space(),
-                                                                                                global_grid_view);
-    const size_t over_integrate = 2;
-    // * L2
-    typedef GDT::Products::L2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
-        L2ProductType;
-    std::unique_ptr< L2ProductType > l2_product;
-    auto l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()) {
-      l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                              this->ansatz_space().mapper().size(),
-                                              pattern_);
-      l2_product = DSC::make_unique< L2ProductType >(*(l2_product_matrix->affine_part()),
-                                                     this->test_space(),
-                                                     global_grid_view,
-                                                     this->ansatz_space(),
-                                                     over_integrate);
-      system_assembler.add(*l2_product);
-    }
-    // * H1 semi
-    typedef GDT::Products::H1SemiAssemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
-        H1ProductType;
-    std::unique_ptr< H1ProductType > h1_product;
-    auto h1_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()) {
-      h1_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                              this->ansatz_space().mapper().size(),
-                                              pattern_);
-      h1_product = DSC::make_unique< H1ProductType >(*(h1_product_matrix->affine_part()),
-                                                     this->test_space(),
-                                                     global_grid_view,
-                                                     this->ansatz_space(),
-                                                     over_integrate);
-      system_assembler.add(*h1_product);
-    }
-    // * elliptic
-    typedef typename ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
-    typedef typename ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
-    const auto diffusion_factor = this->problem().diffusion_factor();
-    const auto diffusion_tensor = this->problem().diffusion_tensor();
-    assert(!diffusion_tensor->parametric());
-    typedef GDT::Products::EllipticAssemblable< MatrixType, DiffusionFactorType, TestSpaceType, GlobalGridViewType,
-                                                AnsatzSpaceType, RangeFieldType, DiffusionTensorType >
-        EllipticProductType;
-    std::vector< std::unique_ptr< EllipticProductType > > elliptic_products;
-    auto elliptic_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end()) {
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
-        const auto id = elliptic_product_matrix->register_component(diffusion_factor->coefficient(qq),
-                                                                    this->test_space().mapper().size(),
-                                                                    this->ansatz_space().mapper().size(),
-                                                                    pattern_);
-        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->component(id),
-                                                               this->test_space(),
-                                                               global_grid_view,
-                                                               this->ansatz_space(),
-                                                               *diffusion_factor->component(qq),
-                                                               *diffusion_tensor->affine_part(),
-                                                               over_integrate));
-      }
-      if (diffusion_factor->has_affine_part()) {
-        elliptic_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                      this->ansatz_space().mapper().size(),
-                                                      pattern_);
-        elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->affine_part(),
-                                                               this->test_space(),
-                                                               global_grid_view,
-                                                               this->ansatz_space(),
-                                                               *diffusion_factor->affine_part(),
-                                                               *diffusion_tensor->affine_part(),
-                                                               over_integrate));
-      }
-      for (auto& product : elliptic_products)
-        system_assembler.add(*product);
-    }
-    // * boundary L2
-    typedef GDT::Products::BoundaryL2Assemblable< MatrixType, TestSpaceType, GlobalGridViewType, AnsatzSpaceType >
-        BoundaryL2ProductType;
-    std::unique_ptr< BoundaryL2ProductType > boundary_l2_product;
-    auto boundary_l2_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end()) {
-      boundary_l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                       this->ansatz_space().mapper().size(),
-                                                       pattern_);
-      boundary_l2_product = DSC::make_unique< BoundaryL2ProductType >(*(boundary_l2_product_matrix->affine_part()),
-                                                                      this->test_space(),
-                                                                      global_grid_view,
-                                                                      this->ansatz_space(),
-                                                                      over_integrate);
-      system_assembler.add(*boundary_l2_product);
-    }
-    // * penalty term
-    typedef GDT::Products::SwipdgPenaltyAssemblable
-        < MatrixType, DiffusionFactorType, DiffusionTensorType, TestSpaceType > PenaltyProductType;
-    std::vector< std::unique_ptr< PenaltyProductType > > penalty_products;
-    auto penalty_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end()) {
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor->num_components(); ++qq) {
-        const auto id = penalty_product_matrix->register_component(diffusion_factor->coefficient(qq),
-                                                                   this->test_space().mapper().size(),
-                                                                   this->ansatz_space().mapper().size(),
-                                                                   pattern_);
-        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
-                                                             this->test_space(),
-                                                             global_grid_view,
-                                                             this->ansatz_space(),
-                                                             *diffusion_factor->component(qq),
-                                                             *diffusion_tensor->affine_part(),
-                                                             over_integrate));
-      }
-      if (diffusion_factor->has_affine_part()) {
-        penalty_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                     this->ansatz_space().mapper().size(),
-                                                     pattern_);
-        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
-                                                             this->test_space(),
-                                                             global_grid_view,
-                                                             this->ansatz_space(),
-                                                             *diffusion_factor->affine_part(),
-                                                             *diffusion_tensor->affine_part(),
-                                                             over_integrate));
-      }
-      for (auto& product : penalty_products)
-        system_assembler.add(*product);
-    }
-
-    // do the actual work
-    system_assembler.assemble();
+    this->assemble_products(only_these_products_, 2);
 
     // finalize
-    this->inherit_parameter_type(*(this->matrix_), "lhs");
-    this->inherit_parameter_type(*(this->rhs_), "rhs");
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end())
-      this->products_.insert(std::make_pair("l2", l2_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end())
-      this->products_.insert(std::make_pair("h1_semi", h1_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "elliptic") != only_these_products_.end())
-      this->products_.insert(std::make_pair("elliptic", elliptic_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end())
-      this->products_.insert(std::make_pair("boundary_l2", boundary_l2_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end())
-      this->products_.insert(std::make_pair("penalty", penalty_product_matrix));
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "energy") != only_these_products_.end())
-      this->products_.insert(std::make_pair("energy",
-                                            std::make_shared< AffinelyDecomposedMatrixType >(this->matrix_->copy())));
-
     this->finalize_init(prune);
     logger.info() << "finished!" << std::endl;
   } // ... init(...)
@@ -1074,7 +927,7 @@ private:
         comp = global_matrix.register_component(coefficient,
                                                 this->test_space().mapper().size(),
                                                 this->ansatz_space().mapper().size(),
-                                                pattern_);
+                                                *pattern_);
       assert(comp >= 0);
       copy_local_to_global_matrix(*(local_matrix.component(qq)),
                                   local_pattern,
@@ -1086,7 +939,7 @@ private:
       if (!global_matrix.has_affine_part())
         global_matrix.register_affine_part(this->test_space_.mapper().size(),
                                            this->ansatz_space_.mapper().size(),
-                                           pattern_);
+                                           *pattern_);
       copy_local_to_global_matrix(*(local_matrix.affine_part()),
                                   local_pattern,
                                   subdomain,
@@ -1403,7 +1256,7 @@ private:
   const GridProviderType& grid_provider_;
   std::shared_ptr< const MsGridType > ms_grid_;
   const std::vector< std::string > only_these_products_;
-  PatternType pattern_;
+  using BaseType::pattern_;
   std::vector< std::shared_ptr< AffinelyDecomposedMatrixType > > local_matrices_;
   std::vector< std::shared_ptr< AffinelyDecomposedVectorType > > local_vectors_;
   std::vector< std::map< size_t, std::shared_ptr< PatternType > > > inside_outside_patterns_;
