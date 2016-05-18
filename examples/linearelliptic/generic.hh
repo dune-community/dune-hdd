@@ -140,7 +140,7 @@ public:
                                                              boundary_cfg_,
                                                              *problem_,
                                                              -1);
-    discretization_->init();
+    discretization_->init(/*prune=*/false);
 #if HAVE_DUNE_FEM
     velocity_space_ = DSC::make_unique< VelocitySpaceType >(VelocitySpaceProvider::create(*grid_));
 #endif

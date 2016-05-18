@@ -131,7 +131,7 @@ public:
                                                              boundary_cfg_,
                                                              *problem_,
                                                              /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
-    discretization_->init();
+    discretization_->init(/*prune=*/false);
     logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticMultiscaleExample(...)
 
