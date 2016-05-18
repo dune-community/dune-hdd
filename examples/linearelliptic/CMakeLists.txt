@@ -51,7 +51,11 @@ foreach(file
         "generic_multiscale.py"
         "generic.py"
         "OS2015_SISC__6_2__academic_example.py"
-        "OS2015_SISC__6_2__multiscale_example.py")
+        "OS2015_SISC__6_2__estimators.py"
+        "OS2015_SISC__6_2__multiscale_example.py"
+        "OS2015_SISC__6_2__offline.py"
+        "OS2015_SISC__6_2__online.py"
+        "OS2015_SISC__6_2__prepare.py")
   if (NOT EXISTS ${file})
     execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${file}" "${CMAKE_CURRENT_BINARY_DIR}/${file}")
   endif (NOT EXISTS ${file})
