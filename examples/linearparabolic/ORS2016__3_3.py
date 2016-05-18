@@ -72,7 +72,7 @@ config= {'subdomains': '[1 1 1]',
 new_dataset('ORS2016__3_3', **config)
 
 logger.info('initializing DUNE module ...')
-from generic import dune_module, examples, wrapper
+from generic_multiscale import dune_module, examples, wrapper
 Example = examples[3]['aluconformgrid']['fem']['istl']
 
 logger_cfg = Example.logger_options()
