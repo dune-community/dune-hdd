@@ -127,15 +127,14 @@ public:
                                 logger_cfg.get("warn_color",      logger_options().template get< std::string >("warn_color")));
     } catch (Dune::Stuff::Exceptions::you_are_using_this_wrong&) {}
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "creating grid (" << grid_cfg.get< std::string >("type") << ")... " << std::flush;
+    logger.info() << "creating grid (" << grid_cfg.get< std::string >("type") << "):" << std::endl;
     grid_ = GridProvider::create(grid_cfg.get< std::string >("type"), grid_cfg);
-    logger.info() << "done (has " << grid_->grid().size(0) << " elements)" << std::endl;
+    logger.info() << "  done (has " << grid_->grid().size(0) << " elements)" << std::endl;
 
-    logger.info() << "creating problem (" << problem_cfg.get< std::string >("type") << ")... " << std::flush;
+    logger.info() << "creating problem (" << problem_cfg.get< std::string >("type") << ")... " << std::endl;
     problem_= ProblemProvider::create(problem_cfg.get< std::string >("type"), problem_cfg);
-    logger.info() << "done" << std::endl;
 
-    logger.info() << "creating discretization... " << std::flush;
+    logger.info() << "creating discretization:" << std::endl;
     discretization_ = DSC::make_unique< DiscretizationType >(*grid_,
                                                              boundary_cfg_,
                                                              *problem_,
@@ -144,7 +143,7 @@ public:
 #if HAVE_DUNE_FEM
     velocity_space_ = DSC::make_unique< VelocitySpaceType >(VelocitySpaceProvider::create(*grid_));
 #endif
-    logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
+    logger.info() << "  done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticExample(...)
 
   DiscretizationType& discretization()
@@ -155,18 +154,17 @@ public:
   void visualize_grid(const std::string& filename) const
   {
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "visualizing grid... " << std::flush;
+    logger.info() << "visualizing grid... " << std::endl;
     if (filename.empty())
       DUNE_THROW(Dune::Stuff::Exceptions::wrong_input_given, "Given filename prefix must not be empty!");
     grid_->visualize(filename, boundary_cfg_);
-    logger.info() << "done" << std::endl;
   }
 
   void visualize_problem(const std::string& filename,
                          const Dune::Pymor::Parameter& mu = Dune::Pymor::Parameter()) const
   {
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "visualizing problem (mu = " << mu << ")... " << std::flush;
+    logger.info() << "visualizing problem (mu = " << mu << ")... " << std::endl;
     if (filename.empty())
       DUNE_THROW(Dune::Stuff::Exceptions::wrong_input_given, "Given filename prefix must not be empty!");
     if (mu.empty()) {
@@ -174,7 +172,6 @@ public:
     } else {
       problem_->with_mu(mu)->visualize(grid_->leaf_view(), filename, /*subsampling=*/ false);
     }
-    logger.info() << "done" << std::endl;
   }
 
 #if HAVE_DUNE_FEM
@@ -186,7 +183,7 @@ public:
     using namespace Dune;
     using namespace Dune::GDT;
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "reconstructing darcy velocity... " << std::flush;
+    logger.info() << "reconstructing darcy velocity... " << std::endl;
     auto problem_mu = problem_->with_mu(mu);
     auto diffusion = *problem_mu->diffusion_factor()->affine_part() * *problem_mu->diffusion_tensor()->affine_part();
     auto pressure = make_const_discrete_function(discretization_->ansatz_space(), vector, "pressure");
@@ -194,8 +191,7 @@ public:
     const auto& grid_view = discretization_->grid_view();
     auto darcy_operator = Operators::make_darcy(grid_view, diffusion);
     darcy_operator->apply(pressure, velocity);
-    logger.info() << "done" << std::endl;
-    logger.info() << "visualizing pressure and darcy velocity... " << std::flush;
+    logger.info() << "visualizing pressure and darcy velocity... " << std::endl;
     typedef typename std::remove_const<typename std::remove_reference<decltype(grid_view)>::type>::type GV;
     auto pressure_adapter = std::make_shared< Stuff::Functions::VisualizationAdapter< GV, 1 > >(pressure);
     auto velocity_adapter = std::make_shared< Stuff::Functions::VisualizationAdapter< GV, d > >(velocity);
@@ -203,7 +199,6 @@ public:
     vtk_writer.addVertexData(pressure_adapter);
     vtk_writer.addVertexData(velocity_adapter);
     vtk_writer.write(filename, VTK::appendedraw);
-    logger.info() << "done" << std::endl;
   } // ... visualize_darcy_velocity(...)
 #endif // HAVE_DUNE_FEM
 
@@ -213,10 +208,9 @@ public:
     if (expression.empty())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given expression must not be empty!");
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic.project");
-    logger.info() << "projecting '" << expression << "'... " << std::flush;
+    logger.info() << "projecting '" << expression << "'... " << std::endl;
     auto discrete_function = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
     GDT::Operators::apply_projection(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
-    logger.info() << "done" << std::endl;
     return discrete_function.vector();
   } // ... project(...)
 

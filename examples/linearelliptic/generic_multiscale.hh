@@ -117,22 +117,21 @@ public:
                                 logger_cfg.get("debug_color",     logger_options().template get< std::string >("debug_color")),
                                 logger_cfg.get("warn_color",      logger_options().template get< std::string >("warn_color")));
     } catch (Dune::Stuff::Exceptions::you_are_using_this_wrong&) {}
-    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic");
-    logger.info() << "creating grid (" << grid_cfg.get< std::string >("type") << ")... " << std::flush;
+    auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale");
+    logger.info() << "creating grid (" << grid_cfg.get< std::string >("type") << "):" << std::endl;
     grid_ = GridProvider::create(grid_cfg.get< std::string >("type"), grid_cfg);
-    logger.info() << "done (has " << grid_->grid().size(0) << " elements)" << std::endl;
+    logger.info() << "  done (has " << grid_->grid().size(0) << " elements)" << std::endl;
 
-    logger.info() << "creating problem (" << problem_cfg.get< std::string >("type") << ")... " << std::flush;
+    logger.info() << "creating problem (" << problem_cfg.get< std::string >("type") << ")... " << std::endl;
     problem_= ProblemProvider::create(problem_cfg.get< std::string >("type"), problem_cfg);
-    logger.info() << "done" << std::endl;
 
-    logger.info() << "creating discretization... " << std::flush;
+    logger.info() << "creating discretization:" << std::endl;
     discretization_ = DSC::make_unique< DiscretizationType >(*grid_,
                                                              boundary_cfg_,
                                                              *problem_,
                                                              /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
     discretization_->init(/*prune=*/false);
-    logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
+    logger.info() << "  done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticMultiscaleExample(...)
 
   DiscretizationType& discretization()
@@ -153,11 +152,10 @@ public:
     using namespace Dune;
     if (expression.empty())
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given expression must not be empty!");
-    auto logger = DSC::TimedLogger().get("example.linearelliptic.generic.project");
-    logger.info() << "projecting '" << expression << "'... " << std::flush;
+    auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale.project");
+    logger.info() << "projecting '" << expression << "'... " << std::endl;
     auto discrete_function = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
     GDT::Operators::apply_projection(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
-    logger.info() << "done" << std::endl;
     return discrete_function.vector();
   } // ... project(...)
 
