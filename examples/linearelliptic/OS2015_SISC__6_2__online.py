@@ -9,9 +9,9 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from pymor.core import getLogger
-from pymor.la import induced_norm
-from pymor.reductors import reduce_generic_rb
+from pymor.core.logger import getLogger
+from pymor.operators.constructions import induced_norm
+from pymor.reductors.basic import reduce_generic_rb
 from pymor.playground.algorithms import gram_schmidt_block_basis_extension
 from pymor.playground.reductors import GenericBlockRBReconstructor
 
@@ -19,7 +19,7 @@ from simdb.run import add_values
 
 from dune.pymor.la.container import make_listvectorarray
 
-from OS2014_estimators import DetailedEstimator, ReducedEstimator
+from OS2015_SISC__6_2__estimators import DetailedEstimator, ReducedEstimator
 
 
 class ConfigurationError(Exception):
@@ -31,7 +31,7 @@ class EnrichmentError(Exception):
 
 
 def online_phase(cfg, detailed_data, offline_data):
-    logger = getLogger('.OS2014.online_phase')
+    logger = getLogger('.OS2015_SISC__6_2.online_phase')
     logger.setLevel('INFO')
 
     def doerfler_marking(indicators, theta):

@@ -10,10 +10,9 @@ from __future__ import division, print_function
 import numpy as np
 
 import pymor.core
-from pymor.core import getLogger
-from pymor.la import induced_norm
-from pymor.operators import LincombOperator
-from pymor.parameters import CubicParameterSpace
+from pymor.core.logger import getLogger
+from pymor.operators.constructions import induced_norm, LincombOperator
+from pymor.parameters.spaces import CubicParameterSpace
 
 from dune.pymor.core import wrap_module
 
@@ -21,7 +20,7 @@ import linearellipticexampleOS2015SISC62 as dune_module
 
 
 def prepare(cfg):
-    logger = getLogger('.OS2014.prepare')
+    logger = getLogger('.OS2015_SISC__6_2.prepare')
     logger.setLevel('INFO')
     reference_needed = ((cfg['greedy_use_estimator'] or cfg['estimate_some_errors'])
                          and ('discretization_error' in cfg['estimator_compute']

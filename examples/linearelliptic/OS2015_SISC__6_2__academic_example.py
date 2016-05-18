@@ -10,13 +10,13 @@ from __future__ import division, print_function
 from tempfile import NamedTemporaryFile
 
 import pymor.core
-from pymor.core import getLogger
+from pymor.core.logger import getLogger
 
 from simdb.run import new_dataset, add_logfile
 
-from OS2014_prepare import prepare
-from OS2014_offline import offline_phase
-from OS2014_online  import online_phase
+from OS2015_SISC__6_2__prepare import prepare
+from OS2015_SISC__6_2__offline import offline_phase
+from OS2015_SISC__6_2__online  import online_phase
 
 
 config = {'dune_partitioning': '[8 8 1]',
@@ -52,7 +52,7 @@ config = {'dune_partitioning': '[8 8 1]',
           'local_boundary_values': 'dirichlet',
           'online_target_error': 0.05,
           'online_max_extensions': 20}
-DATASET_ID = 'OS2014_online_enrichment_' + config['dune_example']
+DATASET_ID = 'OS2015_SISC__6_2__academic_example'
 
 pymor.core.logger.MAX_HIERACHY_LEVEL = 2
 getLogger('pymor.WrappedDiscretization').setLevel('WARN')

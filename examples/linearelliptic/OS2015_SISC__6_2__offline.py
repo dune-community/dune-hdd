@@ -19,11 +19,11 @@ from simdb.run import add_values
 
 from dune.pymor.la.container import make_listvectorarray
 
-from OS2014_estimators import ReducedEstimator, reduce_with_estimator
+from OS2015_SISC__6_2__estimators import ReducedEstimator, reduce_with_estimator
 
 
 def offline_phase(cfg, data):
-    logger = getLogger('.OS2014.offline_phase')
+    logger = getLogger('.OS2015_SISC__6_2.offline_phase')
     logger.setLevel('INFO')
 
     discretization = data['discretization']
