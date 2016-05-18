@@ -424,8 +424,7 @@ public:
     if (std::find(only_these_products_.begin(), only_these_products_.end(), "l2") != only_these_products_.end()) {
       l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
                                               this->ansatz_space().mapper().size(),
-                                              L2ProductType::pattern(this->test_space(),
-                                                                     this->ansatz_space()));
+                                              pattern_);
       l2_product = DSC::make_unique< L2ProductType >(*(l2_product_matrix->affine_part()),
                                                      this->test_space(),
                                                      global_grid_view,
@@ -441,8 +440,7 @@ public:
     if (std::find(only_these_products_.begin(), only_these_products_.end(), "h1_semi") != only_these_products_.end()) {
       h1_product_matrix->register_affine_part(this->test_space().mapper().size(),
                                               this->ansatz_space().mapper().size(),
-                                              H1ProductType::pattern(this->test_space(),
-                                                                     this->ansatz_space()));
+                                              pattern_);
       h1_product = DSC::make_unique< H1ProductType >(*(h1_product_matrix->affine_part()),
                                                      this->test_space(),
                                                      global_grid_view,
@@ -466,8 +464,7 @@ public:
         const auto id = elliptic_product_matrix->register_component(diffusion_factor->coefficient(qq),
                                                                     this->test_space().mapper().size(),
                                                                     this->ansatz_space().mapper().size(),
-                                                                    EllipticProductType::pattern(this->test_space(),
-                                                                                                 this->ansatz_space()));
+                                                                    pattern_);
         elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->component(id),
                                                                this->test_space(),
                                                                global_grid_view,
@@ -479,8 +476,7 @@ public:
       if (diffusion_factor->has_affine_part()) {
         elliptic_product_matrix->register_affine_part(this->test_space().mapper().size(),
                                                       this->ansatz_space().mapper().size(),
-                                                      EllipticProductType::pattern(this->test_space(),
-                                                                                   this->ansatz_space()));
+                                                      pattern_);
         elliptic_products.emplace_back(new EllipticProductType(*elliptic_product_matrix->affine_part(),
                                                                this->test_space(),
                                                                global_grid_view,
@@ -500,8 +496,7 @@ public:
     if (std::find(only_these_products_.begin(), only_these_products_.end(), "boundary_l2") != only_these_products_.end()) {
       boundary_l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
                                                        this->ansatz_space().mapper().size(),
-                                                       BoundaryL2ProductType::pattern(this->test_space(),
-                                                                                      this->ansatz_space()));
+                                                       pattern_);
       boundary_l2_product = DSC::make_unique< BoundaryL2ProductType >(*(boundary_l2_product_matrix->affine_part()),
                                                                       this->test_space(),
                                                                       global_grid_view,
@@ -519,8 +514,7 @@ public:
         const auto id = penalty_product_matrix->register_component(diffusion_factor->coefficient(qq),
                                                                    this->test_space().mapper().size(),
                                                                    this->ansatz_space().mapper().size(),
-                                                                   PenaltyProductType::pattern(this->test_space(),
-                                                                                               this->ansatz_space()));
+                                                                   pattern_);
         penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
                                                              this->test_space(),
                                                              global_grid_view,
@@ -532,8 +526,7 @@ public:
       if (diffusion_factor->has_affine_part()) {
         penalty_product_matrix->register_affine_part(this->test_space().mapper().size(),
                                                      this->ansatz_space().mapper().size(),
-                                                     PenaltyProductType::pattern(this->test_space(),
-                                                                                 this->ansatz_space()));
+                                                     pattern_);
         penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
                                                              this->test_space(),
                                                              global_grid_view,

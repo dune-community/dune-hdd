@@ -319,8 +319,7 @@ public:
         || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
       l2_product_matrix->register_affine_part(this->test_space().mapper().size(),
                                               this->ansatz_space().mapper().size(),
-                                              L2ProductType::pattern(this->test_space(),
-                                                                     this->ansatz_space()));
+                                              pattern_);
       l2_product = DSC::make_unique< L2ProductType >(*(l2_product_matrix->affine_part()),
                                                      this->test_space(),
                                                      this->grid_view(),
@@ -337,8 +336,7 @@ public:
         || std::find(only_these_products_.begin(), only_these_products_.end(), "h1") != only_these_products_.end()) {
       semi_h1_product_matrix->register_affine_part(this->test_space().mapper().size(),
                                                    this->ansatz_space().mapper().size(),
-                                                   SemiH1ProductType::pattern(this->test_space(),
-                                                                          this->ansatz_space()));
+                                                   pattern_);
       semi_h1_product = DSC::make_unique< SemiH1ProductType >(*(semi_h1_product_matrix->affine_part()),
                                                               this->test_space(),
                                                               this->grid_view(),
