@@ -92,7 +92,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                 template_parameters=[GridType, RangeFieldType,
                                      dimRange, polOrder, la_backend])
         # then create the example
-        Example = module.add_class('PbGenericLinearellipticExample', template_parameters=[GridType, space_backend, la_backend], custom_name=name)
+        Example = module.add_class('PbGenericLinearellipticMultiscaleExample', template_parameters=[GridType, space_backend, la_backend], custom_name=name)
         Example.add_method('logger_options',
                            retval('Dune::Stuff::Common::Configuration'),
                            [], is_static=True, throw=exceptions)
@@ -147,23 +147,23 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
     space_backend_pdelab = 'Dune::GDT::ChooseSpaceBackend::pdelab'
     space_backend_fem    = 'Dune::GDT::ChooseSpaceBackend::fem'
     if HAVE_DUNE_FEM and HAVE_DUNE_ISTL:
-        add_example(SGrid1d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_1dSGrid_fem_istl')
-        add_example(SGrid2d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_2dSGrid_fem_istl')
-        add_example(SGrid3d, space_backend_fem, la_backend_istl, 'GenericLinearellipticExample_3dSGrid_fem_istl')
+        add_example(SGrid1d, space_backend_fem, la_backend_istl, 'GenericLinearellipticMultiscaleExample_1dSGrid_fem_istl')
+        add_example(SGrid2d, space_backend_fem, la_backend_istl, 'GenericLinearellipticMultiscaleExample_2dSGrid_fem_istl')
+        add_example(SGrid3d, space_backend_fem, la_backend_istl, 'GenericLinearellipticMultiscaleExample_3dSGrid_fem_istl')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_istl,
-                        'GenericLinearellipticExample_2dAluConformGrid_fem_istl')
+                        'GenericLinearellipticMultiscaleExample_2dAluConformGrid_fem_istl')
             add_example(AluGridConform3d, space_backend_fem, la_backend_istl,
-                        'GenericLinearellipticExample_3dAluConformGrid_fem_istl')
+                        'GenericLinearellipticMultiscaleExample_3dAluConformGrid_fem_istl')
     if HAVE_DUNE_FEM and HAVE_EIGEN:
-        add_example(SGrid1d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_1dSGrid_fem_eigen')
-        add_example(SGrid2d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_2dSGrid_fem_eigen')
-        add_example(SGrid3d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticExample_3dSGrid_fem_eigen')
+        add_example(SGrid1d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticMultiscaleExample_1dSGrid_fem_eigen')
+        add_example(SGrid2d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticMultiscaleExample_2dSGrid_fem_eigen')
+        add_example(SGrid3d, space_backend_fem, la_backend_eigen, 'GenericLinearellipticMultiscaleExample_3dSGrid_fem_eigen')
         if HAVE_ALUGRID:
             add_example(AluGridConform2d, space_backend_fem, la_backend_eigen,
-                        'GenericLinearellipticExample_2dAluConformGrid_fem_eigen')
+                        'GenericLinearellipticMultiscaleExample_2dAluConformGrid_fem_eigen')
             add_example(AluGridConform3d, space_backend_fem, la_backend_eigen,
-                        'GenericLinearellipticExample_3dAluConformGrid_fem_eigen')
+                        'GenericLinearellipticMultiscaleExample_3dAluConformGrid_fem_eigen')
 
 
 if __name__ == '__main__':

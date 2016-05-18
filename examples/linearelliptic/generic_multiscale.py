@@ -18,7 +18,7 @@ for dd in (1, 2, 3):
     for grid in ('Yasp', 'AluConform', 'Sp', 'S'):
         for space in ('fem', 'pdelab'):
             for la in ('istl', 'eigen'):
-                name = 'GenericLinearellipticExample_{}d{}Grid_{}_{}'.format(dd, grid, space, la)
+                name = 'GenericLinearellipticMultiscaleExample_{}d{}Grid_{}_{}'.format(dd, grid, space, la)
                 lowergrid = grid.lower() + 'grid'
                 if name in dune_module.__dict__:
                     if dd not in examples:

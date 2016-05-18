@@ -132,7 +132,7 @@ public:
                                                              *problem_,
                                                              /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
     discretization_->init();
-    logger.info() << "done (has " << discretization_->ansatz_space()->mapper().size() << " DoFs)" << std::endl;
+    logger.info() << "done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
   } // GenericLinearellipticMultiscaleExample(...)
 
   DiscretizationType& discretization()
@@ -155,7 +155,7 @@ public:
       DUNE_THROW(Stuff::Exceptions::wrong_input_given, "Given expression must not be empty!");
     auto logger = DSC::TimedLogger().get("example.linearelliptic.generic.project");
     logger.info() << "projecting '" << expression << "'... " << std::flush;
-    auto discrete_function = GDT::make_discrete_function< VectorType >(*discretization_->ansatz_space());
+    auto discrete_function = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
     GDT::Operators::apply_projection(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
     logger.info() << "done" << std::endl;
     return discrete_function.vector();
