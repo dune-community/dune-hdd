@@ -153,7 +153,8 @@ public:
   }
 
   Default(const ThisType& other)
-    : diffusion_factor_(other.diffusion_factor_)
+    : BaseType()
+    , diffusion_factor_(other.diffusion_factor_)
     , diffusion_tensor_(other.diffusion_tensor_)
     , force_(other.force_)
     , dirichlet_(other.dirichlet_)
