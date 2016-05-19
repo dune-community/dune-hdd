@@ -21,6 +21,7 @@ from pymor.algorithms.greedy import greedy
 from pymor.algorithms.timestepping import ImplicitEulerTimeStepper
 from pymor.core.logger import getLogger
 from pymor.discretizations.basic import InstationaryDiscretization
+from pymor.grids.oned import OnedGrid
 from pymor.operators.constructions import LincombOperator
 from pymor.operators.numpy import NumpyMatrixOperator
 from pymor.parameters.spaces import CubicParameterSpace
@@ -131,19 +132,18 @@ example = create_example(Example, '[8 8]')
 disc_stat, disc = create_discretization(example, config, 'detailed discretization', config['nt'])
 logger.info('  discretization has {} DoFs'.format(disc.solution_space.dim))
 
-logger.info('visualizing grid and data functions ...')
-example_ref.visualize('example')
-disc_ref_stat._impl.visualize(example_ref.project(config['initial_data']), 'initial_data.reference', 'initial_data')
-example.visualize('example.reference')
-disc_stat._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
+# logger.info('visualizing grid and data functions ...')
+# example_ref.visualize('example')
+# disc_ref_stat._impl.visualize(example_ref.project(config['initial_data']), 'initial_data.reference', 'initial_data')
+# example.visualize('example.reference')
+# disc_stat._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
 
-# compute sample trajectories
-mu = (0.1, 1.0)
-U = disc.solve(mu)
-disc.visualize(U)
-
-U_ref = disc_ref.solve(mu)
-disc_ref.visualize(U_ref)
+# # compute sample trajectories
+# mu = (0.1, 1.0)
+# U = disc.solve(mu)
+# disc.visualize(U)
+# U_ref = disc_ref.solve(mu)
+# disc_ref.visualize(U_ref)
 
 # create product and norm
 mu_fixed = disc.operator.parse_parameter((1, 1))
@@ -162,12 +162,11 @@ def norm(U, order=2):
     '''
     T = config['end_time']
     nt = len(U)
-    from pymor.grids.oned import OnedGrid
-    time_grid = OnedGrid(domain=(0., T), num_intervals=nt)
-    assert len(U) == time_grid.size(0)
+    time_grid = OnedGrid(domain=(0., T), num_intervals=nt-1)
+    assert len(U) == time_grid.size(1)
     qq = time_grid.quadrature_points(0, order=order)
     integral = 0.
-    for entity in np.arange(time_grid.size(0) - 1):
+    for entity in np.arange(time_grid.size(0)):
         # get quadrature
         qq_e = qq[entity] # points
         ww = time_grid.reference_element.quadrature(order)[1] # weights
@@ -175,7 +174,6 @@ def norm(U, order=2):
         # create shape function evaluations
         a = time_grid.centers(1)[entity]
         b = time_grid.centers(1)[entity + 1]
-        dt = time_grid.diameters(0)[entity]
         SF = np.array((1./(a - b)*qq_e[..., 0] - b/(a - b),
                        1./(b - a)*qq_e[..., 0] - a/(b - a)))
         U_a = U._list[entity]
@@ -191,6 +189,21 @@ def norm(U, order=2):
         integral += np.dot(values, ww)*ie
     return np.sqrt(integral)
 
+
+def project(example_ref, nt_ref, U):
+    T = config['end_time']
+    time_grid_ref = OnedGrid(domain=(0., T), num_intervals=nt_ref)
+    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
+    for t_n in time_grid_ref.centers(1):
+        coarse_entity = (time_grid.centers(1) <= t_n).nonzero()[0][-1]
+        a = time_grid.centers(1)[coarse_entity]
+        b = time_grid.centers(1)[coarse_entity + 1]
+        SF = np.array((1./(a - b)*t_n - b/(a - b),
+                       1./(b - a)*t_n - a/(b - a)))
+        import ipdb; ipdb.set_trace()
+
+
+U_proj = project(example_ref, len(U_ref) - 1, U)
 
 norm(U_ref)
 
