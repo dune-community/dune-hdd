@@ -377,9 +377,7 @@ public:
       clear_dirichlet_rows.apply(*(rhs.component(qq)));
     logger.info() << "done (took " << timer.elapsed() << " sec)" << std::endl;
 
-    // build parameter type
-    this->inherit_parameter_type(matrix.parameter_type(), "lhs");
-    this->inherit_parameter_type(rhs.parameter_type(), "rhs");
+    // build parameter type (matrix and rhs are done in base)
     this->inherit_parameter_type(dirichlet_vector->parameter_type(), "dirichlet");
 
     // finalize

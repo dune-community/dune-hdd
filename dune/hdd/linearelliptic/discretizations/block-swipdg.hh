@@ -399,6 +399,7 @@ public:
 
     // finalize
     this->finalize_init(prune);
+
     logger.info() << "finished!" << std::endl;
   } // ... init(...)
 

@@ -398,10 +398,6 @@ public:
       if (!dirichlet_detector.found())
         this->purely_neumann_ = true;
 
-      // build parameter type
-      this->inherit_parameter_type(matrix.parameter_type(), "lhs");
-      this->inherit_parameter_type(rhs.parameter_type(),    "rhs");
-
       if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end())
         this->products_.insert(std::make_pair("penalty", penalty_product_matrix));
 

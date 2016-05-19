@@ -578,6 +578,8 @@ protected:
   void finalize_init(const bool prune)
   {
     if (!container_based_initialized_) {
+      this->inherit_parameter_type(matrix_->parameter_type(), "lhs");
+      this->inherit_parameter_type(rhs_->parameter_type(), "rhs");
       if (prune) {
         matrix_ = std::make_shared< AffinelyDecomposedMatrixType >(matrix_->pruned());
         for (auto& element : products_)
