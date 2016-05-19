@@ -63,10 +63,10 @@ class InstationaryDuneVisualizer(object):
                                 'solution',
                                 False) # do not add dirichlet shift
 
-config= {'subdomains': '[1 1 1]',
+config= {'subdomains': '[8 2 2]',
          'end_time' : 0.001,
-         'nt' : 25,
-         'num_training_samples' : 50,
+         'nt' : 10,
+         'num_training_samples' : 5,
          'max_rb_size' : 500,
          'target_error': 1e-10}
 new_dataset('ORS2016__3_3', **config)
@@ -80,17 +80,17 @@ logger_cfg.set('info', 99, True)
 logger_cfg.set('info_color', 'blue', True)
 
 # multibat-pymor/problem-data/46x20x20_h4e-6m
-battery_geometry = {'lower_left':   '[0      0     0]',
-                    'upper_right':  '[0.0184 0.008 0.008]',
-                    'num_elements': '[46     20    20]',
-                    'separator':    '[0.0084 0.01; 0 0.008; 0 0.008]',
-                    'filename': 'geometry__46x20x20_h4e-6m'}
-# multibat-pymor/problem-data/ellisoid_5_5_16.8
 # battery_geometry = {'lower_left':   '[0      0     0]',
-#                     'upper_right':  '[0.0246 0.006 0.006]',
-#                     'num_elements': '[246    60    60]',
-#                     'separator':    '[]',
-#                     'filename': 'geometry__ellisoid_5_5_16.8'}
+#                     'upper_right':  '[0.0184 0.008 0.008]',
+#                     'num_elements': '[46     20    20]',
+#                     'separator':    '[0.0084 0.01; 0 0.008; 0 0.008]',
+#                     'filename': 'geometry__46x20x20_h4e-6m'}
+# multibat-pymor/problem-data/ellisoid_5_5_16.8
+battery_geometry = {'lower_left':   '[0      0     0]',
+                    'upper_right':  '[0.0246 0.006 0.006]',
+                    'num_elements': '[246    60    60]',
+                    'separator':    '[-2 -1; -2 -1; -2 -1]',
+                    'filename': 'geometry__ellisoid_5_5_16.8'}
 
 grid_cfg = Example.grid_options('grid.multiscale.provider.cube')
 grid_cfg.set('lower_left', battery_geometry['lower_left'], True)
