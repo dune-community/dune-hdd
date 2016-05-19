@@ -132,7 +132,7 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         Example.add_method('project',
                            retval(VectorType),
                            [param('const std::string', 'expression')], is_const=True, throw=exceptions)
-        Example.add_method('project',
+        Example.add_method('prolong',
                            retval(VectorType),
                            [param('const ' + DiscretizationType + '&', 'source_disc'),
                             param('const ' + VectorType + '&', 'source_vec')],

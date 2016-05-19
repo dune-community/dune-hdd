@@ -1,6 +1,8 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX
 
+#include <dune/gdt/operators/prolongations.hh>
+
 #include "generic_multiscale.hh"
 
 
@@ -151,20 +153,20 @@ project(const std::string& expression) const
 
 template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
     typename GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType GenericLinearellipticMultiscaleExample< G, sp, la >::
-project(const typename GenericLinearellipticMultiscaleExample< G, sp, la >::DiscretizationType& source_disc,
+prolong(const typename GenericLinearellipticMultiscaleExample< G, sp, la >::DiscretizationType& source_disc,
         const typename GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& source_vec)
 {
   using namespace Dune;
   auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale.project");
   auto source_func = GDT::make_const_discrete_function(source_disc.ansatz_space(), source_vec);
   auto range_func = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
-  if (source_vec.size() > range_func.vector().size())
-    logger.warn() << " projecting from space of size " << source_vec.size() << " onto space of size "
+  if (source_vec.size() >= range_func.vector().size())
+    logger.warn() << "prolonging from space of size " << source_vec.size() << " onto space of size "
                   << range_func.vector().size() << ", this might not be what you want!" << std::endl;
   else
-    logger.info() << " projecting from space of size " << source_vec.size() << " onto space of size "
+    logger.info() << "prolonging from space of size " << source_vec.size() << " onto space of size "
                   << range_func.vector().size() << "... " << std::endl;
-  GDT::Operators::apply_projection(source_func, range_func);
+  GDT::Operators::prolong(source_func, range_func);
   return range_func.vector();
 } // ... project(...)
 
