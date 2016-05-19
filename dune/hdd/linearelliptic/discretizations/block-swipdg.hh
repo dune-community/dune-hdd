@@ -287,30 +287,16 @@ public:
       if (this->problem().diffusion_factor()->has_affine_part()) {
         if (!local_operator.has_affine_part())
           DUNE_THROW(Stuff::Exceptions::internal_error, "The local operator is missing the affine part!");
-        logger.debug() << "  local_matrices_[" << ss << "]: copying local affine part" << std::endl;
         local_matrices_[ss]->register_affine_part(new MatrixType(*(local_operator.affine_part().container())));
-        logger.debug() << "    size: " << local_matrices_[ss]->affine_part()->rows() << "x"
-                       << local_matrices_[ss]->affine_part()->cols() << std::endl;
-        logger.debug() << "    non_zeros(): " << local_matrices_[ss]->affine_part()->non_zeros() << std::endl;
-        logger.debug() << std::flush;
       }
       if (local_operator.num_components() < this->problem().diffusion_factor()->num_components())
         DUNE_THROW(Stuff::Exceptions::requirements_not_met,
                    "The local operator should have " << this->problem().diffusion_factor()->num_components()
                    << " components (but has only " << local_operator.num_components() << ")!");
-      if (this->problem().diffusion_factor()->num_components() > 0) {
-        logger.debug() << "  local_matrices_[" << ss << "]: copying "
-                       << this->problem().diffusion_factor()->num_components() << " components" << std::endl;
-      }
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
-        logger.debug() << "   component " << qq << std::endl;
         local_matrices_[ss]->register_component(new MatrixType(
             local_operator.component(qq).container()->backend()),
             this->problem().diffusion_factor()->coefficient(qq));
-        logger.debug() << "    size: " << local_matrices_[ss]->component(qq)->rows() << "x"
-                       << local_matrices_[ss]->component(qq)->cols() << std::endl;
-        logger.debug() << "    non_zeros(): " << local_matrices_[ss]->component(qq)->non_zeros() << std::endl;
-        logger.debug() << std::flush;
       }
       // * and the vectors
       const auto local_functional = this->local_discretizations_[ss]->get_rhs();
@@ -1002,15 +988,12 @@ private:
   void assemble_boundary_contributions(const size_t subdomain) const
   {
     auto logger = Stuff::Common::TimedLogger().get("hdd.linearelliptic.discretizations.block-swipdg.assemble_boundary_contributions");
-    logger.debug() << "subdomain " << subdomain << std::endl;
 
     typedef typename MsGridType::BoundaryGridPartType BoundaryGridPartType;
     typedef typename LocalDiscretizationType::TestSpaceType   LocalTestSpaceType;
     typedef typename LocalDiscretizationType::AnsatzSpaceType LocalAnsatzSpaceType;
     const LocalTestSpaceType&   local_test_space   = this->local_discretizations_[subdomain]->test_space();
     const LocalAnsatzSpaceType& local_ansatz_space = this->local_discretizations_[subdomain]->ansatz_space();
-    logger.debug() << "local_test_space.mapper().size() = " << local_test_space.mapper().size() << std::endl;
-    logger.debug() << "local_ansatz_space.mapper().size() = " << local_ansatz_space.mapper().size() << std::endl;
     typedef GDT::SystemAssembler< LocalTestSpaceType, BoundaryGridPartType, LocalAnsatzSpaceType > BoundaryAssemblerType;
     BoundaryAssemblerType boundary_assembler(local_test_space,
                                              local_ansatz_space,
@@ -1019,9 +1002,6 @@ private:
     auto& local_matrix = *(local_matrices_[subdomain]);
     auto& local_vector = *(local_vectors_[subdomain]);
 
-    logger.debug() << "local_matrix: " << local_matrix.affine_part()->rows() << "x"
-                   << local_matrix.affine_part()->cols() << std::endl;
-    logger.debug() << "local_matrix.affine_part()->non_zeros(): " << local_matrix.affine_part()->non_zeros() << std::endl;
 
     // lhs
     // * dirichlet boundary terms
@@ -1035,8 +1015,6 @@ private:
     typedef GDT::LocalAssembler::Codim1BoundaryMatrix< DirichletOperatorType > DirichletMatrixAssemblerType;
     std::vector< std::unique_ptr< DirichletOperatorType > > dirichlet_operators;
     std::vector< std::unique_ptr< DirichletMatrixAssemblerType > > dirichlet_matrix_assemblers;
-    if (this->problem().diffusion_factor()->num_components() > 0)
-      logger.debug() << "  assembling " << this->problem().diffusion_factor()->num_components() << " dirichlet operators for diffusion components..." << std::endl;
     for (DUNE_STUFF_SSIZE_T qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
       dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->component(qq)),
                                                                  *(diffusion_tensor.affine_part())));
@@ -1046,7 +1024,6 @@ private:
                              new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
     }
     if (this->problem().diffusion_factor()->has_affine_part()) {
-      logger.debug() << "  assembling dirichlet operator for diffusion affine part..." << std::endl;
       dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->affine_part()),
                                                                  *(diffusion_tensor.affine_part())));
       dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*dirichlet_operators.back()));
