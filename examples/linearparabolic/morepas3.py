@@ -68,69 +68,88 @@ config= {'subdomains': '[1 1 1]',
          'nt' : 10,
          'num_training_samples' : 1,
          'max_rb_size' : 500,
-         'target_error': 1e-1}
+         'target_error': 1e-1,
+         'initial_data': 'exp(-((x[0]-0.5)*(x[0]-0.5)+(x[1]-0.5)*(x[1]-0.5))/0.01)'}
 new_dataset('morepas3', **config)
 
 logger.info('initializing DUNE module ...')
 from generic_multiscale import dune_module, examples, wrapper
 Example = examples[2]['aluconformgrid']['fem']['istl']
 
-logger_cfg = Example.logger_options()
-logger_cfg.set('info', 99, True)
-logger_cfg.set('info_color', 'blue', True)
-
-grid_cfg = Example.grid_options('grid.multiscale.provider.cube')
-grid_cfg.set('lower_left',     '[0 0]', True)
-grid_cfg.set('upper_right',    '[1 1]', True)
-grid_cfg.set('num_elements',   '[8 8]', True)
-grid_cfg.set('num_partitions', '[2 1]', True)
-
-boundary_cfg = Example.boundary_options('stuff.grid.boundaryinfo.alldirichlet')
-
-problem_cfg = Example.problem_options('hdd.linearelliptic.problem.thermalblock')
-problem_cfg.set('diffusion_factor.num_elements', '[2 1]', True)
-
 # all but the 'type' will be discarded, so no point in setting more details here
 solver_options = Example.solver_options('bicgstab.amg.ilu0')
 
+def create_example(ExampleType, num_grid_elements):
+    logger_cfg = ExampleType.logger_options()
+    logger_cfg.set('info', 0, True)
+    logger_cfg.set('info_color', 'blue', True)
 
-example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
-stat_blocked_disc = wrapper[example.discretization()]
-stat_nonblocked_disc = stat_blocked_disc.as_nonblocked()
-logger.info('  grid has {} subdomains'.format(stat_blocked_disc.num_subdomains))
-logger.info('  discretization has {} DoFs'.format(stat_nonblocked_disc.solution_space.dim))
-logger.info('  parameter type is {}'.format(stat_nonblocked_disc.parameter_type))
+    grid_cfg = ExampleType.grid_options('grid.multiscale.provider.cube')
+    grid_cfg.set('lower_left',     '[0 0]', True)
+    grid_cfg.set('upper_right',    '[1 1]', True)
+    grid_cfg.set('num_elements',   num_grid_elements, True)
+    grid_cfg.set('num_partitions', '[2 1]', True)
+
+    boundary_cfg = ExampleType.boundary_options('stuff.grid.boundaryinfo.alldirichlet')
+
+    problem_cfg = ExampleType.problem_options('hdd.linearelliptic.problem.thermalblock')
+    problem_cfg.set('diffusion_factor.num_elements', '[2 1]', True)
+
+    return ExampleType(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
+
+
+def create_discretization(example, config, name, nt):
+    stat_blocked_disc = wrapper[example.discretization()]
+    stat_nonblocked_disc = stat_blocked_disc.as_nonblocked()
+
+    return (stat_blocked_disc, InstationaryDiscretization(T=config['end_time'],
+                                                          initial_data=make_listvectorarray(wrapper[example.project(config['initial_data'])]),
+                                                          operator=stat_nonblocked_disc.operator,
+                                                          rhs=stat_nonblocked_disc.rhs,
+                                                          mass=stat_nonblocked_disc.products['l2'],
+                                                          time_stepper=ImplicitEulerTimeStepper(nt, invert_options=solver_options.get_str('type')),
+                                                          products=stat_nonblocked_disc.products,
+                                                          operators=stat_nonblocked_disc.operators,
+                                                          functionals=stat_nonblocked_disc.functionals,
+                                                          vector_operators=stat_nonblocked_disc.vector_operators,
+                                                          visualizer=InstationaryDuneVisualizer(stat_nonblocked_disc,
+                                                                                                name + '.solution'),
+                                                          parameter_space=CubicParameterSpace(stat_nonblocked_disc.parameter_type, 0.1, 10),
+                                                          cache_region='disk',
+                                                          name=name))
+
+
+# create reference discretization
+example_ref = create_example(Example, '[32 32]')
+disc_ref_stat, disc_ref = create_discretization(example_ref, config, 'reference discretization', config['nt']*2)
+logger.info('  grid has {} subdomains'.format(disc_ref_stat.num_subdomains))
+logger.info('  parameter type is {}'.format(disc_ref.parameter_type))
+logger.info('  reference discretization has {} DoFs'.format(disc_ref.solution_space.dim))
+
+# create discretization
+example = create_example(Example, '[8 8]')
+disc_stat, disc = create_discretization(example, config, 'detailed discretization', config['nt'])
+logger.info('  discretization has {} DoFs'.format(disc.solution_space.dim))
+
 logger.info('visualizing grid and data functions ...')
-example.visualize(problem_cfg.get_str('type'))
+example_ref.visualize('example')
+disc_ref_stat._impl.visualize(example_ref.project(config['initial_data']), 'initial_data.reference', 'initial_data')
+example.visualize('example.reference')
+disc_stat._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
 
-initial_data = example.project('exp(-((x[0]-0.5)*(x[0]-0.5)+(x[1]-0.5)*(x[1]-0.5))/0.01)')
-stat_nonblocked_disc._impl.visualize(initial_data, 'initial_data', 'initial_data')
-
-nonblocked_disc = InstationaryDiscretization(T=config['end_time'],
-                                             initial_data=make_listvectorarray(wrapper[initial_data]),
-                                             operator=stat_nonblocked_disc.operator,
-                                             rhs=stat_nonblocked_disc.rhs,
-                                             mass=stat_nonblocked_disc.products['l2'],
-                                             time_stepper=ImplicitEulerTimeStepper(config['nt'], invert_options=solver_options.get_str('type')),
-                                             products=stat_nonblocked_disc.products,
-                                             operators=stat_nonblocked_disc.operators,
-                                             functionals=stat_nonblocked_disc.functionals,
-                                             vector_operators=stat_nonblocked_disc.vector_operators,
-                                             visualizer=InstationaryDuneVisualizer(stat_nonblocked_disc,
-                                                                                   problem_cfg.get_str('type') + '.solution'),
-                                             parameter_space=CubicParameterSpace(stat_nonblocked_disc.parameter_type, 0.1, 10),
-                                             cache_region='disk',
-                                             name='detailed non-blocked discretization')
-
+# compute sample trajectories
 mu = (0.1, 1.0)
-U = nonblocked_disc.solve(mu)
-logger.info('visualizing trajectory ...')
-nonblocked_disc.visualize(U)
+U = disc.solve(mu)
+disc.visualize(U)
 
-mu_fixed = nonblocked_disc.operator.parse_parameter((1, 1))
-mu_fixed_d = wrapper.dune_parameter(mu_fixed)
-elliptic_product = nonblocked_disc.products['elliptic']
-elliptic_product = wrapper[elliptic_product._impl.freeze_parameter(mu_fixed_d)]
+U_ref = disc_ref.solve(mu)
+disc_ref.visualize(U_ref)
+
+# create product and norm
+mu_fixed = disc.operator.parse_parameter((1, 1))
+mu_fixed = wrapper.dune_parameter(mu_fixed)
+elliptic_product = disc_ref.products['elliptic']
+elliptic_product = wrapper[elliptic_product._impl.freeze_parameter(mu_fixed)]
 
 
 def space_norm_squared(U):
@@ -172,7 +191,8 @@ def norm(U, order=2):
         integral += np.dot(values, ww)*ie
     return np.sqrt(integral)
 
-norm(U)
+
+norm(U_ref)
 
 a = b
 
