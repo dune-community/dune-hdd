@@ -45,29 +45,11 @@ logger = getLogger('.morepas3.main')
 logger.setLevel('INFO')
 
 
-class InstationaryDuneVisualizer(object):
-
-    def __init__(self, disc, prefix):
-        self.disc = disc
-        self.prefix = prefix
-
-    def visualize(self, U, *args, **kwargs):
-        import numpy as np
-        dune_disc = self.disc._impl
-        assert isinstance(U, ListVectorArray)
-        filename = kwargs['filename'] if 'filename' in kwargs else self.prefix
-        size = len(U)
-        pad = len(str(size))
-        for ss in np.arange(size):
-            dune_disc.visualize(U._list[ss]._impl,
-                                filename + '_' + str(ss).zfill(pad),
-                                'solution',
-                                False) # do not add dirichlet shift
-
 config= {'subdomains': '[1 1 1]',
          'end_time' : 0.01,
          'nt' : 10,
-         'num_training_samples' : 1,
+         'nt_ref' : 20,
+         'num_training_samples' : 5,
          'max_rb_size' : 500,
          'target_error': 1e-1,
          'initial_data': 'exp(-((x[0]-0.5)*(x[0]-0.5)+(x[1]-0.5)*(x[1]-0.5))/0.01)'}
@@ -82,7 +64,7 @@ solver_options = Example.solver_options('bicgstab.amg.ilu0')
 
 def create_example(ExampleType, num_grid_elements):
     logger_cfg = ExampleType.logger_options()
-    logger_cfg.set('info', 0, True)
+    logger_cfg.set('info', -1, True)
     logger_cfg.set('info_color', 'blue', True)
 
     grid_cfg = ExampleType.grid_options('grid.multiscale.provider.cube')
@@ -100,6 +82,26 @@ def create_example(ExampleType, num_grid_elements):
 
 
 def create_discretization(example, config, name, nt):
+
+    class InstationaryDuneVisualizer(object):
+
+        def __init__(self, disc, prefix):
+            self.disc = disc
+            self.prefix = prefix
+
+        def visualize(self, U, *args, **kwargs):
+            import numpy as np
+            dune_disc = self.disc._impl
+            assert isinstance(U, ListVectorArray)
+            filename = kwargs['filename'] if 'filename' in kwargs else self.prefix
+            size = len(U)
+            pad = len(str(size))
+            for ss in np.arange(size):
+                dune_disc.visualize(U._list[ss]._impl,
+                                    filename + '_' + str(ss).zfill(pad),
+                                    'solution',
+                                    False) # do not add dirichlet shift
+
     stat_blocked_disc = wrapper[example.discretization()]
     stat_nonblocked_disc = stat_blocked_disc.as_nonblocked()
 
@@ -122,7 +124,7 @@ def create_discretization(example, config, name, nt):
 
 # create reference discretization
 example_ref = create_example(Example, '[32 32]')
-disc_ref_stat, disc_ref = create_discretization(example_ref, config, 'reference discretization', config['nt']*2)
+disc_ref_stat, disc_ref = create_discretization(example_ref, config, 'reference discretization', config['nt_ref'])
 logger.info('  grid has {} subdomains'.format(disc_ref_stat.num_subdomains))
 logger.info('  parameter type is {}'.format(disc_ref.parameter_type))
 logger.info('  reference discretization has {} DoFs'.format(disc_ref.solution_space.dim))
@@ -138,14 +140,14 @@ logger.info('  discretization has {} DoFs'.format(disc.solution_space.dim))
 # example.visualize('example.reference')
 # disc_stat._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
 
-# # compute sample trajectories
-# mu = (0.1, 1.0)
-# U = disc.solve(mu)
+# compute sample trajectories
+mu = (0.1, 1.0)
+U = disc.solve(mu)
 # disc.visualize(U)
-# U_ref = disc_ref.solve(mu)
+U_ref = disc_ref.solve(mu)
 # disc_ref.visualize(U_ref)
 
-# create product and norm
+# create product and norms
 mu_fixed = disc.operator.parse_parameter((1, 1))
 mu_fixed = wrapper.dune_parameter(mu_fixed)
 elliptic_product = disc_ref.products['elliptic']
@@ -156,7 +158,7 @@ def space_norm_squared(U):
     return elliptic_product.apply2(U, U)
 
 
-def norm(U, order=2):
+def bochner_norm(X_norm_squared, U, order=2):
     '''
       L^2-in-time, X-in-space
     '''
@@ -185,29 +187,38 @@ def norm(U, order=2):
             U_t.scal(SF[0][ii])
             U_t.axpy(SF[1][ii], U_b)
             # compute the X-norm of U(t)
-            values[ii] = space_norm_squared(make_listvectorarray(U_t))
+            values[ii] = X_norm_squared(make_listvectorarray(U_t))
         integral += np.dot(values, ww)*ie
     return np.sqrt(integral)
 
 
-def project(example_ref, nt_ref, U):
+def norm(U, order=2):
+    return bochner_norm(space_norm_squared, U, order)
+
+
+def prolong(example_ref, disc, U):
     T = config['end_time']
+    nt_ref = config['nt_ref']
     time_grid_ref = OnedGrid(domain=(0., T), num_intervals=nt_ref)
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
-    for t_n in time_grid_ref.centers(1):
-        coarse_entity = (time_grid.centers(1) <= t_n).nonzero()[0][-1]
+    U_fine = [None for ii in time_grid_ref.centers(1)]
+    for n in np.arange(len(time_grid_ref.centers(1))):
+        t_n = time_grid_ref.centers(1)[n]
+        coarse_entity = min((time_grid.centers(1) <= t_n).nonzero()[0][-1],
+                            time_grid.size(0) - 1)
         a = time_grid.centers(1)[coarse_entity]
         b = time_grid.centers(1)[coarse_entity + 1]
         SF = np.array((1./(a - b)*t_n - b/(a - b),
                        1./(b - a)*t_n - a/(b - a)))
-        import ipdb; ipdb.set_trace()
+        U_t = U.copy(ind=coarse_entity)
+        U_t.scal(SF[0][0])
+        U_t.axpy(SF[1][0], U, x_ind=coarse_entity + 1)
+        U_fine[n] = wrapper[example_ref.prolong(disc, U_t._list[0]._impl)]
+    return make_listvectorarray(U_fine)
 
 
-U_proj = project(example_ref, len(U_ref) - 1, U)
+print(norm(U_ref - prolong(example_ref, disc_stat._impl, U)))
 
-norm(U_ref)
-
-a = b
 
 class Reconstructor(object):
 
