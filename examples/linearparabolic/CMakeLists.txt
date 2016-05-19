@@ -4,7 +4,8 @@
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 foreach(file
-        "ORS2016__3_3.py")
+        "ORS2016__3_3.py"
+        "morepas3.py")
   if (NOT EXISTS ${file})
     execute_process(COMMAND ln -s "${CMAKE_CURRENT_SOURCE_DIR}/${file}" "${CMAKE_CURRENT_BINARY_DIR}/${file}")
   endif (NOT EXISTS ${file})
