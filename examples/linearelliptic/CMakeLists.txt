@@ -4,15 +4,15 @@
 # License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 add_executable(example_linearelliptic_kuehlergrill "kuehlergrill.cc" ${COMMON_HEADER})
-target_link_libraries(example_linearelliptic_kuehlergrill ${COMMON_LIBS})
+target_link_libraries(example_linearelliptic_kuehlergrill ${COMMON_LIBS} dunehhd)
 
 add_executable(example_linearelliptic_OS2014_FVCA7__visualization "OS2014_FVCA7__visualization.cc" ${COMMON_HEADER})
-target_link_libraries(example_linearelliptic_OS2014_FVCA7__visualization ${COMMON_LIBS})
+target_link_libraries(example_linearelliptic_OS2014_FVCA7__visualization ${COMMON_LIBS} dunehhd)
 
 add_executable(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
                "OS2015_SISC__6_1__multiscale_example__visualizations.cc" ${COMMON_HEADER})
 target_link_libraries(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
-                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY})
+                      ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY} dunehhd)
 
 add_python_bindings(linearellipticexamplegenericmultiscale
                     generic_multiscale_bindings_generator.py

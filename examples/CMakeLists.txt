@@ -6,8 +6,8 @@
 add_subdirectory(linearelliptic)
 add_subdirectory(linearparabolic)
 
-ADD_EXECUTABLE(example_empty "empty.cc" ${COMMON_HEADER})
-TARGET_LINK_LIBRARIES(example_empty ${COMMON_LIBS})
+add_executable(example_empty "empty.cc" ${COMMON_HEADER})
+target_link_libraries(example_empty ${COMMON_LIBS} dunehdd)
 
 foreach(target
         example_empty)
