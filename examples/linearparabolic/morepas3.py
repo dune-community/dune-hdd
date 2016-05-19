@@ -123,39 +123,49 @@ def create_discretization(example, config, name, nt):
 
 
 # create reference discretization
-example_ref = create_example(Example, '[32 32]')
-disc_ref_stat, disc_ref = create_discretization(example_ref, config, 'reference discretization', config['nt_ref'])
-logger.info('  grid has {} subdomains'.format(disc_ref_stat.num_subdomains))
-logger.info('  parameter type is {}'.format(disc_ref.parameter_type))
-logger.info('  reference discretization has {} DoFs'.format(disc_ref.solution_space.dim))
+reference_example = create_example(Example, '[32 32]')
+elliptic_LRBMS_reference_disc, parabolic_reference_disc = create_discretization(reference_example, config, 'reference discretization', config['nt_ref'])
+logger.info('  grid has {} subdomains'.format(elliptic_LRBMS_reference_disc.num_subdomains))
+logger.info('  parameter type is {}'.format(parabolic_reference_disc.parameter_type))
+logger.info('  reference discretization has {} DoFs'.format(parabolic_reference_disc.solution_space.dim))
 
 # create discretization
 example = create_example(Example, '[8 8]')
-disc_stat, disc = create_discretization(example, config, 'detailed discretization', config['nt'])
-logger.info('  discretization has {} DoFs'.format(disc.solution_space.dim))
+elliptic_LRBMS_disc, parabolic_disc = create_discretization(example, config, 'detailed discretization', config['nt'])
+logger.info('  discretization has {} DoFs'.format(parabolic_disc.solution_space.dim))
 
 # logger.info('visualizing grid and data functions ...')
-# example_ref.visualize('example')
-# disc_ref_stat._impl.visualize(example_ref.project(config['initial_data']), 'initial_data.reference', 'initial_data')
+# reference_example.visualize('example')
+# elliptic_LRBMS_reference_disc._impl.visualize(reference_example.project(config['initial_data']), 'initial_data.reference', 'initial_data')
 # example.visualize('example.reference')
-# disc_stat._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
+# elliptic_LRBMS_disc._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
 
 # compute sample trajectories
 mu = (0.1, 1.0)
-U = disc.solve(mu)
-# disc.visualize(U)
-U_ref = disc_ref.solve(mu)
-# disc_ref.visualize(U_ref)
+U = parabolic_disc.solve(mu)
+# parabolic_disc.visualize(U)
+U_ref = parabolic_reference_disc.solve(mu)
+# parabolic_reference_disc.visualize(U_ref)
 
-# create product and norms
-mu_fixed = disc.operator.parse_parameter((1, 1))
-mu_fixed = wrapper.dune_parameter(mu_fixed)
-elliptic_product = disc_ref.products['elliptic']
-elliptic_product = wrapper[elliptic_product._impl.freeze_parameter(mu_fixed)]
+# create products
+def create_fixed_elliptic_product(disc, mu_fixed):
+    mu_fixed = disc.operator.parse_parameter(mu_fixed)
+    mu_fixed = wrapper.dune_parameter(mu_fixed)
+    prod = disc.products['elliptic']
+    return wrapper[prod._impl.freeze_parameter(mu_fixed)]
 
 
+elliptic_reference_product = create_fixed_elliptic_product(parabolic_reference_disc, (1, 1))
+elliptic_product = create_fixed_elliptic_product(parabolic_disc, (1, 1))
+
+
+# create norms
 def space_norm_squared(U):
     return elliptic_product.apply2(U, U)
+
+
+def reference_space_norm_squared(U):
+    return elliptic_reference_product.apply2(U, U)
 
 
 def bochner_norm(X_norm_squared, U, order=2):
@@ -196,7 +206,12 @@ def norm(U, order=2):
     return bochner_norm(space_norm_squared, U, order)
 
 
-def prolong(example_ref, disc, U):
+def reference_norm(U, order=2):
+    return bochner_norm(reference_space_norm_squared, U, order)
+
+
+
+def prolong(fine_ex, disc, U):
     T = config['end_time']
     nt_ref = config['nt_ref']
     time_grid_ref = OnedGrid(domain=(0., T), num_intervals=nt_ref)
@@ -213,11 +228,11 @@ def prolong(example_ref, disc, U):
         U_t = U.copy(ind=coarse_entity)
         U_t.scal(SF[0][0])
         U_t.axpy(SF[1][0], U, x_ind=coarse_entity + 1)
-        U_fine[n] = wrapper[example_ref.prolong(disc, U_t._list[0]._impl)]
+        U_fine[n] = wrapper[fine_ex.prolong(disc, U_t._list[0]._impl)]
     return make_listvectorarray(U_fine)
 
 
-print(norm(U_ref - prolong(example_ref, disc_stat._impl, U)))
+# print(reference_norm(U_ref - prolong(reference_example, elliptic_LRBMS_disc._impl, U)))
 
 
 class Reconstructor(object):
@@ -247,8 +262,8 @@ class Reconstructor(object):
 
 def reductor(discretization, RB, vector_product=None, disable_caching=True, extends=None):
     if RB is None:
-        RB = [stat_blocked_disc.local_operator(ss).source.empty() for ss in np.arange(stat_blocked_disc.num_subdomains)]
-    rd, rc, reduction_data = reduce_generic_rb(stat_blocked_disc, RB, vector_product, disable_caching, extends)
+        RB = [elliptic_LRBMS_disc.local_operator(ss).source.empty() for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)]
+    rd, rc, reduction_data = reduce_generic_rb(elliptic_LRBMS_disc, RB, vector_product, disable_caching, extends)
 
     def unblock_op(op):
         assert op._blocks[0][0] is not None
@@ -301,24 +316,24 @@ def reductor(discretization, RB, vector_product=None, disable_caching=True, exte
                                        parameter_space=rd.parameter_space,
                                        cache_region='disk',
                                        name='reduced non-blocked discretization'),
-            Reconstructor(stat_blocked_disc, RB),
+            Reconstructor(elliptic_LRBMS_disc, RB),
             reduction_data)
 
 
 def extension(basis, U):
     if not isinstance(U, BlockVectorArray):
-        U = BlockVectorArray([stat_blocked_disc.localize_vector(U, ii)
-                              for ii in np.arange(stat_blocked_disc.num_subdomains)])
+        U = BlockVectorArray([elliptic_LRBMS_disc.localize_vector(U, ii)
+                              for ii in np.arange(elliptic_LRBMS_disc.num_subdomains)])
     return pod_block_basis_extension(basis,
                                      U,
                                      count=1,
-                                     product=[stat_blocked_disc.local_product(ss, 'h1')
-                                              for ss in np.arange(stat_blocked_disc.num_subdomains)])
+                                     product=[elliptic_LRBMS_disc.local_product(ss, 'h1')
+                                              for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)])
 
 
-greedy_data = greedy(nonblocked_disc,
+greedy_data = greedy(parabolic_disc,
                      reductor,
-                     nonblocked_disc.parameter_space.sample_uniformly(config['num_training_samples']),
+                     parabolic_disc.parameter_space.sample_uniformly(config['num_training_samples']),
                      use_estimator=False,
                      error_norm=norm,
                      extension_algorithm=extension,
