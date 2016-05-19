@@ -139,7 +139,6 @@ public:
                SpaceProvider::create(grid_provider, level),
                bound_inf_cfg,
                prob)
-    , grid_provider_(grid_provider.copy())
     , only_these_products_(only_these_products)
   {
     // in that case we would have to build the elliptic operators like the dirichlet shift
@@ -158,7 +157,6 @@ public:
                SpaceProvider::create(grid_provider, level_or_subdomain),
                bound_inf_cfg,
                prob)
-    , grid_provider_(grid_provider.copy())
     , only_these_products_(only_these_products)
   {
     // in that case we would have to build the elliptic operators like the dirichlet shift
@@ -417,7 +415,6 @@ private:
   } // ... make_zero_dirichlet_product(...)
 
   using BaseType::pattern_;
-  std::shared_ptr< GridProviderType > grid_provider_;
   const std::vector< std::string > only_these_products_;
 }; // class CG
 
