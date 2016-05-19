@@ -159,6 +159,22 @@ public:
     return discrete_function.vector();
   } // ... project(...)
 
+  VectorType project(const DiscretizationType& source_disc, const VectorType& source_vec)
+  {
+    using namespace Dune;
+    auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale.project");
+    auto source_func = GDT::make_const_discrete_function(source_disc.ansatz_space(), source_vec);
+    auto range_func = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
+    if (source_vec.size() > range_func.vector().size())
+      logger.warn() << " projecting from space of size " << source_vec.size() << " onto space of size "
+                    << range_func.vector().size() << ", this might not be what you want!" << std::endl;
+    else
+      logger.info() << " projecting from space of size " << source_vec.size() << " onto space of size "
+                    << range_func.vector().size() << "... " << std::endl;
+    GDT::Operators::apply_projection(source_func, range_func);
+    return range_func.vector();
+  } // ... project(...)
+
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
   std::unique_ptr< Dune::grid::Multiscale::ProviderInterface< GridType > > grid_;
