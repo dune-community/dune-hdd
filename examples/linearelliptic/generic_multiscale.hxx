@@ -147,7 +147,7 @@ project(const std::string& expression) const
   auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale.project");
   logger.info() << "projecting '" << expression << "'... " << std::endl;
   auto discrete_function = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
-  GDT::Operators::apply_projection(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
+  GDT::project(Stuff::Functions::Expression< E, D, d, R, r >("x", expression), discrete_function);
   return discrete_function.vector();
 } // ... project(...)
 
