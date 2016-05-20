@@ -243,7 +243,7 @@ class Reconstructor(object):
 
     def reconstruct(self, U):
         if U.dim == 0:
-            return self._disc.globalize_vectors(self._disc.solution_space.zeros(1))
+            return self._disc.globalize_vectors(self._disc.solution_space.zeros(len(U)))
         else:
             assert U.dim == np.sum(len(RB) for RB in self._RB)
             local_lens = [len(RB) for RB in self._RB]
