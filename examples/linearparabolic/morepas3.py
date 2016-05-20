@@ -49,6 +49,8 @@ config= {'subdomains': '[1 1 1]',
          'end_time' : 0.01,
          'nt' : 10,
          'nt_ref' : 20,
+         'mu_fixed': (1, 1),
+         'poincare': 1./(np.pi**2),
          'num_training_samples' : 2,
          'max_rb_size' : 500,
          'target_error': 1e-1,
@@ -155,15 +157,16 @@ logger.info('  reference discretization has {} DoFs'.format(parabolic_reference_
 # parabolic_reference_disc.visualize(U_ref)
 
 # create products
-def create_fixed_elliptic_product(disc, mu_fixed):
-    mu_fixed = disc.operator.parse_parameter(mu_fixed)
-    mu_fixed = wrapper.dune_parameter(mu_fixed)
+def create_fixed_elliptic_product(disc, mu_hat):
+    mu_hat = disc.operator.parse_parameter(mu_hat)
+    mu_hat = wrapper.dune_parameter(mu_hat)
     prod = disc.products['elliptic']
-    return wrapper[prod._impl.freeze_parameter(mu_fixed)]
+    return wrapper[prod._impl.freeze_parameter(mu_hat)]
 
+mu_fixed = parabolic_disc.parse_parameter(config['mu_fixed'])
 
-elliptic_reference_product = create_fixed_elliptic_product(parabolic_reference_disc, (1, 1))
-elliptic_product = create_fixed_elliptic_product(parabolic_disc, (1, 1))
+elliptic_reference_product = create_fixed_elliptic_product(parabolic_reference_disc, mu_fixed)
+elliptic_product = create_fixed_elliptic_product(parabolic_disc, mu_fixed)
 
 
 # create norms
@@ -354,6 +357,37 @@ if config['target_error'] < max_disc_err:
     logger.warn('Target error for greedy ({}) is below discretization error ({}),'.format(config['target_error'],
                                                                                           max_disc_err))
     logger.warn('greedy will most likely fail!')
+
+logger.info('estimating detailed error ...')
+mu = training_samples[0]
+p_N = parabolic_disc.solve(mu)
+p_N_c = make_listvectorarray([wrapper[example.oswald_interpolate(p._impl)] for p in p_N._list])
+p_N_d = p_N - p_N_c
+
+def estimate_L2_energydual_dt(energydual_squared, T, U):
+    result = 0.
+    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
+    for n in np.arange(1, time_grid.size(1)):
+        dt = time_grid.volumes(0)[n - 1]
+        result += 1./dt * energydual_squared(U._list[n] - U._list[n - 1])
+    return np.sqrt(result)
+
+def dual_energy_norm_squared_estimate(ex, C_p, mu, mu_hat, U):
+    U = make_listvectorarray(U)
+    mu = wrapper.dune_parameter(mu)
+    mu_hat = wrapper.dune_parameter(mu_hat)
+    return (  (C_p
+               * 1./ex.alpha(mu, mu_hat)
+               * ex.min_diffusion_ev(mu_hat))**2
+            * parabolic_disc.l2_product.apply2(U, U))
+
+a = estimate_L2_energydual_dt(partial(dual_energy_norm_squared_estimate,
+                                      example,
+                                      config['poincare'],
+                                      mu,
+                                      mu_fixed),
+                              config['end_time'],
+                              p_N_d)
 
 
 greedy_data = greedy(parabolic_disc,
