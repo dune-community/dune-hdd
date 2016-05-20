@@ -141,6 +141,20 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            retval(VectorType),
                            [param('const ' + VectorType + '&', 'vector')],
                            is_const=True, throw=exceptions)
+        Example.add_method('alpha',
+                           retval('double'),
+                           [param('const Dune::Pymor::Parameter&', 'mu_1'),
+                            param('const Dune::Pymor::Parameter&', 'mu_2')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('gamma',
+                           retval('double'),
+                           [param('const Dune::Pymor::Parameter&', 'mu_1'),
+                            param('const Dune::Pymor::Parameter&', 'mu_2')],
+                           is_const=True, throw=exceptions)
+        Example.add_method('min_diffusion_ev',
+                           retval('double'),
+                           [param('const Dune::Pymor::Parameter&', 'mu')],
+                           is_const=True, throw=exceptions)
         Example.add_method('visualize',
                            None,
                            [param('const std::string&', 'filename_prefix')],

@@ -4,6 +4,8 @@
 #include <dune/gdt/operators/prolongations.hh>
 #include <dune/gdt/operators/oswaldinterpolation.hh>
 
+#include <dune/hdd/linearelliptic/estimators/block-swipdg.hh>
+
 #include "generic_multiscale.hh"
 
 
@@ -183,6 +185,40 @@ oswald_interpolate(const GenericLinearellipticMultiscaleExample< G, sp, la >::Ve
   auto continuous_func = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
   GDT::Operators::make_oswald_interpolation(discretization_->grid_view())->apply(discontinuous_func, continuous_func);
   return continuous_func.vector();
+}
+
+
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+alpha(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2) const
+{
+  return problem_->diffusion_factor()->alpha(mu_1, mu_2);
+}
+
+
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+gamma(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2) const
+{
+  return problem_->diffusion_factor()->gamma(mu_1, mu_2);
+}
+
+
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+min_diffusion_ev(const Dune::Pymor::Parameter& mu) const
+{
+  using namespace Dune;
+  auto diffusion_factor = problem_->diffusion_factor()->with_mu(problem_->map_parameter(mu, "diffusion_factor"));
+  auto diffusion_tensor = problem_->diffusion_tensor()->with_mu(problem_->map_parameter(mu, "diffusion_tensor"));
+  const auto diffusion = *diffusion_factor * *diffusion_tensor;
+  double min_ev = 0.;
+  const auto grid_view = discretization_->grid_view();
+  const auto entity_it_end = grid_view.template end< 0 >();
+  for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it)
+    min_ev = std::min(min_ev,
+                      HDD::LinearElliptic::Estimators::internal::compute_minimum(diffusion, *entity_it));
+  return min_ev;
 }
 
 

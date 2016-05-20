@@ -73,6 +73,12 @@ public:
 
   VectorType oswald_interpolate(const VectorType& vector) const;
 
+  double alpha(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2) const;
+
+  double gamma(const Dune::Pymor::Parameter& mu_1, const Dune::Pymor::Parameter& mu_2) const;
+
+  double min_diffusion_ev(const Dune::Pymor::Parameter& mu) const;
+
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
   std::unique_ptr< Dune::grid::Multiscale::ProviderInterface< GridType > > grid_;
