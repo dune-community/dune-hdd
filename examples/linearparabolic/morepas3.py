@@ -124,7 +124,7 @@ def create_discretization(example, config, initial_data, name, nt):
 
 # create discretization
 example = create_example(Example, '[8 8]')
-initial_data = example.project(config['initial_data'])
+initial_data = example.oswald_interpolate(example.project(config['initial_data']))
 elliptic_LRBMS_disc, parabolic_disc = create_discretization(example, config, initial_data, 'detailed discretization', config['nt'])
 logger.info('  grid has {} subdomains'.format(elliptic_LRBMS_disc.num_subdomains))
 logger.info('  parameter type is {}'.format(parabolic_disc.parameter_type))
