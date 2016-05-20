@@ -49,7 +49,7 @@ config= {'subdomains': '[1 1 1]',
          'end_time' : 0.01,
          'nt' : 10,
          'nt_ref' : 20,
-         'num_training_samples' : 5,
+         'num_training_samples' : 2,
          'max_rb_size' : 500,
          'target_error': 1e-1,
          'initial_data': 'exp(-((x[0]-0.5)*(x[0]-0.5)+(x[1]-0.5)*(x[1]-0.5))/0.01)'}
@@ -141,10 +141,10 @@ logger.info('  discretization has {} DoFs'.format(parabolic_disc.solution_space.
 # elliptic_LRBMS_disc._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
 
 # compute sample trajectories
-mu = (0.1, 1.0)
-U = parabolic_disc.solve(mu)
+# mu = (0.1, 1.0)
+# U = parabolic_disc.solve(mu)
 # parabolic_disc.visualize(U)
-U_ref = parabolic_reference_disc.solve(mu)
+# U_ref = parabolic_reference_disc.solve(mu)
 # parabolic_reference_disc.visualize(U_ref)
 
 # create products
@@ -298,6 +298,13 @@ def reductor(discretization, RB, vector_product=None, disable_caching=True, exte
                             for ii in np.arange(op.num_range_blocks)]).toarray()
             return NumpyMatrixOperator(mat)
 
+    class DetailedEstimator(object):
+
+        def estimate(self, U, mu, discretization):
+            U_rec = Reconstructor(elliptic_LRBMS_disc, RB).reconstruct(U)
+            U_prol = prolong(reference_example, elliptic_LRBMS_disc._impl, U_rec)
+            return reference_norm(parabolic_reference_disc.solve(mu) - U_prol)
+
     reduced_op = unblock_op(rd.operator)
     reduced_rhs = unblock_op(rd.rhs)
     return (InstationaryDiscretization(T=config['end_time'],
@@ -314,8 +321,9 @@ def reductor(discretization, RB, vector_product=None, disable_caching=True, exte
                                        vector_operators={kk: unblock_op(rd.vector_operators[kk])
                                                          for kk in rd.vector_operators.keys()},
                                        parameter_space=rd.parameter_space,
+                                       estimator=DetailedEstimator(),
                                        cache_region='disk',
-                                       name='reduced non-blocked discretization'),
+                                       name='reduced discretization'),
             Reconstructor(elliptic_LRBMS_disc, RB),
             reduction_data)
 
@@ -331,11 +339,24 @@ def extension(basis, U):
                                               for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)])
 
 
+logger.info('computing max discretization error ...')
+training_samples = list(parabolic_disc.parameter_space.sample_uniformly(config['num_training_samples']))
+max_disc_err = np.max([reference_norm(parabolic_reference_disc.solve(mu)
+                                      - prolong(reference_example, elliptic_LRBMS_disc._impl, parabolic_disc.solve(mu)))
+                       for mu in training_samples])
+add_values(max_disc_error=max_disc_err)
+logger.info('  is {}'.format(max_disc_err))
+if config['target_error'] < max_disc_err:
+    logger.warn('Target error for greedy ({}) is below discretization error ({}),'.format(config['target_error'],
+                                                                                          max_disc_err))
+    logger.warn('greedy will most likely fail!')
+
+
 greedy_data = greedy(parabolic_disc,
                      reductor,
-                     parabolic_disc.parameter_space.sample_uniformly(config['num_training_samples']),
-                     use_estimator=False,
-                     error_norm=norm,
+                     training_samples,
+                     use_estimator=True,
+                     error_norm=None,
                      extension_algorithm=extension,
                      max_extensions=config['max_rb_size'],
                      target_error=config['target_error'])
