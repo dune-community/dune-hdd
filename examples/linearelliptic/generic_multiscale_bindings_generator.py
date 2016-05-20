@@ -137,6 +137,10 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            [param('const ' + DiscretizationType + '&', 'source_disc'),
                             param('const ' + VectorType + '&', 'source_vec')],
                            is_const=True, throw=exceptions)
+        Example.add_method('oswald_interpolate',
+                           retval(VectorType),
+                           [param('const ' + VectorType + '&', 'vector')],
+                           is_const=True, throw=exceptions)
         Example.add_method('visualize',
                            None,
                            [param('const std::string&', 'filename_prefix')],

@@ -71,6 +71,8 @@ public:
 
   VectorType prolong(const DiscretizationType& source_disc, const VectorType& source_vec) const;
 
+  VectorType oswald_interpolate(const VectorType& vector) const;
+
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
   std::unique_ptr< Dune::grid::Multiscale::ProviderInterface< GridType > > grid_;

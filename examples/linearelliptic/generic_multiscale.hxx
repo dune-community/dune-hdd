@@ -2,6 +2,7 @@
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX
 
 #include <dune/gdt/operators/prolongations.hh>
+#include <dune/gdt/operators/oswaldinterpolation.hh>
 
 #include "generic_multiscale.hh"
 
@@ -169,6 +170,20 @@ prolong(const typename GenericLinearellipticMultiscaleExample< G, sp, la >::Disc
   GDT::Operators::prolong(source_func, range_func);
   return range_func.vector();
 } // ... project(...)
+
+
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    typename GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType GenericLinearellipticMultiscaleExample< G, sp, la >::
+oswald_interpolate(const GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& vector) const
+{
+  using namespace Dune;
+  auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale.prolong");
+  logger.info() << "computing Oswald interpolation... " << std::endl;
+  auto discontinuous_func = GDT::make_const_discrete_function(discretization_->ansatz_space(), vector);
+  auto continuous_func = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
+  GDT::Operators::make_oswald_interpolation(discretization_->grid_view())->apply(discontinuous_func, continuous_func);
+  return continuous_func.vector();
+}
 
 
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX
