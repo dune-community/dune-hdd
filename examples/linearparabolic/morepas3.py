@@ -81,7 +81,7 @@ def create_example(ExampleType, num_grid_elements):
     return ExampleType(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
 
 
-def create_discretization(example, config, name, nt):
+def create_discretization(example, config, initial_data, name, nt):
 
     class InstationaryDuneVisualizer(object):
 
@@ -106,7 +106,7 @@ def create_discretization(example, config, name, nt):
     stat_nonblocked_disc = stat_blocked_disc.as_nonblocked()
 
     return (stat_blocked_disc, InstationaryDiscretization(T=config['end_time'],
-                                                          initial_data=make_listvectorarray(wrapper[example.project(config['initial_data'])]),
+                                                          initial_data=make_listvectorarray(wrapper[initial_data]),
                                                           operator=stat_nonblocked_disc.operator,
                                                           rhs=stat_nonblocked_disc.rhs,
                                                           mass=stat_nonblocked_disc.products['l2'],
@@ -122,17 +122,24 @@ def create_discretization(example, config, name, nt):
                                                           name=name))
 
 
-# create reference discretization
-reference_example = create_example(Example, '[32 32]')
-elliptic_LRBMS_reference_disc, parabolic_reference_disc = create_discretization(reference_example, config, 'reference discretization', config['nt_ref'])
-logger.info('  grid has {} subdomains'.format(elliptic_LRBMS_reference_disc.num_subdomains))
-logger.info('  parameter type is {}'.format(parabolic_reference_disc.parameter_type))
-logger.info('  reference discretization has {} DoFs'.format(parabolic_reference_disc.solution_space.dim))
-
 # create discretization
 example = create_example(Example, '[8 8]')
-elliptic_LRBMS_disc, parabolic_disc = create_discretization(example, config, 'detailed discretization', config['nt'])
+initial_data = example.project(config['initial_data'])
+elliptic_LRBMS_disc, parabolic_disc = create_discretization(example, config, initial_data, 'detailed discretization', config['nt'])
+logger.info('  grid has {} subdomains'.format(elliptic_LRBMS_disc.num_subdomains))
+logger.info('  parameter type is {}'.format(parabolic_disc.parameter_type))
 logger.info('  discretization has {} DoFs'.format(parabolic_disc.solution_space.dim))
+
+# create reference discretization
+reference_example = create_example(Example, '[32 32]')
+elliptic_LRBMS_reference_disc, parabolic_reference_disc = create_discretization(reference_example,
+                                                                                config,
+                                                                                reference_example.prolong(elliptic_LRBMS_disc._impl,
+                                                                                                          initial_data),
+                                                                                'reference discretization',
+                                                                                config['nt_ref'])
+logger.info('  reference discretization has {} DoFs'.format(parabolic_reference_disc.solution_space.dim))
+
 
 # logger.info('visualizing grid and data functions ...')
 # reference_example.visualize('example')
@@ -140,7 +147,7 @@ logger.info('  discretization has {} DoFs'.format(parabolic_disc.solution_space.
 # example.visualize('example.reference')
 # elliptic_LRBMS_disc._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
 
-# compute sample trajectories
+# # compute sample trajectories
 # mu = (0.1, 1.0)
 # U = parabolic_disc.solve(mu)
 # parabolic_disc.visualize(U)
@@ -230,9 +237,6 @@ def prolong(fine_ex, disc, U):
         U_t.axpy(SF[1][0], U, x_ind=coarse_entity + 1)
         U_fine[n] = wrapper[fine_ex.prolong(disc, U_t._list[0]._impl)]
     return make_listvectorarray(U_fine)
-
-
-# print(reference_norm(U_ref - prolong(reference_example, elliptic_LRBMS_disc._impl, U)))
 
 
 class Reconstructor(object):
