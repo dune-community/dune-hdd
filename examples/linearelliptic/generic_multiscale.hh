@@ -69,7 +69,7 @@ public:
 
   VectorType project(const std::string& expression) const;
 
-  VectorType prolong(const DiscretizationType& source_disc, const VectorType& source_vec);
+  VectorType prolong(const DiscretizationType& source_disc, const VectorType& source_vec) const;
 
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;

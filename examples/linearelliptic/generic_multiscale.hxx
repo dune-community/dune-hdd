@@ -154,10 +154,10 @@ project(const std::string& expression) const
 template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
     typename GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType GenericLinearellipticMultiscaleExample< G, sp, la >::
 prolong(const typename GenericLinearellipticMultiscaleExample< G, sp, la >::DiscretizationType& source_disc,
-        const typename GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& source_vec)
+        const typename GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& source_vec) const
 {
   using namespace Dune;
-  auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale.project");
+  auto logger = DSC::TimedLogger().get("example.linearelliptic.genericmultiscale.prolong");
   auto source_func = GDT::make_const_discrete_function(source_disc.ansatz_space(), source_vec);
   auto range_func = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
   if (source_vec.size() >= range_func.vector().size())
