@@ -49,9 +49,12 @@ config= {'subdomains': '[1 1 1]',
          'end_time' : 0.01,
          'nt' : 10,
          'nt_ref' : 20,
+         'mu_min': (0.1, 0.1),
+         'mu_max': (1, 1),
          'mu_fixed': (1, 1),
          'poincare': 1./(np.pi**2),
          'num_training_samples' : 2,
+         'extension_product': 'h1',
          'max_rb_size' : 500,
          'target_error': 1e-1,
          'initial_data': 'exp(-((x[0]-0.5)*(x[0]-0.5)+(x[1]-0.5)*(x[1]-0.5))/0.01)'}
@@ -119,7 +122,9 @@ def create_discretization(example, config, initial_data, name, nt):
                                                           vector_operators=stat_nonblocked_disc.vector_operators,
                                                           visualizer=InstationaryDuneVisualizer(stat_nonblocked_disc,
                                                                                                 name + '.solution'),
-                                                          parameter_space=CubicParameterSpace(stat_nonblocked_disc.parameter_type, 0.1, 10),
+                                                          parameter_space=CubicParameterSpace(stat_nonblocked_disc.parameter_type,
+                                                                                              config['mu_min'][0],
+                                                                                              config['mu_max'][0]),
                                                           cache_region='disk',
                                                           name=name))
 
@@ -157,26 +162,30 @@ logger.info('  reference discretization has {} DoFs'.format(parabolic_reference_
 # parabolic_reference_disc.visualize(U_ref)
 
 # create products
-def create_fixed_elliptic_product(disc, mu_hat):
-    mu_hat = disc.operator.parse_parameter(mu_hat)
-    mu_hat = wrapper.dune_parameter(mu_hat)
-    prod = disc.products['elliptic']
-    return wrapper[prod._impl.freeze_parameter(mu_hat)]
+def create_fixed_product(prod, mu_hat):
+    if prod.parametric:
+        return wrapper[prod._impl.freeze_parameter(mu_hat)]
+    else:
+        return prod
 
 mu_fixed = parabolic_disc.parse_parameter(config['mu_fixed'])
+mu_fixed_d = wrapper.dune_parameter(mu_fixed)
+mu_min = parabolic_disc.parse_parameter(config['mu_min'])
+mu_min_d = wrapper.dune_parameter(mu_min)
+mu_max = parabolic_disc.parse_parameter(config['mu_max'])
+mu_max_d = wrapper.dune_parameter(mu_max)
 
-elliptic_reference_product = create_fixed_elliptic_product(parabolic_reference_disc, mu_fixed)
-elliptic_product = create_fixed_elliptic_product(parabolic_disc, mu_fixed)
-
+products = {kk: create_fixed_product(prod, mu_fixed_d) for kk, prod in parabolic_disc.products.items()}
+reference_products = {kk: create_fixed_product(prod, mu_fixed_d) for kk, prod in parabolic_reference_disc.products.items()}
 
 # create norms
-def space_norm_squared(U):
-    return elliptic_product.apply2(U, U)
+def create_norm2(prod):
+    def norm2(U):
+        return prod.apply2(U, U)[0][0]
+    return norm2
 
-
-def reference_space_norm_squared(U):
-    return elliptic_reference_product.apply2(U, U)
-
+norms2 = {kk: create_norm2(prod) for kk, prod in products.items()}
+reference_norms2 = {kk: create_norm2(prod) for kk, prod in reference_products.items()}
 
 def bochner_norm(X_norm_squared, U, order=2):
     '''
@@ -211,15 +220,11 @@ def bochner_norm(X_norm_squared, U, order=2):
         integral += np.dot(values, ww)*ie
     return np.sqrt(integral)
 
+def create_bochner_norm(norm2, order=2):
+    return partial(bochner_norm, norm2, order=order)
 
-def norm(U, order=2):
-    return bochner_norm(space_norm_squared, U, order)
-
-
-def reference_norm(U, order=2):
-    return bochner_norm(reference_space_norm_squared, U, order)
-
-
+bochner_norms = {kk: create_bochner_norm(norm2) for kk, norm2 in norms2.items()}
+reference_bochner_norms = {kk: create_bochner_norm(norm2) for kk, norm2 in reference_norms2.items()}
 
 def prolong(fine_ex, disc, U):
     T = config['end_time']
@@ -342,16 +347,18 @@ def extension(basis, U):
     return pod_block_basis_extension(basis,
                                      U,
                                      count=1,
-                                     product=[elliptic_LRBMS_disc.local_product(ss, 'h1')
+                                     product=[elliptic_LRBMS_disc.local_product(ss, config['extension_product'])
                                               for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)])
 
 
-logger.info('computing max discretization error ...')
+logger.info('computing discretization error ...')
 training_samples = list(parabolic_disc.parameter_space.sample_uniformly(config['num_training_samples']))
-max_disc_err = np.max([reference_norm(parabolic_reference_disc.solve(mu)
-                                      - prolong(reference_example, elliptic_LRBMS_disc._impl, parabolic_disc.solve(mu)))
-                       for mu in training_samples])
-add_values(max_disc_error=max_disc_err)
+disc_err = [reference_bochner_norms['elliptic'](parabolic_reference_disc.solve(mu)
+                                                - prolong(reference_example, elliptic_LRBMS_disc._impl, parabolic_disc.solve(mu)))
+            for mu in training_samples]
+max_disc_err = np.max(disc_err)
+add_values(disc_err=disc_err,
+           max_disc_error=max_disc_err)
 logger.info('  is {}'.format(max_disc_err))
 if config['target_error'] < max_disc_err:
     logger.warn('Target error for greedy ({}) is below discretization error ({}),'.format(config['target_error'],
@@ -359,54 +366,102 @@ if config['target_error'] < max_disc_err:
     logger.warn('greedy will most likely fail!')
 
 logger.info('estimating detailed error ...')
-mu = training_samples[0]
-p_N = parabolic_disc.solve(mu)
-p_N_c = make_listvectorarray([wrapper[example.oswald_interpolate(p._impl)] for p in p_N._list])
-p_N_d = p_N - p_N_c
 
-def estimate_L2_energydual_dt(energydual_squared, T, U):
+def dual_energy_space_norm_squared_estimate(C_P, alpha, c_eps, U):
+    U = make_listvectorarray(U)
+    return (C_P/(alpha * c_eps))**2 * parabolic_disc.l2_product.apply2(U, U)[0][0]
+
+def L2_time_dual_energy_space_partial_t_estimate(dual_energy2_estimate, T, U):
     result = 0.
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
     for n in np.arange(1, time_grid.size(1)):
         dt = time_grid.volumes(0)[n - 1]
-        result += 1./dt * energydual_squared(U._list[n] - U._list[n - 1])
+        result += 1./dt * dual_energy2_estimate(U._list[n] - U._list[n - 1])
     return np.sqrt(result)
 
-def dual_energy_norm_squared_estimate(ex, C_p, mu, mu_hat, U):
-    U = make_listvectorarray(U)
-    mu = wrapper.dune_parameter(mu)
-    mu_hat = wrapper.dune_parameter(mu_hat)
-    return (  (C_p
-               * 1./ex.alpha(mu, mu_hat)
-               * ex.min_diffusion_ev(mu_hat))**2
-            * parabolic_disc.l2_product.apply2(U, U))
+def time_residual_estimate(T, B, l2_prod, U, mu):
+    B =  wrapper[B._impl.freeze_parameter(mu)]
+    result = 0.
+    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
+    for n in np.arange(1, time_grid.size(1)):
+        B_func = B.apply(make_listvectorarray(U._list[n] - U._list[n - 1]))
+        B_riesz = l2_prod.apply_inverse(B_func)
+        dt = time_grid.volumes(0)[n - 1]
+        result += dt/3. * l2_prod.apply2(B_riesz, B_riesz)[0][0]
+    return np.sqrt(result)
 
-a = estimate_L2_energydual_dt(partial(dual_energy_norm_squared_estimate,
-                                      example,
-                                      config['poincare'],
-                                      mu,
-                                      mu_fixed),
-                              config['end_time'],
-                              p_N_d)
+def elliptic_reconstruction_estimate(ex, T, U, mu):
+    result = 0.
+    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
+    dt = time_grid.volumes(0)[0]
+    for n in np.arange(time_grid.size(1)):
+        result += dt/3. * ex.elliptic_reconstruction_estimate(U._list[n]._impl,
+                                                              mu_min_d, mu_max_d, mu_fixed_d, mu_fixed_d,
+                                                              mu)**2
+    return np.sqrt(result)
 
 
-greedy_data = greedy(parabolic_disc,
-                     reductor,
-                     training_samples,
-                     use_estimator=True,
-                     error_norm=None,
-                     extension_algorithm=extension,
-                     max_extensions=config['max_rb_size'],
-                     target_error=config['target_error'])
-rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
-RB = greedy_data['basis']
+def estimate(p_N, mu):
+    p_N_c = make_listvectorarray([wrapper[example.oswald_interpolate(p._impl)] for p in p_N._list])
+    p_N_d = p_N - p_N_c
 
-logger.info(' ')
+    C_P = config['poincare']
+    c_eps_mu_hat = example.min_diffusion_ev(mu_fixed_d)
+    C_eps_mu_hat = example.max_diffusion_ev(mu_fixed_d)
+    alpha_mu_mu_hat = example.alpha(wrapper.dune_parameter(mu), mu_fixed_d)
+    gamma_mu_mu_hat = example.gamma(wrapper.dune_parameter(mu), mu_fixed_d)
 
-add_values(time=greedy_data['time'],
-           max_err_mus=greedy_data['max_err_mus'],
-           extensions=greedy_data['extensions'],
-           max_errs=greedy_data['max_errs'],
-           basis_sizes=[len(local_RB) for local_RB in RB])
-add_logfile(logfile)
+    C_b = 1. #gamma_mu_mu_hat * C_eps_mu_hat
+    C = np.sqrt(3*C_b**2 + 2)
+    C_V = C_P/(alpha_mu_mu_hat * c_eps_mu_hat)
+
+    e_c_0_norm = 0.
+    dt_p_N_d_norm = L2_time_dual_energy_space_partial_t_estimate(partial(dual_energy_space_norm_squared_estimate,
+                                                                         C_P,
+                                                                         alpha_mu_mu_hat,
+                                                                         c_eps_mu_hat),
+                                                                 config['end_time'],
+                                                                 p_N_d)
+    eps_norm = elliptic_reconstruction_estimate(example,
+                                                config['end_time'],
+                                                p_N,
+                                                wrapper.dune_parameter(mu))
+    p_N_d_norm = bochner_norms['elliptic'](p_N_d)
+    R_T_norm = time_residual_estimate(config['end_time'],
+                                      parabolic_disc.operator,
+                                      products['l2'],
+                                      p_N,
+                                      wrapper.dune_parameter(mu))
+
+    return 2.*dt_p_N_d_norm + (C + 1)*eps_norm + C*p_N_d_norm + 2.*C_V*R_T_norm
+
+estimated_err = [estimate(parabolic_disc.solve(mu), mu)
+                 for mu in training_samples]
+
+
+for ii in np.arange(len(training_samples)):
+    print('{}: {} vs. {} ({})'.format(training_samples[ii],
+                                      disc_err[ii],
+                                      estimated_err[ii],
+                                      estimated_err[ii]/disc_err[ii]))
+
+# greedy_data = greedy(parabolic_disc,
+#                      reductor,
+#                      training_samples,
+#                      use_estimator=True,
+#                      error_norm=None,
+#                      extension_algorithm=extension,
+#                      max_extensions=config['max_rb_size'],
+#                      target_error=config['target_error'])
+# rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
+# RB = greedy_data['basis']
+
+# logger.info(' ')
+
+# add_values(time=greedy_data['time'],
+#            max_err_mus=greedy_data['max_err_mus'],
+#            extensions=greedy_data['extensions'],
+#            max_errs=greedy_data['max_errs'],
+#            basis_sizes=[len(local_RB) for local_RB in RB])
+# add_logfile(logfile)
 
