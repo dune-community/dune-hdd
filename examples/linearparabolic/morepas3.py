@@ -7,36 +7,20 @@
 
 from __future__ import division, print_function
 
-from functools import partial
-from tempfile import NamedTemporaryFile
-from scipy.sparse import coo_matrix, bmat
-
 import numpy as np
+
+from tempfile import NamedTemporaryFile
 
 from pymor.core.defaults import set_defaults
 set_defaults({'pymor.core.cache.default_regions.disk_max_size': 107374182400})
 
-from pymor.algorithms.basisextension import pod_basis_extension
-from pymor.algorithms.greedy import greedy
-from pymor.algorithms.timestepping import ImplicitEulerTimeStepper
-from pymor.core.logger import getLogger
-from pymor.discretizations.basic import InstationaryDiscretization
-from pymor.grids.oned import OnedGrid
-from pymor.operators.constructions import LincombOperator
-from pymor.operators.numpy import NumpyMatrixOperator
-from pymor.parameters.spaces import CubicParameterSpace
-from pymor.playground.algorithms.blockbasisextension import pod_block_basis_extension
-from pymor.playground.operators.block import BlockOperator
-from pymor.playground.reductors import GenericBlockRBReconstructor
-from pymor.reductors.basic import reduce_generic_rb
-from pymor.vectorarrays.block import BlockVectorArray
-from pymor.vectorarrays.list import ListVectorArray
-from pymor.vectorarrays.numpy import NumpyVectorArray
 import pymor.core.logger
-
-from dune.pymor.la.container import make_listvectorarray
+from pymor.core.logger import getLogger
 
 from simdb.run import new_dataset, add_values, add_logfile
+
+from morepas3__estimate import DetailedAgainstReference, DetailedAgainstWeak
+from morepas3__prepare import discretize, prepare
 
 logfile = NamedTemporaryFile(delete=False).name
 pymor.core.logger.FILENAME = logfile
@@ -45,416 +29,79 @@ logger = getLogger('.morepas3.main')
 logger.setLevel('INFO')
 
 
-config= {'subdomains': '[1 1 1]',
+config= {'dune_subdomains': '[1 1]',
+         'dune_num_elements': '[8 8]',
+         'dune_num_refinements': '0',
+         'integration_order_time': 2,
          'end_time' : 0.01,
          'nt' : 10,
-         'nt_ref' : 20,
-         'mu_min': (0.1, 0.1),
-         'mu_max': (1, 1),
-         'mu_fixed': (1, 1),
+         'mu_min': 0.1,
+         'mu_max': 1,
+         'mu_bar': 1,
+         'mu_hat': 1,
          'poincare': 1./(np.pi**2),
-         'num_training_samples' : 2,
          'extension_product': 'h1',
+         'num_training_samples' : 3,
          'max_rb_size' : 500,
          'target_error': 1e-1,
          'initial_data': 'exp(-((x[0]-0.5)*(x[0]-0.5)+(x[1]-0.5)*(x[1]-0.5))/0.01)'}
 new_dataset('morepas3', **config)
 
-logger.info('initializing DUNE module ...')
-from generic_multiscale import dune_module, examples, wrapper
-Example = examples[2]['aluconformgrid']['fem']['istl']
-
-# all but the 'type' will be discarded, so no point in setting more details here
-solver_options = Example.solver_options('bicgstab.amg.ilu0')
-
-def create_example(ExampleType, num_grid_elements):
-    logger_cfg = ExampleType.logger_options()
-    logger_cfg.set('info', -1, True)
-    logger_cfg.set('info_color', 'blue', True)
-
-    grid_cfg = ExampleType.grid_options('grid.multiscale.provider.cube')
-    grid_cfg.set('lower_left',     '[0 0]', True)
-    grid_cfg.set('upper_right',    '[1 1]', True)
-    grid_cfg.set('num_elements',   num_grid_elements, True)
-    grid_cfg.set('num_partitions', '[2 1]', True)
-
-    boundary_cfg = ExampleType.boundary_options('stuff.grid.boundaryinfo.alldirichlet')
-
-    problem_cfg = ExampleType.problem_options('hdd.linearelliptic.problem.thermalblock')
-    problem_cfg.set('diffusion_factor.num_elements', '[2 1]', True)
-
-    return ExampleType(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
-
-
-def create_discretization(example, config, initial_data, name, nt):
-
-    class InstationaryDuneVisualizer(object):
-
-        def __init__(self, disc, prefix):
-            self.disc = disc
-            self.prefix = prefix
-
-        def visualize(self, U, *args, **kwargs):
-            import numpy as np
-            dune_disc = self.disc._impl
-            assert isinstance(U, ListVectorArray)
-            filename = kwargs['filename'] if 'filename' in kwargs else self.prefix
-            size = len(U)
-            pad = len(str(size))
-            for ss in np.arange(size):
-                dune_disc.visualize(U._list[ss]._impl,
-                                    filename + '_' + str(ss).zfill(pad),
-                                    'solution',
-                                    False) # do not add dirichlet shift
-
-    stat_blocked_disc = wrapper[example.discretization()]
-    stat_nonblocked_disc = stat_blocked_disc.as_nonblocked()
-
-    return (stat_blocked_disc, InstationaryDiscretization(T=config['end_time'],
-                                                          initial_data=make_listvectorarray(wrapper[initial_data]),
-                                                          operator=stat_nonblocked_disc.operator,
-                                                          rhs=stat_nonblocked_disc.rhs,
-                                                          mass=stat_nonblocked_disc.products['l2'],
-                                                          time_stepper=ImplicitEulerTimeStepper(nt, invert_options=solver_options.get_str('type')),
-                                                          products=stat_nonblocked_disc.products,
-                                                          operators=stat_nonblocked_disc.operators,
-                                                          functionals=stat_nonblocked_disc.functionals,
-                                                          vector_operators=stat_nonblocked_disc.vector_operators,
-                                                          visualizer=InstationaryDuneVisualizer(stat_nonblocked_disc,
-                                                                                                name + '.solution'),
-                                                          parameter_space=CubicParameterSpace(stat_nonblocked_disc.parameter_type,
-                                                                                              config['mu_min'][0],
-                                                                                              config['mu_max'][0]),
-                                                          cache_region='disk',
-                                                          name=name))
-
-
-# create discretization
-example = create_example(Example, '[8 8]')
-initial_data = example.oswald_interpolate(example.project(config['initial_data']))
-elliptic_LRBMS_disc, parabolic_disc = create_discretization(example, config, initial_data, 'detailed discretization', config['nt'])
-logger.info('  grid has {} subdomains'.format(elliptic_LRBMS_disc.num_subdomains))
-logger.info('  parameter type is {}'.format(parabolic_disc.parameter_type))
+logger.info('creating DUNE discretization ...')
+detailed_data = prepare(config)
+(example, wrapper, initial_data, elliptic_disc, parabolic_disc, bochner_norms,
+ mu_min, mu_max, mu_hat, mu_bar) = (
+        detailed_data['example'],
+        detailed_data['wrapper'],
+        detailed_data['initial_data'],
+        detailed_data['elliptic_LRBMS_disc'],
+        detailed_data['parabolic_disc'],
+        detailed_data['bochner_norms'],
+        detailed_data['mu_min'],
+        detailed_data['mu_max'],
+        detailed_data['mu_hat'],
+        detailed_data['mu_bar'])
+logger.info('  grid has {} subdomains'.format(elliptic_disc.num_subdomains))
 logger.info('  discretization has {} DoFs'.format(parabolic_disc.solution_space.dim))
+logger.info('  parameter type is {}'.format(parabolic_disc.parameter_type))
 
-# create reference discretization
-reference_example = create_example(Example, '[32 32]')
-elliptic_LRBMS_reference_disc, parabolic_reference_disc = create_discretization(reference_example,
-                                                                                config,
-                                                                                reference_example.prolong(elliptic_LRBMS_disc._impl,
-                                                                                                          initial_data),
-                                                                                'reference discretization',
-                                                                                config['nt_ref'])
-logger.info('  reference discretization has {} DoFs'.format(parabolic_reference_disc.solution_space.dim))
+# logger.info('visualizing data functions and sample solution ...')
+# example.visualize('example')
+# U = parabolic_disc.solve(1)
+# parabolic_disc.visualize(U, filename='sample_solution')
 
+logger.info('creating reference discretization ...')
+config_ref = dict(config)
+config_ref['dune_num_elements'] = '[16 16]'
+config_ref['nt'] = 2*config['nt']
+reference_data = prepare(config_ref)
+parabolic_disc_ref, prolongator, bochner_norms_ref = (
+        reference_data['parabolic_disc'],
+        reference_data['prolongator'],
+        reference_data['bochner_norms'])
+logger.info('  discretization has {} DoFs'.format(parabolic_disc_ref.solution_space.dim))
 
-# logger.info('visualizing grid and data functions ...')
-# reference_example.visualize('example')
-# elliptic_LRBMS_reference_disc._impl.visualize(reference_example.project(config['initial_data']), 'initial_data.reference', 'initial_data')
-# example.visualize('example.reference')
-# elliptic_LRBMS_disc._impl.visualize(example.project(config['initial_data']), 'initial_data', 'initial_data')
+logger.info('computing discretization errors ...')
+reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
+                                                    prolongator,
+                                                    elliptic_disc,
+                                                    bochner_norms_ref['elliptic'])
 
-# # compute sample trajectories
-# mu = (0.1, 1.0)
-# U = parabolic_disc.solve(mu)
-# parabolic_disc.visualize(U)
-# U_ref = parabolic_reference_disc.solve(mu)
-# parabolic_reference_disc.visualize(U_ref)
+training_samples = list(parabolic_disc.parameter_space.sample_randomly(config['num_training_samples']))
+discretization_errors = [reference_error_computer.estimate(parabolic_disc.solve(mu), mu, parabolic_disc)
+                         for mu in training_samples]
 
-# create products
-def create_fixed_product(prod, mu_hat):
-    if prod.parametric:
-        return wrapper[prod._impl.freeze_parameter(mu_hat)]
-    else:
-        return prod
-
-mu_fixed = parabolic_disc.parse_parameter(config['mu_fixed'])
-mu_fixed_d = wrapper.dune_parameter(mu_fixed)
-mu_min = parabolic_disc.parse_parameter(config['mu_min'])
-mu_min_d = wrapper.dune_parameter(mu_min)
-mu_max = parabolic_disc.parse_parameter(config['mu_max'])
-mu_max_d = wrapper.dune_parameter(mu_max)
-
-products = {kk: create_fixed_product(prod, mu_fixed_d) for kk, prod in parabolic_disc.products.items()}
-reference_products = {kk: create_fixed_product(prod, mu_fixed_d) for kk, prod in parabolic_reference_disc.products.items()}
-
-# create norms
-def create_norm2(prod):
-    def norm2(U):
-        return prod.apply2(U, U)[0][0]
-    return norm2
-
-norms2 = {kk: create_norm2(prod) for kk, prod in products.items()}
-reference_norms2 = {kk: create_norm2(prod) for kk, prod in reference_products.items()}
-
-def bochner_norm(X_norm_squared, U, order=2):
-    '''
-      L^2-in-time, X-in-space
-    '''
-    T = config['end_time']
-    nt = len(U)
-    time_grid = OnedGrid(domain=(0., T), num_intervals=nt-1)
-    assert len(U) == time_grid.size(1)
-    qq = time_grid.quadrature_points(0, order=order)
-    integral = 0.
-    for entity in np.arange(time_grid.size(0)):
-        # get quadrature
-        qq_e = qq[entity] # points
-        ww = time_grid.reference_element.quadrature(order)[1] # weights
-        ie = time_grid.integration_elements(0)[entity] # integration element
-        # create shape function evaluations
-        a = time_grid.centers(1)[entity]
-        b = time_grid.centers(1)[entity + 1]
-        SF = np.array((1./(a - b)*qq_e[..., 0] - b/(a - b),
-                       1./(b - a)*qq_e[..., 0] - a/(b - a)))
-        U_a = U._list[entity]
-        U_b = U._list[entity + 1]
-        values = np.zeros(len(qq_e))
-        for ii in np.arange(len(qq_e)):
-            # compute U(t)
-            U_t = U_a.copy()
-            U_t.scal(SF[0][ii])
-            U_t.axpy(SF[1][ii], U_b)
-            # compute the X-norm of U(t)
-            values[ii] = X_norm_squared(make_listvectorarray(U_t))
-        integral += np.dot(values, ww)*ie
-    return np.sqrt(integral)
-
-def create_bochner_norm(norm2, order=2):
-    return partial(bochner_norm, norm2, order=order)
-
-bochner_norms = {kk: create_bochner_norm(norm2) for kk, norm2 in norms2.items()}
-reference_bochner_norms = {kk: create_bochner_norm(norm2) for kk, norm2 in reference_norms2.items()}
-
-def prolong(fine_ex, disc, U):
-    T = config['end_time']
-    nt_ref = config['nt_ref']
-    time_grid_ref = OnedGrid(domain=(0., T), num_intervals=nt_ref)
-    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
-    U_fine = [None for ii in time_grid_ref.centers(1)]
-    for n in np.arange(len(time_grid_ref.centers(1))):
-        t_n = time_grid_ref.centers(1)[n]
-        coarse_entity = min((time_grid.centers(1) <= t_n).nonzero()[0][-1],
-                            time_grid.size(0) - 1)
-        a = time_grid.centers(1)[coarse_entity]
-        b = time_grid.centers(1)[coarse_entity + 1]
-        SF = np.array((1./(a - b)*t_n - b/(a - b),
-                       1./(b - a)*t_n - a/(b - a)))
-        U_t = U.copy(ind=coarse_entity)
-        U_t.scal(SF[0][0])
-        U_t.axpy(SF[1][0], U, x_ind=coarse_entity + 1)
-        U_fine[n] = wrapper[fine_ex.prolong(disc, U_t._list[0]._impl)]
-    return make_listvectorarray(U_fine)
-
-
-class Reconstructor(object):
-
-    def __init__(self, disc, RB):
-        self._disc = disc
-        self._RB = RB
-
-    def reconstruct(self, U):
-        if U.dim == 0:
-            return self._disc.globalize_vectors(self._disc.solution_space.zeros(len(U)))
-        else:
-            assert U.dim == np.sum(len(RB) for RB in self._RB)
-            local_lens = [len(RB) for RB in self._RB]
-            local_starts = np.insert(np.cumsum(local_lens), 0, 0)[:-1]
-            localized_U = [NumpyVectorArray(U._array[:, local_starts[ii]:(local_starts[ii] + local_lens[ii])])
-                           for ii in np.arange(len(self._RB))]
-            U = GenericBlockRBReconstructor(self._RB).reconstruct(BlockVectorArray(localized_U))
-            return self._disc.globalize_vectors(U)
-
-    def restricted_to_subbasis(self, dim):
-        if not isinstance(dim, tuple):
-            dim = len(self.RB)*[dim]
-        assert all([dd <= len(rb) for dd, rb in izip(dim, self.RB)])
-        return Reconstructor(self._disc, [rb.copy(ind=range(dd)) for rb, dd in izip(self.RB, dim)])
-
-
-def reductor(discretization, RB, vector_product=None, disable_caching=True, extends=None):
-    if RB is None:
-        RB = [elliptic_LRBMS_disc.local_operator(ss).source.empty() for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)]
-    rd, rc, reduction_data = reduce_generic_rb(elliptic_LRBMS_disc, RB, vector_product, disable_caching, extends)
-
-    def unblock_op(op):
-        assert op._blocks[0][0] is not None
-        if isinstance(op._blocks[0][0], LincombOperator):
-            coefficients = op._blocks[0][0].coefficients
-            operators = [None for kk in np.arange(len(op._blocks[0][0].operators))]
-            for kk in np.arange(len(op._blocks[0][0].operators)):
-                ops = [[op._blocks[ii][jj].operators[kk]
-                        if op._blocks[ii][jj] is not None else None
-                        for jj in np.arange(op.num_source_blocks)]
-                       for ii in np.arange(op.num_range_blocks)]
-                operators[kk] = unblock_op(BlockOperator(ops))
-            return LincombOperator(operators=operators, coefficients=coefficients)
-        else:
-            assert all(all([isinstance(block, NumpyMatrixOperator) if block is not None else True
-                           for block in row])
-                       for row in op._blocks)
-            if op.source.dim == 0 and op.range.dim == 0:
-                return NumpyMatrixOperator(np.zeros((0, 0)))
-            elif op.source.dim == 1:
-                mat = np.concatenate([op._blocks[ii][0]._matrix
-                                      for ii in np.arange(op.num_range_blocks)],
-                                     axis=1)
-            elif op.range.dim == 1:
-                mat = np.concatenate([op._blocks[0][jj]._matrix
-                                      for jj in np.arange(op.num_source_blocks)],
-                                     axis=1)
-            else:
-                mat = bmat([[coo_matrix(op._blocks[ii][jj]._matrix)
-                             if op._blocks[ii][jj] is not None else coo_matrix((op._range_dims[ii], op._source_dims[jj]))
-                             for jj in np.arange(op.num_source_blocks)]
-                            for ii in np.arange(op.num_range_blocks)]).toarray()
-            return NumpyMatrixOperator(mat)
-
-    class DetailedEstimator(object):
-
-        def estimate(self, U, mu, discretization):
-            U_rec = Reconstructor(elliptic_LRBMS_disc, RB).reconstruct(U)
-            U_prol = prolong(reference_example, elliptic_LRBMS_disc._impl, U_rec)
-            return reference_norm(parabolic_reference_disc.solve(mu) - U_prol)
-
-    reduced_op = unblock_op(rd.operator)
-    reduced_rhs = unblock_op(rd.rhs)
-    return (InstationaryDiscretization(T=config['end_time'],
-                                       initial_data=reduced_op.source.zeros(1),
-                                       operator=reduced_op,
-                                       rhs=unblock_op(rd.rhs),
-                                       mass=unblock_op(rd.products['l2']),
-                                       time_stepper=ImplicitEulerTimeStepper(config['nt']),
-                                       products={kk: unblock_op(rd.products[kk]) for kk in rd.products.keys()},
-                                       operators={kk: unblock_op(rd.operators[kk])
-                                                  for kk in rd.operators.keys() if kk != 'operator'},
-                                       functionals={kk: unblock_op(rd.functionals[kk])
-                                                    for kk in rd.functionals.keys() if kk != 'rhs'},
-                                       vector_operators={kk: unblock_op(rd.vector_operators[kk])
-                                                         for kk in rd.vector_operators.keys()},
-                                       parameter_space=rd.parameter_space,
-                                       estimator=DetailedEstimator(),
-                                       cache_region='disk',
-                                       name='reduced discretization'),
-            Reconstructor(elliptic_LRBMS_disc, RB),
-            reduction_data)
-
-
-def extension(basis, U):
-    if not isinstance(U, BlockVectorArray):
-        U = BlockVectorArray([elliptic_LRBMS_disc.localize_vector(U, ii)
-                              for ii in np.arange(elliptic_LRBMS_disc.num_subdomains)])
-    return pod_block_basis_extension(basis,
-                                     U,
-                                     count=1,
-                                     product=[elliptic_LRBMS_disc.local_product(ss, config['extension_product'])
-                                              for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)])
-
-
-logger.info('computing discretization error ...')
-training_samples = list(parabolic_disc.parameter_space.sample_uniformly(config['num_training_samples']))
-disc_err = [reference_bochner_norms['elliptic'](parabolic_reference_disc.solve(mu)
-                                                - prolong(reference_example, elliptic_LRBMS_disc._impl, parabolic_disc.solve(mu)))
-            for mu in training_samples]
-max_disc_err = np.max(disc_err)
-add_values(disc_err=disc_err,
-           max_disc_error=max_disc_err)
-logger.info('  is {}'.format(max_disc_err))
-if config['target_error'] < max_disc_err:
-    logger.warn('Target error for greedy ({}) is below discretization error ({}),'.format(config['target_error'],
-                                                                                          max_disc_err))
-    logger.warn('greedy will most likely fail!')
-
-logger.info('estimating detailed error ...')
-
-def dual_energy_space_norm_squared_estimate(C_P, alpha, c_eps, U):
-    U = make_listvectorarray(U)
-    return (C_P/(alpha * c_eps))**2 * parabolic_disc.l2_product.apply2(U, U)[0][0]
-
-def L2_time_dual_energy_space_partial_t_estimate(dual_energy2_estimate, T, U):
-    result = 0.
-    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
-    for n in np.arange(1, time_grid.size(1)):
-        dt = time_grid.volumes(0)[n - 1]
-        result += 1./dt * dual_energy2_estimate(U._list[n] - U._list[n - 1])
-    return np.sqrt(result)
-
-def time_residual_estimate(T, B, l2_prod, U, mu):
-    B =  wrapper[B._impl.freeze_parameter(mu)]
-    result = 0.
-    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
-    for n in np.arange(1, time_grid.size(1)):
-        B_func = B.apply(make_listvectorarray(U._list[n] - U._list[n - 1]))
-        B_riesz = l2_prod.apply_inverse(B_func)
-        dt = time_grid.volumes(0)[n - 1]
-        result += dt/3. * l2_prod.apply2(B_riesz, B_riesz)[0][0]
-    return np.sqrt(result)
-
-def elliptic_reconstruction_estimate(ex, T, U, mu):
-    result = 0.
-    time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
-    dt = time_grid.volumes(0)[0]
-    for n in np.arange(time_grid.size(1)):
-        result += dt/3. * ex.elliptic_reconstruction_estimate(U._list[n]._impl,
-                                                              mu_min_d, mu_max_d, mu_fixed_d, mu_fixed_d,
-                                                              mu)**2
-    return np.sqrt(result)
-
-
-def estimate(p_N, mu):
-    p_N_c = make_listvectorarray([wrapper[example.oswald_interpolate(p._impl)] for p in p_N._list])
-    p_N_d = p_N - p_N_c
-
-    C_P = config['poincare']
-    c_eps_mu_hat = example.min_diffusion_ev(mu_fixed_d)
-    C_eps_mu_hat = example.max_diffusion_ev(mu_fixed_d)
-    alpha_mu_mu_hat = example.alpha(wrapper.dune_parameter(mu), mu_fixed_d)
-    gamma_mu_mu_hat = example.gamma(wrapper.dune_parameter(mu), mu_fixed_d)
-
-    C_b = 1. #gamma_mu_mu_hat * C_eps_mu_hat
-    C = np.sqrt(3*C_b**2 + 2)
-    C_V = C_P/(alpha_mu_mu_hat * c_eps_mu_hat)
-
-    e_c_0_norm = 0.
-    dt_p_N_d_norm = L2_time_dual_energy_space_partial_t_estimate(partial(dual_energy_space_norm_squared_estimate,
-                                                                         C_P,
-                                                                         alpha_mu_mu_hat,
-                                                                         c_eps_mu_hat),
-                                                                 config['end_time'],
-                                                                 p_N_d)
-    eps_norm = elliptic_reconstruction_estimate(example,
-                                                config['end_time'],
-                                                p_N,
-                                                wrapper.dune_parameter(mu))
-    p_N_d_norm = bochner_norms['elliptic'](p_N_d)
-    R_T_norm = time_residual_estimate(config['end_time'],
-                                      parabolic_disc.operator,
-                                      products['l2'],
-                                      p_N,
-                                      wrapper.dune_parameter(mu))
-
-    return 2.*dt_p_N_d_norm + (C + 1)*eps_norm + C*p_N_d_norm + 2.*C_V*R_T_norm
-
-estimated_err = [estimate(parabolic_disc.solve(mu), mu)
-                 for mu in training_samples]
-
+logger.info('estimating discretization errors ...')
+detailed_estimator = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], config['end_time'],
+                                         config['poincare'], mu_min, mu_max, mu_hat, mu_max)
+discretization_estimates = [detailed_estimator.estimate(parabolic_disc.solve(mu), mu, parabolic_disc)
+                            for mu in training_samples]
 
 for ii in np.arange(len(training_samples)):
     print('{}: {} vs. {} ({})'.format(training_samples[ii],
-                                      disc_err[ii],
-                                      estimated_err[ii],
-                                      estimated_err[ii]/disc_err[ii]))
-
-# greedy_data = greedy(parabolic_disc,
-#                      reductor,
-#                      training_samples,
-#                      use_estimator=True,
-#                      error_norm=None,
-#                      extension_algorithm=extension,
-#                      max_extensions=config['max_rb_size'],
-#                      target_error=config['target_error'])
-# rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
-# RB = greedy_data['basis']
+                                      discretization_errors[ii],
+                                      discretization_estimates[ii],
+                                      discretization_estimates[ii]/discretization_errors[ii]))
 
 # logger.info(' ')
 
