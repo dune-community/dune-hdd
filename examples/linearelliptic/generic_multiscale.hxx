@@ -212,7 +212,7 @@ min_diffusion_ev(const Dune::Pymor::Parameter& mu) const
   auto diffusion_factor = problem_->diffusion_factor()->with_mu(problem_->map_parameter(mu, "diffusion_factor"));
   auto diffusion_tensor = problem_->diffusion_tensor()->with_mu(problem_->map_parameter(mu, "diffusion_tensor"));
   const auto diffusion = *diffusion_factor * *diffusion_tensor;
-  double min_ev = 0.;
+  double min_ev = std::numeric_limits< double >::max();
   const auto grid_view = discretization_->grid_view();
   const auto entity_it_end = grid_view.template end< 0 >();
   for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it)
