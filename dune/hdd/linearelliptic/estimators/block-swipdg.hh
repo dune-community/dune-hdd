@@ -33,23 +33,23 @@ namespace internal {
 
 
 template< class FunctionType, class EntityType, int dimRange, int dimRangeCols >
-class Minimum
+class MinMax
 {
   static_assert(AlwaysFalse< FunctionType >::value, "Not implemented for these dimensions!");
 };
 
+/**
+ * We try to find the minimum of a polynomial of given order by evaluating it at the points of a quadrature that
+ * would integrate this polynomial exactly.
+ * \todo These are just some heuristics and should be replaced by something proper.
+ */
 template< class FunctionType, class EntityType >
-class Minimum< FunctionType, EntityType, 1, 1 >
+class MinMax< FunctionType, EntityType, 1, 1 >
 {
   typedef typename FunctionType::RangeFieldType RangeFieldType;
 
 public:
-  /**
-   * We try to find the minimum of a polynomial of given order by evaluating it at the points of a quadrature that
-   * would integrate this polynomial exactly.
-   * \todo These are just some heuristics and should be replaced by something proper.
-   */
-  static RangeFieldType compute(const FunctionType& function, const EntityType& entity)
+  static RangeFieldType compute_min(const FunctionType& function, const EntityType& entity)
   {
     typename FunctionType::RangeType tmp_value(0);
     RangeFieldType ret = std::numeric_limits< RangeFieldType >::max();
@@ -64,18 +64,38 @@ public:
       ret = std::min(ret, tmp_value[0]);
     }
     return ret;
-  } // ... compute(...)
-}; // class Minimum< ..., 1, 1 >
+  } // ... compute_min(...)
+
+  static RangeFieldType compute_max(const FunctionType& function, const EntityType& entity)
+  {
+    typename FunctionType::RangeType tmp_value(0);
+    RangeFieldType ret = std::numeric_limits< RangeFieldType >::min();
+    const auto local_function = function.local_function(entity);
+    const size_t ord = local_function->order();
+    assert(ord < std::numeric_limits< int >::max());
+    const auto& quadrature = QuadratureRules< typename FunctionType::DomainFieldType
+                                            , FunctionType::dimDomain >::rule(entity.type(), int(ord));
+    const auto quad_point_it_end = quadrature.end();
+    for (auto quad_point_it = quadrature.begin(); quad_point_it != quad_point_it_end; ++quad_point_it) {
+      local_function->evaluate(quad_point_it->position(), tmp_value);
+      ret = std::max(ret, tmp_value[0]);
+    }
+    return ret;
+  } // ... compute_max(...)
+}; // class MinMax< ..., 1, 1 >
 
 #if HAVE_EIGEN
 
+/**
+ * we basically assume that the function is constant, since we only evaluate it in the center
+ */
 template< class FunctionType, class EntityType, int dimDomain >
-class Minimum< FunctionType, EntityType, dimDomain, dimDomain >
+class MinMax< FunctionType, EntityType, dimDomain, dimDomain >
 {
   typedef typename FunctionType::RangeFieldType RangeFieldType;
 
 public:
-  static RangeFieldType compute(const FunctionType& function, const EntityType& entity)
+  static RangeFieldType compute_min(const FunctionType& function, const EntityType& entity)
   {
     const auto local_function = function.local_function(entity);
     assert(local_function->order() == 0);
@@ -97,13 +117,37 @@ public:
       min_ev = std::min(min_ev, eigenvalue);
     }
     return min_ev;
-  } // ... compute(...)
-}; // class Minimum< ..., dimDomain, dimDomain >
+  } // ... compute_min(...)
+
+  static RangeFieldType compute_max(const FunctionType& function, const EntityType& entity)
+  {
+    const auto local_function = function.local_function(entity);
+    assert(local_function->order() == 0);
+    const auto& reference_element = ReferenceElements< typename FunctionType::DomainFieldType
+                                                     , FunctionType::dimDomain >::general(entity.type());
+    const Stuff::LA::EigenDenseMatrix< RangeFieldType >
+        tensor = local_function->evaluate(reference_element.position(0, 0));
+    ::Eigen::EigenSolver< typename Stuff::LA::EigenDenseMatrix< RangeFieldType >::BackendType >
+        eigen_solver(tensor.backend());
+    assert(eigen_solver.info() == ::Eigen::Success);
+    const auto eigenvalues = eigen_solver.eigenvalues(); // <- this should be an Eigen vector of std::complex
+    RangeFieldType max_ev = std::numeric_limits< RangeFieldType >::min();
+    for (size_t ii = 0; ii < boost::numeric_cast< size_t >(eigenvalues.size()); ++ii) {
+      // assert this is real
+      assert(std::abs(eigenvalues[ii].imag()) < 1e-15);
+      // assert that this eigenvalue is positive
+      const RangeFieldType eigenvalue = eigenvalues[ii].real();
+      assert(eigenvalue > 1e-15);
+      max_ev = std::max(max_ev, eigenvalue);
+    }
+    return max_ev;
+  } // ... compute_max(...)
+}; // class MinMax< ..., dimDomain, dimDomain >
 
 #else // HAVE_EIGEN
 
 template< class FunctionType, class EntityType, int dimDomain >
-class Minimum< FunctionType, EntityType, dimDomain, dimDomain >
+class MinMax< FunctionType, EntityType, dimDomain, dimDomain >
 {
   static_assert(AlwaysFalse< FunctionType >::value, "You are missing eigen!");
 };
@@ -116,8 +160,17 @@ static typename FunctionType::RangeFieldType compute_minimum(const FunctionType&
 {
   static const int dimRange = FunctionType::dimRange;
   static const int dimRangeCols = FunctionType::dimRangeCols;
-  return Minimum< FunctionType, EntityType, dimRange, dimRangeCols >::compute(function, entity);
+  return MinMax< FunctionType, EntityType, dimRange, dimRangeCols >::compute_min(function, entity);
 } // ... compute_minimum(...)
+
+
+template< class FunctionType, class EntityType >
+static typename FunctionType::RangeFieldType compute_maximum(const FunctionType& function, const EntityType& entity)
+{
+  static const int dimRange = FunctionType::dimRange;
+  static const int dimRangeCols = FunctionType::dimRangeCols;
+  return MinMax< FunctionType, EntityType, dimRange, dimRangeCols >::compute_max(function, entity);
+} // ... compute_maximum(...)
 
 
 namespace BlockSWIPDG {
