@@ -129,6 +129,10 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            retval(DiscretizationType + ' *', caller_owns_return=True),
                            [], is_const=True, throw=exceptions,
                            custom_name='discretization')
+        Example.add_method('visualize',
+                           None,
+                           [param('const std::string&', 'filename_prefix')],
+                           is_const=True, throw=exceptions)
         Example.add_method('project',
                            retval(VectorType),
                            [param('const std::string', 'expression')], is_const=True, throw=exceptions)
@@ -159,9 +163,14 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            retval('double'),
                            [param('const Dune::Pymor::Parameter&', 'mu')],
                            is_const=True, throw=exceptions)
-        Example.add_method('visualize',
-                           None,
-                           [param('const std::string&', 'filename_prefix')],
+        Example.add_method('elliptic_reconstruction_estimate',
+                           retval('double'),
+                           [param('const ' + VectorType + '&', 'p_h'),
+                            param('const Dune::Pymor::Parameter&', 'mu_min'),
+                            param('const Dune::Pymor::Parameter&', 'mu_max'),
+                            param('const Dune::Pymor::Parameter&', 'mu_hat'),
+                            param('const Dune::Pymor::Parameter&', 'mu_bar'),
+                            param('const Dune::Pymor::Parameter&', 'mu')],
                            is_const=True, throw=exceptions)
     SGrid1d = 'Dune::SGrid< 1, 1 >'
     SGrid2d = 'Dune::SGrid< 2, 2 >'

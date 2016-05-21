@@ -22,9 +22,10 @@
 #include <dune/hdd/linearelliptic/problems.hh>
 
 
-template< class GridType, Dune::GDT::ChooseSpaceBackend space_backend, Dune::Stuff::LA::ChooseBackend la_backend >
+template< class GridImp, Dune::GDT::ChooseSpaceBackend space_backend, Dune::Stuff::LA::ChooseBackend la_backend >
 class GenericLinearellipticMultiscaleExample
 {
+  typedef GridImp GridType;
   typedef typename GridType::template Codim< 0 >::Entity E;
   typedef typename GridType::ctype D;
   static const size_t d = GridType::dimension;
@@ -80,6 +81,13 @@ public:
   double min_diffusion_ev(const Dune::Pymor::Parameter& mu) const;
 
   double max_diffusion_ev(const Dune::Pymor::Parameter& mu) const;
+
+  double elliptic_reconstruction_estimate(const VectorType& p_h,
+                                          const Dune::Pymor::Parameter& mu_min,
+                                          const Dune::Pymor::Parameter& mu_max,
+                                          const Dune::Pymor::Parameter& mu_hat,
+                                          const Dune::Pymor::Parameter& mu_bar,
+                                          const Dune::Pymor::Parameter& mu) const;
 
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;

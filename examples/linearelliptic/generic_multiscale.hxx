@@ -118,7 +118,9 @@ GenericLinearellipticMultiscaleExample(const Dune::Stuff::Common::Configuration&
   discretization_ = DSC::make_unique< DiscretizationType >(*grid_,
                                                            boundary_cfg_,
                                                            *problem_,
-                                                           /*only_these_products=*/std::vector<std::string>({"l2", "h1", "elliptic"}));
+                                                           /*only_these_products=*/std::vector<std::string>({"l2",
+                                                                                                             "h1",
+                                                                                                             "elliptic"}));
   discretization_->init(/*prune=*/false);
   logger.info() << "  done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
 } // GenericLinearellipticMultiscaleExample(...)
@@ -237,6 +239,44 @@ max_diffusion_ev(const Dune::Pymor::Parameter& mu) const
     max_ev = std::max(max_ev,
                       HDD::LinearElliptic::Estimators::internal::compute_maximum(diffusion, *entity_it));
   return max_ev;
+}
+
+
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+elliptic_reconstruction_estimate(const GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& p_h,
+                                 const Dune::Pymor::Parameter& mu_min,
+                                 const Dune::Pymor::Parameter& mu_max,
+                                 const Dune::Pymor::Parameter& mu_hat,
+                                 const Dune::Pymor::Parameter& mu_bar,
+                                 const Dune::Pymor::Parameter& mu) const
+{
+  using namespace Dune;
+  const auto f = problem_->force()->with_mu(problem_->map_parameter(mu, "force"));
+  auto f_h = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
+  GDT::project(*f, f_h);
+  const auto b_h = discretization_->get_operator();
+  const auto l2_prod = discretization_->get_product("l2");
+  auto w_h = l2_prod.apply_inverse(b_h.apply(p_h, mu));
+  w_h -= f_h.vector();
+  const auto w_h_func = GDT::make_const_discrete_function(discretization_->ansatz_space(), w_h);
+  const auto rhs = std::make_shared< typename decltype(w_h_func)::SumType >(w_h_func + *f);
+  HDD::LinearElliptic::Problems::Default< E, D, d, R, r >
+      tmp_problem(problem_->diffusion_factor(),
+                  problem_->diffusion_tensor(),
+                  std::make_shared< Pymor::Functions::NonparametricDefault< E, D, d, R, r > >(rhs),
+                  problem_->dirichlet(),
+                  problem_->neumann());
+  typedef HDD::LinearElliptic::Estimators::BlockSWIPDG< typename DiscretizationType::AnsatzSpaceType,
+                                                        VectorType,
+                                                        decltype(tmp_problem),
+                                                        GridType > Estimator;
+  return Estimator::estimate(discretization_->ansatz_space(), p_h, tmp_problem, "eta_OS2014_*",
+                             {{"parameter_range_min", mu_min},
+                              {"parameter_range_max", mu_max},
+                              {"mu_hat", mu_hat},
+                              {"mu_bar", mu_bar},
+                              {"mu", mu}});
 }
 
 
