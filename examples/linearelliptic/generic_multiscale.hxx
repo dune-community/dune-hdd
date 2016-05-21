@@ -222,4 +222,22 @@ min_diffusion_ev(const Dune::Pymor::Parameter& mu) const
 }
 
 
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+max_diffusion_ev(const Dune::Pymor::Parameter& mu) const
+{
+  using namespace Dune;
+  auto diffusion_factor = problem_->diffusion_factor()->with_mu(problem_->map_parameter(mu, "diffusion_factor"));
+  auto diffusion_tensor = problem_->diffusion_tensor()->with_mu(problem_->map_parameter(mu, "diffusion_tensor"));
+  const auto diffusion = *diffusion_factor * *diffusion_tensor;
+  double max_ev = std::numeric_limits< double >::min();
+  const auto grid_view = discretization_->grid_view();
+  const auto entity_it_end = grid_view.template end< 0 >();
+  for (auto entity_it = grid_view.template begin< 0 >(); entity_it != entity_it_end; ++entity_it)
+    max_ev = std::max(max_ev,
+                      HDD::LinearElliptic::Estimators::internal::compute_maximum(diffusion, *entity_it));
+  return max_ev;
+}
+
+
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX

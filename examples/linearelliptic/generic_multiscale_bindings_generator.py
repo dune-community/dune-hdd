@@ -155,6 +155,10 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                            retval('double'),
                            [param('const Dune::Pymor::Parameter&', 'mu')],
                            is_const=True, throw=exceptions)
+        Example.add_method('max_diffusion_ev',
+                           retval('double'),
+                           [param('const Dune::Pymor::Parameter&', 'mu')],
+                           is_const=True, throw=exceptions)
         Example.add_method('visualize',
                            None,
                            [param('const std::string&', 'filename_prefix')],

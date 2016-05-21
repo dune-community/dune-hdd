@@ -79,6 +79,8 @@ public:
 
   double min_diffusion_ev(const Dune::Pymor::Parameter& mu) const;
 
+  double max_diffusion_ev(const Dune::Pymor::Parameter& mu) const;
+
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
   std::unique_ptr< Dune::grid::Multiscale::ProviderInterface< GridType > > grid_;
