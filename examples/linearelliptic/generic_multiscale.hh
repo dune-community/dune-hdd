@@ -89,6 +89,8 @@ public:
                                           const Dune::Pymor::Parameter& mu_bar,
                                           const Dune::Pymor::Parameter& mu) const;
 
+  double max_grid_width() const;
+
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
   std::unique_ptr< Dune::grid::Multiscale::ProviderInterface< GridType > > grid_;

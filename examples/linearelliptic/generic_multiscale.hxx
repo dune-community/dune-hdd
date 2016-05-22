@@ -1,6 +1,8 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX
 
+#include <dune/stuff/grid/information.hh>
+
 #include <dune/gdt/operators/prolongations.hh>
 #include <dune/gdt/operators/oswaldinterpolation.hh>
 
@@ -277,6 +279,14 @@ elliptic_reconstruction_estimate(const GenericLinearellipticMultiscaleExample< G
                               {"mu_hat", mu_hat},
                               {"mu_bar", mu_bar},
                               {"mu", mu}});
+}
+
+
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+max_grid_width() const
+{
+  return Dune::Stuff::Grid::Statistics(discretization_->grid_view()).maxGridWidth;
 }
 
 
