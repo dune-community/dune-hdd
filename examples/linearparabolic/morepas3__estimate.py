@@ -80,7 +80,7 @@ class DetailedAgainstWeak(object):
         self._mu_hat = wrapper.dune_parameter(mu_hat)
         self._mu_bar = wrapper.dune_parameter(mu_bar)
 
-    def estimate(self, U, mu, disc):
+    def compute_indicators(self, U, mu, disc):
         p_N = U
         mu = self._wrapper.dune_parameter(mu)
         p_N_c = make_listvectorarray([self._wrapper[self._example.oswald_interpolate(p._impl)] for p in p_N._list])
@@ -115,5 +115,28 @@ class DetailedAgainstWeak(object):
                                           p_N,
                                           mu)
 
+        return {'c_eps_mu_hat': c_eps_mu_hat,
+                'C_eps_mu_hat': C_eps_mu_hat,
+                'alpha_mu_mu_hat': alpha_mu_mu_hat,
+                'gamma_mu_mu_hat': gamma_mu_mu_hat,
+                'C_b': C_b,
+                'C': C,
+                'C_V': C_V,
+                'e_c_0_norm': e_c_0_norm,
+                'dt_p_N_d_norm': dt_p_N_d_norm,
+                'eps_norm': eps_norm,
+                'p_N_d_norm': p_N_d_norm,
+                'R_T_norm': R_T_norm}
+
+        return 2.*dt_p_N_d_norm + (C + 1)*eps_norm + C*p_N_d_norm + 2.*C_V*R_T_norm
+
+    def estimate(self, U, mu, disc):
+        indicators = self.compute_indicators(U, mu, disc)
+        dt_p_N_d_norm = indicators['dt_p_N_d_norm']
+        C = indicators['C']
+        eps_norm = indicators['eps_norm']
+        p_N_d_norm = indicators['p_N_d_norm']
+        C_V = indicators['C_V']
+        R_T_norm = indicators['R_T_norm']
         return 2.*dt_p_N_d_norm + (C + 1)*eps_norm + C*p_N_d_norm + 2.*C_V*R_T_norm
 
