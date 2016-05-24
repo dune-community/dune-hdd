@@ -175,6 +175,9 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         Example.add_method('max_grid_width',
                            retval('double'),
                            [], is_const=True, throw=exceptions)
+        Example.add_method('domain_diameter',
+                           retval('double'),
+                           [], is_const=True, throw=exceptions)
     SGrid1d = 'Dune::SGrid< 1, 1 >'
     SGrid2d = 'Dune::SGrid< 2, 2 >'
     SGrid3d = 'Dune::SGrid< 3, 3 >'

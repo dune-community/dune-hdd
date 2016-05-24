@@ -290,4 +290,16 @@ max_grid_width() const
 }
 
 
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+domain_diameter() const
+{
+  const auto dimensions = Dune::Stuff::Grid::dimensions(discretization_->grid_view());
+  Dune::FieldVector< double, d > diff(0.);
+  for (size_t dd = 0; dd < d; ++dd)
+    diff[dd] = dimensions.coord_limits[dd].max() - dimensions.coord_limits[dd].min();
+  return diff.two_norm();
+}
+
+
 #endif // DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_HXX

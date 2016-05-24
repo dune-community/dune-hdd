@@ -91,6 +91,8 @@ public:
 
   double max_grid_width() const;
 
+  double domain_diameter() const;
+
 private:
   const Dune::Stuff::Common::Configuration boundary_cfg_;
   std::unique_ptr< Dune::grid::Multiscale::ProviderInterface< GridType > > grid_;
