@@ -47,7 +47,7 @@ class InstationaryDuneVisualizer(object):
                                 False) # do not add dirichlet shift
 
 
-def bochner_norm(T, space_norm2, U, order=2):
+def bochner_norm(T, space_norm2, U, mu=None, order=2):
     '''
       L^2-in-time, X-in-space
     '''
@@ -75,7 +75,7 @@ def bochner_norm(T, space_norm2, U, order=2):
             U_t.scal(SF[0][ii])
             U_t.axpy(SF[1][ii], U_b)
             # compute the X-norm of U(t)
-            values[ii] = space_norm2(make_listvectorarray(U_t))
+            values[ii] = space_norm2(make_listvectorarray(U_t), mu)
         integral += np.dot(values, ww)*ie
     return np.sqrt(integral)
 
@@ -168,22 +168,20 @@ def prepare(cfg):
 
     logger.info('creating products and norms ...')
 
-    for tp in ('mu_bar', 'mu_hat', 'mu_min', 'mu_max'):
+    for tp in ('mu_bar', 'mu_hat', 'mu_tilde', 'mu_min', 'mu_max'):
         detailed_data[tp] = parabolic_disc.parse_parameter(cfg[tp])
-        detailed_data[tp + '_dune'] = wrapper.dune_parameter(detailed_data[tp])
 
-    def fix_product(prod, mu):
+    space_products = {}
+    for kk, prod in parabolic_disc.products.items():
+        space_products[kk] = prod
         if prod.parametric:
-            return wrapper[prod._impl.freeze_parameter(mu)]
-        else:
-            return prod
-    
-    space_products = {kk: fix_product(prod, detailed_data['mu_bar_dune'])
-                      for kk, prod in parabolic_disc.products.items()}
+            for tp in 'mu_bar', 'mu_hat', 'mu_tilde':
+                mu = wrapper.dune_parameter(detailed_data[tp])
+                space_products['{}_{}'.format(kk, tp)] = wrapper[prod._impl.freeze_parameter(mu)]
 
     def create_norm2(prod):
-        def norm2(U):
-            return prod.apply2(U, U)[0][0]
+        def norm2(U, mu=None):
+            return prod.apply2(U, U, mu=mu)[0][0]
         return norm2
 
     space_norms2 = {kk: create_norm2(prod)

@@ -16,41 +16,38 @@ from pymor.grids.oned import OnedGrid
 from dune.pymor.la.container import make_listvectorarray
 
 
-def dual_energy_space_norm_squared_estimate(l2_product, C_P, alpha, c_eps, U):
-    U = make_listvectorarray(U)
-    return (C_P/(alpha * c_eps))**2 * l2_product.apply2(U, U)[0][0]
-
-
-def L2_time_dual_energy_space_partial_t_estimate(dual_energy2_estimate, T, U):
+def L2_time_L2_space_partial_t_estimate(l2_product, T, U):
     result = 0.
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
+    dt = time_grid.volumes(0)[0]
     for n in np.arange(1, time_grid.size(1)):
-        dt = time_grid.volumes(0)[n - 1]
-        result += 1./dt * dual_energy2_estimate(U._list[n] - U._list[n - 1])
+        diff = make_listvectorarray(U._list[n] - U._list[n - 1])
+        result += l2_product.apply2(diff, diff)[0][0]
+    result /= dt
     return np.sqrt(result)
 
 
-def time_residual_estimate(wrapper, T, B, l2_product, U, mu):
-    B =  wrapper[B._impl.freeze_parameter(mu)]
+def time_residual_estimate(wrapper, T, b, l2_product, U, mu):
     result = 0.
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
+    dt = time_grid.volumes(0)[0]
     for n in np.arange(1, time_grid.size(1)):
-        B_func = B.apply(make_listvectorarray(U._list[n] - U._list[n - 1]))
-        B_riesz = l2_product.apply_inverse(B_func)
-        dt = time_grid.volumes(0)[n - 1]
-        result += dt/3. * l2_product.apply2(B_riesz, B_riesz)[0][0]
+        b_func = b.apply(make_listvectorarray(U._list[n] - U._list[n - 1]), mu=mu)
+        b_riesz = l2_product.apply_inverse(b_func)
+        result += l2_product.apply2(b_riesz, b_riesz)[0][0]
+    result *= dt/3.
     return np.sqrt(result)
 
 
-def elliptic_reconstruction_estimate(example, T, U, mu_min, mu_max, mu_hat, mu_bar, mu):
+def elliptic_reconstruction_estimate(example, T, U, mu_min, mu_max, mu_tilde, mu):
     result = 0.
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
     dt = time_grid.volumes(0)[0]
     for n in np.arange(time_grid.size(1)):
-        result += dt/3. * example.elliptic_reconstruction_estimate(U._list[n]._impl,
-                                                                   mu_min, mu_max, mu_hat, mu_bar,
-                                                                   mu)**2
-    return np.sqrt(result)
+        result += example.elliptic_reconstruction_estimate(U._list[n]._impl, mu, mu, mu_tilde, mu, mu)**2
+        # result += example.elliptic_reconstruction_estimate(U._list[n]._impl, mu_min, mu_max, mu_tilde, mu, mu)**2
+    result *= dt/3.
+    return 2*np.sqrt(result)
 
 
 class DetailedAgainstReference(object):
@@ -69,74 +66,62 @@ class DetailedAgainstReference(object):
 
 class DetailedAgainstWeak(object):
 
-    def __init__(self, example, wrapper, L2_elliptic_bochner_norm, T, C_P, mu_min, mu_max, mu_hat, mu_bar):
+    def __init__(self, example, wrapper, L2_elliptic_bochner_norm, l2_product, T, mu_min, mu_max, mu_hat, mu_bar, mu_tilde):
         self._example = example
         self._wrapper = wrapper
         self._L2_elliptic_bochner_norm = L2_elliptic_bochner_norm
+        self._l2_product = l2_product
         self._T = T
-        self._C_P = C_P
         self._mu_min = wrapper.dune_parameter(mu_min)
         self._mu_max = wrapper.dune_parameter(mu_max)
         self._mu_hat = wrapper.dune_parameter(mu_hat)
         self._mu_bar = wrapper.dune_parameter(mu_bar)
+        self._mu_tilde = wrapper.dune_parameter(mu_tilde)
 
     def compute_indicators(self, U, mu, disc):
         p_N = U
+        _mu = mu
         mu = self._wrapper.dune_parameter(mu)
         p_N_c = make_listvectorarray([self._wrapper[self._example.oswald_interpolate(p._impl)] for p in p_N._list])
         p_N_d = p_N - p_N_c
 
         c_eps_mu_hat = self._example.min_diffusion_ev(self._mu_hat)
-        C_eps_mu_hat = self._example.max_diffusion_ev(self._mu_hat)
         alpha_mu_mu_hat = self._example.alpha(mu, self._mu_hat)
-        gamma_mu_mu_hat = self._example.gamma(mu, self._mu_hat)
-
-        C_b = 1. #gamma_mu_mu_hat * C_eps_mu_hat
-        C = np.sqrt(3*C_b**2 + 2)
-        C_V = self._C_P/(alpha_mu_mu_hat * c_eps_mu_hat)
+        C_P_Omega = 2*self._example.domain_diameter()
 
         e_c_0_norm = 0.
-        dt_p_N_d_norm = L2_time_dual_energy_space_partial_t_estimate(partial(dual_energy_space_norm_squared_estimate,
-                                                                             disc.l2_product,
-                                                                             self._C_P,
-                                                                             alpha_mu_mu_hat,
-                                                                             c_eps_mu_hat),
-                                                                     self._T,
-                                                                     p_N_d)
+        dt_p_N_d_norm = L2_time_L2_space_partial_t_estimate(self._l2_product, self._T, p_N_d)
         eps_norm = elliptic_reconstruction_estimate(self._example,
                                                     self._T,
                                                     p_N,
-                                                    self._mu_min, self._mu_max, self._mu_hat, self._mu_bar, mu)
-        p_N_d_norm = self._L2_elliptic_bochner_norm(p_N_d)
+                                                    self._mu_min, self._mu_max, self._mu_tilde, mu)
+        p_N_d_norm = self._L2_elliptic_bochner_norm(p_N_d, mu=_mu)
         R_T_norm = time_residual_estimate(self._wrapper,
                                           self._T,
                                           disc.operator,
                                           disc.l2_product,
                                           p_N,
-                                          mu)
+                                          _mu)
 
         return {'c_eps_mu_hat': c_eps_mu_hat,
-                'C_eps_mu_hat': C_eps_mu_hat,
                 'alpha_mu_mu_hat': alpha_mu_mu_hat,
-                'gamma_mu_mu_hat': gamma_mu_mu_hat,
-                'C_b': C_b,
-                'C': C,
-                'C_V': C_V,
+                'C_P_Omega': C_P_Omega,
                 'e_c_0_norm': e_c_0_norm,
                 'dt_p_N_d_norm': dt_p_N_d_norm,
                 'eps_norm': eps_norm,
                 'p_N_d_norm': p_N_d_norm,
                 'R_T_norm': R_T_norm}
 
-        return 2.*dt_p_N_d_norm + (C + 1)*eps_norm + C*p_N_d_norm + 2.*C_V*R_T_norm
-
     def estimate(self, U, mu, disc):
+        alpha_mu_mu_bar = self._example.alpha(self._wrapper.dune_parameter(mu), self._mu_bar)
         indicators = self.compute_indicators(U, mu, disc)
-        dt_p_N_d_norm = indicators['dt_p_N_d_norm']
-        C = indicators['C']
-        eps_norm = indicators['eps_norm']
-        p_N_d_norm = indicators['p_N_d_norm']
-        C_V = indicators['C_V']
-        R_T_norm = indicators['R_T_norm']
-        return 2.*dt_p_N_d_norm + (C + 1)*eps_norm + C*p_N_d_norm + 2.*C_V*R_T_norm
+        (e_c_0_norm, C_P_Omega, c_eps_mu_hat, alpha_mu_mu_hat, dt_p_N_d_norm, eps_norm, p_N_d_norm, R_T_norm) = (
+                indicators['e_c_0_norm'], indicators['C_P_Omega'], indicators['c_eps_mu_hat'],
+                indicators['alpha_mu_mu_hat'], indicators['dt_p_N_d_norm'], indicators['eps_norm'],
+                indicators['p_N_d_norm'], indicators['R_T_norm'])
+        return  1./np.sqrt(alpha_mu_mu_bar) * (  e_c_0_norm
+                                               + (2.*C_P_Omega*c_eps_mu_hat)/alpha_mu_mu_hat * dt_p_N_d_norm
+                                               + (np.sqrt(5.) + 1.) * eps_norm
+                                               + np.sqrt(5.) * p_N_d_norm
+                                               + 2./alpha_mu_mu_hat * R_T_norm)
 

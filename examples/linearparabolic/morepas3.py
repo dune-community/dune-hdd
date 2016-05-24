@@ -9,6 +9,7 @@ from __future__ import division, print_function
 
 import numpy as np
 
+from functools import partial
 from tempfile import NamedTemporaryFile
 
 from pymor.core.defaults import set_defaults
@@ -39,6 +40,7 @@ config= {'dune_subdomains': '[1 1]',
          'mu_max': 1,
          'mu_bar': 1,
          'mu_hat': 1,
+         'mu_tilde': 1,
          'poincare': 1./(np.pi**2),
          'extension_product': 'h1',
          'num_training_samples' : 3,
@@ -67,14 +69,15 @@ def eoc_study():
         reference_error_computer = DetailedAgainstReference(reference_data['parabolic_disc'],
                                                             reference_data['prolongator'],
                                                             level_data['elliptic_disc'],
-                                                            reference_data['bochner_norms']['elliptic'])
+                                                            partial(reference_data['bochner_norms']['elliptic'], mu=mu))
         return reference_error_computer.estimate(level_data['parabolic_disc'].solve(mu), mu, level_data['parabolic_disc'])
 
     def estimate_error(level_data, mu):
         detailed_estimator = DetailedAgainstWeak(level_data['example'], level_data['wrapper'],
-                                                 level_data['bochner_norms']['elliptic'], config['end_time'],
-                                                 config['poincare'], level_data['mu_min'], level_data['mu_max'],
-                                                 level_data['mu_hat'], level_data['mu_max'])
+                                                 level_data['bochner_norms']['elliptic'], level_data['space_products']['l2'],
+                                                 config['end_time'],
+                                                 level_data['mu_min'], level_data['mu_max'], level_data['mu_hat'],
+                                                 level_data['mu_bar'], level_data['mu_tilde'])
         return detailed_estimator.compute_indicators(level_data['parabolic_disc'].solve(mu), mu, level_data['parabolic_disc'])
 
     logger.info('creating DUNE discretization ...')
@@ -122,18 +125,12 @@ def eoc_study():
 
 logger.info('creating DUNE discretization ...')
 detailed_data = prepare(config)
-(example, wrapper, initial_data, elliptic_disc, parabolic_disc, bochner_norms,
- mu_min, mu_max, mu_hat, mu_bar) = (
-        detailed_data['example'],
-        detailed_data['wrapper'],
-        detailed_data['initial_data'],
-        detailed_data['elliptic_LRBMS_disc'],
-        detailed_data['parabolic_disc'],
-        detailed_data['bochner_norms'],
-        detailed_data['mu_min'],
-        detailed_data['mu_max'],
-        detailed_data['mu_hat'],
-        detailed_data['mu_bar'])
+(example, wrapper, initial_data, elliptic_disc, parabolic_disc, bochner_norms, space_products,
+ mu_min, mu_max, mu_hat, mu_bar, mu_tilde) = (
+        detailed_data['example'], detailed_data['wrapper'], detailed_data['initial_data'],
+        detailed_data['elliptic_LRBMS_disc'], detailed_data['parabolic_disc'], detailed_data['bochner_norms'],
+        detailed_data['space_products'], detailed_data['mu_min'], detailed_data['mu_max'], detailed_data['mu_hat'],
+        detailed_data['mu_bar'], detailed_data['mu_tilde'])
 logger.info('  grid has {} subdomains'.format(elliptic_disc.num_subdomains))
 logger.info('  discretization has {} DoFs'.format(parabolic_disc.solution_space.dim))
 logger.info('  parameter type is {}'.format(parabolic_disc.parameter_type))
@@ -155,19 +152,26 @@ parabolic_disc_ref, prolongator, bochner_norms_ref = (
 logger.info('  discretization has {} DoFs'.format(parabolic_disc_ref.solution_space.dim))
 
 logger.info('computing discretization errors ...')
-reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
-                                                    prolongator,
-                                                    elliptic_disc,
-                                                    bochner_norms_ref['elliptic'])
+
+def compute_error(U, mu, disc):
+    reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
+                                                        prolongator,
+                                                        elliptic_disc,
+                                                        partial(bochner_norms_ref['elliptic'], mu=mu))
+    return reference_error_computer.estimate(U, mu, disc)
 
 training_samples = list(parabolic_disc.parameter_space.sample_randomly(config['num_training_samples']))
-discretization_errors = [reference_error_computer.estimate(parabolic_disc.solve(mu), mu, parabolic_disc)
+discretization_errors = [compute_error(parabolic_disc.solve(mu), mu, parabolic_disc)
                          for mu in training_samples]
 
 logger.info('estimating discretization errors ...')
-detailed_estimator = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], config['end_time'],
-                                         config['poincare'], mu_min, mu_max, mu_hat, mu_max)
-discretization_estimates = [detailed_estimator.estimate(parabolic_disc.solve(mu), mu, parabolic_disc)
+
+def estimate_error(U, mu, disc):
+    detailed_estimator = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], space_products['l2'],
+                                             config['end_time'], mu_min, mu_max, mu_hat, mu_bar, mu_tilde)
+    return detailed_estimator.estimate(U, mu, disc)
+
+discretization_estimates = [estimate_error(parabolic_disc.solve(mu), mu, parabolic_disc)
                             for mu in training_samples]
 
 for ii in np.arange(len(training_samples)):
