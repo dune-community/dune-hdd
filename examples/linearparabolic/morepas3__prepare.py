@@ -101,6 +101,7 @@ def discretize(num_elements, num_refinements, T, nt, initial_data, parameter_ran
 
     problem_cfg = Example.problem_options('hdd.linearelliptic.problem.thermalblock')
     problem_cfg.set('diffusion_factor.num_elements', '[1 1]', True)
+    problem_cfg.set('force.value', '0)', True)
 
     example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
 
