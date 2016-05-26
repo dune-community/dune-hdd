@@ -170,7 +170,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             param('const Dune::Pymor::Parameter&', 'mu_max'),
                             param('const Dune::Pymor::Parameter&', 'mu_hat'),
                             param('const Dune::Pymor::Parameter&', 'mu_bar'),
-                            param('const Dune::Pymor::Parameter&', 'mu')],
+                            param('const Dune::Pymor::Parameter&', 'mu'),
+                            param('const std::string', 'visualize')],
                            is_const=True, throw=exceptions)
         Example.add_method('max_grid_width',
                            retval('double'),

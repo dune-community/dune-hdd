@@ -251,18 +251,40 @@ elliptic_reconstruction_estimate(const GenericLinearellipticMultiscaleExample< G
                                  const Dune::Pymor::Parameter& mu_max,
                                  const Dune::Pymor::Parameter& mu_hat,
                                  const Dune::Pymor::Parameter& mu_bar,
-                                 const Dune::Pymor::Parameter& mu) const
+                                 const Dune::Pymor::Parameter& mu,
+                                 const std::string visualize) const
 {
   using namespace Dune;
+  const bool do_visualize = !visualize.empty();
+  const auto& grid_view = discretization_->grid_view();
   const auto f = problem_->force()->with_mu(problem_->map_parameter(mu, "force"));
-  auto f_h = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space());
+  auto f_h = GDT::make_discrete_function< VectorType >(discretization_->ansatz_space(), "f_h");
   GDT::project(*f, f_h);
+  if (do_visualize) {
+    GDT::make_const_discrete_function(discretization_->ansatz_space(), p_h, "p_h").visualize(visualize + ".p_h");
+    f->visualize(grid_view, visualize + ".f");
+    f_h.visualize(visualize + ".f_h");
+    (*f - f_h).visualize(grid_view, visualize + ".f_minus_f_h");
+  }
   const auto b_h = discretization_->get_operator();
   const auto l2_prod = discretization_->get_product("l2");
-  auto w_h = l2_prod.apply_inverse(b_h.apply(p_h, mu));
+  const auto b_times_p = b_h.apply(p_h, mu);
+  auto w_h = l2_prod.apply_inverse(b_times_p);
+  if (do_visualize) {
+    GDT::make_const_discrete_function(discretization_->ansatz_space(), b_times_p, "b_h * p_h").visualize(visualize + ".b_h_times_p_h");
+    GDT::make_const_discrete_function(discretization_->ansatz_space(), w_h, "w_h").visualize(visualize + ".w_h");
+  }
   w_h -= f_h.vector();
   const auto w_h_func = GDT::make_const_discrete_function(discretization_->ansatz_space(), w_h);
-  const auto rhs = std::make_shared< typename decltype(w_h_func)::SumType >(w_h_func + *f);
+  const auto rhs = std::make_shared< typename decltype(w_h_func)::SumType >(w_h_func, *f, "tmp_rhs");
+  if (do_visualize) {
+    rhs->visualize(grid_view, visualize + ".tmp_rhs");
+    GDT::Spaces::FV::Default< typename DiscretizationType::GridViewType, R, 1 > fv_space(grid_view);
+    auto rhs_h = GDT::make_discrete_function< VectorType >(fv_space, "tmp_rhs_h");
+    GDT::project(*rhs, rhs_h);
+    rhs_h.visualize(visualize + ".tmp_rhs_h");
+    (*rhs - rhs_h).visualize(grid_view, visualize + ".tmp_rhs_minus_tmp_rhs_h");
+  }
   HDD::LinearElliptic::Problems::Default< E, D, d, R, r >
       tmp_problem(problem_->diffusion_factor(),
                   problem_->diffusion_tensor(),

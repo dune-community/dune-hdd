@@ -87,7 +87,8 @@ public:
                                           const Dune::Pymor::Parameter& mu_max,
                                           const Dune::Pymor::Parameter& mu_hat,
                                           const Dune::Pymor::Parameter& mu_bar,
-                                          const Dune::Pymor::Parameter& mu) const;
+                                          const Dune::Pymor::Parameter& mu,
+                                          const std::string visualize = "") const;
 
   double max_grid_width() const;
 

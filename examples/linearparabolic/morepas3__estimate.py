@@ -44,7 +44,7 @@ def elliptic_reconstruction_estimate(example, T, U, mu_min, mu_max, mu_tilde, mu
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
     dt = time_grid.volumes(0)[0]
     for n in np.arange(time_grid.size(1)):
-        result += example.elliptic_reconstruction_estimate(U._list[n]._impl, mu, mu, mu_tilde, mu, mu)**2
+        result += example.elliptic_reconstruction_estimate(U._list[n]._impl, mu, mu, mu_tilde, mu, mu, '')**2
         # result += example.elliptic_reconstruction_estimate(U._list[n]._impl, mu_min, mu_max, mu_tilde, mu, mu)**2
     result *= dt/3.
     return 2*np.sqrt(result)
