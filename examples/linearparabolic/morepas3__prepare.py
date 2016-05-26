@@ -128,7 +128,7 @@ def discretize(num_elements, num_refinements, T, nt, initial_data, parameter_ran
 
     if isinstance(initial_data, str):
         initial_data = make_listvectorarray(wrapper[example.project(initial_data)])
-        initial_data = elliptic_disc.operator.apply_inverse(initial_data, mu=1)
+        # initial_data = elliptic_disc.operator.apply_inverse(initial_data, mu=(1, 1))
     else:
         coarse_disc = initial_data[0]
         initial_data = initial_data[1]
