@@ -151,7 +151,7 @@ def discretize(num_elements, num_refinements, T, nt, initial_data, parameter_ran
                                                                                     parameter_range[0],
                                                                                     parameter_range[1]),
                                                 cache_region='disk',
-                                                name=name)
+                                                name='{} ({} DoFs)'.format(name, elliptic_disc.solution_space.dim))
 
     return {'example': example,
             'initial_data': initial_data,
