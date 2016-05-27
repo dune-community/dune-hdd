@@ -274,8 +274,28 @@ elliptic_reconstruction_estimate(const GenericLinearellipticMultiscaleExample< G
     GDT::make_const_discrete_function(discretization_->ansatz_space(), b_times_p, "b_h * p_h").visualize(visualize + ".b_h_times_p_h");
     GDT::make_const_discrete_function(discretization_->ansatz_space(), w_h, "w_h").visualize(visualize + ".w_h");
   }
-  w_h -= f_h.vector();
-  const auto w_h_func = GDT::make_const_discrete_function(discretization_->ansatz_space(), w_h);
+  return elliptic_reconstruction_estimate(p_h, w_h, f_h.vector(), mu_min, mu_max, mu_hat, mu_bar, mu, visualize);
+}
+
+
+template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBackend la >
+    double GenericLinearellipticMultiscaleExample< G, sp, la >::
+elliptic_reconstruction_estimate(const GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& p_h,
+                                 const GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& w_h,
+                                 const GenericLinearellipticMultiscaleExample< G, sp, la >::VectorType& f_h,
+                                 const Dune::Pymor::Parameter& mu_min,
+                                 const Dune::Pymor::Parameter& mu_max,
+                                 const Dune::Pymor::Parameter& mu_hat,
+                                 const Dune::Pymor::Parameter& mu_bar,
+                                 const Dune::Pymor::Parameter& mu,
+                                 const std::string visualize) const
+{
+  using namespace Dune;
+  const bool do_visualize = !visualize.empty();
+  const auto& grid_view = discretization_->grid_view();
+  const auto f = problem_->force()->with_mu(problem_->map_parameter(mu, "force"));
+  const auto tmp_vec = w_h - f_h;
+  const auto w_h_func = GDT::make_const_discrete_function(discretization_->ansatz_space(), tmp_vec);
   const auto rhs = std::make_shared< typename decltype(w_h_func)::SumType >(w_h_func, *f, "tmp_rhs");
   if (do_visualize) {
     rhs->visualize(grid_view, visualize + ".tmp_rhs");

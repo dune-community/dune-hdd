@@ -90,6 +90,16 @@ public:
                                           const Dune::Pymor::Parameter& mu,
                                           const std::string visualize = "") const;
 
+  double elliptic_reconstruction_estimate(const VectorType& p_h,
+                                          const VectorType& w_h,
+                                          const VectorType& f_h,
+                                          const Dune::Pymor::Parameter& mu_min,
+                                          const Dune::Pymor::Parameter& mu_max,
+                                          const Dune::Pymor::Parameter& mu_hat,
+                                          const Dune::Pymor::Parameter& mu_bar,
+                                          const Dune::Pymor::Parameter& mu,
+                                          const std::string visualize = "") const;
+
   double max_grid_width() const;
 
   double domain_diameter() const;

@@ -173,6 +173,18 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
                             param('const Dune::Pymor::Parameter&', 'mu'),
                             param('const std::string', 'visualize')],
                            is_const=True, throw=exceptions)
+        Example.add_method('elliptic_reconstruction_estimate',
+                           retval('double'),
+                           [param('const ' + VectorType + '&', 'p_h'),
+                            param('const ' + VectorType + '&', 'w_h'),
+                            param('const ' + VectorType + '&', 'f_h'),
+                            param('const Dune::Pymor::Parameter&', 'mu_min'),
+                            param('const Dune::Pymor::Parameter&', 'mu_max'),
+                            param('const Dune::Pymor::Parameter&', 'mu_hat'),
+                            param('const Dune::Pymor::Parameter&', 'mu_bar'),
+                            param('const Dune::Pymor::Parameter&', 'mu'),
+                            param('const std::string', 'visualize')],
+                           is_const=True, throw=exceptions)
         Example.add_method('max_grid_width',
                            retval('double'),
                            [], is_const=True, throw=exceptions)
