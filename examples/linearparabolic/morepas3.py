@@ -29,6 +29,7 @@ pymor.core.logger.FILENAME = logfile
 logger = getLogger('.morepas3.main')
 logger.setLevel('INFO')
 
+getLogger('.morepas3.estimate.DetailedAgainstWeak').setLevel('INFO')
 
 config= {'dune_num_elements': '[200 40]',
          'dune_num_partitions': '[1 1]',

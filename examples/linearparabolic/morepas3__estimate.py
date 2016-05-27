@@ -11,6 +11,7 @@ from functools import partial
 
 import numpy as np
 
+from pymor.core.logger import getLogger
 from pymor.grids.oned import OnedGrid
 
 from dune.pymor.la.container import make_listvectorarray
@@ -77,6 +78,7 @@ class DetailedAgainstWeak(object):
         self._mu_hat = wrapper.dune_parameter(mu_hat)
         self._mu_bar = wrapper.dune_parameter(mu_bar)
         self._mu_tilde = wrapper.dune_parameter(mu_tilde)
+        self._logger = getLogger('.morepas3.estimate.DetailedAgainstWeak')
 
     def compute_indicators(self, U, mu, disc):
         p_N = U
@@ -113,6 +115,7 @@ class DetailedAgainstWeak(object):
                 'R_T_norm': R_T_norm}
 
     def estimate(self, U, mu, disc):
+        self._logger.info('estimating for {} ...'.format(mu))
         alpha_mu_mu_bar = self._example.alpha(self._wrapper.dune_parameter(mu), self._mu_bar)
         indicators = self.compute_indicators(U, mu, disc)
         (e_c_0_norm, C_P_Omega, c_eps_mu_hat, alpha_mu_mu_hat, dt_p_N_d_norm, eps_norm, p_N_d_norm, R_T_norm) = (
