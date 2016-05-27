@@ -31,17 +31,16 @@ logger.setLevel('INFO')
 
 getLogger('.morepas3.estimate.DetailedAgainstWeak').setLevel('INFO')
 
-config= {'dune_num_elements': '[200 40]',
-         'dune_num_partitions': '[1 1]',
+config= {'dune_num_elements': '[100 20]',
+         'dune_num_partitions': '[25 5]',
          'integration_order_time': 2,
          'end_time' : 0.01,
          'nt' : 10,
          'mu_min': 0.1,
-         'mu_max': 1,
-         'mu_bar': 1,
-         'mu_hat': 1,
-         'mu_tilde': 1,
-         'poincare': 1./(np.pi**2),
+         'mu_max': 1.,
+         'mu_bar': 0.1,
+         'mu_hat': 0.1,
+         'mu_tilde': 0.1,
          'extension_product': 'h1',
          'num_training_samples' : 3,
          'max_rb_size' : 500,
