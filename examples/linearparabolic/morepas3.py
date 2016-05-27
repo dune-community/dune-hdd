@@ -30,9 +30,8 @@ logger = getLogger('.morepas3.main')
 logger.setLevel('INFO')
 
 
-config= {'dune_subdomains': '[1 1]',
-         'dune_num_elements': '[8 8]',
-         'dune_num_refinements': '0',
+config= {'dune_num_elements': '[200 40]',
+         'dune_num_partitions': '[1 1]',
          'integration_order_time': 2,
          'end_time' : 0.01,
          'nt' : 10,
@@ -46,7 +45,7 @@ config= {'dune_subdomains': '[1 1]',
          'num_training_samples' : 3,
          'max_rb_size' : 500,
          'target_error': 1e-1,
-         'initial_data': 'exp(-((x[0]-0.5)*(x[0]-0.5)+(x[1]-0.5)*(x[1]-0.5))/0.01)'}
+         'initial_data': '0'}
 new_dataset('morepas3', **config)
 
 
