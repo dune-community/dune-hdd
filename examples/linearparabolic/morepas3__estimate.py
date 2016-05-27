@@ -40,13 +40,13 @@ def time_residual_estimate(wrapper, T, b, l2_product, U, mu):
     return np.sqrt(result)
 
 
-def elliptic_reconstruction_estimate(example, T, U, mu_min, mu_max, mu_tilde, mu):
+def elliptic_reconstruction_estimate(example, riesz_computer, T, f_h, U, mu_min, mu_max, mu_tilde, mu):
     result = 0.
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
     dt = time_grid.volumes(0)[0]
     for n in np.arange(time_grid.size(1)):
-        result += example.elliptic_reconstruction_estimate(U._list[n]._impl, mu, mu, mu_tilde, mu, mu, '')**2
-        # result += example.elliptic_reconstruction_estimate(U._list[n]._impl, mu_min, mu_max, mu_tilde, mu, mu)**2
+        w_N = riesz_computer(make_listvectorarray(U._list[n]))
+        result += example.elliptic_reconstruction_estimate(U._list[n]._impl, w_N._list[0]._impl, f_h._list[0]._impl, mu, mu, mu_tilde, mu, mu, '')**2
     result *= dt/3.
     return 2*np.sqrt(result)
 
@@ -91,10 +91,17 @@ class DetailedAgainstWeak(object):
         alpha_mu_mu_hat = self._example.alpha(mu, self._mu_hat)
         C_P_Omega = 2*self._example.domain_diameter()
 
+        f_h = disc.l2_product.apply_inverse(disc.rhs.as_vector(_mu)) # we know rhs is nonparametric, so mu is ignored
+
+        def riesz_computer(p_h):
+            return disc.l2_product.apply_inverse(disc.operator.apply(p_h, mu=_mu))
+
         e_c_0_norm = 0.
         dt_p_N_d_norm = L2_time_L2_space_partial_t_estimate(self._l2_product, self._T, p_N_d)
         eps_norm = elliptic_reconstruction_estimate(self._example,
+                                                    riesz_computer,
                                                     self._T,
+                                                    f_h,
                                                     p_N,
                                                     self._mu_min, self._mu_max, self._mu_tilde, mu)
         p_N_d_norm = self._L2_elliptic_bochner_norm(p_N_d, mu=_mu)
