@@ -14,9 +14,15 @@ add_executable(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visu
 target_link_libraries(example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY} dunehhd)
 
+add_library(examplelinearellipticgenericmultiscale
+            generic_multiscale__aluconformsimplexgrid_2d__fem__istl_sparse.cxx)
+target_link_dune_default_libraries(examplelinearellipticgenericmultiscale)
+target_link_libraries(examplelinearellipticgenericmultiscale dunehdd)
+
 add_python_bindings(linearellipticexamplegenericmultiscale
                     generic_multiscale_bindings_generator.py
-                    generic_multiscale_bindings_generator.hh "")
+                    generic_multiscale_bindings_generator.hh
+                    examplelinearellipticgenericmultiscale)
 add_python_bindings(linearellipticexamplegeneric
                     generic_bindings_generator.py
                     generic_bindings_generator.hh "")
@@ -31,6 +37,7 @@ add_python_bindings(linearellipticexampleOS2015SISC62
                     OS2015_SISC__6_2__bindings_generator.hh "")
 
 foreach(target
+        examplelinearellipticgenericmultiscale
         example_linearelliptic_kuehlergrill
         example_linearelliptic_OS2014_FVCA7__visualization
         example_linearelliptic_OS2015_SISC__6_1__multiscale_example__visualizations
