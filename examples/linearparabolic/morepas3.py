@@ -119,6 +119,12 @@ def eoc_study():
                 pass
         return eocs
 
+    logger.info('errors and estimates:')
+    for kk, vv in quantities.items():
+        print('{}: {}'.format(kk, vv))
+
+    logger.info(' ')
+    logger.info('EOCs:')
     for kk, vv in quantities.items():
         print('{}: {}'.format(kk, eoc(vv)[1:]))
 
@@ -135,34 +141,36 @@ logger.info('  grid has {} subdomains'.format(elliptic_disc.num_subdomains))
 logger.info('  discretization has {} DoFs'.format(parabolic_disc.solution_space.dim))
 logger.info('  parameter type is {}'.format(parabolic_disc.parameter_type))
 
-# logger.info('visualizing data functions and sample solution ...')
-# example.visualize('example')
-# U = parabolic_disc.solve(1)
-# parabolic_disc.visualize(U, filename='sample_solution')
+training_samples = list(parabolic_disc.parameter_space.sample_uniformly(config['num_training_samples']))
 
-logger.info('creating reference discretization ...')
-config_ref = dict(config)
-config_ref['dune_num_elements'] = '[16 16]'
-config_ref['nt'] = 2*config['nt']
-reference_data = prepare(config_ref)
-parabolic_disc_ref, prolongator, bochner_norms_ref = (
-        reference_data['parabolic_disc'],
-        reference_data['prolongator'],
-        reference_data['bochner_norms'])
-logger.info('  discretization has {} DoFs'.format(parabolic_disc_ref.solution_space.dim))
+logger.info('visualizing data functions and sample solution ...')
+example.visualize('example')
+for mu in (0.1, 1):
+    U = parabolic_disc.solve(mu)
+    parabolic_disc.visualize(U, filename='sample_solution_{}'.format(mu))
 
-logger.info('computing discretization errors ...')
+# logger.info('creating reference discretization ...')
+# config_ref = dict(config)
+# config_ref['dune_num_elements'] = '[64 64]'
+# config_ref['nt'] = 4*config['nt']
+# reference_data = prepare(config_ref)
+# parabolic_disc_ref, prolongator, bochner_norms_ref = (
+#         reference_data['parabolic_disc'],
+#         reference_data['prolongator'],
+#         reference_data['bochner_norms'])
+# logger.info('  discretization has {} DoFs'.format(parabolic_disc_ref.solution_space.dim))
 
-def compute_error(U, mu, disc):
-    reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
-                                                        prolongator,
-                                                        elliptic_disc,
-                                                        partial(bochner_norms_ref['elliptic'], mu=mu))
-    return reference_error_computer.estimate(U, mu, disc)
+# logger.info('computing discretization errors ...')
 
-training_samples = list(parabolic_disc.parameter_space.sample_randomly(config['num_training_samples']))
-discretization_errors = [compute_error(parabolic_disc.solve(mu), mu, parabolic_disc)
-                         for mu in training_samples]
+# def compute_error(U, mu, disc):
+#     reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
+#                                                         prolongator,
+#                                                         elliptic_disc,
+#                                                         partial(bochner_norms_ref['elliptic'], mu=mu))
+#     return reference_error_computer.estimate(U, mu, disc)
+
+# discretization_errors = [compute_error(parabolic_disc.solve(mu), mu, parabolic_disc)
+#                          for mu in training_samples]
 
 logger.info('estimating discretization errors ...')
 
@@ -175,12 +183,9 @@ discretization_estimates = [estimate_error(parabolic_disc.solve(mu), mu, parabol
                             for mu in training_samples]
 
 for ii in np.arange(len(training_samples)):
-    print('{}: {} vs. {} ({})'.format(training_samples[ii],
-                                      discretization_errors[ii],
-                                      discretization_estimates[ii],
-                                      discretization_estimates[ii]/discretization_errors[ii]))
+    print('{}: {}'.format(training_samples[ii], discretization_estimates[ii]))
 
-# logger.info(' ')
+logger.info(' ')
 
 # add_values(time=greedy_data['time'],
 #            max_err_mus=greedy_data['max_err_mus'],
