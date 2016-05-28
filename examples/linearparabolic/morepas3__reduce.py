@@ -7,11 +7,17 @@
 
 from __future__ import division, print_function
 
+import numpy as np
+
+from functools import partial
+from itertools import izip
 from scipy.sparse import coo_matrix, bmat
 
 from pymor.algorithms.basisextension import pod_basis_extension
 from pymor.algorithms.greedy import greedy
-from pymor.operators.constructions import LincombOperator
+from pymor.algorithms.timestepping import ImplicitEulerTimeStepper
+from pymor.discretizations.basic import InstationaryDiscretization
+from pymor.operators.constructions import FixedParameterOperator, LincombOperator
 from pymor.operators.numpy import NumpyMatrixOperator
 from pymor.playground.algorithms.blockbasisextension import pod_block_basis_extension
 from pymor.playground.operators.block import BlockOperator
@@ -19,6 +25,8 @@ from pymor.playground.reductors import GenericBlockRBReconstructor
 from pymor.reductors.basic import reduce_generic_rb
 from pymor.vectorarrays.block import BlockVectorArray
 from pymor.vectorarrays.numpy import NumpyVectorArray
+
+from morepas3__estimate import ReducedAgainstWeak
 
 
 class Reconstructor(object):
@@ -31,12 +39,16 @@ class Reconstructor(object):
         if U.dim == 0:
             return self._disc.globalize_vectors(self._disc.solution_space.zeros(len(U)))
         else:
-            assert U.dim == np.sum(len(RB) for RB in self._RB)
-            local_lens = [len(RB) for RB in self._RB]
-            local_starts = np.insert(np.cumsum(local_lens), 0, 0)[:-1]
-            localized_U = [NumpyVectorArray(U._array[:, local_starts[ii]:(local_starts[ii] + local_lens[ii])])
-                           for ii in np.arange(len(self._RB))]
-            U = GenericBlockRBReconstructor(self._RB).reconstruct(BlockVectorArray(localized_U))
+            if isinstance(U, NumpyVectorArray):
+                assert U.dim == np.sum(len(RB) for RB in self._RB)
+                local_lens = [len(RB) for RB in self._RB]
+                local_starts = np.insert(np.cumsum(local_lens), 0, 0)[:-1]
+                localized_U = [NumpyVectorArray(U._array[:, local_starts[ii]:(local_starts[ii] + local_lens[ii])])
+                               for ii in np.arange(len(self._RB))]
+                U = BlockVectorArray(localized_U)
+            if not isinstance(U, BlockVectorArray):
+                raise NotImplementedError
+            U = GenericBlockRBReconstructor(self._RB).reconstruct(U)
             return self._disc.globalize_vectors(U)
 
     def restricted_to_subbasis(self, dim):
@@ -46,10 +58,39 @@ class Reconstructor(object):
         return Reconstructor(self._disc, [rb.copy(ind=range(dd)) for rb, dd in izip(self.RB, dim)])
 
 
-def reductor(discretization, RB, vector_product=None, disable_caching=True, extends=None):
+# class Estimator(object):
+
+#     def __init__(self, disc, estimator, reconstructor):
+#         self._disc = disc
+#         self._estimator = estimator
+#         self._reconstructor = reconstructor
+
+#     def estimate(self, U, mu, discretization):
+#         f_h = self._disc.l2_product.apply_inverse(self._disc.rhs.as_vector(mu)) # we know rhs is nonparametric, so mu has no effect
+#         f_h = BlockVectorArray([self._reconstructor._disc.localize_vector(f_h, ii)
+#                                 for ii in np.arange(self._reconstructor._disc.num_subdomains)])
+#         f_red = BlockVectorArray([NumpyVectorArray(f_block.dot(RB_block))
+#                                   for f_block, RB_block in izip(f_h._blocks, self._reconstructor._RB)])
+#         f_red = self._reconstructor.reconstruct(f_red)
+#         U_rec = self._reconstructor.reconstruct(U)
+#         b_red = FixedParameterOperator(discretization.operator, mu)
+#         L2_red = L2 = discretization.l2_product
+#         def riesz_computer(U):
+#             w_red = L2_red.apply_inverse(b_red.apply(U))
+#             return self._reconstructor.reconstruct(w_red)
+#         import ipdb; ipdb.set_trace()
+#         return self._estimator.estimate(U_rec, mu, self._disc)
+
+
+def reductor(config, detailed_data, discretization, RB, vector_product=None, disable_caching=True, extends=None):
+    elliptic_disc = detailed_data['elliptic_disc']
+    elliptic_LRBMS_disc = detailed_data['elliptic_LRBMS_disc']
+    T = config['end_time']
+    nt = config['nt']
     if RB is None:
         RB = [elliptic_LRBMS_disc.local_operator(ss).source.empty() for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)]
     rd, rc, reduction_data = reduce_generic_rb(elliptic_LRBMS_disc, RB, vector_product, disable_caching, extends)
+    rc = Reconstructor(elliptic_LRBMS_disc, RB)
 
     def unblock_op(op):
         assert op._blocks[0][0] is not None
@@ -84,21 +125,18 @@ def reductor(discretization, RB, vector_product=None, disable_caching=True, exte
                             for ii in np.arange(op.num_range_blocks)]).toarray()
             return NumpyMatrixOperator(mat)
 
-    class DetailedEstimator(object):
-
-        def estimate(self, U, mu, discretization):
-            U_rec = Reconstructor(elliptic_LRBMS_disc, RB).reconstruct(U)
-            U_prol = prolong(reference_example, elliptic_LRBMS_disc._impl, U_rec)
-            return reference_norm(parabolic_reference_disc.solve(mu) - U_prol)
-
     reduced_op = unblock_op(rd.operator)
     reduced_rhs = unblock_op(rd.rhs)
-    return (InstationaryDiscretization(T=config['end_time'],
+    estimator = ReducedAgainstWeak(rc, detailed_data['example'], detailed_data['wrapper'],
+                                   detailed_data['bochner_norms']['elliptic'], detailed_data['space_products']['l2'],
+                                   T, detailed_data['mu_min'], detailed_data['mu_max'], detailed_data['mu_hat'],
+                                   detailed_data['mu_bar'], detailed_data['mu_tilde'])
+    return (InstationaryDiscretization(T=T,
                                        initial_data=reduced_op.source.zeros(1),
                                        operator=reduced_op,
                                        rhs=unblock_op(rd.rhs),
                                        mass=unblock_op(rd.products['l2']),
-                                       time_stepper=ImplicitEulerTimeStepper(config['nt']),
+                                       time_stepper=ImplicitEulerTimeStepper(nt),
                                        products={kk: unblock_op(rd.products[kk]) for kk in rd.products.keys()},
                                        operators={kk: unblock_op(rd.operators[kk])
                                                   for kk in rd.operators.keys() if kk != 'operator'},
@@ -107,31 +145,32 @@ def reductor(discretization, RB, vector_product=None, disable_caching=True, exte
                                        vector_operators={kk: unblock_op(rd.vector_operators[kk])
                                                          for kk in rd.vector_operators.keys()},
                                        parameter_space=rd.parameter_space,
-                                       estimator=DetailedEstimator(),
+                                       estimator=estimator,
                                        cache_region='disk',
-                                       name='reduced discretization'),
-            Reconstructor(elliptic_LRBMS_disc, RB),
+                                       name='reduced discretization ({} DoFs)'.format(reduced_op.source.dim)),
+            rc,
             reduction_data)
 
 
-def extension(basis, U):
+def extension(elliptic_LRBMS_disc, extension_product, basis, U):
     if not isinstance(U, BlockVectorArray):
         U = BlockVectorArray([elliptic_LRBMS_disc.localize_vector(U, ii)
                               for ii in np.arange(elliptic_LRBMS_disc.num_subdomains)])
     return pod_block_basis_extension(basis,
                                      U,
                                      count=1,
-                                     product=[elliptic_LRBMS_disc.local_product(ss, config['extension_product'])
+                                     product=[elliptic_LRBMS_disc.local_product(ss, extension_product)
                                               for ss in np.arange(elliptic_LRBMS_disc.num_subdomains)])
 
 
-def reduce():
-    greedy_data = greedy(parabolic_disc,
-                         reductor,
+def reduce_pod_greedy(config, detailed_data, training_samples):
+    greedy_data = greedy(detailed_data['parabolic_disc'],
+                         partial(reductor, config, detailed_data),
                          training_samples,
+                         initial_basis=detailed_data['initial_basis'] if 'initial_basis' in detailed_data else None,
                          use_estimator=True,
                          error_norm=None,
-                         extension_algorithm=extension,
+                         extension_algorithm=partial(extension, detailed_data['elliptic_LRBMS_disc'], config['extension_product']),
                          max_extensions=config['max_rb_size'],
                          target_error=config['target_error'])
     rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
