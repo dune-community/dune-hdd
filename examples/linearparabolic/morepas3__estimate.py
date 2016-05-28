@@ -33,20 +33,21 @@ def time_residual_estimate(wrapper, T, b, l2_product, U, mu):
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
     dt = time_grid.volumes(0)[0]
     for n in np.arange(1, time_grid.size(1)):
-        b_func = b.apply(make_listvectorarray(U._list[n] - U._list[n - 1]), mu=mu)
+        b_func = b.apply(U.copy(n) - U.copy(n - 1), mu=mu)
         b_riesz = l2_product.apply_inverse(b_func)
         result += l2_product.apply2(b_riesz, b_riesz)[0][0]
     result *= dt/3.
     return np.sqrt(result)
 
 
-def elliptic_reconstruction_estimate(example, riesz_computer, T, f_h, U, mu_min, mu_max, mu_tilde, mu):
+def elliptic_reconstruction_estimate(example, riesz_computer, reconstructor, T, f_h, U, mu_min, mu_max, mu_tilde, mu):
     result = 0.
     time_grid = OnedGrid(domain=(0., T), num_intervals=len(U)-1)
     dt = time_grid.volumes(0)[0]
     for n in np.arange(time_grid.size(1)):
-        w_N = riesz_computer(make_listvectorarray(U._list[n]))
-        result += example.elliptic_reconstruction_estimate(U._list[n]._impl, w_N._list[0]._impl, f_h._list[0]._impl, mu, mu, mu_tilde, mu, mu, '')**2
+        w_N = riesz_computer(U, n)
+        p_h = reconstructor(U, n)
+        result += example.elliptic_reconstruction_estimate(p_h, w_N._list[0]._impl, f_h._list[0]._impl, mu, mu, mu_tilde, mu, mu, '')**2
     result *= dt/3.
     return 2*np.sqrt(result)
 
@@ -81,6 +82,7 @@ class DetailedAgainstWeak(object):
         self._logger = getLogger('.morepas3.estimate.DetailedAgainstWeak')
 
     def compute_indicators(self, U, mu, disc):
+        self._logger.info('estimating for {} ...'.format(mu))
         p_N = U
         _mu = mu
         mu = self._wrapper.dune_parameter(mu)
@@ -93,13 +95,17 @@ class DetailedAgainstWeak(object):
 
         f_h = disc.l2_product.apply_inverse(disc.rhs.as_vector(_mu)) # we know rhs is nonparametric, so mu is ignored
 
-        def riesz_computer(p_h):
-            return disc.l2_product.apply_inverse(disc.operator.apply(p_h, mu=_mu))
+        def riesz_computer(p_h, n):
+            return disc.l2_product.apply_inverse(disc.operator.apply(make_listvectorarray(p_h._list[n]), mu=_mu))
+
+        def reconstructor(p_h, n):
+            return p_h._list[n]._impl
 
         e_c_0_norm = 0.
         dt_p_N_d_norm = L2_time_L2_space_partial_t_estimate(self._l2_product, self._T, p_N_d)
         eps_norm = elliptic_reconstruction_estimate(self._example,
                                                     riesz_computer,
+                                                    reconstructor,
                                                     self._T,
                                                     f_h,
                                                     p_N,
@@ -121,10 +127,9 @@ class DetailedAgainstWeak(object):
                 'p_N_d_norm': p_N_d_norm,
                 'R_T_norm': R_T_norm}
 
-    def estimate(self, U, mu, disc):
-        self._logger.info('estimating for {} ...'.format(mu))
+    def estimate(self, U, mu, discretization):
         alpha_mu_mu_bar = self._example.alpha(self._wrapper.dune_parameter(mu), self._mu_bar)
-        indicators = self.compute_indicators(U, mu, disc)
+        indicators = self.compute_indicators(U, mu, discretization)
         (e_c_0_norm, C_P_Omega, c_eps_mu_hat, alpha_mu_mu_hat, dt_p_N_d_norm, eps_norm, p_N_d_norm, R_T_norm) = (
                 indicators['e_c_0_norm'], indicators['C_P_Omega'], indicators['c_eps_mu_hat'],
                 indicators['alpha_mu_mu_hat'], indicators['dt_p_N_d_norm'], indicators['eps_norm'],
