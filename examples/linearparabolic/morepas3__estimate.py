@@ -13,6 +13,8 @@ import numpy as np
 
 from pymor.core.logger import getLogger
 from pymor.grids.oned import OnedGrid
+from pymor.vectorarrays.block import BlockVectorArray
+from pymor.vectorarrays.numpy import NumpyVectorArray
 
 from dune.pymor.la.container import make_listvectorarray
 
@@ -140,3 +142,64 @@ class DetailedAgainstWeak(object):
                                                + np.sqrt(5.) * p_N_d_norm
                                                + 2./alpha_mu_mu_hat * R_T_norm)
 
+
+class ReducedAgainstWeak(DetailedAgainstWeak):
+
+    def __init__(self, reconstructor, example, wrapper, L2_elliptic_bochner_norm, l2_product, T, mu_min, mu_max, mu_hat,
+                 mu_bar, mu_tilde):
+        super(ReducedAgainstWeak, self).__init__(example, wrapper, L2_elliptic_bochner_norm, l2_product, T, mu_min,
+                                                 mu_max, mu_hat, mu_bar, mu_tilde)
+        self._reconstructor = reconstructor
+        self._logger = getLogger('.morepas3.estimate.ReducedAgainstWeak')
+
+    def compute_indicators(self, U, mu, disc):
+        self._logger.info('estimating for {} ...'.format(mu))
+        p_red = U
+        p_N = self._reconstructor.reconstruct(U)
+        p_N_c = make_listvectorarray([self._wrapper[self._example.oswald_interpolate(p._impl)] for p in p_N._list])
+        p_N_d = p_N - p_N_c
+        _mu = mu
+        mu = self._wrapper.dune_parameter(mu)
+
+        detailed_disc = self._reconstructor._disc
+
+        c_eps_mu_hat = self._example.min_diffusion_ev(self._mu_hat)
+        alpha_mu_mu_hat = self._example.alpha(mu, self._mu_hat)
+        C_P_Omega = 2*self._example.domain_diameter()
+
+        f_h = detailed_disc.rhs.as_vector(_mu)
+        f_h = detailed_disc.l2_product.apply_inverse(detailed_disc.rhs.as_vector(_mu)) # we know rhs is nonparametric, so mu is ignored
+        f_h = BlockVectorArray([NumpyVectorArray(f_h._blocks[ii].dot(self._reconstructor._RB[ii])) for ii in np.arange(len(f_h._blocks))])
+        f_h = self._reconstructor.reconstruct(f_h)
+
+        def riesz_computer(p_h, n):
+            return self._reconstructor.reconstruct(disc.operator.apply(p_h.copy(n), mu=_mu))
+
+        def reconstructor(p_h, n):
+            return self._reconstructor.reconstruct(p_h.copy(n))._list[0]._impl
+
+        e_c_0_norm = 0.
+        dt_p_N_d_norm = L2_time_L2_space_partial_t_estimate(self._l2_product, self._T, p_N_d)
+        eps_norm = elliptic_reconstruction_estimate(self._example,
+                                                    riesz_computer,
+                                                    reconstructor,
+                                                    self._T,
+                                                    f_h,
+                                                    p_red,
+                                                    self._mu_min, self._mu_max, self._mu_tilde, mu)
+        p_N_d_norm = self._L2_elliptic_bochner_norm(p_N_d, mu=_mu)
+        R_T_norm = time_residual_estimate(self._wrapper,
+                                          self._T,
+                                          disc.operator,
+                                          disc.l2_product,
+                                          p_red,
+                                          _mu)
+
+        return {'c_eps_mu_hat': c_eps_mu_hat,
+                'alpha_mu_mu_hat': alpha_mu_mu_hat,
+                'C_P_Omega': C_P_Omega,
+                'e_c_0_norm': e_c_0_norm,
+                'dt_p_N_d_norm': dt_p_N_d_norm,
+                'eps_norm': eps_norm,
+                'p_N_d_norm': p_N_d_norm,
+                'R_T_norm': R_T_norm}
