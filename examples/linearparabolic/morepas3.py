@@ -12,24 +12,28 @@ import numpy as np
 from functools import partial
 from tempfile import NamedTemporaryFile
 
+from simdb.run import new_dataset, add_values, add_logfile
+
 from pymor.core.defaults import set_defaults
 set_defaults({'pymor.core.cache.default_regions.disk_max_size': 107374182400})
 
 import pymor.core.logger
+from pymor.playground.algorithms.blockbasisextension import gram_schmidt_block_basis_extension
 from pymor.core.logger import getLogger
+from pymor.vectorarrays.block import BlockVectorArray
 
-from simdb.run import new_dataset, add_values, add_logfile
+from dune.pymor.la.container import make_listvectorarray
 
 from morepas3__estimate import DetailedAgainstReference, DetailedAgainstWeak
 from morepas3__prepare import discretize, prepare
+from morepas3__reduce import reduce_pod_greedy
 
 logfile = NamedTemporaryFile(delete=False).name
 pymor.core.logger.FILENAME = logfile
 
+for logger_id in ('.morepas3.main', '.morepas3.estimate.DetailedAgainstWeak', '.morepas3.estimate.ReducedAgainstWeak'):
+    getLogger(logger_id).setLevel('INFO')
 logger = getLogger('.morepas3.main')
-logger.setLevel('INFO')
-
-getLogger('.morepas3.estimate.DetailedAgainstWeak').setLevel('INFO')
 
 config= {'dune_num_elements': '[100 20]',
          'dune_num_partitions': '[25 5]',
@@ -42,9 +46,10 @@ config= {'dune_num_elements': '[100 20]',
          'mu_hat': 0.1,
          'mu_tilde': 0.1,
          'extension_product': 'h1',
-         'num_training_samples' : 3,
+         'initial_basis': 1,
+         'num_training_samples' : 10,
          'max_rb_size' : 500,
-         'target_error': 1e-1,
+         'target_error': 150,
          'initial_data': '0'}
 new_dataset('morepas3', **config)
 
@@ -144,9 +149,11 @@ training_samples = list(parabolic_disc.parameter_space.sample_uniformly(config['
 
 logger.info('visualizing data functions and sample solution ...')
 example.visualize('example')
-for mu in (0.1, 1):
+for mu in (config['mu_min'], config['mu_max']):
+    mu_str = str(mu)
+    mu = parabolic_disc.parse_parameter(mu)
     U = parabolic_disc.solve(mu)
-    parabolic_disc.visualize(U, filename='sample_solution_{}'.format(mu))
+    parabolic_disc.visualize(U, filename='sample_solution_{}'.format(mu_str))
 
 # logger.info('creating reference discretization ...')
 # config_ref = dict(config)
@@ -171,20 +178,35 @@ for mu in (0.1, 1):
 # discretization_errors = [compute_error(parabolic_disc.solve(mu), mu, parabolic_disc)
 #                          for mu in training_samples]
 
+detailed_data['estimator'] = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], space_products['l2'],
+                                                 config['end_time'], mu_min, mu_max, mu_hat, mu_bar, mu_tilde)
+
 logger.info('estimating discretization errors ...')
+estimates = [detailed_data['estimator'].estimate(parabolic_disc.solve(parabolic_disc.parse_parameter(mu)),
+                                                 parabolic_disc.parse_parameter(mu),
+                                                 parabolic_disc)
+             for mu in (config['mu_min'], config['mu_max'])]
+logger.info('  range: {} to {}'.format(np.min(estimates), np.max(estimates)))
+if np.max(estimates) > config['target_error']:
+    logger.warn(('target error for greedy ({}) is below max estimated discretization error ({}), '
+                 + 'greedy will most likely fail!').format(config['target_error'], np.max(estimates)))
 
-def estimate_error(U, mu, disc):
-    detailed_estimator = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], space_products['l2'],
-                                             config['end_time'], mu_min, mu_max, mu_hat, mu_bar, mu_tilde)
-    return detailed_estimator.estimate(U, mu, disc)
+if config['initial_basis'] < 0:
+    config['initial_basis'] = 0
+elif config['initial_basis'] > 1:
+    config['initial_basis'] = 1
+logger.info('initializing local reduced bases of order up to {} ...'.format(config['initial_basis']))
+local_products = [elliptic_disc.local_product(ss, config['extension_product'])
+                  for ss in np.arange(elliptic_disc.num_subdomains)]
+initial_basis = elliptic_disc.solution_space.empty()._blocks
+for basis in (('1',) if config['initial_basis'] == 0 else ('1', 'x[0]', 'x[1]', 'x[0]*x[1]')):
+    vec = make_listvectorarray(wrapper[example.project(basis)])
+    vec = BlockVectorArray([elliptic_disc.localize_vector(vec, ss)
+                            for ss in np.arange(elliptic_disc.num_subdomains)])
+    initial_basis, _ = gram_schmidt_block_basis_extension(initial_basis, vec, product=local_products)
+detailed_data['initial_basis'] = initial_basis
 
-discretization_estimates = [estimate_error(parabolic_disc.solve(mu), mu, parabolic_disc)
-                            for mu in training_samples]
-
-for ii in np.arange(len(training_samples)):
-    print('{}: {}'.format(training_samples[ii], discretization_estimates[ii]))
-
-logger.info(' ')
+reduce_pod_greedy(config, detailed_data, training_samples)
 
 # add_values(time=greedy_data['time'],
 #            max_err_mus=greedy_data['max_err_mus'],
