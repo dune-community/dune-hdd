@@ -179,10 +179,9 @@ class ReducedAgainstWeak(DetailedAgainstWeak):
         alpha_mu_mu_hat = self._example.alpha(mu, self._mu_hat)
         C_P_Omega = 2*self._example.domain_diameter()
 
-        f_h = detailed_disc.rhs.as_vector(_mu)
         f_h = detailed_disc.l2_product.apply_inverse(detailed_disc.rhs.as_vector(_mu)) # we know rhs is nonparametric, so mu is ignored
-        f_h = BlockVectorArray([NumpyVectorArray(f_h._blocks[ii].dot(self._reconstructor._RB[ii])) for ii in np.arange(len(f_h._blocks))])
-        f_h = self._reconstructor.reconstruct(f_h)
+        f_red = NumpyVectorArray(detailed_disc.l2_product.apply2(f_h, BlockVectorArray(self._reconstructor._RB)))
+        f_red_h = self._reconstructor.reconstruct(f_red)
 
         def riesz_computer(p_h, n):
             return self._reconstructor.reconstruct(disc.operator.apply(p_h.copy(n), mu=_mu))
@@ -196,7 +195,7 @@ class ReducedAgainstWeak(DetailedAgainstWeak):
                                                     riesz_computer,
                                                     reconstructor,
                                                     self._T,
-                                                    f_h,
+                                                    f_red_h,
                                                     p_red,
                                                     self._mu_min, self._mu_max, self._mu_tilde, mu)
         p_N_d_norm = self._L2_elliptic_bochner_norm(p_N_d, mu=_mu)
