@@ -1,16 +1,6 @@
 #ifndef DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_BINDINGS_GENERATOR_HH
 #define DUNE_HDD_EXAMPLES_LINEARELLIPTIC_GENERIC_MULTISCALE_BINDINGS_GENERATOR_HH
 
-#ifdef ENABLE_MPI
-# undef ENABLE_MPI
-#endif
-#define ENABLE_MPI 0
-
-#ifdef ENABLE_PARMETIS
-# undef ENABLE_PARMETIS
-#endif
-#define ENABLE_PARMETIS 0
-
 #include <dune/stuff/common/disable_warnings.hh>
 # include "config.h"
 
