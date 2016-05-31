@@ -58,30 +58,6 @@ class Reconstructor(object):
         return Reconstructor(self._disc, [rb.copy(ind=range(dd)) for rb, dd in izip(self.RB, dim)])
 
 
-# class Estimator(object):
-
-#     def __init__(self, disc, estimator, reconstructor):
-#         self._disc = disc
-#         self._estimator = estimator
-#         self._reconstructor = reconstructor
-
-#     def estimate(self, U, mu, discretization):
-#         f_h = self._disc.l2_product.apply_inverse(self._disc.rhs.as_vector(mu)) # we know rhs is nonparametric, so mu has no effect
-#         f_h = BlockVectorArray([self._reconstructor._disc.localize_vector(f_h, ii)
-#                                 for ii in np.arange(self._reconstructor._disc.num_subdomains)])
-#         f_red = BlockVectorArray([NumpyVectorArray(f_block.dot(RB_block))
-#                                   for f_block, RB_block in izip(f_h._blocks, self._reconstructor._RB)])
-#         f_red = self._reconstructor.reconstruct(f_red)
-#         U_rec = self._reconstructor.reconstruct(U)
-#         b_red = FixedParameterOperator(discretization.operator, mu)
-#         L2_red = L2 = discretization.l2_product
-#         def riesz_computer(U):
-#             w_red = L2_red.apply_inverse(b_red.apply(U))
-#             return self._reconstructor.reconstruct(w_red)
-#         import ipdb; ipdb.set_trace()
-#         return self._estimator.estimate(U_rec, mu, self._disc)
-
-
 def reductor(config, detailed_data, discretization, RB, vector_product=None, disable_caching=True, extends=None):
     elliptic_disc = detailed_data['elliptic_disc']
     elliptic_LRBMS_disc = detailed_data['elliptic_LRBMS_disc']
