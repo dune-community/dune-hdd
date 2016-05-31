@@ -180,7 +180,9 @@ class ReducedAgainstWeak(DetailedAgainstWeak):
         C_P_Omega = 2*self._example.domain_diameter()
 
         f_h = detailed_disc.l2_product.apply_inverse(detailed_disc.rhs.as_vector(_mu)) # we know rhs is nonparametric, so mu is ignored
-        f_red = NumpyVectorArray(detailed_disc.l2_product.apply2(f_h, BlockVectorArray(self._reconstructor._RB)))
+        f_red = [detailed_disc.local_product(ii, 'l2').apply2(f_h._blocks[ii], self._reconstructor._RB[ii])
+                 for ii in np.arange(len(f_h._blocks))]
+        f_red = NumpyVectorArray(np.concatenate([bb[0] for bb in f_red]))
         f_red_h = self._reconstructor.reconstruct(f_red)
 
         def riesz_computer(p_h, n):
