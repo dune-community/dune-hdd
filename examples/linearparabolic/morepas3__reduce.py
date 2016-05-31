@@ -68,7 +68,7 @@ def reductor(config, detailed_data, discretization, RB, vector_product=None, dis
     rd, rc, reduction_data = reduce_generic_rb(elliptic_LRBMS_disc, RB, vector_product, disable_caching, extends)
     rc = Reconstructor(elliptic_LRBMS_disc, RB)
 
-    def unblock_op(op):
+    def unblock_op(op, sparse=False):
         assert op._blocks[0][0] is not None
         if isinstance(op._blocks[0][0], LincombOperator):
             coefficients = op._blocks[0][0].coefficients
@@ -98,10 +98,11 @@ def reductor(config, detailed_data, discretization, RB, vector_product=None, dis
                 mat = bmat([[coo_matrix(op._blocks[ii][jj]._matrix)
                              if op._blocks[ii][jj] is not None else coo_matrix((op._range_dims[ii], op._source_dims[jj]))
                              for jj in np.arange(op.num_source_blocks)]
-                            for ii in np.arange(op.num_range_blocks)]).toarray()
+                            for ii in np.arange(op.num_range_blocks)])
+                mat = mat.toarray()
             return NumpyMatrixOperator(mat)
 
-    reduced_op = unblock_op(rd.operator)
+    reduced_op = unblock_op(rd.operator, True)
     reduced_rhs = unblock_op(rd.rhs)
     estimator = ReducedAgainstWeak(rc, detailed_data['example'], detailed_data['wrapper'],
                                    detailed_data['bochner_norms']['elliptic'], detailed_data['space_products']['l2'],
