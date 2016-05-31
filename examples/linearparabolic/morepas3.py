@@ -31,8 +31,10 @@ from morepas3__reduce import reduce_pod_greedy
 logfile = NamedTemporaryFile(delete=False).name
 pymor.core.logger.FILENAME = logfile
 
-for logger_id in ('.morepas3.main', '.morepas3.estimate.DetailedAgainstWeak', '.morepas3.estimate.ReducedAgainstWeak'):
+for logger_id in ('.morepas3.main', '.morepas3.estimate'):
     getLogger(logger_id).setLevel('INFO')
+for logger_id in ('pymor.algorithms.gram_schmidt',):
+    getLogger(logger_id).setLevel('WARN')
 logger = getLogger('.morepas3.main')
 
 config= {'dune_num_elements': '[100 20]',
