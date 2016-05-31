@@ -204,6 +204,9 @@ for basis in (('1',) if config['initial_basis'] == 0 else ('1', 'x[0]', 'x[1]', 
     vec = BlockVectorArray([elliptic_disc.localize_vector(vec, ss)
                             for ss in np.arange(elliptic_disc.num_subdomains)])
     initial_basis, _ = gram_schmidt_block_basis_extension(initial_basis, vec, product=local_products)
+f_h = elliptic_disc.rhs.as_vector(mu)
+f_h = elliptic_disc.l2_product.apply_inverse(f_h)
+initial_basis, _ = gram_schmidt_block_basis_extension(initial_basis, f_h, product=local_products)
 detailed_data['initial_basis'] = initial_basis
 
 reduce_pod_greedy(config, detailed_data, training_samples)
