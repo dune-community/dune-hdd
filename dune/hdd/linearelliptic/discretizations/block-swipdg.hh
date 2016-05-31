@@ -550,12 +550,21 @@ private:
 
 #if HAVE_ALUGRID
 
-extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming >,
+extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
                                    double,
                                    1,
                                    1,
                                    Stuff::LA::ChooseBackend::istl_sparse >;
 
+# if HAVE_MPI
+
+extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                                   double,
+                                   1,
+                                   1,
+                                   Stuff::LA::ChooseBackend::istl_sparse >;
+
+# endif // HAVE_MPI
 #endif // HAVE_ALUGRID
 
 

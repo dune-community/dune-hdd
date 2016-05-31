@@ -1,13 +1,3 @@
-#ifdef ENABLE_MPI
-# undef ENABLE_MPI
-#endif
-#define ENABLE_MPI 0
-
-#ifdef ENABLE_PARMETIS
-# undef ENABLE_PARMETIS
-#endif
-#define ENABLE_PARMETIS 0
-
 #include "config.h"
 
 #if HAVE_ALUGRID
@@ -22,12 +12,22 @@ namespace LinearElliptic {
 namespace Discretizations {
 
 
-template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming >,
+template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
                             double,
                             1,
                             1,
                             Stuff::LA::ChooseBackend::istl_sparse >;
 
+# if HAVE_MPI
+
+template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                            double,
+                            1,
+                            1,
+                            Stuff::LA::ChooseBackend::istl_sparse >;
+
+
+# endif // HAVE_MPI
 
 } // namespace Discretizations
 } // namespace LinearElliptic
