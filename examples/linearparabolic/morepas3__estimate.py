@@ -61,11 +61,15 @@ class DetailedAgainstReference(object):
         self._prolong = prolong
         self._coarse_elliptic_disc = coarse_elliptic_disc
         self._bochner_norm = bochner_norm
+        self._logger = getLogger('.morepas3.estimate.DetailedAgainstReference')
 
     def estimate(self, U, mu, disc):
+        self._logger.info('estimating for {} ...'.format(mu))
         U_reference = self._reference_disc.solve(mu)
         U_coarse_prologated = self._prolong(self._coarse_elliptic_disc, U)
-        return self._bochner_norm(U_reference - U_coarse_prologated)
+        result =  self._bochner_norm(U_reference - U_coarse_prologated)
+        self._logger.info('  => {}'.format(result))
+        return result
 
 
 class DetailedAgainstWeak(object):
@@ -120,6 +124,12 @@ class DetailedAgainstWeak(object):
                                           p_N,
                                           _mu)
 
+        self._logger.info('  => e_c_0_norm:    {}'.format(e_c_0_norm))
+        self._logger.info('     dt_p_N_d_norm: {}'.format(dt_p_N_d_norm))
+        self._logger.info('     eps_norm:      {}'.format(eps_norm))
+        self._logger.info('     p_N_d_norm:    {}'.format(p_N_d_norm))
+        self._logger.info('     R_T_norm:      {}'.format(R_T_norm))
+
         return {'c_eps_mu_hat': c_eps_mu_hat,
                 'alpha_mu_mu_hat': alpha_mu_mu_hat,
                 'C_P_Omega': C_P_Omega,
@@ -136,11 +146,13 @@ class DetailedAgainstWeak(object):
                 indicators['e_c_0_norm'], indicators['C_P_Omega'], indicators['c_eps_mu_hat'],
                 indicators['alpha_mu_mu_hat'], indicators['dt_p_N_d_norm'], indicators['eps_norm'],
                 indicators['p_N_d_norm'], indicators['R_T_norm'])
-        return  1./np.sqrt(alpha_mu_mu_bar) * (  e_c_0_norm
+        result = 1./np.sqrt(alpha_mu_mu_bar) * (  e_c_0_norm
                                                + (2.*C_P_Omega*c_eps_mu_hat)/alpha_mu_mu_hat * dt_p_N_d_norm
                                                + (np.sqrt(5.) + 1.) * eps_norm
                                                + np.sqrt(5.) * p_N_d_norm
                                                + 2./alpha_mu_mu_hat * R_T_norm)
+        self._logger.info('  => {}'.format(result))
+        return result
 
 
 class ReducedAgainstWeak(DetailedAgainstWeak):
@@ -194,6 +206,12 @@ class ReducedAgainstWeak(DetailedAgainstWeak):
                                           disc.l2_product,
                                           p_red,
                                           _mu)
+
+        self._logger.info('  => e_c_0_norm:    {}'.format(e_c_0_norm))
+        self._logger.info('     dt_p_N_d_norm: {}'.format(dt_p_N_d_norm))
+        self._logger.info('     eps_norm:      {}'.format(eps_norm))
+        self._logger.info('     p_N_d_norm:    {}'.format(p_N_d_norm))
+        self._logger.info('     R_T_norm:      {}'.format(R_T_norm))
 
         return {'c_eps_mu_hat': c_eps_mu_hat,
                 'alpha_mu_mu_hat': alpha_mu_mu_hat,
