@@ -6,7 +6,7 @@
 # test infrastructure
 enable_testing()
 DEPENDENCYCHECK()
-BEGIN_TESTCASES()
+BEGIN_TESTCASES(dunehdd)
 END_TESTCASES()
 
 # test target libs
