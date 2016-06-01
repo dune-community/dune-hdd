@@ -185,17 +185,28 @@ private:
 }; // class CG
 
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_ISTL
 
-//extern template class CG< ALUGrid< 2, 2, simplex, conforming >,
-//                          Stuff::Grid::ChooseLayer::leaf,
-//                          double,
-//                          1,
-//                          1,
-//                          GDT::ChooseSpaceBackend::fem,
-//                          Stuff::LA::ChooseBackend::istl_sparse >;
+extern template class CG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double,
+                          1,
+                          1,
+                          GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::istl_sparse >;
 
-//#endif // HAVE_ALUGRID
+# if HAVE_MPI
+
+extern template class CG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                          Stuff::Grid::ChooseLayer::leaf,
+                          double,
+                          1,
+                          1,
+                          GDT::ChooseSpaceBackend::fem,
+                          Stuff::LA::ChooseBackend::istl_sparse >;
+
+# endif // HAVE_MPI
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_ISTL
 
 
 } // namespace Discretizations

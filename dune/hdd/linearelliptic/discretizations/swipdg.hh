@@ -182,28 +182,265 @@ private:
 }; // class SWIPDG
 
 
-//#if HAVE_ALUGRID
+#if HAVE_ALUGRID && HAVE_DUNE_FEM
+# if HAVE_DUNE_ISTL
 
-//extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >,
-//                              Stuff::Grid::ChooseLayer::leaf,
-//                              double,
-//                              1,
-//                              1,
-//                              GDT::ChooseSpaceBackend::fem,
-//                              Stuff::LA::ChooseBackend::istl_sparse >;
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                        Stuff::Grid::ChooseLayer::leaf,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::istl_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::leaf >(GridProviderType&,
+                                               const Stuff::Common::Configuration&,
+                                               const ProblemType&,
+                                               const int level_or_subdomain,
+                                               const std::vector< std::string >&,
+                                               void*);
 
-//# if HAVE_DUNE_GRID_MULTISCALE
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                        Stuff::Grid::ChooseLayer::level,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::istl_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::level >(GridProviderType&,
+                                                const Stuff::Common::Configuration&,
+                                                const ProblemType&,
+                                                const int level_or_subdomain,
+                                                const std::vector< std::string >&,
+                                                void*);
 
-//extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming >,
-//                              Stuff::Grid::ChooseLayer::local,
-//                              double,
-//                              1,
-//                              1,
-//                              GDT::ChooseSpaceBackend::fem,
-//                              Stuff::LA::ChooseBackend::istl_sparse >;
+#   if HAVE_MPI
 
-//# endif // HAVE_DUNE_GRID_MULTISCALE
-//#endif // HAVE_ALUGRID
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                        Stuff::Grid::ChooseLayer::leaf,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::istl_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::leaf >(GridProviderType&,
+                                               const Stuff::Common::Configuration&,
+                                               const ProblemType&,
+                                               const int level_or_subdomain,
+                                               const std::vector< std::string >&,
+                                               void*);
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                        Stuff::Grid::ChooseLayer::level,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::istl_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::level >(GridProviderType&,
+                                                const Stuff::Common::Configuration&,
+                                                const ProblemType&,
+                                                const int level_or_subdomain,
+                                                const std::vector< std::string >&,
+                                                void*);
+
+#   endif // HAVE_MPI
+#   if HAVE_DUNE_GRID_MULTISCALE
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::local,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::local_oversampled,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+
+#     if HAVE_MPI
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                              Stuff::Grid::ChooseLayer::local,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                              Stuff::Grid::ChooseLayer::local_oversampled,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::istl_sparse >;
+
+#     endif // HAVE_MPI
+#   endif // HAVE_DUNE_GRID_MULTISCALE
+# endif // HAVE_DUNE_ISTL
+# if HAVE_EIGEN
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                        Stuff::Grid::ChooseLayer::leaf,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::eigen_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::leaf >(GridProviderType&,
+                                               const Stuff::Common::Configuration&,
+                                               const ProblemType&,
+                                               const int level_or_subdomain,
+                                               const std::vector< std::string >&,
+                                               void*);
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                        Stuff::Grid::ChooseLayer::level,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::eigen_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::level >(GridProviderType&,
+                                                const Stuff::Common::Configuration&,
+                                                const ProblemType&,
+                                                const int level_or_subdomain,
+                                                const std::vector< std::string >&,
+                                                void*);
+
+#   if HAVE_MPI
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                              Stuff::Grid::ChooseLayer::leaf,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                        Stuff::Grid::ChooseLayer::leaf,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::eigen_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::leaf >(GridProviderType&,
+                                               const Stuff::Common::Configuration&,
+                                               const ProblemType&,
+                                               const int level_or_subdomain,
+                                               const std::vector< std::string >&,
+                                               void*);
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                              Stuff::Grid::ChooseLayer::level,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+extern template SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm  >,
+                        Stuff::Grid::ChooseLayer::level,
+                        double,
+                        1,
+                        1,
+                        GDT::ChooseSpaceBackend::fem,
+                        Stuff::LA::ChooseBackend::eigen_sparse >
+    ::SWIPDG< Stuff::Grid::ChooseLayer::level >(GridProviderType&,
+                                                const Stuff::Common::Configuration&,
+                                                const ProblemType&,
+                                                const int level_or_subdomain,
+                                                const std::vector< std::string >&,
+                                                void*);
+
+#   endif // HAVE_MPI
+#   if HAVE_DUNE_GRID_MULTISCALE
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::local,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                              Stuff::Grid::ChooseLayer::local_oversampled,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+#     if HAVE_MPI
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                              Stuff::Grid::ChooseLayer::local,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+extern template class SWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                              Stuff::Grid::ChooseLayer::local_oversampled,
+                              double,
+                              1,
+                              1,
+                              GDT::ChooseSpaceBackend::fem,
+                              Stuff::LA::ChooseBackend::eigen_sparse >;
+
+#     endif // HAVE_MPI
+#   endif // HAVE_DUNE_GRID_MULTISCALE
+# endif // HAVE_EIGEN
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM
+
 
 } // namespace Discretizations
 } // namespace LinearElliptic

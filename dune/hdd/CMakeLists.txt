@@ -1,5 +1,9 @@
 set(lib_dune_hdd_sources
-    linearelliptic/discretizations/block-swipdg_aluconformsimplexgrid_2d.cxx
+    linearelliptic/discretizations/block-swipdg_2daluconformsimplex_fem_eigen.cxx
+    linearelliptic/discretizations/block-swipdg_2daluconformsimplex_fem_istl.cxx
+    linearelliptic/discretizations/cg_2daluconformsimplex_fem_istl.cxx
+    linearelliptic/discretizations/swipdg_2daluconformsimplex_fem_eigen.cxx
+    linearelliptic/discretizations/swipdg_2daluconformsimplex_fem_istl.cxx
    )
 
 dune_add_library("dunehdd" ${lib_dune_hdd_sources}

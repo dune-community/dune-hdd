@@ -1,10 +1,9 @@
 #include "config.h"
 
-#if HAVE_ALUGRID
+#if HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN
 
 # include "block-swipdg.hxx"
 # include "cg.hxx"
-# include "swipdg.hxx"
 
 namespace Dune {
 namespace HDD {
@@ -16,7 +15,7 @@ template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
                             double,
                             1,
                             1,
-                            Stuff::LA::ChooseBackend::istl_sparse >;
+                            Stuff::LA::ChooseBackend::eigen_sparse >;
 
 # if HAVE_MPI
 
@@ -24,7 +23,7 @@ template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
                             double,
                             1,
                             1,
-                            Stuff::LA::ChooseBackend::istl_sparse >;
+                            Stuff::LA::ChooseBackend::eigen_sparse >;
 
 
 # endif // HAVE_MPI
@@ -34,4 +33,4 @@ template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
 } // namespace HDD
 } // namespace Dune
 
-#endif // HAVE_ALUGRID
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_EIGEN

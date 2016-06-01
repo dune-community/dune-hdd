@@ -548,7 +548,8 @@ private:
 }; // BlockSWIPDG
 
 
-#if HAVE_ALUGRID
+#if HAVE_ALUGRID && HAVE_DUNE_FEM
+# if HAVE_DUNE_ISTL
 
 extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
                                    double,
@@ -556,7 +557,7 @@ extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >
                                    1,
                                    Stuff::LA::ChooseBackend::istl_sparse >;
 
-# if HAVE_MPI
+#   if HAVE_MPI
 
 extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
                                    double,
@@ -564,8 +565,27 @@ extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm 
                                    1,
                                    Stuff::LA::ChooseBackend::istl_sparse >;
 
-# endif // HAVE_MPI
-#endif // HAVE_ALUGRID
+#   endif // HAVE_MPI
+# endif // HAVE_DUNE_ISTL
+# if HAVE_EIGEN
+
+extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
+                                   double,
+                                   1,
+                                   1,
+                                   Stuff::LA::ChooseBackend::eigen_sparse >;
+
+#   if HAVE_MPI
+
+extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
+                                   double,
+                                   1,
+                                   1,
+                                   Stuff::LA::ChooseBackend::eigen_sparse >;
+
+#   endif // HAVE_MPI
+# endif // HAVE_EIGEN
+#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_ISTL
 
 
 template< Stuff::LA::ChooseBackend la, class G, class R, int r = 1, int p = 1 >
