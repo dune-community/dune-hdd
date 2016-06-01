@@ -24,12 +24,18 @@ static_id()
 
 template< class G, Stuff::Grid::ChooseLayer gl, class R, int r, int p, GDT::ChooseSpaceBackend s,
           Stuff::LA::ChooseBackend la >
+template< Stuff::Grid::ChooseLayer lr >
     SWIPDG< G, gl, R, r, p, s, la >::
 SWIPDG(typename SWIPDG< G, gl, R, r, p, s, la >::GridProviderType& grid_provider,
        const Stuff::Common::Configuration& bound_inf_cfg,
        const typename SWIPDG< G, gl, R, r, p, s, la >::ProblemType& prob,
        const int level_or_subdomain,
-       const std::vector< std::string >& only_these_products)
+       const std::vector< std::string >& only_these_products
+#if HAVE_DUNE_GRID_MULTISCALE
+     , typename std::enable_if<    (lr != Stuff::Grid::ChooseLayer::local)
+                                && (lr != Stuff::Grid::ChooseLayer::local_oversampled), void >::type* /*disable_for_local_grid_parts*/
+#endif
+      )
   : BaseType(SpaceProvider::create(grid_provider, level_or_subdomain),
              SpaceProvider::create(grid_provider, level_or_subdomain),
              bound_inf_cfg,

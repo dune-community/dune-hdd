@@ -149,11 +149,17 @@ private:
 public:
   static std::string static_id();
 
+  template< Stuff::Grid::ChooseLayer lr = layer >
   SWIPDG(GridProviderType& grid_provider,
          const Stuff::Common::Configuration& bound_inf_cfg,
          const ProblemType& prob,
          const int level_or_subdomain = 0,
-         const std::vector< std::string >& only_these_products = {});
+         const std::vector< std::string >& only_these_products = {}
+#if HAVE_DUNE_GRID_MULTISCALE
+       , typename std::enable_if<    (lr != Stuff::Grid::ChooseLayer::local)
+                                  && (lr != Stuff::Grid::ChooseLayer::local_oversampled), void >::type* /*disable_for_local_grid_parts*/ = nullptr
+#endif
+        );
 
 #if HAVE_DUNE_GRID_MULTISCALE
 
