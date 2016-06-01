@@ -150,5 +150,4 @@ def reduce_pod_greedy(config, detailed_data, training_samples):
                          extension_algorithm=partial(extension, detailed_data['elliptic_LRBMS_disc'], config['extension_product']),
                          max_extensions=config['max_rb_size'],
                          target_error=config['target_error'])
-    rd, rc = greedy_data['reduced_discretization'], greedy_data['reconstructor']
-    RB = greedy_data['basis']
+    return greedy_data
