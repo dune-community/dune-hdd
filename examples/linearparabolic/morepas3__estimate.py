@@ -68,7 +68,7 @@ class DetailedAgainstReference(object):
         U_reference = self._reference_disc.solve(mu)
         U_coarse_prologated = self._prolong(self._coarse_elliptic_disc, U)
         result =  self._bochner_norm(U_reference - U_coarse_prologated)
-        self._logger.info('  => {}'.format(result))
+        self._logger.debug('  => {}'.format(result))
         return result
 
 
@@ -124,11 +124,11 @@ class DetailedAgainstWeak(object):
                                           p_N,
                                           _mu)
 
-        self._logger.info('  => e_c_0_norm:    {}'.format(e_c_0_norm))
-        self._logger.info('     dt_p_N_d_norm: {}'.format(dt_p_N_d_norm))
-        self._logger.info('     eps_norm:      {}'.format(eps_norm))
-        self._logger.info('     p_N_d_norm:    {}'.format(p_N_d_norm))
-        self._logger.info('     R_T_norm:      {}'.format(R_T_norm))
+        self._logger.debug('  => e_c_0_norm:    {}'.format(e_c_0_norm))
+        self._logger.debug('     dt_p_N_d_norm: {}'.format(dt_p_N_d_norm))
+        self._logger.debug('     eps_norm:      {}'.format(eps_norm))
+        self._logger.debug('     p_N_d_norm:    {}'.format(p_N_d_norm))
+        self._logger.debug('     R_T_norm:      {}'.format(R_T_norm))
 
         return {'c_eps_mu_hat': c_eps_mu_hat,
                 'alpha_mu_mu_hat': alpha_mu_mu_hat,
@@ -151,7 +151,7 @@ class DetailedAgainstWeak(object):
                                                + (np.sqrt(5.) + 1.) * eps_norm
                                                + np.sqrt(5.) * p_N_d_norm
                                                + 2./alpha_mu_mu_hat * R_T_norm)
-        self._logger.info('  => {}'.format(result))
+        self._logger.debug('  => {}'.format(result))
         return result
 
 
@@ -208,11 +208,11 @@ class ReducedAgainstWeak(DetailedAgainstWeak):
                                           p_red,
                                           _mu)
 
-        self._logger.info('  => e_c_0_norm:    {}'.format(e_c_0_norm))
-        self._logger.info('     dt_p_N_d_norm: {}'.format(dt_p_N_d_norm))
-        self._logger.info('     eps_norm:      {}'.format(eps_norm))
-        self._logger.info('     p_N_d_norm:    {}'.format(p_N_d_norm))
-        self._logger.info('     R_T_norm:      {}'.format(R_T_norm))
+        self._logger.debug('  => e_c_0_norm:    {}'.format(e_c_0_norm))
+        self._logger.debug('     dt_p_N_d_norm: {}'.format(dt_p_N_d_norm))
+        self._logger.debug('     eps_norm:      {}'.format(eps_norm))
+        self._logger.debug('     p_N_d_norm:    {}'.format(p_N_d_norm))
+        self._logger.debug('     R_T_norm:      {}'.format(R_T_norm))
 
         return {'c_eps_mu_hat': c_eps_mu_hat,
                 'alpha_mu_mu_hat': alpha_mu_mu_hat,
