@@ -15,7 +15,16 @@ target_link_libraries(example_linearelliptic_OS2015_SISC__6_1__multiscale_exampl
                       ${COMMON_LIBS} ${Boost_FILESYSTEM_LIBRARY} dunehhd)
 
 add_library(examplelinearellipticgenericmultiscale
-            generic_multiscale__aluconformsimplexgrid_2d__fem__istl_sparse.cxx)
+            generic_multiscale_1ds_fem_eigen.cxx
+            generic_multiscale_1ds_fem_istl.cxx
+            generic_multiscale_2daluconformsimplex_fem_eigen.cxx
+            generic_multiscale_2daluconformsimplex_fem_istl.cxx
+            generic_multiscale_2ds_fem_eigen.cxx
+            generic_multiscale_2ds_fem_istl.cxx
+            generic_multiscale_3daluconformsimplex_fem_eigen.cxx
+            generic_multiscale_3daluconformsimplex_fem_istl.cxx
+            generic_multiscale_3ds_fem_eigen.cxx
+            generic_multiscale_3ds_fem_istl.cxx)
 target_link_dune_default_libraries(examplelinearellipticgenericmultiscale)
 target_link_libraries(examplelinearellipticgenericmultiscale dunehdd)
 
