@@ -37,10 +37,10 @@ for logger_id in ('pymor.algorithms.gram_schmidt',):
     getLogger(logger_id).setLevel('WARN')
 logger = getLogger('.morepas3.main')
 
-config= {'dune_num_elements': '[100 20]',
+config= {'dune_num_elements': '[200 40]',
          'dune_num_partitions': '[25 5]',
          'integration_order_time': 2,
-         'end_time' : 0.01,
+         'end_time' : 0.05,
          'nt' : 10,
          'mu_min': 0.1,
          'mu_max': 1.,
@@ -50,8 +50,9 @@ config= {'dune_num_elements': '[100 20]',
          'extension_product': 'h1',
          'initial_basis': 1,
          'num_training_samples' : 10,
-         'max_rb_size' : 500,
-         'target_error': 150,
+         'num_test_samples' : 3,
+         'max_rb_size' : 999,
+         'target_error': 34,
          'initial_data': '0'}
 new_dataset('morepas3', **config)
 
@@ -216,5 +217,5 @@ greedy_data = reduce_pod_greedy(config, detailed_data, training_samples)
 add_values(greedy_max_err_mus=greedy_data['max_err_mus'],
            greedy_max_errs=greedy_data['max_errs'],
            greedy_extensions=greedy_data['extensions'],
-           greedy_basis_sizes=[len(local_RB) for local_RB in RB])
+           greedy_basis_sizes=[len(local_RB) for local_RB in greedy_data['basis']])
 
