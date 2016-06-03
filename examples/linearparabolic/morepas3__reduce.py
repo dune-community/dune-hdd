@@ -21,7 +21,7 @@ from pymor.operators.constructions import FixedParameterOperator, LincombOperato
 from pymor.operators.numpy import NumpyMatrixOperator
 from pymor.playground.algorithms.blockbasisextension import pod_block_basis_extension
 from pymor.playground.operators.block import BlockOperator
-from pymor.playground.reductors import GenericBlockRBReconstructor
+from pymor.playground.reductors.block import GenericBlockRBReconstructor
 from pymor.reductors.basic import reduce_generic_rb
 from pymor.vectorarrays.block import BlockVectorArray
 from pymor.vectorarrays.numpy import NumpyVectorArray
@@ -149,5 +149,5 @@ def reduce_pod_greedy(config, detailed_data, training_samples):
                          error_norm=None,
                          extension_algorithm=partial(extension, detailed_data['elliptic_LRBMS_disc'], config['extension_product']),
                          max_extensions=config['max_rb_size'],
-                         target_error=config['target_error'])
+                         atol=config['target_error'])
     return greedy_data
