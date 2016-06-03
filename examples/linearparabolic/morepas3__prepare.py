@@ -83,9 +83,6 @@ def bochner_norm(T, space_norm2, U, mu=None, order=2):
 def discretize(num_elements, num_partitions, T, nt, initial_data, parameter_range, name='detailed discretization'):
     Example = examples[2]['aluconformgrid']['fem']['istl']
 
-    # all but the 'type' will be discarded, so no point in setting more details here
-    solver_options = Example.solver_options('bicgstab.amg.ilu0')
-
     logger_cfg = Example.logger_options()
     logger_cfg.set('info', -1, True)
     logger_cfg.set('info_color', 'blue', True)
@@ -360,7 +357,7 @@ def discretize(num_elements, num_partitions, T, nt, initial_data, parameter_rang
                                                 operator=elliptic_disc.operator,
                                                 rhs=elliptic_disc.rhs,
                                                 mass=elliptic_disc.products['l2'],
-                                                time_stepper=ImplicitEulerTimeStepper(nt, invert_options=solver_options.get_str('type')),
+                                                time_stepper=ImplicitEulerTimeStepper(nt, solver_options='operator'),
                                                 products=elliptic_disc.products,
                                                 operators=elliptic_disc.operators,
                                                 functionals=elliptic_disc.functionals,
