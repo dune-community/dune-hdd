@@ -322,7 +322,9 @@ def discretize(num_elements, num_partitions, T, nt, initial_data, parameter_rang
     example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
 
     elliptic_LRBMS_disc = wrapper[example.discretization()]
-    elliptic_disc = elliptic_LRBMS_disc.as_nonblocked()
+    parameter_space = CubicParameterSpace(elliptic_LRBMS_disc.parameter_type, parameter_range[0], parameter_range[1])
+    elliptic_LRBMS_disc = elliptic_LRBMS_disc.with_(parameter_space=parameter_space)
+    elliptic_disc = elliptic_LRBMS_disc.as_nonblocked().with_(parameter_space=parameter_space)
 
     def prolong(coarse_disc, coarse_U):
         time_grid_ref = OnedGrid(domain=(0., T), num_intervals=nt)
@@ -363,9 +365,7 @@ def discretize(num_elements, num_partitions, T, nt, initial_data, parameter_rang
                                                 functionals=elliptic_disc.functionals,
                                                 vector_operators=elliptic_disc.vector_operators,
                                                 visualizer=InstationaryDuneVisualizer(elliptic_disc, 'dune_discretization.solution'),
-                                                parameter_space=CubicParameterSpace(elliptic_disc.parameter_type,
-                                                                                    parameter_range[0],
-                                                                                    parameter_range[1]),
+                                                parameter_space=parameter_space,
                                                 cache_region='disk',
                                                 name='{} ({} DoFs)'.format(name, elliptic_disc.solution_space.dim))
 
