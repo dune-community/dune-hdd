@@ -33,7 +33,7 @@ pymor.core.logger.FILENAME = logfile
 
 for logger_id in ('.morepas3.main', '.morepas3.estimate'):
     getLogger(logger_id).setLevel('INFO')
-for logger_id in ('pymor.algorithms.gram_schmidt',):
+for logger_id in ('pymor.algorithms.gram_schmidt', 'pymor.algorithms.pod'):
     getLogger(logger_id).setLevel('WARN')
 logger = getLogger('.morepas3.main')
 
@@ -218,4 +218,16 @@ add_values(greedy_max_err_mus=greedy_data['max_err_mus'],
            greedy_max_errs=greedy_data['max_errs'],
            greedy_extensions=greedy_data['extensions'],
            greedy_basis_sizes=[len(local_RB) for local_RB in greedy_data['basis']])
+
+print(' ')
+logger.info('error analysis ...')
+rds, rcs = greedy_data['rds'], greedy_data['rcs']
+test_samples = list(parabolic_disc.parameter_space.sample_randomly(config['num_test_samples']))
+max_errs = []
+for rd, rc in zip(rds, rcs):
+    ests = [rd.estimate(rd.solve(mu), mu=mu) for mu in test_samples]
+    max_errs.append(np.max(ests))
+
+add_values(test_max_errs=max_errs,
+           test_num_DoFs=[rd.solution_space.dim for rd in rds])
 
