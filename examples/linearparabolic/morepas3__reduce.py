@@ -33,7 +33,7 @@ class Reconstructor(object):
 
     def __init__(self, disc, RB):
         self._disc = disc
-        self._RB = RB
+        self._RB = [rb.copy() for rb in RB]
 
     def reconstruct(self, U):
         if U.dim == 0:
