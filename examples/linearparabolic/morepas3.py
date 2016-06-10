@@ -37,7 +37,7 @@ for logger_id in ('pymor.algorithms.gram_schmidt', 'pymor.algorithms.pod'):
     getLogger(logger_id).setLevel('WARN')
 logger = getLogger('.morepas3.main')
 
-config= {'dune_num_elements': '[200 40]',
+config= {'dune_num_elements': '[100 20]',
          'dune_num_partitions': '[25 5]',
          'integration_order_time': 2,
          'end_time' : 0.05,
@@ -50,90 +50,90 @@ config= {'dune_num_elements': '[200 40]',
          'extension_product': 'h1',
          'initial_basis': 1,
          'num_training_samples' : 10,
-         'num_test_samples' : 3,
+         'num_test_samples' : 10,
          'max_rb_size' : 999,
-         'target_error': 34,
+         'target_error': 35, # [100 20]: 53.1424678533
          'initial_data': '0'}
 new_dataset('morepas3', **config)
 
 
-def eoc_study():
-    refinements = (('[4 4]', 10),
-                   ('[8 8]', 20),
-                   ('[16 16]', 40),
-                   ('[32 32]', 80),
-                   ('[64 64]', 160),
-                   ('[128 128]', 320))
+# def eoc_study():
+#     refinements = (('[4 4]', 10),
+#                    ('[8 8]', 20),
+#                    ('[16 16]', 40),
+#                    ('[32 32]', 80),
+#                    ('[64 64]', 160),
+#                    ('[128 128]', 320))
 
-    def level_disc(init, dx_nt):
-        level_cfg = dict(config)
-        level_cfg['dune_num_elements'] = dx_nt[0]
-        level_cfg['nt'] = dx_nt[1]
-        level_cfg['initial_data'] = init
-        return prepare(level_cfg)
+#     def level_disc(init, dx_nt):
+#         level_cfg = dict(config)
+#         level_cfg['dune_num_elements'] = dx_nt[0]
+#         level_cfg['nt'] = dx_nt[1]
+#         level_cfg['initial_data'] = init
+#         return prepare(level_cfg)
 
-    def compute_error(level_data, reference_data, mu):
-        reference_error_computer = DetailedAgainstReference(reference_data['parabolic_disc'],
-                                                            reference_data['prolongator'],
-                                                            level_data['elliptic_disc'],
-                                                            partial(reference_data['bochner_norms']['elliptic'], mu=mu))
-        return reference_error_computer.estimate(level_data['parabolic_disc'].solve(mu), mu, level_data['parabolic_disc'])
+#     def compute_error(level_data, reference_data, mu):
+#         reference_error_computer = DetailedAgainstReference(reference_data['parabolic_disc'],
+#                                                             reference_data['prolongator'],
+#                                                             level_data['elliptic_disc'],
+#                                                             partial(reference_data['bochner_norms']['elliptic'], mu=mu))
+#         return reference_error_computer.estimate(level_data['parabolic_disc'].solve(mu), mu, level_data['parabolic_disc'])
 
-    def estimate_error(level_data, mu):
-        detailed_estimator = DetailedAgainstWeak(level_data['example'], level_data['wrapper'],
-                                                 level_data['bochner_norms']['elliptic'], level_data['space_products']['l2'],
-                                                 config['end_time'],
-                                                 level_data['mu_min'], level_data['mu_max'], level_data['mu_hat'],
-                                                 level_data['mu_bar'], level_data['mu_tilde'])
-        return detailed_estimator.compute_indicators(level_data['parabolic_disc'].solve(mu), mu, level_data['parabolic_disc'])
+#     def estimate_error(level_data, mu):
+#         detailed_estimator = DetailedAgainstWeak(level_data['example'], level_data['wrapper'],
+#                                                  level_data['bochner_norms']['elliptic'], level_data['space_products']['l2'],
+#                                                  config['end_time'],
+#                                                  level_data['mu_min'], level_data['mu_max'], level_data['mu_hat'],
+#                                                  level_data['mu_bar'], level_data['mu_tilde'])
+#         return detailed_estimator.compute_indicators(level_data['parabolic_disc'].solve(mu), mu, level_data['parabolic_disc'])
 
-    logger.info('creating DUNE discretization ...')
-    level_data = [0, 1, 2, 3]
-    level_data[0] = level_disc(config['initial_data'], refinements[0])
-    for ii in range(1, len(level_data)):
-        level_data[ii] = level_disc((level_data[0]['elliptic_disc'], level_data[0]['initial_data']), refinements[ii])
-    reference_data = level_disc((level_data[0]['elliptic_disc'], level_data[0]['initial_data']), refinements[-1])
-    logger.info('  reference discretization has {} DoFs'.format(reference_data['parabolic_disc'].solution_space.dim))
+#     logger.info('creating DUNE discretization ...')
+#     level_data = [0, 1, 2, 3]
+#     level_data[0] = level_disc(config['initial_data'], refinements[0])
+#     for ii in range(1, len(level_data)):
+#         level_data[ii] = level_disc((level_data[0]['elliptic_disc'], level_data[0]['initial_data']), refinements[ii])
+#     reference_data = level_disc((level_data[0]['elliptic_disc'], level_data[0]['initial_data']), refinements[-1])
+#     logger.info('  reference discretization has {} DoFs'.format(reference_data['parabolic_disc'].solution_space.dim))
 
-    logger.info('computing errors ...')
-    mu = level_data[0]['parabolic_disc'].parse_parameter(1)
-    errors = [compute_error(lvl_data, reference_data, mu) for lvl_data in level_data]
+#     logger.info('computing errors ...')
+#     mu = level_data[0]['parabolic_disc'].parse_parameter(1)
+#     errors = [compute_error(lvl_data, reference_data, mu) for lvl_data in level_data]
 
-    logger.info('computing estimates ...')
-    estimates = [estimate_error(lvl_data, mu) for lvl_data in level_data]
+#     logger.info('computing estimates ...')
+#     estimates = [estimate_error(lvl_data, mu) for lvl_data in level_data]
 
-    quantities = {}
-    for kk in estimates[0].keys():
-        quantities[kk] = [None for ii in np.arange(len(estimates))]
-    quantities['error'] = [None for ii in np.arange(len(estimates))]
-    for lvl in np.arange(len(estimates)):
-        lvl_data = estimates[lvl]
-        for kk, vv in lvl_data.items():
-            quantities[kk][lvl] = vv
-        quantities['error'][lvl] = errors[lvl]
+#     quantities = {}
+#     for kk in estimates[0].keys():
+#         quantities[kk] = [None for ii in np.arange(len(estimates))]
+#     quantities['error'] = [None for ii in np.arange(len(estimates))]
+#     for lvl in np.arange(len(estimates)):
+#         lvl_data = estimates[lvl]
+#         for kk, vv in lvl_data.items():
+#             quantities[kk][lvl] = vv
+#         quantities['error'][lvl] = errors[lvl]
 
 
-    logger.info('  finished')
+#     logger.info('  finished')
 
-    grid_widths = [lvl_data['example'].max_grid_width() for lvl_data in level_data]
+#     grid_widths = [lvl_data['example'].max_grid_width() for lvl_data in level_data]
 
-    def eoc(values):
-        eocs = [None for ii in np.arange(len(values))]
-        for ii in np.arange(1, len(values)):
-            try:
-                eocs[ii] = np.log(values[ii]/values[ii - 1]) / np.log(grid_widths[ii]/grid_widths[ii - 1])
-            except ZeroDivisionError:
-                pass
-        return eocs
+#     def eoc(values):
+#         eocs = [None for ii in np.arange(len(values))]
+#         for ii in np.arange(1, len(values)):
+#             try:
+#                 eocs[ii] = np.log(values[ii]/values[ii - 1]) / np.log(grid_widths[ii]/grid_widths[ii - 1])
+#             except ZeroDivisionError:
+#                 pass
+#         return eocs
 
-    logger.info('errors and estimates:')
-    for kk, vv in quantities.items():
-        print('{}: {}'.format(kk, vv))
+#     logger.info('errors and estimates:')
+#     for kk, vv in quantities.items():
+#         print('{}: {}'.format(kk, vv))
 
-    logger.info(' ')
-    logger.info('EOCs:')
-    for kk, vv in quantities.items():
-        print('{}: {}'.format(kk, eoc(vv)[1:]))
+#     logger.info(' ')
+#     logger.info('EOCs:')
+#     for kk, vv in quantities.items():
+#         print('{}: {}'.format(kk, eoc(vv)[1:]))
 
 
 logger.info('creating DUNE discretization ...')
