@@ -18,6 +18,7 @@ from pymor.core.defaults import set_defaults
 set_defaults({'pymor.core.cache.default_regions.disk_max_size': 107374182400})
 
 import pymor.core.logger
+from pymor.algorithms.error import reduction_error_analysis
 from pymor.playground.algorithms.blockbasisextension import gram_schmidt_block_basis_extension
 from pymor.core.logger import getLogger
 from pymor.vectorarrays.block import BlockVectorArray
@@ -38,7 +39,7 @@ for logger_id in ('pymor.algorithms.gram_schmidt', 'pymor.algorithms.pod'):
 logger = getLogger('.morepas3.main')
 
 config= {'dune_num_elements': '[100 20]',
-         'dune_num_partitions': '[25 5]',
+         'dune_num_partitions': '[5 1]',
          'integration_order_time': 2,
          'end_time' : 0.05,
          'nt' : 10,
@@ -48,11 +49,11 @@ config= {'dune_num_elements': '[100 20]',
          'mu_hat': 0.1,
          'mu_tilde': 0.1,
          'extension_product': 'h1',
-         'initial_basis': 1,
+         'initial_basis': 0,
          'num_training_samples' : 10,
          'num_test_samples' : 10,
          'max_rb_size' : 999,
-         'target_error': 35, # [100 20]: 53.1424678533
+         'target_error': 1,
          'initial_data': '0'}
 new_dataset('morepas3', **config)
 
@@ -150,41 +151,17 @@ logger.info('  parameter type is {}'.format(parabolic_disc.parameter_type))
 
 training_samples = list(parabolic_disc.parameter_space.sample_uniformly(config['num_training_samples']))
 
-logger.info('visualizing data functions and sample solution ...')
-example.visualize('example')
-for mu in (config['mu_min'], config['mu_max']):
-    mu_str = str(mu)
-    mu = parabolic_disc.parse_parameter(mu)
-    U = parabolic_disc.solve(mu)
-    parabolic_disc.visualize(U, filename='sample_solution_{}'.format(mu_str))
-
-# logger.info('creating reference discretization ...')
-# config_ref = dict(config)
-# config_ref['dune_num_elements'] = '[64 64]'
-# config_ref['nt'] = 4*config['nt']
-# reference_data = prepare(config_ref)
-# parabolic_disc_ref, prolongator, bochner_norms_ref = (
-#         reference_data['parabolic_disc'],
-#         reference_data['prolongator'],
-#         reference_data['bochner_norms'])
-# logger.info('  discretization has {} DoFs'.format(parabolic_disc_ref.solution_space.dim))
-
-# logger.info('computing discretization errors ...')
-
-# def compute_error(U, mu, disc):
-#     reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
-#                                                         prolongator,
-#                                                         elliptic_disc,
-#                                                         partial(bochner_norms_ref['elliptic'], mu=mu))
-#     return reference_error_computer.estimate(U, mu, disc)
-
-# discretization_errors = [compute_error(parabolic_disc.solve(mu), mu, parabolic_disc)
-#                          for mu in training_samples]
-
-detailed_data['estimator'] = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], space_products['l2'],
-                                                 config['end_time'], mu_min, mu_max, mu_hat, mu_bar, mu_tilde)
+# logger.info('visualizing data functions and sample solution ...')
+# example.visualize('example')
+# for mu in (config['mu_min'], config['mu_max']):
+#     mu_str = str(mu)
+#     mu = parabolic_disc.parse_parameter(mu)
+#     U = parabolic_disc.solve(mu)
+#     parabolic_disc.visualize(U, filename='sample_solution_{}'.format(mu_str))
 
 logger.info('estimating discretization errors ...')
+detailed_data['estimator'] = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], space_products['l2'],
+                                                 config['end_time'], mu_min, mu_max, mu_hat, mu_bar, mu_tilde)
 estimates = [detailed_data['estimator'].estimate(parabolic_disc.solve(parabolic_disc.parse_parameter(mu)),
                                                  parabolic_disc.parse_parameter(mu),
                                                  parabolic_disc)
@@ -217,17 +194,48 @@ greedy_data = reduce_pod_greedy(config, detailed_data, training_samples)
 add_values(greedy_max_err_mus=greedy_data['max_err_mus'],
            greedy_max_errs=greedy_data['max_errs'],
            greedy_extensions=greedy_data['extensions'],
-           greedy_basis_sizes=[len(local_RB) for local_RB in greedy_data['basis']])
-
+           greedy_basis_sizes=[len(local_RB) for local_RB in greedy_data['basis']],
+           training_samples=training_samples)
 print(' ')
+
+logger.info('creating reference discretization ...')
+config_ref = dict(config)
+config_ref['dune_num_elements'] = '[200 40]'
+config_ref['dune_num_subdomains'] = '[1 1]'
+config_ref['nt'] = 2*config['nt']
+reference_data = prepare(config_ref)
+parabolic_disc_ref, prolongator, bochner_norms_ref = (
+        reference_data['parabolic_disc'],
+        reference_data['prolongator'],
+        reference_data['bochner_norms'])
+logger.info('  discretization has {} DoFs'.format(parabolic_disc_ref.solution_space.dim))
+print(' ')
+
 logger.info('error analysis ...')
 rds, rcs = greedy_data['rds'], greedy_data['rcs']
 test_samples = list(parabolic_disc.parameter_space.sample_randomly(config['num_test_samples']))
+add_values(test_samples=test_samples,
+           num_DoFs=[rd.solution_space.dim for rd in rds])
+for mu in test_samples:
+    parabolic_disc_ref.solve(mu)
+reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
+                                                    prolongator,
+                                                    elliptic_disc,
+                                                    partial(bochner_norms_ref['elliptic'], mu=detailed_data['mu_bar']))
+max_ests = []
 max_errs = []
 for rd, rc in zip(rds, rcs):
-    ests = [rd.estimate(rd.solve(mu), mu=mu) for mu in test_samples]
-    max_errs.append(np.max(ests))
+    ests = []
+    errs = []
+    for mu in test_samples:
+        U_red = rd.solve(mu)
+        ests.append(rd.estimate(U_red, mu=mu))
+        U_h = rc.reconstruct(U_red)
+        errs.append(reference_error_computer.estimate(U_h, mu, parabolic_disc))
+    max_ests.append(np.max(ests))
+    max_errs.append(np.max(errs))
 
 add_values(test_max_errs=max_errs,
+           test_max_ests=max_ests,
            test_num_DoFs=[rd.solution_space.dim for rd in rds])
 
