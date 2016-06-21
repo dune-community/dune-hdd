@@ -79,9 +79,9 @@ public:
   {
     const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     return Stuff::Common::make_unique< ThisType >(
-          cfg.get("filename", default_config().get< std::string >("filename")),
-          cfg.get("upper_right", default_config().get< DomainType >("upper_right")),
-          cfg.get("channel_width", default_config().get< DomainFieldType >("channel_width")));
+          cfg.get("filename", default_config().template get< std::string >("filename")),
+          cfg.get("upper_right", default_config().template get< DomainType >("upper_right")),
+          cfg.get("channel_width", default_config().template get< DomainFieldType >("channel_width")));
   } // ... create(...)
 
   Model2(const std::string& filename, const DomainType& upper_right, const DomainFieldType& channel_width)

@@ -117,10 +117,10 @@ public:
   {
     const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     return Stuff::Common::make_unique< ThisType >(cfg.get("integration_order",
-                                                          default_config().get< size_t >("integration_order")));
+                                                          default_config().template get< size_t >("integration_order")));
   } // ... create(...)
 
-  ParametricESV2007(const size_t integration_order = default_config().get< size_t >("integration_order"))
+  ParametricESV2007(const size_t integration_order = default_config().template get< size_t >("integration_order"))
     : BaseType(create_diffusion_factor(integration_order),
                std::make_shared< ParametricMatrixFunctionType >(new ConstantMatrixFunctionType(unit_matrix(),
                                                                                                   "diffusion_tensor")),
@@ -216,8 +216,8 @@ public:
               const DomainType& upper_right,
               const std::vector< std::tuple< DomainType, DomainType, typename IndicatorFunctionType::RangeType > >& channel_values,
               const std::vector< std::tuple< DomainType, DomainType, typename IndicatorFunctionType::RangeType > >& force_values,
-              const DomainType& channel_boundary_layer = default_config().get< DomainType >("channel_boundary_layer"),
-              const bool parametric_channel = default_config().get< bool >("parametric_channel"))
+              const DomainType& channel_boundary_layer = default_config().template get< DomainType >("channel_boundary_layer"),
+              const bool parametric_channel = default_config().template get< bool >("parametric_channel"))
     : BaseType(create_base(filename,
                            lower_left,
                            upper_right,

@@ -70,10 +70,10 @@ public:
   {
     const Stuff::Common::Configuration cfg = config.has_sub(sub_name) ? config.sub(sub_name) : config;
     return Stuff::Common::make_unique< ThisType >(cfg.get("integration_order",
-                                                          default_config().get< size_t >("integration_order")));
+                                                          default_config().template get< size_t >("integration_order")));
   } // ... create(...)
 
-  ESV2007(const size_t integration_order = default_config().get< size_t >("integration_order"))
+  ESV2007(const size_t integration_order = default_config().template get< size_t >("integration_order"))
     : BaseType(std::make_shared< ScalarFunctionType >(new ScalarConstantFunctionType(1, "diffusion_factor")),
                std::make_shared< FunctionType >(new ConstantFunctionType(unit_matrix(), "diffusion_tensor")),
                std::make_shared< ScalarFunctionType >(new ForceType(integration_order,  "force")),
