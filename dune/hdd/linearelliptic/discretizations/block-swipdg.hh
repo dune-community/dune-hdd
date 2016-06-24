@@ -445,7 +445,7 @@ private:
                ++intersectionIt) {
             const auto& intersection = *intersectionIt;
             // for a coupling grid part, we can be sure to only get the inner coupling intersetcions
-            // so no further check neccesarry than
+            // so no further check neccesarry then
             assert(intersection.neighbor() && !intersection.boundary());
             // call local matrix assemblers
             for (auto& localCodim1MatrixAssembler : localCodim1MatrixAssemblers_) {
