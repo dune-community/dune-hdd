@@ -562,14 +562,11 @@ copy_local_to_global_matrix(const typename BlockSWIPDG< G, R, r, p, la >::Affine
                             BlockSWIPDG< G, R, r, p, la >::AffinelyDecomposedMatrixType& global_matrix) const
 {
   for (size_t qq = 0; qq < boost::numeric_cast< size_t >(local_matrix.num_components()); ++qq) {
-    const auto coefficient = local_matrix.coefficient(qq);
-    ssize_t comp = find_component(global_matrix, *coefficient);
-    if (comp < 0)
-      comp = global_matrix.register_component(coefficient,
-                                              this->test_space().mapper().size(),
-                                              this->ansatz_space().mapper().size(),
-                                              *pattern_);
-    assert(comp >= 0);
+    auto comp = find_add_component(global_matrix,
+                                   *local_matrix.coefficient(qq),
+                                   this->test_space(),
+                                   this->ansatz_space(),
+                                   *pattern_);
     copy_local_to_global_matrix(*(local_matrix.component(qq)),
                                 local_pattern,
                                 subdomain,
@@ -596,12 +593,7 @@ copy_local_to_global_vector(const typename BlockSWIPDG< G, R, r, p, la >::Affine
                             typename BlockSWIPDG< G, R, r, p, la >::AffinelyDecomposedVectorType& global_vector) const
 {
   for (size_t qq = 0; qq < boost::numeric_cast< size_t >(local_vector.num_components()); ++qq) {
-    const auto coefficient = local_vector.coefficient(qq);
-    ssize_t comp = find_component(global_vector, *coefficient);
-    if (comp < 0)
-      comp = global_vector.register_component(coefficient,
-                                              this->test_space().mapper().size());
-    assert(comp >= 0);
+    auto comp = find_add_component(global_vector, *local_vector.coefficient(qq), this->test_space());
     copy_local_to_global_vector(*(local_vector.component(qq)),
                                 subdomain,
                                 *(global_vector.component(comp)));
@@ -619,13 +611,12 @@ template< class G, class R, int r, int p, Stuff::LA::ChooseBackend la >
     void BlockSWIPDG< G, R, r, p, la >::
 assemble_boundary_contributions(const size_t subdomain) const
 {
-  auto logger = Stuff::Common::TimedLogger().get("hdd.linearelliptic.discretizations.block-swipdg.assemble_boundary_contributions");
-
   typedef typename MsGridType::BoundaryGridPartType BoundaryGridPartType;
   typedef typename LocalDiscretizationType::TestSpaceType   LocalTestSpaceType;
   typedef typename LocalDiscretizationType::AnsatzSpaceType LocalAnsatzSpaceType;
   const LocalTestSpaceType&   local_test_space   = this->local_discretizations_[subdomain]->test_space();
   const LocalAnsatzSpaceType& local_ansatz_space = this->local_discretizations_[subdomain]->ansatz_space();
+  const auto& local_pattern = this->local_discretizations_[subdomain]->pattern();
   typedef GDT::SystemAssembler< LocalTestSpaceType, BoundaryGridPartType, LocalAnsatzSpaceType > BoundaryAssemblerType;
   BoundaryAssemblerType boundary_assembler(local_test_space,
                                            local_ansatz_space,
@@ -633,7 +624,6 @@ assemble_boundary_contributions(const size_t subdomain) const
 
   auto& local_matrix = *(local_matrices_[subdomain]);
   auto& local_vector = *(local_vectors_[subdomain]);
-
 
   // lhs
   // * dirichlet boundary terms
@@ -648,14 +638,23 @@ assemble_boundary_contributions(const size_t subdomain) const
   std::vector< std::unique_ptr< DirichletOperatorType > > dirichlet_operators;
   std::vector< std::unique_ptr< DirichletMatrixAssemblerType > > dirichlet_matrix_assemblers;
   for (ssize_t qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
+    auto mat_comp = find_add_component(local_matrix,
+                                       *this->problem().diffusion_factor()->coefficient(qq),
+                                       local_test_space,
+                                       local_ansatz_space,
+                                       local_pattern);
     dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->component(qq)),
                                                                *(diffusion_tensor.affine_part())));
     dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*dirichlet_operators.back()));
     boundary_assembler.add(*dirichlet_matrix_assemblers.back(),
-                           *(local_matrix.component(qq)),
+                           *(local_matrix.component(mat_comp)),
                            new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
   }
   if (this->problem().diffusion_factor()->has_affine_part()) {
+    if (!local_matrix.has_affine_part())
+      local_matrix.register_affine_part(local_test_space.mapper().size(),
+                                        local_ansatz_space.mapper().size(),
+                                        local_pattern);
     dirichlet_operators.emplace_back(new DirichletOperatorType(*(this->problem().diffusion_factor()->affine_part()),
                                                                *(diffusion_tensor.affine_part())));
     dirichlet_matrix_assemblers.emplace_back(new DirichletMatrixAssemblerType(*dirichlet_operators.back()));
@@ -672,17 +671,21 @@ assemble_boundary_contributions(const size_t subdomain) const
   std::vector< std::unique_ptr< NeumannFunctionalType > > neumann_functionals;
   std::vector< std::unique_ptr< NeumannVectorAssemblerType > > neumann_vector_assemblers;
   for (ssize_t qq = 0; qq < this->problem().neumann()->num_components(); ++qq) {
+    auto vec_comp = find_add_component(local_vector,
+                                       *this->problem().neumann()->coefficient(qq),
+                                       local_test_space);
     neumann_functionals.emplace_back(new NeumannFunctionalType(*(this->problem().neumann()->component(qq))));
-    neumann_vector_assemblers.emplace_back(new NeumannVectorAssemblerType(*(neumann_functionals[qq])));
-    boundary_assembler.add(*(neumann_vector_assemblers[qq]),
-                           *(local_vector.component(this->problem().force()->num_components() + qq)),
+    neumann_vector_assemblers.emplace_back(new NeumannVectorAssemblerType(*(neumann_functionals.back())));
+    boundary_assembler.add(*(neumann_vector_assemblers.back()),
+                           *(local_vector.component(vec_comp)),
                            new Stuff::Grid::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
   }
   if (this->problem().neumann()->has_affine_part()) {
+    if (!local_vector.has_affine_part())
+      local_vector.register_affine_part(local_test_space.mapper().size());
     neumann_functionals.emplace_back(new NeumannFunctionalType(*(this->problem().neumann()->affine_part())));
-    neumann_vector_assemblers.emplace_back(new NeumannVectorAssemblerType(*(
-      neumann_functionals[neumann_functionals.size() - 1])));
-    boundary_assembler.add(*(neumann_vector_assemblers[neumann_vector_assemblers.size() - 1]),
+    neumann_vector_assemblers.emplace_back(new NeumannVectorAssemblerType(*(neumann_functionals.back())));
+    boundary_assembler.add(*(neumann_vector_assemblers.back()),
                            *(local_vector.affine_part()),
                            new Stuff::Grid::ApplyOn::NeumannIntersections< BoundaryGridPartType >(this->boundary_info()));
   }
@@ -696,45 +699,66 @@ assemble_boundary_contributions(const size_t subdomain) const
   typedef GDT::LocalAssembler::Codim1Vector< DirichletFunctionalType > DirichletVectorAssemblerType;
   std::vector< std::unique_ptr< DirichletFunctionalType > > dirichlet_functionals;
   std::vector< std::unique_ptr< DirichletVectorAssemblerType > > dirichlet_vector_assemblers;
-  size_t component_index = this->problem().force()->num_components() + this->problem().neumann()->num_components();
   if (this->problem().diffusion_factor()->has_affine_part()) {
     for (ssize_t qq = 0; qq < this->problem().dirichlet()->num_components(); ++qq) {
+      auto vec_comp = find_add_component(local_vector,
+                                         *this->problem().dirichlet()->coefficient(qq),
+                                         local_test_space);
       dirichlet_functionals.emplace_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->affine_part()),
                                                                      *(diffusion_tensor.affine_part()),
                                                                      *(this->problem().dirichlet()->component(qq))));
-      dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(
-          dirichlet_functionals[dirichlet_functionals.size() - 1])));
-      boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
-                             *(local_vector.component(component_index)),
+      dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*dirichlet_functionals.back()));
+      boundary_assembler.add(*dirichlet_vector_assemblers.back(),
+                             *local_vector.component(vec_comp),
                              new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
-      ++component_index;
     }
   }
   if (this->problem().dirichlet()->has_affine_part()) {
     for (ssize_t qq = 0; qq < this->problem().diffusion_factor()->num_components(); ++qq) {
+      auto vec_comp = find_add_component(local_vector,
+                                         *this->problem().diffusion_factor()->coefficient(qq),
+                                         local_test_space);
       dirichlet_functionals.emplace_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(qq)),
                                                                      *(diffusion_tensor.affine_part()),
                                                                      *(this->problem().dirichlet()->affine_part())));
-      dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(
-          dirichlet_functionals[dirichlet_functionals.size() - 1])));
-      boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
-                             *(local_vector.component(component_index)),
+      dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*dirichlet_functionals.back()));
+      boundary_assembler.add(*dirichlet_vector_assemblers.back(),
+                             *local_vector.component(vec_comp),
                              new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
-      ++component_index;
     }
   }
+  Pymor::ParameterType combined_param_type;
+  for (auto key : this->problem().diffusion_factor()->parameter_type().keys())
+    combined_param_type.set(key, this->problem().diffusion_factor()->parameter_type().get(key));
+  for (auto key : this->problem().dirichlet()->parameter_type().keys())
+    combined_param_type.set(key, this->problem().dirichlet()->parameter_type().get(key));
   for (ssize_t pp = 0; pp < this->problem().diffusion_factor()->num_components(); ++ pp) {
     for (ssize_t qq = 0; qq < this->problem().dirichlet()->num_components(); ++qq) {
+      const Pymor::ParameterFunctional coefficient(combined_param_type,
+                                                   "("
+                                                   + this->problem().diffusion_factor()->coefficient(pp)->expression()
+                                                   + ")*(" + this->problem().dirichlet()->coefficient(qq)->expression()
+                                                   + ")");
+      auto vec_comp = find_add_component(local_vector, coefficient, local_test_space);
       dirichlet_functionals.emplace_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->component(pp)),
                                                                      *(diffusion_tensor.affine_part()),
                                                                      *(this->problem().dirichlet()->component(qq))));
-      dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(
-          dirichlet_functionals[dirichlet_functionals.size() - 1])));
-      boundary_assembler.add(*(dirichlet_vector_assemblers[dirichlet_vector_assemblers.size() - 1]),
-                             *(local_vector.component(component_index)),
+      dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(dirichlet_functionals.back())));
+      boundary_assembler.add(*(dirichlet_vector_assemblers.back()),
+                             *(local_vector.component(vec_comp)),
                              new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
-      ++component_index;
     }
+  }
+  if (this->problem().dirichlet()->has_affine_part() && this->problem().diffusion_factor()->has_affine_part()) {
+    if (!local_vector.has_affine_part())
+      local_vector.register_affine_part(new VectorType(local_test_space.mapper().size()));
+    dirichlet_functionals.emplace_back(new DirichletFunctionalType(*(this->problem().diffusion_factor()->affine_part()),
+                                                                   *(diffusion_tensor.affine_part()),
+                                                                   *(this->problem().dirichlet()->affine_part())));
+    dirichlet_vector_assemblers.emplace_back(new DirichletVectorAssemblerType(*(dirichlet_functionals.back())));
+    boundary_assembler.add(*(dirichlet_vector_assemblers.back()),
+                           *(local_vector.affine_part()),
+                           new Stuff::Grid::ApplyOn::DirichletIntersections< BoundaryGridPartType >(this->boundary_info()));
   } // dirichlet boundary terms
 
   // do the actual work

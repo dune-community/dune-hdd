@@ -525,15 +525,29 @@ private:
 
   void build_global_containers();
 
-  template< class AffinelyDecomposedContainerType >
-  ssize_t find_component(const AffinelyDecomposedContainerType& container,
-                         const Pymor::ParameterFunctional& coefficient) const
+  template <class T, class A>
+  ssize_t find_add_component(AffinelyDecomposedMatrixType& matrix,
+                             const Pymor::ParameterFunctional& coefficient,
+                             const T& t_space,
+                             const A& a_space,
+                             const PatternType& ptrn) const
   {
-    for (size_t qq = 0; qq < boost::numeric_cast< size_t >(container.num_components()); ++qq)
-      if (*(container.coefficient(qq)) == coefficient)
+    for (size_t qq = 0; qq < boost::numeric_cast<size_t>(matrix.num_components()); ++qq)
+      if (*(matrix.coefficient(qq)) == coefficient)
         return qq;
-    return -1;
-  } // ... find_component(...)
+    return matrix.register_component(coefficient, t_space.mapper().size(), a_space.mapper().size(), ptrn);
+  } // ... find_add_component(...)
+
+  template <class S>
+  ssize_t find_add_component(AffinelyDecomposedVectorType& vector,
+                             const Pymor::ParameterFunctional& coefficient,
+                             const S& space) const
+  {
+    for (size_t qq = 0; qq < boost::numeric_cast<size_t>(vector.num_components()); ++qq)
+      if (*(vector.coefficient(qq)) == coefficient)
+        return qq;
+    return vector.register_component(coefficient, space.mapper().size());
+  } // ... find_add_component(...)
 
   const GridProviderType& grid_provider_;
   std::shared_ptr< const MsGridType > ms_grid_;
