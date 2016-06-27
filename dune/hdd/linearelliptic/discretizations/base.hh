@@ -94,6 +94,8 @@ public:
 
   CachedDefault(const ThisType& other) = default;
 
+  virtual ~CachedDefault() = default;
+
   ThisType& operator=(const ThisType& other) = delete;
 
   const TestSpaceType& test_space() const
@@ -131,11 +133,11 @@ public:
     return VectorType(ansatz_space_.mapper().size());
   }
 
-  void visualize(const VectorType& vector,
-                 const std::string filename,
-                 const std::string name,
-                 const bool add_dirichlet = true,
-                 Pymor::Parameter mu = Pymor::Parameter()) const
+  virtual void visualize(const VectorType& vector,
+                         const std::string filename,
+                         const std::string name,
+                         const bool add_dirichlet = true,
+                         Pymor::Parameter mu = Pymor::Parameter()) const
   {
     const auto vectors = this->available_vectors();
     if (add_dirichlet && std::find(vectors.begin(), vectors.end(), "dirichlet") != vectors.end()) {
