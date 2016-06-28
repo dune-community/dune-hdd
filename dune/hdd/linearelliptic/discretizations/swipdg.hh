@@ -52,11 +52,14 @@ namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
 namespace Discretizations {
-
+namespace BlockSwipdg {
 
 // forward, for friendlyness
 template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder, Stuff::LA::ChooseBackend la_backend >
-class BlockSWIPDG;
+class DefaultMultiscaleGrid;
+
+
+} // namespace BlockSwipdg
 
 
 // forward, needed in the Traits
@@ -174,7 +177,7 @@ public:
   void init(const bool prune = false);
 
 private:
-  friend class BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
+  friend class BlockSwipdg::DefaultMultiscaleGrid< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >;
 
   const RangeFieldType beta_;
   using BaseType::pattern_;
