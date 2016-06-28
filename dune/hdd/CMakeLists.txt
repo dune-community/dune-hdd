@@ -1,6 +1,6 @@
 set(lib_dune_hdd_sources
-    linearelliptic/discretizations/block-swipdg_2daluconformsimplex_fem_eigen.cxx
-    linearelliptic/discretizations/block-swipdg_2daluconformsimplex_fem_istl.cxx
+    linearelliptic/discretizations/block-swipdg/default__2daluconformsimplex_fem_eigen.cxx
+    linearelliptic/discretizations/block-swipdg/default__2daluconformsimplex_fem_istl.cxx
     linearelliptic/discretizations/cg_2daluconformsimplex_fem_istl.cxx
     linearelliptic/discretizations/swipdg_2daluconformsimplex_fem_eigen.cxx
     linearelliptic/discretizations/swipdg_2daluconformsimplex_fem_istl.cxx
