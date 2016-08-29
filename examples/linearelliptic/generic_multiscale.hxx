@@ -122,7 +122,8 @@ GenericLinearellipticMultiscaleExample(const Dune::Stuff::Common::Configuration&
                                                            *problem_,
                                                            /*only_these_products=*/std::vector<std::string>({"l2",
                                                                                                              "h1",
-                                                                                                             "elliptic"}));
+                                                                                                             "elliptic",
+                                                                                                             "penalty"}));
   discretization_->init(/*prune=*/false);
   logger.info() << "  done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
 } // GenericLinearellipticMultiscaleExample(...)
