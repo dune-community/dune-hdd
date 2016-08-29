@@ -12,7 +12,7 @@ import numpy as np
 from functools import partial
 from tempfile import NamedTemporaryFile
 
-from simdb.run import new_dataset, add_values, add_logfile
+from simdb.run import new_dataset, add_values
 
 from pymor.core.defaults import set_defaults
 set_defaults({'pymor.core.cache.default_regions.disk_max_size': 107374182400})
