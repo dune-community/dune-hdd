@@ -23,6 +23,7 @@
 #include <dune/pymor/functionals/affine.hh>
 
 #include <dune/gdt/discretefunction/default.hh>
+#include <dune/gdt/playground/products/swipdgpenalty.hh>
 #include <dune/gdt/products/boundaryl2.hh>
 #include <dune/gdt/products/elliptic.hh>
 #include <dune/gdt/products/h1.hh>
@@ -480,7 +481,8 @@ protected:
     std::vector< std::unique_ptr< EllipticProductType > > elliptic_products;
     auto elliptic_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
     if (   std::find(only_these_products.begin(), only_these_products.end(), "elliptic") != only_these_products.end()
-        || std::find(only_these_products.begin(), only_these_products.end(), "elliptic_0") != only_these_products.end()) {
+        || std::find(only_these_products.begin(), only_these_products.end(), "elliptic_0") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "elliptic_penalty") != only_these_products.end()) {
       for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
         const auto id = elliptic_product_matrix->register_component(diffusion_factor.coefficient(qq),
                                                                     this->test_space().mapper().size(),
@@ -526,12 +528,50 @@ protected:
                                                                       over_integrate);
       system_assembler.add(*boundary_l2_product);
     }
+    // DG penalty
+    typedef Products::SwipdgPenaltyAssemblable< MatrixType,
+                                                typename ProblemType::DiffusionFactorType::NonparametricType,
+                                                typename ProblemType::DiffusionTensorType::NonparametricType,
+                                                TestSpaceType > PenaltyProductType;
+    std::vector< std::unique_ptr< PenaltyProductType > > penalty_products;
+    auto penalty_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+    if (   std::find(only_these_products.begin(), only_these_products.end(), "penalty") != only_these_products.end()
+        || std::find(only_these_products.begin(), only_these_products.end(), "elliptic_penalty") != only_these_products.end()) {
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
+        const auto id = penalty_product_matrix->register_component(diffusion_factor.coefficient(qq),
+                                                                   this->test_space().mapper().size(),
+                                                                   this->ansatz_space().mapper().size(),
+                                                                   *pattern_);
+        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
+                                                             this->test_space(),
+                                                             this->grid_view(),
+                                                             this->ansatz_space(),
+                                                             *diffusion_factor.component(qq),
+                                                             *diffusion_tensor.affine_part(),
+                                                             over_integrate));
+      }
+      if (diffusion_factor.has_affine_part()) {
+        penalty_product_matrix->register_affine_part(this->test_space().mapper().size(),
+                                                     this->ansatz_space().mapper().size(),
+                                                     *pattern_);
+        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
+                                                             this->test_space(),
+                                                             this->grid_view(),
+                                                             this->ansatz_space(),
+                                                             *diffusion_factor.affine_part(),
+                                                             *diffusion_tensor.affine_part(),
+                                                             over_integrate));
+      }
+      for (auto& product : penalty_products)
+        system_assembler.add(*product);
+    }
     // walk the grid
     system_assembler.assemble();
     // register the products
     for (auto&& key_value_pair : {std::make_pair("l2", l2_product_matrix),
                                   std::make_pair("h1_semi", semi_h1_product_matrix),
-                                  std::make_pair("elliptic", elliptic_product_matrix)})  {
+                                  std::make_pair("elliptic", elliptic_product_matrix),
+                                  std::make_pair("penalty", penalty_product_matrix)})  {
       auto key = std::string(key_value_pair.first);
       auto value = key_value_pair.second;
       if (   std::find(only_these_products.begin(), only_these_products.end(), key) != only_these_products.end()
@@ -549,6 +589,20 @@ protected:
           = std::make_shared< AffinelyDecomposedMatrixType >(new MatrixType(l2_product_matrix->affine_part()->backend()));
       h1_product_matrix->affine_part()->axpy(1.0, *semi_h1_product_matrix->affine_part());
       products_.insert(std::make_pair("h1", h1_product_matrix));
+    }
+    // elliptic penalty product is elliptic product + penalty product
+    if (std::find(only_these_products.begin(), only_these_products.end(), "elliptic_penalty") != only_these_products.end()) {
+      auto elliptic_penalty_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
+      if (elliptic_product_matrix->has_affine_part()) {
+        elliptic_penalty_product_matrix->register_affine_part(new MatrixType(elliptic_product_matrix->affine_part()->backend()));
+        elliptic_penalty_product_matrix->affine_part()->axpy(1.0, *penalty_product_matrix->affine_part());
+      }
+      for (DUNE_STUFF_SSIZE_T qq = 0; qq < elliptic_product_matrix->num_components(); ++qq) {
+        elliptic_penalty_product_matrix->register_component(new MatrixType(elliptic_product_matrix->component(qq)->backend()),
+                                                            elliptic_product_matrix->coefficient(qq));
+        elliptic_penalty_product_matrix->component(qq)->axpy(1.0, *penalty_product_matrix->component(qq));
+      }
+      products_.insert(std::make_pair("elliptic_penalty", elliptic_penalty_product_matrix));
     }
   } // ... assemble_products(...)
 

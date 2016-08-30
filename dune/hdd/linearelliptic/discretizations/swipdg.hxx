@@ -236,41 +236,6 @@ init(const bool prune)
     for (auto& neumann_boundary_functional : neumann_boundary_functionals)
       system_assembler.add(*neumann_boundary_functional);
 
-    // swipdg penalty product
-    const size_t over_integrate = 2;
-    typedef Products::SwipdgPenaltyAssemblable
-        < MatrixType, DiffusionFactorType, DiffusionTensorType, TestSpaceType > PenaltyProductType;
-    std::vector< std::unique_ptr< PenaltyProductType > > penalty_products;
-    auto penalty_product_matrix = std::make_shared< AffinelyDecomposedMatrixType >();
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end()) {
-      for (DUNE_STUFF_SSIZE_T qq = 0; qq < diffusion_factor.num_components(); ++qq) {
-        const auto id = penalty_product_matrix->register_component(diffusion_factor.coefficient(qq),
-                                                                   this->test_space().mapper().size(),
-                                                                   this->ansatz_space().mapper().size(),
-                                                                   *pattern_);
-        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->component(id),
-                                                             this->test_space(),
-                                                             this->grid_view(),
-                                                             this->ansatz_space(),
-                                                             *diffusion_factor.component(qq),
-                                                             *diffusion_tensor.affine_part(),
-                                                             over_integrate));
-      }
-      if (diffusion_factor.has_affine_part()) {
-        penalty_product_matrix->register_affine_part(this->test_space().mapper().size(),
-                                                     this->ansatz_space().mapper().size(),
-                                                     *pattern_);
-        penalty_products.emplace_back(new PenaltyProductType(*penalty_product_matrix->affine_part(),
-                                                             this->test_space(),
-                                                             this->grid_view(),
-                                                             this->ansatz_space(),
-                                                             *diffusion_factor.affine_part(),
-                                                             *diffusion_tensor.affine_part(),
-                                                             over_integrate));
-      }
-      for (auto& product : penalty_products)
-        system_assembler.add(*product);
-    }
     // do the actual assembling
     system_assembler.walk();
     logger.info() << "done (took " << timer.elapsed() << "s)" << std::endl;
@@ -282,9 +247,6 @@ init(const bool prune)
 
     if (!dirichlet_detector.found())
       this->purely_neumann_ = true;
-
-    if (std::find(only_these_products_.begin(), only_these_products_.end(), "penalty") != only_these_products_.end())
-      this->products_.insert(std::make_pair("penalty", penalty_product_matrix));
 
     this->finalize_init(prune);
   } // if (!this->container_based_initialized_)
