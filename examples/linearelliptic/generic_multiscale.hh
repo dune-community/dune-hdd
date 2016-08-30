@@ -62,7 +62,8 @@ public:
   GenericLinearellipticMultiscaleExample(const Dune::Stuff::Common::Configuration& logger_cfg = Dune::Stuff::Common::Configuration(),
                                          const Dune::Stuff::Common::Configuration& grid_cfg = Dune::Stuff::Common::Configuration(),
                                          const Dune::Stuff::Common::Configuration& boundary_cfg = Dune::Stuff::Common::Configuration(),
-                                         const Dune::Stuff::Common::Configuration& problem_cfg = Dune::Stuff::Common::Configuration());
+                                         const Dune::Stuff::Common::Configuration& problem_cfg = Dune::Stuff::Common::Configuration(),
+                                         const std::vector<std::string>& only_these_products = {});
 
   DiscretizationType& discretization();
 

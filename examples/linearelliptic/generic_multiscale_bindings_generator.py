@@ -123,7 +123,8 @@ def inject_Example(module, exceptions, interfaces, CONFIG_H):
         Example.add_constructor([param('const Dune::Stuff::Common::Configuration&', 'logger_cfg'),
                                  param('const Dune::Stuff::Common::Configuration&', 'grid_cfg'),
                                  param('const Dune::Stuff::Common::Configuration&', 'boundary_cfg'),
-                                 param('const Dune::Stuff::Common::Configuration&', 'problem_cfg')],
+                                 param('const Dune::Stuff::Common::Configuration&', 'problem_cfg'),
+                                 param('const std::vector<std::string>&', 'only_these_products')],
                                 throw=exceptions)
         Example.add_method('pb_discretization_and_return_ptr',
                            retval(DiscretizationType + ' *', caller_owns_return=True),

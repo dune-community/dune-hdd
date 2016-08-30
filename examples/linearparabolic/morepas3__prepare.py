@@ -319,7 +319,7 @@ def discretize(num_elements, num_partitions, T, nt, initial_data, parameter_rang
     problem_cfg.set('channel.103.domain', '[2.6 2.65; 0.35 0.40]', True)
     problem_cfg.set('channel.104.domain', '[2.65 2.7; 0.35 0.4]', True)
 
-    example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg)
+    example = Example(logger_cfg, grid_cfg, boundary_cfg, problem_cfg, ['l2', 'h1', 'elliptic_penalty'])
 
     elliptic_LRBMS_disc = wrapper[example.discretization()]
     parameter_space = CubicParameterSpace(elliptic_LRBMS_disc.parameter_type, parameter_range[0], parameter_range[1])

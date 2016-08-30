@@ -87,7 +87,8 @@ template< class G, Dune::GDT::ChooseSpaceBackend sp, Dune::Stuff::LA::ChooseBack
 GenericLinearellipticMultiscaleExample(const Dune::Stuff::Common::Configuration& logger_cfg,
                                        const Dune::Stuff::Common::Configuration& grid_cfg,
                                        const Dune::Stuff::Common::Configuration& boundary_cfg,
-                                       const Dune::Stuff::Common::Configuration& problem_cfg)
+                                       const Dune::Stuff::Common::Configuration& problem_cfg,
+                                       const std::vector<std::string>& only_these_products)
   : boundary_cfg_(boundary_cfg)
 {
   try {
@@ -120,10 +121,7 @@ GenericLinearellipticMultiscaleExample(const Dune::Stuff::Common::Configuration&
   discretization_ = DSC::make_unique< DiscretizationType >(*grid_,
                                                            boundary_cfg_,
                                                            *problem_,
-                                                           /*only_these_products=*/std::vector<std::string>({"l2",
-                                                                                                             "h1",
-                                                                                                             "elliptic",
-                                                                                                             "penalty"}));
+                                                           only_these_products);
   discretization_->init(/*prune=*/false);
   logger.info() << "  done (has " << discretization_->ansatz_space().mapper().size() << " DoFs)" << std::endl;
 } // GenericLinearellipticMultiscaleExample(...)
