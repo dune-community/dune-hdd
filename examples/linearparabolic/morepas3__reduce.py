@@ -105,7 +105,7 @@ def reductor(config, detailed_data, discretization, RB, vector_product=None, dis
     reduced_op = unblock_op(rd.operator, True)
     reduced_rhs = unblock_op(rd.rhs)
     estimator = ReducedAgainstWeak(rc, detailed_data['example'], detailed_data['wrapper'],
-                                   detailed_data['bochner_norms']['elliptic'], detailed_data['space_products']['l2'],
+                                   detailed_data['bochner_norms']['elliptic_penalty'], detailed_data['space_products']['l2'],
                                    T, detailed_data['mu_min'], detailed_data['mu_max'], detailed_data['mu_hat'],
                                    detailed_data['mu_bar'], detailed_data['mu_tilde'])
     return (InstationaryDiscretization(T=T,

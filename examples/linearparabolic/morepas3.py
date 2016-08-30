@@ -77,12 +77,12 @@ new_dataset('morepas3', **config)
 #         reference_error_computer = DetailedAgainstReference(reference_data['parabolic_disc'],
 #                                                             reference_data['prolongator'],
 #                                                             level_data['elliptic_disc'],
-#                                                             partial(reference_data['bochner_norms']['elliptic'], mu=mu))
+#                                                             partial(reference_data['bochner_norms']['elliptic_penalty'], mu=mu))
 #         return reference_error_computer.estimate(level_data['parabolic_disc'].solve(mu), mu, level_data['parabolic_disc'])
 
 #     def estimate_error(level_data, mu):
 #         detailed_estimator = DetailedAgainstWeak(level_data['example'], level_data['wrapper'],
-#                                                  level_data['bochner_norms']['elliptic'], level_data['space_products']['l2'],
+#                                                  level_data['bochner_norms']['elliptic_penalty'], level_data['space_products']['l2'],
 #                                                  config['end_time'],
 #                                                  level_data['mu_min'], level_data['mu_max'], level_data['mu_hat'],
 #                                                  level_data['mu_bar'], level_data['mu_tilde'])
@@ -160,7 +160,7 @@ training_samples = list(parabolic_disc.parameter_space.sample_uniformly(config['
 #     parabolic_disc.visualize(U, filename='sample_solution_{}'.format(mu_str))
 
 logger.info('estimating discretization errors ...')
-detailed_data['estimator'] = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic'], space_products['l2'],
+detailed_data['estimator'] = DetailedAgainstWeak(example, wrapper, bochner_norms['elliptic_penalty'], space_products['l2'],
                                                  config['end_time'], mu_min, mu_max, mu_hat, mu_bar, mu_tilde)
 estimates = [detailed_data['estimator'].estimate(parabolic_disc.solve(parabolic_disc.parse_parameter(mu)),
                                                  parabolic_disc.parse_parameter(mu),
@@ -221,7 +221,7 @@ for mu in test_samples:
 reference_error_computer = DetailedAgainstReference(parabolic_disc_ref,
                                                     prolongator,
                                                     elliptic_disc,
-                                                    partial(bochner_norms_ref['elliptic'], mu=detailed_data['mu_bar']))
+                                                    partial(bochner_norms_ref['elliptic_penalty'], mu=detailed_data['mu_bar']))
 max_ests = []
 max_errs = []
 for rd, rc in zip(rds, rcs):
