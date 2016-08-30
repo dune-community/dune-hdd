@@ -20,7 +20,7 @@ from pymor.discretizations.basic import InstationaryDiscretization
 from pymor.operators.constructions import FixedParameterOperator, LincombOperator
 from pymor.operators.numpy import NumpyMatrixOperator
 from pymor.playground.algorithms.blockbasisextension import pod_block_basis_extension
-from pymor.playground.operators.block import BlockOperator
+from pymor.operators.block import BlockOperator
 from pymor.playground.reductors.block import GenericBlockRBReconstructor
 from pymor.reductors.basic import reduce_generic_rb
 from pymor.vectorarrays.block import BlockVectorArray
