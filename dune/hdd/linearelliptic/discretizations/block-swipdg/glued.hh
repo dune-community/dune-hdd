@@ -173,9 +173,9 @@ public:
             auto outside_inside_pattern = create_coupling_pattern(outside_inside_coupling, outer_test_space, inner_ansatz_space);
             this->outside_inside_patterns_[neighboring_subomain].insert(std::make_pair(subdomain, outside_inside_pattern));
             // assemble
-            auto coupling_assembler = make_coupling_assembler(inner_test_space, inner_ansatz_space,
-                                                              outer_test_space, outer_ansatz_space,
-                                                              inside_outside_coupling);
+            auto coupling_assembler = make_coupling_assembler(inside_outside_coupling,
+                                                              inner_test_space, inner_ansatz_space,
+                                                              outer_test_space, outer_ansatz_space);
             this->assemble_coupling_contributions(subdomain, neighboring_subomain, coupling_assembler);
           } // if (subdomain < neighboring_subomain)
         } // if (!intersection.boundary() && intersection.neighbor())
@@ -322,137 +322,36 @@ private:
 
   template <class CouplingGlueType>
   class CouplingAssembler
+      : public BaseType::template CouplingAssemblerBase<typename CouplingGlueType::Intersection>
   {
-    typedef Dune::DynamicMatrix< R > LocalMatrixType;
-    typedef Dune::DynamicVector< R > LocalVectorType;
-    typedef std::vector< std::vector< LocalMatrixType > > LocalMatricesContainerType;
-    typedef std::vector< std::vector< LocalVectorType > > LocalVectorsContainerType;
-    typedef std::vector< Dune::DynamicVector< size_t > > IndicesContainer;
-
-    typedef typename CouplingGlueType::Intersection IntersectionType;
-
-    class LocalCodim1MatrixAssemblerApplication
-    {
-    public:
-      virtual ~LocalCodim1MatrixAssemblerApplication(){}
-
-      virtual void apply(const LocalTestSpaceType& /*inner_test_space*/,
-                         const LocalAnsatzSpaceType& /*inner_ansatz_space*/,
-                         const LocalTestSpaceType& /*outer_test_space*/,
-                         const LocalAnsatzSpaceType& /*outer_ansatz_space*/,
-                         const IntersectionType& /*_intersection*/,
-                         LocalMatricesContainerType& /*_localMatricesContainer*/,
-                         IndicesContainer& /*indicesContainer*/) const = 0;
-
-      virtual std::vector< size_t > numTmpObjectsRequired() const = 0;
-    };
-
-    template< class LocalAssemblerType, class M >
-    class LocalCodim1MatrixAssemblerWrapper
-      : public LocalCodim1MatrixAssemblerApplication
-    {
-    public:
-      LocalCodim1MatrixAssemblerWrapper(const LocalAssemblerType& localAssembler,
-                                        Dune::Stuff::LA::MatrixInterface< M >& in_in_matrix,
-                                        Dune::Stuff::LA::MatrixInterface< M >& in_out_matrix,
-                                        Dune::Stuff::LA::MatrixInterface< M >& out_in_matrix,
-                                        Dune::Stuff::LA::MatrixInterface< M >& out_out_matrix)
-        : localMatrixAssembler_(localAssembler)
-        , in_in_matrix_(in_in_matrix)
-        , out_out_matrix_(out_out_matrix)
-        , in_out_matrix_(in_out_matrix)
-        , out_in_matrix_(out_in_matrix)
-      {}
-
-      virtual void apply(const LocalTestSpaceType& inner_test_space,
-                         const LocalAnsatzSpaceType& inner_ansatz_space,
-                         const LocalTestSpaceType& outer_test_space,
-                         const LocalAnsatzSpaceType& outer_ansatz_space,
-                         const IntersectionType& intersection,
-                         LocalMatricesContainerType& localMatricesContainer,
-                         IndicesContainer& indicesContainer) const
-      {
-        localMatrixAssembler_.assembleLocal(inner_test_space, inner_ansatz_space,
-                                            outer_test_space, outer_ansatz_space,
-                                            intersection,
-                                            in_in_matrix_, out_out_matrix_, in_out_matrix_, out_in_matrix_,
-                                            localMatricesContainer, indicesContainer);
-      }
-
-      virtual std::vector< size_t > numTmpObjectsRequired() const
-      {
-        return localMatrixAssembler_.numTmpObjectsRequired();
-      }
-
-    private:
-      const LocalAssemblerType& localMatrixAssembler_;
-      Dune::Stuff::LA::MatrixInterface< M >& in_in_matrix_;
-      Dune::Stuff::LA::MatrixInterface< M >& out_out_matrix_;
-      Dune::Stuff::LA::MatrixInterface< M >& in_out_matrix_;
-      Dune::Stuff::LA::MatrixInterface< M >& out_in_matrix_;
-    }; // class LocalCodim1MatrixAssemblerWrapper
-
+    typedef typename BaseType::template CouplingAssemblerBase<typename CouplingGlueType::Intersection>
+      CouplingAssemblerBaseType;
   public:
-    CouplingAssembler(const LocalTestSpaceType& inner_test_space,
-                      const LocalAnsatzSpaceType& inner_ansatz_space,
-                      const LocalTestSpaceType& outer_test_space,
-                      const LocalAnsatzSpaceType& outer_ansatz_space,
-                      const CouplingGlueType& coupling_glue)
-      : innerTestSpace_(inner_test_space)
-      , innerAnsatzSpace_(inner_ansatz_space)
-      , outerTestSpace_(outer_test_space)
-      , outerAnsatzSpace_(outer_ansatz_space)
+    using typename CouplingAssemblerBaseType::LocalMatrixType;
+
+    template <class... Args>
+    CouplingAssembler(const CouplingGlueType& coupling_glue, Args&& ...args)
+      : CouplingAssemblerBaseType(std::forward< Args >(args)...)
       , coupling_glue_(coupling_glue)
     {}
-
-    ~CouplingAssembler()
-    {
-      clearLocalAssemblers();
-    }
-
-    void clearLocalAssemblers()
-    {
-      for (auto& element: localCodim1MatrixAssemblers_)
-        delete element;
-    }
-
-    template< class L, class M >
-    void addLocalAssembler(const GDT::LocalAssembler::Codim1CouplingMatrix< L >& localAssembler,
-                           Dune::Stuff::LA::MatrixInterface< M >& in_in_matrix,
-                           Dune::Stuff::LA::MatrixInterface< M >& in_out_matrix,
-                           Dune::Stuff::LA::MatrixInterface< M >& out_in_matrix,
-                           Dune::Stuff::LA::MatrixInterface< M >& out_out_matrix)
-    {
-      assert(in_in_matrix.rows() == innerTestSpace_.mapper().size());
-      assert(in_in_matrix.cols() == innerAnsatzSpace_.mapper().size());
-      assert(in_out_matrix.rows() == innerTestSpace_.mapper().size());
-      assert(in_out_matrix.cols() == outerAnsatzSpace_.mapper().size());
-      assert(out_in_matrix.rows() == outerTestSpace_.mapper().size());
-      assert(out_in_matrix.cols() == innerAnsatzSpace_.mapper().size());
-      assert(out_out_matrix.rows() == outerTestSpace_.mapper().size());
-      assert(out_out_matrix.cols() == outerAnsatzSpace_.mapper().size());
-      localCodim1MatrixAssemblers_.push_back(
-            new LocalCodim1MatrixAssemblerWrapper< GDT::LocalAssembler::Codim1CouplingMatrix< L >, M >(
-              localAssembler, in_in_matrix, in_out_matrix, out_in_matrix, out_out_matrix));
-    }
 
     void assemble() const
     {
       // only do something, if there are local assemblers
-      if (localCodim1MatrixAssemblers_.size() > 0) {
+      if (this->localCodim1MatrixAssemblers_.size() > 0) {
         // common tmp storage for all entities
         // * for the matrix assemblers
         std::vector< size_t > numberOfTmpMatricesNeeded(2, 0);
-        for (auto& localCodim1MatrixAssembler : localCodim1MatrixAssemblers_) {
+        for (auto& localCodim1MatrixAssembler : this->localCodim1MatrixAssemblers_) {
           const auto tmp = localCodim1MatrixAssembler->numTmpObjectsRequired();
           assert(tmp.size() == 2);
           numberOfTmpMatricesNeeded[0] = std::max(numberOfTmpMatricesNeeded[0], tmp[0]);
           numberOfTmpMatricesNeeded[1] = std::max(numberOfTmpMatricesNeeded[1], tmp[1]);
         }
-        const size_t maxLocalSize = std::max(innerTestSpace_.mapper().maxNumDofs(),
-                                             std::max(innerAnsatzSpace_.mapper().maxNumDofs(),
-                                                      std::max(outerTestSpace_.mapper().maxNumDofs(),
-                                                               outerAnsatzSpace_.mapper().maxNumDofs())));
+        const size_t maxLocalSize = std::max(this->innerTestSpace_.mapper().maxNumDofs(),
+                                             std::max(this->innerAnsatzSpace_.mapper().maxNumDofs(),
+                                                      std::max(this->outerTestSpace_.mapper().maxNumDofs(),
+                                                               this->outerAnsatzSpace_.mapper().maxNumDofs())));
         std::vector< LocalMatrixType > tmpLocalAssemblerMatrices( numberOfTmpMatricesNeeded[0],
                                                                   LocalMatrixType(maxLocalSize,
                                                                                   maxLocalSize,
@@ -478,9 +377,9 @@ private:
              ++coupling_intersection_it) {
           const auto& intersection = *coupling_intersection_it;
           // call local matrix assemblers
-          for (auto& localCodim1MatrixAssembler : localCodim1MatrixAssemblers_) {
-            localCodim1MatrixAssembler->apply(innerTestSpace_, innerAnsatzSpace_,
-                                              outerTestSpace_, outerAnsatzSpace_,
+          for (auto& localCodim1MatrixAssembler : this->localCodim1MatrixAssemblers_) {
+            localCodim1MatrixAssembler->apply(this->innerTestSpace_, this->innerAnsatzSpace_,
+                                              this->outerTestSpace_, this->outerAnsatzSpace_,
                                               intersection,
                                               tmpLocalMatricesContainer, tmpIndices);
           }
@@ -489,22 +388,17 @@ private:
     } // void assemble() const
 
   private:
-    const LocalTestSpaceType& innerTestSpace_;
-    const LocalAnsatzSpaceType& innerAnsatzSpace_;
-    const LocalTestSpaceType& outerTestSpace_;
-    const LocalAnsatzSpaceType& outerAnsatzSpace_;
-    const CouplingGlueType coupling_glue_;
-    std::vector< LocalCodim1MatrixAssemblerApplication* > localCodim1MatrixAssemblers_;
+    const CouplingGlueType& coupling_glue_;
   }; // class CouplingAssembler
 
   template <class CouplingGlueType>
-  CouplingAssembler<CouplingGlueType> make_coupling_assembler(const LocalTestSpaceType& innr_tst_spc,
+  CouplingAssembler<CouplingGlueType> make_coupling_assembler(const CouplingGlueType& coupling_glue,
+                                                              const LocalTestSpaceType& innr_tst_spc,
                                                               const LocalAnsatzSpaceType& innr_anstz_spc,
                                                               const LocalTestSpaceType& outr_tst_spc,
-                                                              const LocalAnsatzSpaceType& outr_anstz_spc,
-                                                              const CouplingGlueType& coupling_glue) const
+                                                              const LocalAnsatzSpaceType& outr_anstz_spc) const
   {
-    return CouplingAssembler<CouplingGlueType>(innr_tst_spc, innr_anstz_spc, outr_tst_spc, outr_anstz_spc, coupling_glue);
+    return CouplingAssembler<CouplingGlueType>(coupling_glue, innr_tst_spc, innr_anstz_spc, outr_tst_spc, outr_anstz_spc);
   }
 
   template <class CouplingGlueType, class InnerTestSpaceType, class OuterAnsatzSpaceType>
