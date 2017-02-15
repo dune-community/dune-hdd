@@ -270,15 +270,8 @@ private:
     } // void assemble() const
 
   private:
-//    using BaseType::this->innerTestSpace_;
-//    using BaseType::this->innerAnsatzSpace_;
-//    using BaseType::this->outerTestSpace_;
-//    using BaseType::this->outerAnsatzSpace_;
-//    using BaseType::this->localCodim1MatrixAssemblers_;
-
     const CouplingGridPartType& coupling_grid_part_;
   }; // class CouplingAssembler
-
 
   using BaseType::local_grids_provider_;
 }; // DefaultMultiscaleGrid
