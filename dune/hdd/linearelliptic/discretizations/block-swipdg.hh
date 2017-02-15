@@ -547,47 +547,6 @@ private:
   std::vector< std::map< size_t, std::shared_ptr< AffinelyDecomposedMatrixType > > > outside_inside_matrices_;
 }; // BlockSWIPDG
 
-
-#if HAVE_ALUGRID && HAVE_DUNE_FEM
-# if HAVE_DUNE_ISTL
-
-extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
-                                   double,
-                                   1,
-                                   1,
-                                   Stuff::LA::ChooseBackend::istl_sparse >;
-
-#   if HAVE_MPI
-
-extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
-                                   double,
-                                   1,
-                                   1,
-                                   Stuff::LA::ChooseBackend::istl_sparse >;
-
-#   endif // HAVE_MPI
-# endif // HAVE_DUNE_ISTL
-# if HAVE_EIGEN
-
-extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, No_Comm >,
-                                   double,
-                                   1,
-                                   1,
-                                   Stuff::LA::ChooseBackend::eigen_sparse >;
-
-#   if HAVE_MPI
-
-extern template class BlockSWIPDG< ALUGrid< 2, 2, simplex, conforming, MPI_Comm >,
-                                   double,
-                                   1,
-                                   1,
-                                   Stuff::LA::ChooseBackend::eigen_sparse >;
-
-#   endif // HAVE_MPI
-# endif // HAVE_EIGEN
-#endif // HAVE_ALUGRID && HAVE_DUNE_FEM && HAVE_DUNE_ISTL
-
-
 template< Stuff::LA::ChooseBackend la, class G, class R, int r = 1, int p = 1 >
 BlockSWIPDG< G, R, r, p, la > make_block_swipdg(const grid::Multiscale::ProviderInterface< G >& grid_provider,
                                                 const DSC::Configuration& boundary_info,
@@ -604,5 +563,7 @@ BlockSWIPDG< G, R, r, p, la > make_block_swipdg(const grid::Multiscale::Provider
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
+
+#include "block-swipdg.hxx"
 
 #endif // DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_BLOCK_SWIPDG_HH

@@ -6,8 +6,6 @@
 #ifndef DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_HXX
 #define DUNE_HDD_LINEARELLIPTIC_DISCRETIZATIONS_SWIPDG_HXX
 
-#include "swipdg.hh"
-
 namespace Dune {
 namespace HDD {
 namespace LinearElliptic {
