@@ -9,6 +9,7 @@ DEPENDENCYCHECK()
 BEGIN_TESTCASES(dunehdd)
 END_TESTCASES()
 
+include(AddMETISFlags)
 # test target libs
 add_library(lib_test_OS2015_SISC__6_1__academic_example__estimator_study
             STATIC
@@ -30,6 +31,7 @@ foreach(target
         lib_test_OS2014_FVCA7__estimator_study)
   add_dune_alugrid_flags(${target})
   add_dune_mpi_flags(${target})
+  add_dune_metis_flags(${target})
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})
   add_dune_tbb_flags(${target})
@@ -43,7 +45,6 @@ target_link_libraries(test_OS2015_SISC__6_1__multiscale_example__estimator_study
                       lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study)
 target_link_libraries(test_OS2014_FVCA7__estimator_study
                       lib_test_OS2014_FVCA7__estimator_study)
-
 # clang analizer targets (should be guarded)
 #add_analyze(OS2014.cc)
 #target_link_libraries(analyze_OS2014.cc lib_test_OS2014)
