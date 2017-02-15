@@ -76,9 +76,9 @@ public:
     if (type == "L2")
       return {1.83e-02, 4.53e-03, 1.12e-03, 2.78e-04};
     else if (type == "H1_semi")
-      return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
+      return {3.28e-01, 1.39e-01, 6.98e-02, 3.50e-02};
     else if (type == "energy")
-      return {3.28e-01, 1.62e-01, 8.04e-02, 4.01e-02};
+      return {2.77e-01, 1.39e-01, 6.98e-02, 3.50e-02};
     else if (type == "eta_NC_ESV2007")
       return {1.66e-1, 7.89e-2, 3.91e-2, 1.95e-2};
     else if (type == "eta_R_ESV2007")

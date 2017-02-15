@@ -30,16 +30,18 @@
 # include "linearelliptic-swipdg.hh"
 # include "linearelliptic-block-swipdg.hh"
 
+#include <dune/grid/spgrid.hh>
 
 using namespace Dune;
 using namespace HDD;
 
+//typedef ALUGrid< 2, 2, simplex, conforming, MPI_Comm > GridType;
+//typedef YaspGrid< 2 > GridType;
+typedef SPGrid< double, 2, SPIsotropicRefinement, MPI_Comm > GridType ;
 
 class OS2014_FVCA7__estimator_study
   : public ::testing::Test
 {
-  typedef ALUGrid< 2, 2, simplex, conforming > GridType;
-
   typedef LinearElliptic::TestCases::OS2014< GridType >           TestCaseType;
   typedef LinearElliptic::TestCases::OS2014Multiscale< GridType > BlockTestCaseType;
 
@@ -86,10 +88,10 @@ TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__64_sub
 
 
 extern template class LinearElliptic::Tests::SWIPDGStudyExpectations
-    < LinearElliptic::TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+    < LinearElliptic::TestCases::OS2014< GridType >, 1 >;
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations
-    < LinearElliptic::TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
+    < LinearElliptic::TestCases::OS2014Multiscale< GridType >, 1 >;
 
 
 #else // HAVE_DUNE_GRID_MULTISCALE && HAVE_DUNE_FEM && HAVE_DUNE_ISTL && HAVE_ALUGRID
