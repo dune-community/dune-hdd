@@ -45,13 +45,13 @@ class ContainerBasedDefault;
 namespace internal {
 
 
-template< class MatrixImp, class VectorImp >
+template< class MatrixImp, class VectorImp, class CommunicatorType >
 class ContainerBasedDefaultTraits
 {
 public:
   typedef MatrixImp MatrixType;
   typedef VectorImp VectorType;
-  typedef Pymor::Operators::LinearAffinelyDecomposedContainerBased< MatrixType, VectorType > OperatorType;
+  typedef Pymor::Operators::LinearAffinelyDecomposedContainerBased< MatrixType, VectorType, CommunicatorType > OperatorType;
   typedef OperatorType ProductType;
   typedef Pymor::Functionals::LinearAffinelyDecomposedVectorBased< VectorType > FunctionalType;
 }; // class ContainerBasedDefaultTraits
@@ -240,7 +240,7 @@ public:
 protected:
   typedef Pymor::LA::AffinelyDecomposedContainer< MatrixType > AffinelyDecomposedMatrixType;
   typedef Pymor::LA::AffinelyDecomposedContainer< VectorType > AffinelyDecomposedVectorType;
-  typedef Stuff::LA::Solver< MatrixType > SolverType;
+  typedef Stuff::LA::Solver< MatrixType, typename TestSpaceType::CommunicatorType > SolverType;
 
 public:
   static std::string static_id() { return "hdd.linearelliptic.discretizations.containerbased"; }
@@ -289,7 +289,7 @@ public:
   OperatorType get_operator() const
   {
     assert_everything_is_ready();
-    return OperatorType(*matrix_);
+    return OperatorType(BaseType::ansatz_space().communicator(), *matrix_);
   }
 
   FunctionalType get_rhs() const
@@ -370,7 +370,7 @@ public:
                                                          : *(matrix.affine_part());
       tmp_system_matrix.unit_row(0);
       tmp_rhs.set_entry(0, 0.0);
-      SolverType(tmp_system_matrix).apply(tmp_rhs, vector, options);
+      SolverType(tmp_system_matrix, BaseType::ansatz_space().communicator()).apply(tmp_rhs, vector, options);
       vector -= vector.mean();
     } else {
       // compute right hand side vector
@@ -383,7 +383,7 @@ public:
         rhs_vector = std::make_shared< const VectorType >(rhs.freeze_parameter(mu_rhs));
       }
       logger.debug() << "computing system matrix..." << std::endl;
-      const OperatorType lhsOperator(matrix);
+      const OperatorType lhsOperator(BaseType::ansatz_space().communicator(), matrix);
       if (lhsOperator.parametric()) {
         const Pymor::Parameter mu_lhs = this->map_parameter(mu, "lhs");
         const auto frozenOperator = lhsOperator.freeze_parameter(mu_lhs);

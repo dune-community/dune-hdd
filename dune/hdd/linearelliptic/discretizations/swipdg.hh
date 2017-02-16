@@ -78,7 +78,8 @@ template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, in
           Stuff::LA::ChooseBackend la_backend >
 class SWIPDGTraits
   : public internal::ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
-                                                  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType>
+                                                  typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType,
+                                                  typename GDT::Spaces::DGProvider< GridImp, layer, space_backend, polynomialOrder, RangeFieldImp, rangeDim >::Type::CommunicatorType >
 {
 public:
   typedef SWIPDG< GridImp, layer, RangeFieldImp, rangeDim, polynomialOrder, space_backend, la_backend > derived_type;
@@ -96,6 +97,7 @@ public:
   typedef typename SpaceProvider::Type TestSpaceType;
   typedef TestSpaceType AnsatzSpaceType;
   typedef typename TestSpaceType::GridViewType GridViewType;
+  typedef typename AnsatzSpaceType::CommunicatorType CommunicatorType;
 }; // class SWIPDGTraits
 
 

@@ -145,7 +145,8 @@ protected:
 template< class GridImp, class RangeFieldImp, int rangeDim, int polynomialOrder, Stuff::LA::ChooseBackend la_backend >
 class BlockSWIPDGTraits
   : public ContainerBasedDefaultTraits< typename Stuff::LA::Container< RangeFieldImp, la_backend >::MatrixType,
-                                        typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType >
+                                        typename Stuff::LA::Container< RangeFieldImp, la_backend >::VectorType,
+                                        typename LocalDiscretizationsContainer< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend >::AnsatzSpaceType::CommunicatorType   >
 {
 public:
   typedef BlockSWIPDG< GridImp, RangeFieldImp, rangeDim, polynomialOrder, la_backend > derived_type;
