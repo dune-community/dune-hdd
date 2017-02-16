@@ -45,7 +45,7 @@ class OS2014_FVCA7__estimator_study
   typedef LinearElliptic::TestCases::OS2014< GridType >           TestCaseType;
   typedef LinearElliptic::TestCases::OS2014Multiscale< GridType > BlockTestCaseType;
 
-  static const GDT::ChooseSpaceBackend  space_backend = GDT::ChooseSpaceBackend::fem;
+  static const GDT::ChooseSpaceBackend  space_backend = GDT::ChooseSpaceBackend::pdelab;
   static const Stuff::LA::ChooseBackend la_backend    = Stuff::LA::ChooseBackend::istl_sparse;
 
   typedef LinearElliptic::Tests::SWIPDGStudy< TestCaseType, 1, space_backend, la_backend > EocStudyType;
@@ -73,19 +73,19 @@ protected:
 TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_fine_grid) {
   ESV2007_fine_triangulation();
 }
-TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__01_subdomain) {
-  BlockSWIPDG_coarse_triangulation("[1 1 1]");
-}
-TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__04_subdomain) {
-  BlockSWIPDG_coarse_triangulation("[2 2 1]");
-}
-TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__16_subdomain) {
-  BlockSWIPDG_coarse_triangulation("[4 4 1]");
-}
-TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__64_subdomain) {
-  BlockSWIPDG_coarse_triangulation("[8 8 1]");
-}
-
+//TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__01_subdomain) {
+//  BlockSWIPDG_coarse_triangulation("[1 1 1]");
+//}
+//TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__04_subdomain) {
+//  BlockSWIPDG_coarse_triangulation("[2 2 1]");
+//}
+//TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__16_subdomain) {
+//  BlockSWIPDG_coarse_triangulation("[4 4 1]");
+//}
+//TEST_F(OS2014_FVCA7__estimator_study, figure_5__estimator_on_coarse_grid__64_subdomain) {
+//  BlockSWIPDG_coarse_triangulation("[8 8 1]");
+//}
+//
 
 extern template class LinearElliptic::Tests::SWIPDGStudyExpectations
     < LinearElliptic::TestCases::OS2014< GridType >, 1 >;
