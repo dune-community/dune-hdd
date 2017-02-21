@@ -24,6 +24,7 @@
 
 # include <dune/stuff/common/print.hh>
 # include <dune/stuff/common/float_cmp.hh>
+#include <dune/stuff/test/common.hh>
 
 # include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
@@ -55,10 +56,10 @@ protected:
   void ESV2007_fine_triangulation() const
   {
     TestCaseType test_case;
-    test_case.print_header(DSC_LOG_INFO);
-    DSC_LOG_INFO << std::endl;
+    test_case.print_header(DSC_LOG_INFO_0);
+    DSC_LOG_INFO_0 << std::endl;
     EocStudyType eoc_study(test_case, {"energy", "eta_ESV2007"});
-    Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run_eoc(DSC_LOG_INFO));
+    Stuff::Test::check_eoc_study_for_success(eoc_study, eoc_study.run_eoc(DSC_LOG_INFO_0));
   } // ... ESV2007_fine_triangulation(...)
 
   void BlockSWIPDG_coarse_triangulation(const std::string partitioning) const

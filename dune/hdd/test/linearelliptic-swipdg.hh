@@ -56,7 +56,7 @@ template< class TestCaseType,
 #if HAVE_DUNE_FEM
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
 #else
-# error No space backend available!
+          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
 #endif
           Stuff::LA::ChooseBackend la_backend = Stuff::LA::default_sparse_backend >
 class SWIPDGStudy
@@ -263,17 +263,19 @@ private:
     return {"L2", "H1_semi", "energy"};
   }
 
-  virtual double compute_norm(const GridViewType& grid_view,
+  virtual double compute_norm(const int level,
                               const FunctionType& function,
                               const std::string type) const override final
   {
     using namespace GDT;
+    auto grid_view = StudyBaseType::test_case_.interior_grid_view(level);
+    typedef decltype(grid_view) ViewType;
     typedef typename TestCaseType::ProblemType::DiffusionFactorType::NonparametricType DiffusionFactorType;
     typedef typename TestCaseType::ProblemType::DiffusionTensorType::NonparametricType DiffusionTensorType;
     if (type == "L2") {
-      return Products::L2< GridViewType >(grid_view).induced_norm(function);
+      return Products::L2<ViewType>(grid_view).induced_norm(function);
     } else if (type == "H1_semi") {
-      return Products::H1Semi< GridViewType >(grid_view).induced_norm(function);
+      return Products::H1Semi<ViewType>(grid_view).induced_norm(function);
     } else if (type == "energy") {
       const auto& diffusion_factor = *(this->test_case_.problem().diffusion_factor());
       assert(!diffusion_factor.parametric());
@@ -281,7 +283,7 @@ private:
       const auto& diffusion_tensor = *(this->test_case_.problem().diffusion_tensor());
       assert(!diffusion_tensor.parametric());
       assert(diffusion_tensor.has_affine_part());
-      Products::Elliptic< GridViewType, DiffusionFactorType, double, DiffusionTensorType >
+      Products::Elliptic< ViewType, DiffusionFactorType, double, DiffusionTensorType >
           elliptic_product(grid_view, *diffusion_factor.affine_part(), *diffusion_tensor.affine_part());
       return elliptic_product.induced_norm(function);
     } else

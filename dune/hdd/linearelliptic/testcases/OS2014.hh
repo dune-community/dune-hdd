@@ -120,17 +120,20 @@ class OS2014
   typedef Base< GridType >                  TestCaseBaseType;
 
 private:
-  static std::shared_ptr< GridType > create_initial_grid(const int refinements)
+  static std::shared_ptr< GridType > create_initial_grid(const int refinements, const int start_cell_count)
   {
-    Stuff::Grid::Providers::Cube< GridType > grid_provider(-1, 1, 4);
+    Stuff::Grid::Providers::Cube< GridType > grid_provider(-1, 1, start_cell_count);
     auto grid = grid_provider.grid_ptr();
+    grid->preAdapt();
     grid->globalRefine(refinements);
+    grid->postAdapt();
+    grid->loadBalance();
     return grid;
   } // ... create_initial_grid(...)
 
 public:
-  OS2014(const size_t num_refinements = OS2014BaseType::default_num_refinements)
-    : TestCaseBaseType(create_initial_grid(OS2014BaseType::initial_refinements()), num_refinements)
+  OS2014(const size_t num_refinements = OS2014BaseType::default_num_refinements, const int start_cell_count = 4)
+    : TestCaseBaseType(create_initial_grid(OS2014BaseType::initial_refinements(), start_cell_count), num_refinements)
   {}
 }; // class OS2014
 

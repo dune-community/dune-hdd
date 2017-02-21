@@ -92,16 +92,22 @@ public:
   typedef typename GridType::ctype                       DomainFieldType;
   static const unsigned int                              dimDomain = GridType::dimension;
 
+  void grid_global_refine(int steps) {
+    this->grid().preAdapt();
+    this->grid().globalRefine(steps);
+    this->grid().postAdapt();
+    this->grid().loadBalance();
+  }
   Base(std::shared_ptr< GridType > grd, size_t num_refinements)
     : BaseType(grd)
   {
     levels_.push_back(this->grid().maxLevel());
     static const int refine_steps_for_half = DGFGridInfo< GridType >::refineStepsForHalf();
     for (size_t rr = 0; rr < num_refinements; ++rr) {
-      this->grid().globalRefine(refine_steps_for_half);
+      grid_global_refine(refine_steps_for_half);
       levels_.push_back(this->grid().maxLevel());
     }
-    this->grid().globalRefine(refine_steps_for_half);
+    grid_global_refine(refine_steps_for_half);
     reference_level_ = this->grid().maxLevel();
   } // Base(...)
 
@@ -125,6 +131,16 @@ public:
   typename BaseType::LevelGridViewType reference_grid_view() const
   {
     return this->level_view(reference_level_);
+  }
+
+  typename BaseType::InteriorLevelGridViewType interior_reference_grid_view() const
+  {
+    return this->interior_grid_view(reference_level());
+  }
+
+  typename BaseType::InteriorLevelGridViewType interior_grid_view(int level) const
+  {
+    return this->grid().template levelGridView<InteriorBorder_Partition>(level);
   }
 
 private:

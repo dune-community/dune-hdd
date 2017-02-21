@@ -14,7 +14,6 @@
 #include <dune/common/timer.hh>
 
 #include <dune/fem/misc/gridwidth.hh>
-
 #include <dune/stuff/common/memory.hh>
 #include <dune/stuff/common/convergence-study.hh>
 #include <dune/stuff/grid/layers.hh>
@@ -108,7 +107,7 @@ public:
           test_case_.exact_solution().visualize(test_case_.reference_grid_view(),
                                                 visualize_prefix_ + "_exact_solution");
         }
-        return compute_norm(test_case_.reference_grid_view(), test_case_.exact_solution(), type);
+        return compute_norm(test_case_.reference_level(), test_case_.exact_solution(), type);
       } else {
         compute_reference_solution();
         assert(reference_discretization_);
@@ -116,7 +115,7 @@ public:
         const ConstDiscreteFunctionType reference_solution(reference_discretization_->ansatz_space(),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm(test_case_.reference_grid_view(), reference_solution, type);
+        return compute_norm(test_case_.reference_level(), reference_solution, type);
       }
     } else
       return 1.0;
@@ -126,8 +125,7 @@ public:
   {
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
-    auto size = test_case_.grid().size(level, 0);
-    return test_case_.grid().comm().sum(size);
+    return DSG::parallel_size(test_case_.grid(), level, 0);
   } // ... current_grid_size(...)
 
   virtual double current_grid_width() const override final
@@ -135,7 +133,8 @@ public:
     assert(current_refinement_ <= num_refinements());
     const int level = test_case_.level_of(current_refinement_);
     const auto grid_part = test_case_.template level< Stuff::Grid::ChoosePartView::view >(level);
-    return DSG::dimensions(grid_part).entity_width.max();
+    auto max = DSG::dimensions(grid_part).entity_width.max();
+    return test_case_.grid().comm().max(max);
   } // ... current_grid_width(...)
 
   virtual double compute_on_current_refinement() override final
@@ -154,7 +153,8 @@ public:
       current_discretization_->init();
       current_solution_vector_on_level_
           = Stuff::Common::make_unique< VectorType >(current_discretization_->create_vector());
-      current_discretization_->solve(*current_solution_vector_on_level_);
+      auto options = DSC_CONFIG.sub("global_solver");
+      current_discretization_->solve(options, *current_solution_vector_on_level_);
       time_to_solution_ = timer.elapsed();
       const ConstDiscreteFunctionType current_refinement_solution(current_discretization_->ansatz_space(),
                                                                   *current_solution_vector_on_level_,
@@ -177,6 +177,11 @@ public:
         this->test_case_.problem().visualize(current_discretization_->grid_view(),
                                              visualize_prefix_ + "_problem_" + DSC::toString(current_refinement_));
         current_refinement_solution.visualize(visualize_prefix_ + "_solution_" + DSC::toString(current_refinement_));
+        DiscreteFunctionType reference(reference_discretization_->ansatz_space(),
+                                        *reference_solution_vector_,
+                                        "solution on reference grid part");
+        DSFu::Difference<DiscreteFunctionType, DiscreteFunctionType> difference(reference, reference_refinement_solution);
+        difference.visualize(reference.space().grid_view(), visualize_prefix_ + "_difference_" + DSC::toString(current_refinement_));
       }
     }
     return time_to_solution_;
@@ -200,7 +205,11 @@ public:
                                                        "current solution");
       // compute error
       if (test_case_.provides_exact_solution()) {
-        return compute_norm(test_case_.reference_grid_view(), test_case_.exact_solution() - current_solution, type);
+        if (!visualize_prefix_.empty()) {
+          test_case_.exact_solution().visualize(test_case_.reference_grid_view(),
+                                                visualize_prefix_ + "_exact_solution");
+        }
+        return compute_norm(test_case_.reference_level(), test_case_.exact_solution() - current_solution, type);
       } else {
         // get reference solution
         compute_reference_solution();
@@ -209,7 +218,7 @@ public:
         const ConstDiscreteFunctionType reference_solution(reference_discretization_->ansatz_space(),
                                                            *reference_solution_vector_,
                                                            "reference solution");
-        return compute_norm(test_case_.reference_grid_view(), reference_solution- current_solution, type);
+        return compute_norm(test_case_.reference_level(), reference_solution- current_solution, type);
       }
     } else {
       assert(current_solution_vector_on_level_);
@@ -241,7 +250,8 @@ protected:
                                                              test_case_.reference_level());
       reference_discretization_->init();
       reference_solution_vector_ = Stuff::Common::make_unique< VectorType >(reference_discretization_->create_vector());
-      reference_discretization_->solve(*reference_solution_vector_);
+      auto options = DSC_CONFIG.sub("global_solver");
+      reference_discretization_->solve(options, *reference_solution_vector_);
       reference_solution_computed_ = true;
       // visualize
       if (!visualize_prefix_.empty()) {
@@ -266,7 +276,7 @@ protected:
 
   virtual double estimate(const VectorType& vector, const std::string type) const = 0;
 
-  virtual double compute_norm(const GridViewType& grid_view,
+  virtual double compute_norm(const int level,
                               const FunctionType& function,
                               const std::string type) const = 0;
 
@@ -398,6 +408,7 @@ public:
     assert(current_refinement_ <= num_refinements());
     const auto grid_part
         = test_case_.level_provider(current_refinement_)->template global< Stuff::Grid::ChoosePartView::part >();
+//    return DSG::dimensions(grid_part).entity_width.avg();
     return Fem::GridWidth::calcGridWidth(grid_part);
   } // ... current_grid_width(...)
 
