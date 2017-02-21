@@ -24,8 +24,13 @@ add_library(lib_test_OS2014_FVCA7__estimator_study
             EXCLUDE_FROM_ALL
             linearelliptic-swipdg-expectations_os2014_2daluconform.cxx
             linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx)
-
+add_library(lib_test_OS2014_FVCA7__testbed
+            STATIC
+            EXCLUDE_FROM_ALL
+            linearelliptic-swipdg-expectations_os2014_2daluconform.cxx
+            linearelliptic-block-swipdg-expectations_os2014_2daluconform.cxx)
 foreach(target
+        lib_test_OS2014_FVCA7__testbed
         lib_test_OS2015_SISC__6_1__academic_example__estimator_study
         lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study
         lib_test_OS2014_FVCA7__estimator_study)
@@ -45,6 +50,8 @@ target_link_libraries(test_OS2015_SISC__6_1__multiscale_example__estimator_study
                       lib_test_OS2015_SISC__6_1__multiscale_example__estimator_study)
 target_link_libraries(test_OS2014_FVCA7__estimator_study
                       lib_test_OS2014_FVCA7__estimator_study)
+target_link_libraries(test_OS2014_FVCA7__testbed
+                      lib_test_OS2014_FVCA7__testbed)
 # clang analizer targets (should be guarded)
 #add_analyze(OS2014.cc)
 #target_link_libraries(analyze_OS2014.cc lib_test_OS2014)

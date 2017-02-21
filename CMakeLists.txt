@@ -63,7 +63,7 @@ set_source_files_properties(${COMMON_HEADER} PROPERTIES HEADER_FILE_ONLY 1)
 
 # libs
 set(COMMON_LIBS ${DUNE_DEFAULT_LIBS})
-
+cmake_policy(SET CMP0022 OLD)
 #disable most warnings from dependent modules
 foreach(_mod ${ALL_DEPENDENCIES})
     dune_module_to_uppercase(_upper_case "${_mod}")
