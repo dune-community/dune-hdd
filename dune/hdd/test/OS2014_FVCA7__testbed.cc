@@ -10,33 +10,35 @@
 #include <dune/grid/alugrid.hh>
 #include <dune/stuff/common/disable_warnings.hh>
 #include <dune/stuff/common/reenable_warnings.hh>
-
 #include <dune/stuff/common/exceptions.hh>
-
 #include <dune/stuff/common/filesystem.hh>
 #include <dune/stuff/common/float_cmp.hh>
 #include <dune/stuff/common/logging.hh>
 #include <dune/stuff/common/print.hh>
 #include <dune/stuff/common/profiler.hh>
 #include <dune/stuff/test/common.hh>
-
+#include <dune/grid/spgrid.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic-block-swipdg.hh"
 #include "linearelliptic-swipdg.hh"
 
-#include <dune/grid/spgrid.hh>
+#include "benchmark_util.hh"
+
 
 using namespace Dune;
 using namespace HDD;
 
 // typedef ALUGrid< 2, 2, simplex, conforming, MPI_Comm > GridType;
 // typedef YaspGrid< 2 > GridType;
-typedef SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm> GridType;
+
+
+typedef SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm> StudyGridType;
 
 class OS2014_FVCA7__estimator_study {
-  typedef LinearElliptic::TestCases::OS2014<GridType> TestCaseType;
-  typedef LinearElliptic::TestCases::OS2014Multiscale<GridType>
+
+  typedef LinearElliptic::TestCases::OS2014<StudyGridType> TestCaseType;
+  typedef LinearElliptic::TestCases::OS2014Multiscale<StudyGridType>
       BlockTestCaseType;
 
   static const GDT::ChooseSpaceBackend space_backend =
@@ -60,7 +62,7 @@ public:
   } // ... BlockSWIPDG_coarse_triangulation(...)
 
   static void ESV2007_fine_triangulation() {
-    TestCaseType test_case(DSC_CONFIG_GET("refinements", 4), DSC_CONFIG_GET("start_cell_count", 16));
+    TestCaseType test_case(DSC_CONFIG_GET("eoc_run.refinements", 4), DSC_CONFIG_GET("eoc_run.start_cell_count", 16));
     test_case.print_header(DSC_LOG_INFO_0);
     DSC_LOG_INFO_0 << std::endl;
     EocStudyType eoc_study(test_case, {"L2", "energy", "eta_ESV2007"}, std::vector<std::string>(), "OS2014");
@@ -69,11 +71,30 @@ public:
 }; // class OS2014_FVCA7__estimator_study
 
 extern template class LinearElliptic::Tests::SWIPDGStudyExpectations<
-    LinearElliptic::TestCases::OS2014<GridType>, 1>;
+    LinearElliptic::TestCases::OS2014<StudyGridType>, 1>;
 
 extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations<
-    LinearElliptic::TestCases::OS2014Multiscale<GridType>, 1>;
+    LinearElliptic::TestCases::OS2014Multiscale<StudyGridType>, 1>;
 
+
+void single_run_swipdg()
+{
+  typedef SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm> GridType;
+  typedef LinearElliptic::TestCases::OS2014<GridType> TestCaseType;
+
+  static constexpr GDT::ChooseSpaceBackend space_backend{GDT::ChooseSpaceBackend::pdelab};
+  static constexpr Stuff::LA::ChooseBackend la_backend{Stuff::LA::ChooseBackend::istl_sparse};
+  static constexpr int polOrder{1};
+  typedef typename LinearElliptic::Tests::internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type DiscretizationType;
+  TestCaseType test_case(0, DSC_CONFIG_GET("single_run.cells_per_dim", 16));
+  DSC::ScopedTiming timing("current_disc_solve");
+  DiscretizationType current_discretization(test_case, test_case.boundary_info(), test_case.problem(),
+                                               test_case.level_of(test_case.reference_level()));
+  current_discretization.init();
+  auto current_solution_vector_on_level_ = current_discretization.create_vector();
+  auto options = DSC_CONFIG.sub("global_solver");
+  current_discretization.solve(options, current_solution_vector_on_level_);
+}
 int main(int argc, char **argv) {
   try {
     DSC_CONFIG.read_command_line(argc, argv);
@@ -93,24 +114,17 @@ int main(int argc, char **argv) {
         DSC_CONFIG_GET("logging.file", std::string(argv[0]) + ".log"),
         DSC_CONFIG_GET("global.datadir", "data"),
         DSC_CONFIG_GET("logging.dir", "log" /*path below datadir*/));
-    DSC_PROFILER.setOutputdir(DSC_CONFIG_GET("global.datadir", "data"));
+    DSC_PROFILER.set_outputdir(DSC_CONFIG_GET("global.datadir", "data"));
 
     DSC_LOG_INFO_0 << DSC_CONFIG.report_string() << std::endl;
 
     DSC::TimedLogger().create(-1, -1);
-    const size_t threads =
-        DSC_CONFIG.has_key(
-            "threading.max_count") // <- doing this so complicated to
-            ? DSC_CONFIG.get<size_t>(
-                  "threading.max_count") //    silence the WARNING: ...
-#if HAVE_TBB
-            : std::thread::hardware_concurrency();
-#else
-            : 1u;
-#endif
-    DS::threadManager().set_max_threads(threads);
+    DS::threadManager().set_max_threads(1);
 
-    OS2014_FVCA7__estimator_study::ESV2007_fine_triangulation();
+    single_run_swipdg();
+    DSC_PROFILER.output_per_rank("profiler");
+    DS::mem_usage();
+    DS::dump_environment();
 
   } catch (Dune::Exception &e) {
     std::cerr << "\nDune reported error: " << e.what() << std::endl;
@@ -118,8 +132,5 @@ int main(int argc, char **argv) {
   } catch (std::exception &e) {
     std::cerr << "\n" << e.what() << std::endl;
     std::abort();
-  } catch (...) {
-    std::cerr << "Unknown exception thrown!" << std::endl;
-    std::abort();
-  } // try
+  }
 }

@@ -64,7 +64,7 @@ template< class GridImp, Stuff::Grid::ChooseLayer layer, class RangeFieldImp, in
 #if HAVE_DUNE_FEM
           GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::fem,
 #else
-# error No suitable space backend available!
+          GDT::ChooseSpaceBackend space_backend = GDT::ChooseSpaceBackend::pdelab,
 #endif
           Stuff::LA::ChooseBackend la_backend  = Stuff::LA::default_sparse_backend >
 class SWIPDG;
