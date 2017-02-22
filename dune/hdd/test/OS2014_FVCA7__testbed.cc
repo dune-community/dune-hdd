@@ -70,31 +70,49 @@ public:
   }
 }; // class OS2014_FVCA7__estimator_study
 
-extern template class LinearElliptic::Tests::SWIPDGStudyExpectations<
-    LinearElliptic::TestCases::OS2014<StudyGridType>, 1>;
-
-extern template class LinearElliptic::Tests::BlockSWIPDGStudyExpectations<
-    LinearElliptic::TestCases::OS2014Multiscale<StudyGridType>, 1>;
-
-
 void single_run_swipdg()
 {
-  typedef SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm> GridType;
-  typedef LinearElliptic::TestCases::OS2014<GridType> TestCaseType;
-
+  static constexpr int polOrder{1};
   static constexpr GDT::ChooseSpaceBackend space_backend{GDT::ChooseSpaceBackend::pdelab};
   static constexpr Stuff::LA::ChooseBackend la_backend{Stuff::LA::ChooseBackend::istl_sparse};
-  static constexpr int polOrder{1};
-  typedef typename LinearElliptic::Tests::internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type DiscretizationType;
+  using GridType = SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm>;
+  using TestCaseType = LinearElliptic::TestCases::OS2014<GridType>;
+  using DiscretizationType = typename LinearElliptic::Tests::internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type;
+
   TestCaseType test_case(0, DSC_CONFIG_GET("single_run.cells_per_dim", 16));
-  DSC::ScopedTiming timing("current_disc_solve");
-  DiscretizationType current_discretization(test_case, test_case.boundary_info(), test_case.problem(),
-                                               test_case.level_of(test_case.reference_level()));
-  current_discretization.init();
-  auto current_solution_vector_on_level_ = current_discretization.create_vector();
-  auto options = DSC_CONFIG.sub("global_solver");
-  current_discretization.solve(options, current_solution_vector_on_level_);
+  {
+    DSC::ScopedTiming timing("single_run.swipdg.solve");
+    DiscretizationType current_discretization(test_case, test_case.boundary_info(), test_case.problem(),
+                                              test_case.level_of(test_case.reference_level()));
+    current_discretization.init();
+    auto current_solution_vector_on_level_ = current_discretization.create_vector();
+    const auto solver_options = DSC_CONFIG.sub("global_solver");
+    current_discretization.solve(solver_options, current_solution_vector_on_level_);
+  }
 }
+
+void single_run_blockswipdg()
+{
+  static constexpr int polOrder{1};
+  static constexpr GDT::ChooseSpaceBackend space_backend{GDT::ChooseSpaceBackend::pdelab};
+  static constexpr Stuff::LA::ChooseBackend la_backend{Stuff::LA::ChooseBackend::istl_sparse};
+  using GridType = SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm>;
+  using TestCaseType = LinearElliptic::TestCases::OS2014Multiscale<GridType>;
+  using DiscretizationType = typename LinearElliptic::Tests::internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type;
+
+  TestCaseType test_case(DSC_CONFIG_GET("lrbms.partitioning", "[1 1 1]"), DSC_CONFIG_GET("lrbms.refinements", 0));
+  {
+    DSC::ScopedTiming timing("single_run.lrbms.solve");
+    DiscretizationType current_discretization(*test_case.reference_provider(), test_case.boundary_info(), test_case.problem());
+    auto grid_view = test_case.reference_provider()->grid().leafGridView();
+
+    current_discretization.init();
+    auto current_solution_vector_on_level_ = current_discretization.create_vector();
+    const auto solver_options = DSC_CONFIG.sub("global_solver");
+    current_discretization.solve(solver_options, current_solution_vector_on_level_);
+  }
+}
+
 int main(int argc, char **argv) {
   try {
     DSC_CONFIG.read_command_line(argc, argv);
@@ -120,8 +138,14 @@ int main(int argc, char **argv) {
 
     DSC::TimedLogger().create(-1, -1);
     DS::threadManager().set_max_threads(1);
-
-    single_run_swipdg();
+    {
+      DSC::OutputScopedTiming outs("all", DSC_LOG_INFO_0);
+      DSC_CONFIG.set("grids.total_macro_cells", 256);
+  //    single_run_swipdg();
+  //    single_run_blockswipdg();
+      OS2014_FVCA7__estimator_study::BlockSWIPDG_coarse_triangulation(DSC_CONFIG_GET("lrbms.partitioning", "[1 1 1]"));
+  //    OS2014_FVCA7__estimator_study::ESV2007_fine_triangulation();
+    }
     DSC_PROFILER.output_per_rank("profiler");
     DS::mem_usage();
     DS::dump_environment();
