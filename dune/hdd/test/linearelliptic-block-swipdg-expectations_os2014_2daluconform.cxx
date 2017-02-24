@@ -9,7 +9,7 @@
 
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
-
+#endif // HAVE_ALUGRID
 # include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 # include "linearelliptic-block-swipdg-expectations.hh"
@@ -19,12 +19,11 @@ namespace HDD {
 namespace LinearElliptic {
 
 
-typedef TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
-
 
 namespace Tests {
 
-
+#if HAVE_ALUGRID
+typedef TestCases::OS2014Multiscale< ALUGrid< 2, 2, simplex, conforming > > TestCaseType;
 template< bool anything >
 class BlockSWIPDGStudyExpectations< TestCaseType, 1, anything >
   : public internal::BlockSWIPDGStudyExpectationsBase< TestCaseType, 1 >
@@ -138,13 +137,12 @@ public:
   } // ... results(...)
 }; // BlockSWIPDGStudyExpectations
 
-
 template class BlockSWIPDGStudyExpectations< TestCaseType, 1 >;
-
+#endif // HAVE_ALUGRID
 
 } // namespace Tests
 } // namespace LinearElliptic
 } // namespace HDD
 } // namespace Dune
 
-#endif // HAVE_ALUGRID
+

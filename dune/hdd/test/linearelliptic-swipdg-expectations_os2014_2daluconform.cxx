@@ -7,7 +7,7 @@
 
 #if HAVE_ALUGRID
 # include <dune/grid/alugrid.hh>
-
+#endif
 # include <dune/stuff/test/gtest/gtest.h>
 
 # include <dune/hdd/linearelliptic/testcases/OS2014.hh>
@@ -19,7 +19,7 @@ namespace HDD {
 namespace LinearElliptic {
 namespace Tests {
 
-
+#if HAVE_ALUGRID
 template< bool anything >
 class SWIPDGStudyExpectations< TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >, 1, anything >
   : public internal::SWIPDGStudyExpectationsBase< TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >, 1 >
@@ -60,6 +60,7 @@ public:
     return {};
   } // ... results(...)
 }; // SWIPDGStudyExpectations
+#endif // HAVE_ALUGRID
 
 template class SWIPDGStudyExpectations< TestCases::OS2014< ALUGrid< 2, 2, simplex, conforming > >, 1 >;
 
@@ -110,4 +111,4 @@ template class SWIPDGStudyExpectations< TestCases::OS2014< SPGRID >, 1 >;
 } // namespace HDD
 } // namespace Dune
 
-#endif // HAVE_ALUGRID
+
