@@ -190,7 +190,10 @@ public:
     static const int refine_steps_for_half = DGFGridInfo< GridType >::refineStepsForHalf();
     for (size_t rr = 0; rr <= num_refinements; ++rr) {
       auto grid_ptr = GridProviderType(lower_left, upper_right, num_elements).grid_ptr();
+      grid_ptr->preAdapt();
       grid_ptr->globalRefine(boost::numeric_cast< int >(initial_refinements + rr*refine_steps_for_half));
+      grid_ptr->postAdapt();
+      grid_ptr->loadBalance();
       std::vector< size_t > actual_partitions = num_partitions;
       if (H_with_h)
         for (auto& element : actual_partitions)
@@ -237,6 +240,7 @@ private:
   std::vector< std::unique_ptr< MsGridProviderType > > level_providers_;
   std::unique_ptr< MsGridProviderType > reference_provider_;
 }; // class MultiscaleCubeBase
+
 
 
 #endif // HAVE_DUNE_GRID_MULTISCALE

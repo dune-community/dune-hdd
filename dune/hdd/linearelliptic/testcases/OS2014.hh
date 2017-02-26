@@ -14,6 +14,7 @@
 
 #include <dune/stuff/functions/ESV2007.hh>
 #include <dune/stuff/grid/provider/cube.hh>
+#include <dune/stuff/grid/information.hh>
 #include <dune/stuff/common/configuration.hh>
 
 #include <dune/hdd/linearelliptic/problems/ESV2007.hh>
@@ -107,7 +108,6 @@ private:
   const ExactSolutionType exact_solution_;
 }; // class OS2014
 
-
 } // namespace internal
 
 
@@ -169,6 +169,81 @@ public:
 
 }; // class OS2014Multiscale
 
+template< class GridImp >
+class SingleMultiscaleCube
+    : public internal::ParametricBase
+    , public internal::OS2014Base< GridImp >
+{
+public:
+  typedef GridImp GridType;
+  typedef typename GridType::template Codim< 0 >::Entity EntityType;
+  typedef typename GridType::ctype                       DomainFieldType;
+  static const unsigned int                              dimDomain = GridType::dimension;
+  typedef FieldVector< DomainFieldType, dimDomain >      DomainType;
+  typedef double            RangeFieldType;
+  static const unsigned int dimRange = 1;
+
+  typedef Problems::ESV2007< EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ProblemType;
+  typedef Stuff::Functions::ESV2007::Testcase1ExactSolution
+      < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange > ExactSolutionType;
+
+  typedef Stuff::LocalizableFunctionInterface < EntityType, DomainFieldType, dimDomain, RangeFieldType, dimRange >
+      FunctionType;
+
+  typedef Stuff::Grid::Providers::Cube< GridType >      GridProviderType;
+  typedef grid::Multiscale::Providers::Cube< GridType > MsGridProviderType;
+
+  SingleMultiscaleCube(const Stuff::Common::Configuration& grid_cfg,
+                       const bool H_with_h = false)
+      : partitions_(H_with_h
+                    ? grid_cfg.get< std::string >("num_partitions") + "_H_with_h"
+                    : grid_cfg.get< std::string >("num_partitions"))
+  {
+#ifndef DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
+    std::cerr << Stuff::Common::Colors::red
+              << "warning: running a multiscale testcase!\n"
+              << "      => the boundaryinfo is set to AllDirichlet and all boundary values are set to zero!\n"
+              << "         please manually check the testcase for compliance!\n"
+              << "         define DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING to disable this warning!\n"
+              << Stuff::Common::StreamModifiers::normal << std::endl;
+#endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_BASE_DISABLE_WARNING
+    const auto lower_left = grid_cfg.get< DomainType >("lower_left");
+    const auto upper_right = grid_cfg.get< DomainType >("upper_right");
+    const auto num_elements = grid_cfg.get< std::vector< unsigned int > >("num_elements", dimDomain);
+    auto num_partitions = grid_cfg.get< std::vector< size_t > >("num_partitions", dimDomain);
+    const auto num_oversampling_layers = grid_cfg.get("oversampling_layers", size_t(0));
+
+    auto grid_ptr = GridProviderType(lower_left, upper_right, num_elements).grid_ptr();
+    grid_ptr->loadBalance();
+    const auto dims = DSG::dimensions(grid_ptr->template leafGridView<All_Partition>());
+    const auto bounding_box = dims.bounding_box();
+
+    grid_provider_ = Stuff::Common::make_unique< MsGridProviderType >(grid_ptr,
+                                                                      bounding_box[0],
+                                                                      bounding_box[1],
+                                                                      num_partitions,
+                                                                      num_oversampling_layers);
+  } // MultiscaleCubeBase(...)
+
+  std::string partitioning() const
+  {
+    return partitions_;
+  }
+
+  size_t num_refinements() const
+  {
+   return 0;
+  }
+
+  const MsGridProviderType& grid_provider() const
+  {
+    return *grid_provider_;
+  }
+
+private:
+  std::string partitions_;
+  std::unique_ptr< MsGridProviderType > grid_provider_;
+}; // class MultiscaleCubeBase
 
 # endif // HAVE_DUNE_GRID_MULTISCALE
 
@@ -178,3 +253,4 @@ public:
 } // namespace Dune
 
 #endif // DUNE_HDD_LINEARELLIPTIC_TESTCASES_OS2014_HH
+

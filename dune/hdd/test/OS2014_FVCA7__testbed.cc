@@ -18,6 +18,7 @@
 #include <dune/stuff/common/profiler.hh>
 #include <dune/stuff/test/common.hh>
 #include <dune/grid/spgrid.hh>
+#include <dune/grid/uggrid.hh>
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic-block-swipdg.hh"
@@ -25,6 +26,7 @@
 
 #include "benchmark_util.hh"
 
+#include <dune/grid/multiscale/factory/default.hh>
 
 using namespace Dune;
 using namespace HDD;
@@ -57,8 +59,7 @@ public:
   static void BlockSWIPDG_coarse_triangulation(const std::string partitioning) {
     BlockTestCaseType test_case(partitioning);
     BlockEocStudyType eoc_study(test_case, {"energy", "eta_OS2014"});
-    Stuff::Test::check_eoc_study_for_success(eoc_study,
-                                             eoc_study.run_eoc(DSC_LOG_INFO));
+    eoc_study.run_eoc(DSC_LOG_INFO_0);
   } // ... BlockSWIPDG_coarse_triangulation(...)
 
   static void ESV2007_fine_triangulation() {
@@ -94,17 +95,18 @@ void single_run_swipdg()
 void single_run_blockswipdg()
 {
   static constexpr int polOrder{1};
-  static constexpr GDT::ChooseSpaceBackend space_backend{GDT::ChooseSpaceBackend::pdelab};
   static constexpr Stuff::LA::ChooseBackend la_backend{Stuff::LA::ChooseBackend::istl_sparse};
-  using GridType = SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm>;
-  using TestCaseType = LinearElliptic::TestCases::OS2014Multiscale<GridType>;
+//  using GridType = SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm>;
+  using GridType = UGGrid<2>;
+  using TestCaseType = LinearElliptic::TestCases::SingleMultiscaleCube< GridType >;
   using DiscretizationType = typename LinearElliptic::Tests::internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type;
 
-  TestCaseType test_case(DSC_CONFIG_GET("lrbms.partitioning", "[1 1 1]"), DSC_CONFIG_GET("lrbms.refinements", 0));
+  auto grid_config = DSC_CONFIG.sub("grid");
+  TestCaseType test_case(grid_config);
   {
     DSC::ScopedTiming timing("single_run.lrbms.solve");
-    DiscretizationType current_discretization(*test_case.reference_provider(), test_case.boundary_info(), test_case.problem());
-    auto grid_view = test_case.reference_provider()->grid().leafGridView();
+    DiscretizationType current_discretization(test_case.grid_provider(), test_case.boundary_info(), test_case.problem());
+    auto grid_view = test_case.grid_provider().grid().leafGridView();
 
     current_discretization.init();
     auto current_solution_vector_on_level_ = current_discretization.create_vector();
@@ -142,8 +144,8 @@ int main(int argc, char **argv) {
       DSC::OutputScopedTiming outs("all", DSC_LOG_INFO_0);
       DSC_CONFIG.set("grids.total_macro_cells", 256);
   //    single_run_swipdg();
-  //    single_run_blockswipdg();
-      OS2014_FVCA7__estimator_study::BlockSWIPDG_coarse_triangulation(DSC_CONFIG_GET("lrbms.partitioning", "[1 1 1]"));
+      single_run_blockswipdg();
+//      OS2014_FVCA7__estimator_study::BlockSWIPDG_coarse_triangulation(DSC_CONFIG_GET("lrbms.partitioning", "[1 1 1]"));
   //    OS2014_FVCA7__estimator_study::ESV2007_fine_triangulation();
     }
     DSC_PROFILER.output_per_rank("profiler");
