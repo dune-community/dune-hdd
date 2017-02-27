@@ -4,6 +4,8 @@
 // License: BSD 2-Clause License (http://opensource.org/licenses/BSD-2-Clause)
 
 #define DUNE_GRID_EXPERIMENTAL_GRID_EXTENSIONS 1
+#define ENABLE_UG 1
+
 #include <config.h>
 #include <sstream>
 
@@ -19,6 +21,7 @@
 #include <dune/stuff/test/common.hh>
 #include <dune/grid/spgrid.hh>
 #include <dune/grid/uggrid.hh>
+
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
 #include "linearelliptic-block-swipdg.hh"

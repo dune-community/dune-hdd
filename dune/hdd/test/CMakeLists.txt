@@ -39,6 +39,7 @@ foreach(target
   add_dune_metis_flags(${target})
   add_dune_parmetis_flags(${target})
   add_dune_superlu_flags(${target})
+  add_dune_ug_flags(${target})
   add_dune_tbb_flags(${target})
   add_dune_umfpack_flags(${target})
 endforeach(target)
@@ -55,6 +56,17 @@ target_link_libraries(test_OS2014_FVCA7__testbed
 # clang analizer targets (should be guarded)
 #add_analyze(OS2014.cc)
 #target_link_libraries(analyze_OS2014.cc lib_test_OS2014)
+
+foreach(target test_OS2014_FVCA7__testbed)
+  add_dune_alugrid_flags(${target})
+  add_dune_mpi_flags(${target})
+  add_dune_metis_flags(${target})
+  add_dune_parmetis_flags(${target})
+  add_dune_superlu_flags(${target})
+  add_dune_ug_flags(${target})
+  add_dune_tbb_flags(${target})
+  add_dune_umfpack_flags(${target})
+endforeach()
 
 # link spe10 data file if present
 if (NOT ${SPE10MODEL1DATA} STREQUAL "SPE10MODEL1DATA-NOTFOUND")
