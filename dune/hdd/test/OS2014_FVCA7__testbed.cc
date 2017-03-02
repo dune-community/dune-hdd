@@ -20,7 +20,16 @@
 #include <dune/stuff/common/profiler.hh>
 #include <dune/stuff/test/common.hh>
 #include <dune/grid/spgrid.hh>
-#include <dune/grid/uggrid.hh>
+
+// UG
+#include <dune/grid/common/mcmgmapper.hh>
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include <dune/common/parallel/mpihelper.hh>
+#include <dune/common/float_cmp.hh>
+#include <dune/grid/common/gridenums.hh>
+#include <dune/grid/utility/structuredgridfactory.hh>
+#include <dune/geometry/referenceelements.hh>
+// UG
 
 #include <dune/hdd/linearelliptic/testcases/OS2014.hh>
 
@@ -79,7 +88,9 @@ void single_run_swipdg()
   static constexpr int polOrder{1};
   static constexpr GDT::ChooseSpaceBackend space_backend{GDT::ChooseSpaceBackend::pdelab};
   static constexpr Stuff::LA::ChooseBackend la_backend{Stuff::LA::ChooseBackend::istl_sparse};
-  using GridType = SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm>;
+//  using GridType = SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm>;
+  using GridType = UGGrid<2>;
+//  using GridType = YaspGrid<2>;
   using TestCaseType = LinearElliptic::TestCases::OS2014<GridType>;
   using DiscretizationType = typename LinearElliptic::Tests::internal::DiscretizationSWIPDG< TestCaseType, polOrder, space_backend, la_backend >::Type;
 
@@ -87,7 +98,7 @@ void single_run_swipdg()
   {
     DSC::ScopedTiming timing("single_run.swipdg.solve");
     DiscretizationType current_discretization(test_case, test_case.boundary_info(), test_case.problem(),
-                                              test_case.level_of(test_case.reference_level()));
+                                              test_case.level_of(0));
     current_discretization.init();
     auto current_solution_vector_on_level_ = current_discretization.create_vector();
     const auto solver_options = DSC_CONFIG.sub("global_solver");
@@ -101,6 +112,7 @@ void single_run_blockswipdg()
   static constexpr Stuff::LA::ChooseBackend la_backend{Stuff::LA::ChooseBackend::istl_sparse};
 //  using GridType = SPGrid<double, 2, SPIsotropicRefinement, MPI_Comm>;
   using GridType = UGGrid<2>;
+//  using GridType = YaspGrid<2>;
   using TestCaseType = LinearElliptic::TestCases::SingleMultiscaleCube< GridType >;
   using DiscretizationType = typename LinearElliptic::Tests::internal::DiscretizationBlockSWIPDG< TestCaseType, polOrder, la_backend >::Type;
 
@@ -146,8 +158,15 @@ int main(int argc, char **argv) {
     {
       DSC::OutputScopedTiming outs("all", DSC_LOG_INFO_0);
       DSC_CONFIG.set("grids.total_macro_cells", 256);
-  //    single_run_swipdg();
-      single_run_blockswipdg();
+
+      if (DSC_CONFIG_GET("testbed.blockswipdg", true)) {
+        DSC_LOG_DEBUG_0 << "running BLOCK SwipDG" << std::endl;
+        single_run_blockswipdg();
+      }
+      else {
+        DSC_LOG_DEBUG_0 << "running SwipDG" << std::endl;
+        single_run_swipdg();
+      }
 //      OS2014_FVCA7__estimator_study::BlockSWIPDG_coarse_triangulation(DSC_CONFIG_GET("lrbms.partitioning", "[1 1 1]"));
   //    OS2014_FVCA7__estimator_study::ESV2007_fine_triangulation();
     }
