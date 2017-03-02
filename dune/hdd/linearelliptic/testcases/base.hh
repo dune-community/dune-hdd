@@ -96,7 +96,9 @@ public:
     this->grid().preAdapt();
     this->grid().globalRefine(steps);
     this->grid().postAdapt();
-    this->grid().loadBalance();
+    if(!std::is_same<GridType, Dune::UGGrid<GridType::dimension>>::value)
+      this->grid().loadBalance();
+
   }
   Base(std::shared_ptr< GridType > grd, size_t num_refinements)
     : BaseType(grd)
@@ -193,7 +195,8 @@ public:
       grid_ptr->preAdapt();
       grid_ptr->globalRefine(boost::numeric_cast< int >(initial_refinements + rr*refine_steps_for_half));
       grid_ptr->postAdapt();
-      grid_ptr->loadBalance();
+      if(!std::is_same<GridType, Dune::UGGrid<GridType::dimension>>::value)
+        grid_ptr->loadBalance();
       std::vector< size_t > actual_partitions = num_partitions;
       if (H_with_h)
         for (auto& element : actual_partitions)

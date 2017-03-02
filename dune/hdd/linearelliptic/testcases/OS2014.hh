@@ -127,7 +127,8 @@ private:
     grid->preAdapt();
     grid->globalRefine(refinements);
     grid->postAdapt();
-    grid->loadBalance();
+    if(!std::is_same<GridType, Dune::UGGrid<GridType::dimension>>::value)
+      grid->loadBalance();
     return grid;
   } // ... create_initial_grid(...)
 
@@ -214,7 +215,8 @@ public:
     const auto num_oversampling_layers = grid_cfg.get("oversampling_layers", size_t(0));
 
     auto grid_ptr = GridProviderType(lower_left, upper_right, num_elements).grid_ptr();
-    grid_ptr->loadBalance();
+    if(!std::is_same<GridType, Dune::UGGrid<GridType::dimension>>::value)
+      grid_ptr->loadBalance();
     const auto dims = DSG::dimensions(grid_ptr->template leafGridView<All_Partition>());
     const auto bounding_box = dims.bounding_box();
 
